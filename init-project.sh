@@ -98,6 +98,13 @@ for file in .exocortex/*.md docs/control/*.md; do
     fi
 done
 
+# Update .cursorrules file (pointer to AI_INSTRUCTIONS.md)
+if [ -f ".cursorrules" ]; then
+    $SED_INPLACE "s/\[PROJECT_NAME\]/$PROJECT_NAME/g" ".cursorrules"
+    $SED_INPLACE "s/\[DATE\]/$CURRENT_DATE/g" ".cursorrules"
+    echo "  ✓ Updated .cursorrules"
+fi
+
 if [ "$FILE_COUNT" -eq 0 ]; then
     echo ""
     echo "⚠️  Warning: No .md files found to process"
@@ -110,10 +117,24 @@ echo ""
 echo "🧹 Cleaning up backup files..."
 
 # Remove backup files created by sed
-if ! find .exocortex/ docs/control/ -name "*.bak" -type f -delete 2>/dev/null; then
+if ! find .exocortex/ docs/control/ .cursorrules -name "*.bak" -type f -delete 2>/dev/null; then
     echo "  ⚠️  Warning: Some backup files could not be deleted (check permissions)"
 else
     echo "  ✓ Cleaned up backup files"
+fi
+
+echo ""
+echo "🔧 Making scripts executable..."
+
+# Make event system scripts executable
+if [ -f ".exocortex/scripts/generate_context.sh" ]; then
+    chmod +x .exocortex/scripts/generate_context.sh
+    echo "  ✓ Made generate_context.sh executable"
+fi
+
+if [ -f ".exocortex/scripts/archive_events.sh" ]; then
+    chmod +x .exocortex/scripts/archive_events.sh
+    echo "  ✓ Made archive_events.sh executable"
 fi
 
 echo ""
@@ -127,7 +148,16 @@ echo "  2. Customize .exocortex/ESSENTIAL_FILES.md (map your file locations)"
 echo "  3. Add your first tasks to .exocortex/TODO.md"
 echo "  4. Start working with '/work' command"
 echo ""
-echo "📖 Read .exocortex/README.md for complete usage guide"
+echo "📖 Documentation:"
+echo "  - .exocortex/README.md - Complete usage guide"
+echo "  - .exocortex/EVENT_SYSTEM_USAGE.md - Event system quick start"
+echo "  - .exocortex/AI_INSTRUCTIONS.md - Full workflow commands"
+echo ""
+echo "✨ Event System v2.0:"
+echo "  - Use /save to create work events (no overwrites!)"
+echo "  - Use /work to view current context"
+echo "  - Use /history to search older work"
+echo "  - VS Code and Cursor work simultaneously"
 echo ""
 echo "🚀 Happy coding!"
 echo ""

@@ -29,29 +29,30 @@ The **Exocortex** is an external memory system for your development projects. It
 ### 1. Copy Template to Your Project
 
 ```bash
-# Clone this template into your project
-cp -r template-export/.exocortex /path/to/your-project/
-cp -r template-export/docs/control /path/to/your-project/docs/
-cp template-export/.cursorrules /path/to/your-project/
+# Clone or download this template
+git clone https://github.com/EnkratFlow/exocortex-template.git
+
+# Copy to your project (replace /path/to/your-project)
+cd exocortex-template
+cp -r .exocortex /path/to/your-project/
+cp -r docs /path/to/your-project/
+cp .cursorrules /path/to/your-project/
+cp .gitignore /path/to/your-project/.gitignore-exocortex  # Merge with existing
+cp init-project.sh /path/to/your-project/
 ```
 
 ### 2. Run Initialization Script
 
-**On macOS/Linux:**
 ```bash
 cd /path/to/your-project
-bash template-export/init-project.sh
+bash init-project.sh
 ```
 
-**On Windows (PowerShell):**
-```powershell
-cd C:\path\to\your-project
-.\template-export\init-project.ps1
-```
-
-The script will:
-- Prompt for your project name and parent project (optional)
+**The script will:**
+- Prompt for your project name
+- Prompt for parent project (optional)
 - Replace all `[PROJECT_NAME]`, `[PARENT_PROJECT]`, and `[DATE]` placeholders
+- Make scripts executable (generate_context.sh, archive_events.sh)
 - Clean up backup files
 - Show you next steps
 
