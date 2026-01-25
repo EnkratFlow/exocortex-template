@@ -74,23 +74,65 @@ template-export/
 ├── README.md                          ← You are here
 ├── init-project.sh                    ← Bash initialization script
 ├── init-project.ps1                   ← PowerShell initialization script
-├── .cursorrules                       ← Workflow command definitions
+├── .cursorrules                       ← Lightweight pointer to AI instructions
 ├── .exocortex/                        ← Memory system
 │   ├── README.md                      ← System guide (keep as-is)
+│   ├── AI_INSTRUCTIONS.md             ← Full workflow commands (1900+ lines)
 │   ├── MEMORY.md                      ← Entry point for AI
 │   ├── PROJECT_MEMORY.md              ← System constraints & philosophy
-│   ├── SESSION_CONTEXT.md             ← Current work state
+│   ├── SESSION_CONTEXT.md             ← Current work state (generated from events)
 │   ├── TODO.md                        ← Daily task board
 │   ├── LESSONS.md                     ← Lessons learned & anti-patterns
 │   ├── ESSENTIAL_FILES.md             ← File location map
 │   ├── OPEN_DECISIONS.md              ← Unresolved decisions
-│   └── TEMPLATE_STRUCTURE.md          ← Template reference
+│   ├── TEMPLATE_STRUCTURE.md          ← Template reference
+│   ├── EVENT_SYSTEM_USAGE.md          ← Event system quick guide
+│   ├── PHASE_1_EVENT_SYSTEM_PLAN.md   ← Implementation details
+│   ├── PHASE_2_TRANSITION_PLAN.md     ← Future RAG integration
+│   ├── events/                        ← Append-only work events
+│   │   └── .gitkeep                   ← Keep directory in git
+│   └── scripts/
+│       ├── generate_context.sh        ← Regenerate SESSION_CONTEXT from events
+│       └── archive_events.sh          ← Archive old events (7+ days)
 └── docs/control/                      ← Control system
     ├── README.md                      ← Control system guide
     ├── INTERRUPTS.md                  ← Capture lane for ideas
     ├── BACKLOG.md                     ← Items under investigation
     └── ROADMAP.md                     ← Strategic planning (optional)
 ```
+
+---
+
+## 🎯 New in v2.0: Event-Based Memory System
+
+**The Problem This Solves:**
+- ❌ Using VS Code and Cursor simultaneously would overwrite SESSION_CONTEXT.md
+- ❌ Lost work context when switching between editors
+- ❌ No cross-machine sync without git conflicts
+
+**The Solution:**
+- ✅ **Append-only event files** - Each `/save` creates a new event file (no overwrites)
+- ✅ **Multi-editor support** - VS Code and Cursor work simultaneously without conflicts
+- ✅ **Auto-regeneration** - SESSION_CONTEXT.md regenerated from events automatically
+- ✅ **Cross-machine sync** - Git-based (Phase 1) → RAG API-based (Phase 2)
+- ✅ **Comprehensive history** - All work events preserved in timeline
+
+**How It Works:**
+```
+/save → Creates event file → Regenerates SESSION_CONTEXT
+/work → Regenerates SESSION_CONTEXT from events → Shows current work
+/history → Searches older events (7+ days)
+```
+
+**Files:**
+- `.exocortex/events/*.md` - Append-only event files (last 7 days)
+- `.exocortex/scripts/generate_context.sh` - Regenerates SESSION_CONTEXT from events
+- `.exocortex/SESSION_CONTEXT.md` - Generated file (do not edit manually)
+
+**Documentation:**
+- [EVENT_SYSTEM_USAGE.md](.exocortex/EVENT_SYSTEM_USAGE.md) - Quick usage guide
+- [PHASE_1_EVENT_SYSTEM_PLAN.md](.exocortex/PHASE_1_EVENT_SYSTEM_PLAN.md) - Implementation details
+- [PHASE_2_TRANSITION_PLAN.md](.exocortex/PHASE_2_TRANSITION_PLAN.md) - Future RAG integration
 
 ---
 
