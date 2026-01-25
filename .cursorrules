@@ -24,6 +24,7 @@ This enables workflow commands to work in ANY editor (Cursor, VS Code, Claude De
 
 - `/save` - Save work event (append-only, no overwrites)
 - `/work` - Load context and start working
+- `/ecosystem` - View cross-project activity (if hub configured)
 - `/history` - Search older events (7+ days)
 - `/groom` - Review and organize tasks
 - `/daily-end` - End of day workflow
