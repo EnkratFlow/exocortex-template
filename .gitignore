@@ -1,0 +1,17 @@
+.DS_Store
+node_modules/
+.env
+.env.local
+dist/
+build/
+.vscode/
+*.log
+
+# Exocortex - Event System
+# Phase 1 (1-2 months): Track active events via git for cross-machine sync
+# Phase 2 (after RAG API): Switch to RAG-based sync, stop committing events
+# Only ignore backups (not needed in repo)
+.exocortex/SESSION_CONTEXT_BACKUP_*.md
+
+# Note: Archive directory is tracked during Phase 1 for complete cross-machine sync
+# Will be ignored in Phase 2 when RAG API becomes primary sync mechanism
