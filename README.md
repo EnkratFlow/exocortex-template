@@ -94,7 +94,8 @@ template-export/
 │   │   └── .gitkeep                   ← Keep directory in git
 │   └── scripts/
 │       ├── generate_context.sh        ← Regenerate SESSION_CONTEXT from events
-│       └── archive_events.sh          ← Archive old events (7+ days)
+│       ├── archive_events.sh          ← Archive old events (7+ days)
+│       └── post_to_hub.sh             ← Post events to ecosystem hub (optional)
 └── docs/control/                      ← Control system
     ├── README.md                      ← Control system guide
     ├── INTERRUPTS.md                  ← Capture lane for ideas
@@ -134,6 +135,42 @@ template-export/
 - [EVENT_SYSTEM_USAGE.md](.exocortex/EVENT_SYSTEM_USAGE.md) - Quick usage guide
 - [PHASE_1_EVENT_SYSTEM_PLAN.md](.exocortex/PHASE_1_EVENT_SYSTEM_PLAN.md) - Implementation details
 - [PHASE_2_TRANSITION_PLAN.md](.exocortex/PHASE_2_TRANSITION_PLAN.md) - Future RAG integration
+
+---
+
+## 🌐 Optional: Cross-Project Hub Integration
+
+**For Multi-Project Ecosystems Only**
+
+If you're working on multiple projects that need cross-project visibility, the Exocortex includes optional hub integration:
+
+**Features:**
+- ✅ **Automatic activity posting** - `/save` posts event summaries to a central hub
+- ✅ **Cross-project visibility** - `/ecosystem` shows activity across all connected projects
+- ✅ **Fail-safe operation** - If hub doesn't exist, silently skips (no errors)
+- ✅ **Zero configuration** - Works automatically if hub exists
+
+**How It Works:**
+```
+Project A: /save → post_to_hub.sh → Central Hub
+Project B: /save → post_to_hub.sh → Central Hub
+Project C: /ecosystem → Reads hub → Shows all activity
+```
+
+**Setup (Parent Project Only):**
+```bash
+# Create hub structure in parent project
+mkdir -p .exocortex/hub/projects
+touch .exocortex/hub/activity_stream.txt
+```
+
+**Commands:**
+- `/save` - Auto-posts to hub (if exists)
+- `/ecosystem` - View cross-project activity
+
+**Default Hub Location:** `~/EnkratFlow/EnkratFlow-Project/.exocortex/hub/`
+
+**Note:** Hub integration is completely optional. Projects work independently without it.
 
 ---
 

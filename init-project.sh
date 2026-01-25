@@ -137,6 +137,11 @@ if [ -f ".exocortex/scripts/archive_events.sh" ]; then
     echo "  ✓ Made archive_events.sh executable"
 fi
 
+if [ -f ".exocortex/scripts/post_to_hub.sh" ]; then
+    chmod +x .exocortex/scripts/post_to_hub.sh
+    echo "  ✓ Made post_to_hub.sh executable"
+fi
+
 echo ""
 echo "✅ Initialization Complete!"
 echo ""
