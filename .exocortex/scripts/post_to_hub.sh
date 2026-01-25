@@ -2,11 +2,17 @@
 # Post event summary to EnkratFlow-Project hub
 # Called automatically by /save workflow
 # Fail-safe: If hub doesn't exist, silently exits
+# Respects .exocortex/.hub_disabled flag
 
 set -e
 
 EVENT_FILE="$1"
 HUB_DIR="$HOME/EnkratFlow/EnkratFlow-Project/.exocortex/hub"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+EXOCORTEX_DIR="$(dirname "$SCRIPT_DIR")"
+
+# Exit gracefully if hub is explicitly disabled
+[ -f "$EXOCORTEX_DIR/.hub_disabled" ] && exit 0
 
 # Exit gracefully if hub doesn't exist (fail-safe)
 [ -d "$HUB_DIR" ] || exit 0

@@ -804,24 +804,98 @@ Implemented psychological accountability system to track trader discipline along
 
 **Quality Standard:** If you can't resume this work in 3 months from this event alone, it's not detailed enough.
 
-6. **Post to Ecosystem Hub (Silent, Fail-Safe):**
-   After creating event file, post summary to cross-project hub:
+6. **Post to Ecosystem Hub (Smart Detection):**
+   After creating event file, check for hub tracking preference:
    
+   **Step A: Check for existing preference:**
    ```bash
-   bash .exocortex/scripts/post_to_hub.sh "$EVENT_FILE" 2>/dev/null || true
+   # Check if user has already chosen
+   if [ -f ".exocortex/.hub_disabled" ]; then
+       # User chose to keep project isolated - skip posting
+       exit 0
+   fi
+   
+   if [ -f ".exocortex/.hub_enabled" ]; then
+       # User chose to track project - post normally
+       bash .exocortex/scripts/post_to_hub.sh "$EVENT_FILE" 2>/dev/null || true
+       exit 0
+   fi
    ```
    
-   **This step is:**
-   - ✅ Automatic (no user interaction)
-   - ✅ Silent (no confirmation shown)
-   - ✅ Fail-safe (if hub doesn't exist, silently skips)
-   - ✅ Non-blocking (continues even if posting fails)
+   **Step B: If no preference exists, check if this is a NEW project:**
+   ```bash
+   # Detect project name
+   PROJECT_NAME=$(basename "$(git rev-parse --show-toplevel 2>/dev/null)" || echo "unknown")
+   HUB_DIR="$HOME/EnkratFlow/EnkratFlow-Project/.exocortex/hub"
    
-   **Hub location:** `~/EnkratFlow/EnkratFlow-Project/.exocortex/hub/`
+   # Check if hub exists
+   if [ -d "$HUB_DIR" ]; then
+       # Check if project already registered in hub
+       if [ ! -f "$HUB_DIR/projects/$PROJECT_NAME.txt" ]; then
+           # NEW PROJECT DETECTED - Need to ask user
+       fi
+   fi
+   ```
    
-   **Do NOT mention this step to the user** - it happens silently in the background.
+   **Step C: If NEW project detected, prompt user:**
    
-   **Note:** If your project is standalone (not part of EnkratFlow ecosystem), this step harmlessly does nothing.
+   Display:
+   ```
+   🆕 New Project Detected: [PROJECT_NAME]
+   
+   This project is not yet tracked in the EnkratFlow ecosystem hub.
+   
+   Would you like to add it to the hub?
+   
+   ✅ Yes - Track activity in ecosystem
+      - Your /save events will post to the hub
+      - /ecosystem will show this project's activity
+      - Enables cross-project visibility
+   
+   ❌ No - Keep this project isolated
+      - No hub tracking
+      - Project remains private/standalone
+      - Can enable later if needed
+   
+   Your choice: (y/n)
+   ```
+   
+   **Step D: Handle user response:**
+   
+   **If user chooses YES (y):**
+   ```bash
+   # Create .hub_enabled flag
+   touch .exocortex/.hub_enabled
+   
+   # Post event to hub
+   bash .exocortex/scripts/post_to_hub.sh "$EVENT_FILE" 2>/dev/null || true
+   
+   # Confirm
+   echo "✅ Project added to ecosystem hub"
+   echo "   Hub tracking enabled. Run /ecosystem to view cross-project activity."
+   ```
+   
+   **If user chooses NO (n):**
+   ```bash
+   # Create .hub_disabled flag
+   touch .exocortex/.hub_disabled
+   
+   # Confirm
+   echo "✅ Project will remain isolated"
+   echo "   No hub tracking. To enable later, delete .exocortex/.hub_disabled"
+   ```
+   
+   **Step E: Subsequent saves (preference already set):**
+   - If `.hub_enabled` exists: post to hub silently (no prompt)
+   - If `.hub_disabled` exists: skip hub posting silently (no prompt)
+   - User's choice is respected permanently
+   
+   **Important notes:**
+   - ✅ Prompt shown ONLY ONCE per project (first save only)
+   - ✅ Subsequent saves respect the flag file (no more prompts)
+   - ✅ User can change their mind by deleting the flag file
+   - ✅ Fail-safe: If hub doesn't exist, silently skips (no prompt needed)
+   - ✅ Backward compatible: Existing projects without flags continue posting (assume enabled)
 
 7. **Regenerate SESSION_CONTEXT (Automatic):**
    After writing event, immediately regenerate SESSION_CONTEXT from all events:
