@@ -1,18 +1,32 @@
 {
   "name": "/daily-end",
-  "description": "Control Center: End of day workflow review",
+  "description": "End of day: reflect, capture what happened, close the day with a rich event",
   "steps": [
     {
       "type": "shell",
-      "command": ".exocortex/scripts/run_end_day.sh",
-      "description": "Running end of day review",
-      "success_format": "✓ End of day review complete"
+      "command": "bash .exocortex/scripts/run_end_day.sh",
+      "description": "Gather today's raw data (events, git, TODO, interrupts, timing)",
+      "outputs": { "day_data": "Structured facts about today's activity" }
     },
     {
       "type": "ai",
-      "command": "Based on the end of day review, help the user reflect on what was accomplished today and what should be the priority for tomorrow. Suggest any cleanup actions needed (commits, interrupt grooming, etc.).",
-      "description": "Generating day reflection and tomorrow's priorities",
-      "success_format": "✓ Day closed with reflection and tomorrow's plan"
+      "action": "Write a rich end-of-day event body for create_event.sh",
+      "inputs": ["day_data"],
+      "context": "You are closing the day. Write a detailed end-of-day event that captures EVERYTHING meaningful. Use TWO sources:\n\n1. **day_data** (from Step 1) — today's events, git commits, TODO state, interrupts, timing\n2. **Your conversation context** — you have the FULL conversation with the user in your context window right now. Mine it for:\n   - What was discussed and decided\n   - Problems solved and how\n   - Key insights, architecture decisions, design choices\n   - What the user cared about (their intent, priorities, energy)\n   - Anything that would help future-you (or another AI) understand what happened today\n\nWrite the event body in this format:\n\n```\n# End of Day — {date}\n\n## What Got Done\n(Concrete accomplishments — merge git commits + conversation context for full picture)\n\n## Key Decisions & Insights\n(Architecture choices, design decisions, things learned — from the conversation)\n\n## Problems Solved\n(What broke, what was tricky, how it was fixed — conversation has the details)\n\n## Conversation Highlights\n(2-5 bullet summary of the most important things discussed — this is the COLOR that raw git data misses)\n\n## State at Close\n- Branch: {branch}\n- Working tree: clean/dirty\n- In Progress: {current task or none}\n- Ready queue: {count} items\n- Uncommitted: {count} files\n\n## Tomorrow\n(What should be picked up next, based on conversation + TODO state)\n```\n\nWrite this content to a temp file at /tmp/daily_end_event.md. Be specific and detailed — this event will be read by memory scripts days/weeks later. Generic summaries are useless. Conversation color is what makes this valuable.\n\nAfter writing the file, show the user the full event content for review before creating it."
+    },
+    {
+      "type": "user_choice",
+      "options": [
+        "A) Save this event and close the day",
+        "B) Edit — I want to add/change something",
+        "C) Skip the event — just close"
+      ]
+    },
+    {
+      "type": "ai",
+      "action": "Handle the user's choice",
+      "inputs": ["user_choice"],
+      "context": "If A: Run `bash .exocortex/scripts/create_event.sh --body-file /tmp/daily_end_event.md` to save the event. Show confirmation. Suggest: commit if uncommitted changes exist, then '/groom' tomorrow if interrupts are pending.\n\nIf B: Ask what they want to change, update /tmp/daily_end_event.md, show again, then re-ask A/B/C.\n\nIf C: Skip event creation. Just show a closing summary with tomorrow's priorities.\n\nAlways end with: 'Day closed. See you tomorrow 👋'"
     }
   ]
 }
