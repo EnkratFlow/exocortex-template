@@ -25,11 +25,19 @@ curl -sL https://raw.githubusercontent.com/EnkratFlow/exocortex-template/main/in
 
 **The installer will:**
 1. Download the latest exocortex template
-2. Copy `.exocortex/` and `.cursorrules` to your project
+2. Copy `.exocortex/` and editor pointer files to your project
 3. Replace all placeholders with your project name
 4. Make scripts executable
 5. Optionally set up API keys for AI memory features
 6. Update `.gitignore` to protect secrets
+
+**Editor pointer files created:**
+- `.cursorrules` → Cursor
+- `CLAUDE.md` → Claude Code
+- `.github/copilot-instructions.md` → VS Code Copilot
+- `.windsurfrules` → Windsurf
+
+All point to the same source: `.exocortex/AI_BOOTSTRAP.md`
 
 ---
 
@@ -56,9 +64,12 @@ rm -rf /tmp/exocortex
 ## What's Included
 
 ```
-.cursorrules                              ← Auto-loaded pointer for Cursor/VS Code
+.cursorrules                              ← Thin pointer (Cursor auto-loads)
+CLAUDE.md                                 ← Thin pointer (Claude Code auto-loads)
+.windsurfrules                            ← Thin pointer (Windsurf auto-loads)
+.github/copilot-instructions.md           ← Thin pointer (VS Code Copilot auto-loads)
 .exocortex/
-  ├── AI_BOOTSTRAP.md                     ← Command protocol (start here)
+  ├── AI_BOOTSTRAP.md                     ← HEAVY — single source of truth
   ├── COMMAND_SYSTEM.md                   ← Schema reference & full command index
   ├── PERSONA_AND_COMMANDS.md             ← AI persona & mode documentation
   ├── MEMORY_TIERS.md                     ← Memory tier architecture
@@ -181,7 +192,8 @@ Memory scripts use OpenAI (primary) with Anthropic fallback. Requires API key in
 - **git** (for installation)
 - **bash** (macOS/Linux — Windows WSL works too)
 - **OpenAI API key** (optional, for AI memory features)
-- **Works with:** Cursor, VS Code + Copilot, Claude Desktop, any AI that reads files
+- **Works with:** Cursor, VS Code + Copilot, Claude Code, Windsurf, any AI that reads files
+- Each editor gets a thin pointer file that auto-loads → reads `AI_BOOTSTRAP.md` → full system
 
 ---
 

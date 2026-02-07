@@ -12,7 +12,7 @@
 #
 # What this does:
 #   1. Clones exocortex-template to a temp directory
-#   2. Copies .exocortex/ and .cursorrules to the current directory
+#   2. Copies .exocortex/ and editor pointer files to the current directory
 #   3. Runs init-project.sh to replace placeholders and set up API keys
 #   4. Cleans up the temp clone
 #
@@ -80,14 +80,27 @@ echo "📁 Installing to $(pwd)/"
 cp -r "$TMPDIR/exocortex-template/.exocortex" .
 echo "  ✓ Copied .exocortex/"
 
-# Copy .cursorrules (don't overwrite if exists)
-if [ -f ".cursorrules" ]; then
-    echo "  ⚠️  .cursorrules already exists — keeping yours"
-    echo "  ℹ️  New version saved as .cursorrules.exocortex for reference"
-    cp "$TMPDIR/exocortex-template/.cursorrules" .cursorrules.exocortex
-else
-    cp "$TMPDIR/exocortex-template/.cursorrules" .
-    echo "  ✓ Copied .cursorrules"
+# Copy editor pointer files (thin pointers to AI_BOOTSTRAP.md)
+for pfile in .cursorrules CLAUDE.md .windsurfrules; do
+    if [ -f "$TMPDIR/exocortex-template/$pfile" ]; then
+        if [ -f "$pfile" ]; then
+            echo "  ⚠️  $pfile already exists — keeping yours"
+        else
+            cp "$TMPDIR/exocortex-template/$pfile" .
+            echo "  ✓ Copied $pfile"
+        fi
+    fi
+done
+
+# Copilot instructions go in .github/
+if [ -f "$TMPDIR/exocortex-template/.github/copilot-instructions.md" ]; then
+    mkdir -p .github
+    if [ -f ".github/copilot-instructions.md" ]; then
+        echo "  ⚠️  .github/copilot-instructions.md already exists — keeping yours"
+    else
+        cp "$TMPDIR/exocortex-template/.github/copilot-instructions.md" .github/
+        echo "  ✓ Copied .github/copilot-instructions.md"
+    fi
 fi
 
 # Merge .gitignore entries

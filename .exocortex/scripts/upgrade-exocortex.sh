@@ -381,6 +381,23 @@ upgrade_project() {
         fi
     done
 
+    # --- Step 11: Copy editor pointer files to project root ---
+    log_info "Step 11: Editor pointer files"
+    local target_project
+    target_project="$(dirname "$target_exocortex")"
+
+    for pfile in .cursorrules CLAUDE.md .windsurfrules; do
+        if [ -f "$SOURCE_PROJECT/$pfile" ]; then
+            safe_copy "$SOURCE_PROJECT/$pfile" "$target_project/$pfile" "$pfile (thin pointer)"
+        fi
+    done
+
+    # .github/copilot-instructions.md
+    if [ -f "$SOURCE_PROJECT/.github/copilot-instructions.md" ]; then
+        mkdir -p "$target_project/.github"
+        safe_copy "$SOURCE_PROJECT/.github/copilot-instructions.md" "$target_project/.github/copilot-instructions.md" ".github/copilot-instructions.md (thin pointer)"
+    fi
+
     echo ""
     log_ok "Upgrade complete: $project_name"
     echo ""

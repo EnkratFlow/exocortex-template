@@ -4,7 +4,7 @@
 # Replaces placeholders with your project-specific values
 #
 # USAGE: Run this script from your PROJECT ROOT directory after copying
-#        the .exocortex/ directory and .cursorrules to your project.
+#        the .exocortex/ directory and editor pointer files to your project.
 #
 # This script is run automatically by install.sh, or manually:
 #   cd /path/to/your-project
@@ -94,12 +94,12 @@ while IFS= read -r -d '' file; do
     fi
 done < <(find "$EXOCORTEX_DIR" -name "*.md" -print0)
 
-# Update .cursorrules if it exists
-if [ -f ".cursorrules" ]; then
-    $SED_INPLACE "s/\[PROJECT_NAME\]/$PROJECT_NAME/g" ".cursorrules"
-    $SED_INPLACE "s/\[DATE\]/$CURRENT_DATE/g" ".cursorrules"
-    echo "  ✓ .cursorrules"
-fi
+# Update pointer files if they exist (thin pointers — no placeholders to replace)
+for pfile in .cursorrules CLAUDE.md .windsurfrules .github/copilot-instructions.md; do
+    if [ -f "$pfile" ]; then
+        echo "  ✓ $pfile (pointer — no changes needed)"
+    fi
+done
 
 echo ""
 echo "🧹 Cleaning up backup files..."
@@ -181,7 +181,12 @@ echo "📖 Key Documents:"
 echo "  - .exocortex/AI_BOOTSTRAP.md       — Command protocol (start here)"
 echo "  - .exocortex/COMMAND_SYSTEM.md      — Full command reference"
 echo "  - .exocortex/reference/MEMORY.md    — Memory entry point"
-echo "  - .cursorrules                      — Auto-loaded in Cursor"
+echo ""
+echo "📂 Editor pointers (thin — all point to AI_BOOTSTRAP.md):"
+echo "  - .cursorrules                      — Cursor"
+echo "  - CLAUDE.md                         — Claude Code"
+echo "  - .github/copilot-instructions.md   — VS Code Copilot"
+echo "  - .windsurfrules                    — Windsurf"
 echo ""
 echo "🚀 Happy coding!"
 echo ""

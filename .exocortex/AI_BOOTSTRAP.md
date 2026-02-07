@@ -1,7 +1,10 @@
 # AI Bootstrap — Exocortex Command Protocol
 
-> **Read this first.** This is the portable execution protocol for the exocortex command system.
-> Any AI agent (Cursor, VS Code Copilot, Claude, etc.) should follow these rules when the user types a `/command`.
+> **Read this first.** This is the single source of truth for the exocortex command system.
+> Any AI agent (Cursor, VS Code Copilot, Claude, Windsurf, etc.) should follow these rules when the user types a `/command`.
+
+**After reading this file, also read:**
+→ `.exocortex/reference/MEMORY.md` (project memory entry point and reading order)
 
 ---
 
@@ -21,7 +24,50 @@ Commands work **with or without** the `/` prefix:
 
 ---
 
-## 2. Step Execution Protocol
+## 2. All 20 Commands
+
+### Daily Workflow
+| Command | Purpose |
+|---------|---------|
+| `/work` | Load context, see what to work on |
+| `/scrum` | Daily standup (yesterday/today/blockers) |
+| `/save` | Save work state before breaks |
+| `/daily-end` | End of day review |
+| `/interrupt` | Capture ideas without breaking flow |
+| `/brief` | Quick status check |
+
+### Memory (AI-powered)
+| Command | Purpose |
+|---------|---------|
+| `/shortterm` | 7-31 day semantic memory |
+| `/longterm` | 31+ day compressed memory |
+| `/subconscious` | Cross-cutting pattern detection |
+| `/drill <topic>` | Deep-dive on a specific topic |
+| `/history` | Search older events (7+ days) |
+
+### Planning
+| Command | Purpose |
+|---------|---------|
+| `/groom` | Process interrupts to backlog/TODO |
+| `/refine-backlog` | Promote backlog items to TODO |
+| `/prioritize` | Reorder TODO items |
+| `/weekly-review` | Weekly planning & review |
+| `/monthly-review` | Monthly strategic review |
+
+### System
+| Command | Purpose |
+|---------|---------|
+| `/system-scan` | Repository health check |
+| `/ai-export` | Generate system understanding document |
+| `/ecosystem` | Cross-project activity view |
+| `/init-exocortex` | Initialize exocortex for a new project |
+
+**Command schemas:** `.exocortex/commands/*.json` (one file per command)
+**Command index:** `.exocortex/COMMAND_SYSTEM.md`
+
+---
+
+## 3. Step Execution Protocol
 
 Each command JSON has a `steps` array. Execute steps **in order**.
 
@@ -73,7 +119,7 @@ Each command JSON has a `steps` array. Execute steps **in order**.
 
 ---
 
-## 3. Response Format
+## 4. Response Format
 
 After executing all steps, show a compact summary:
 
@@ -97,7 +143,7 @@ If a step fails:
 
 ---
 
-## 4. Self-Correction Rules
+## 5. Self-Correction Rules
 
 - **Never auto-fix** without asking
 - **Always show** what failed
@@ -107,7 +153,7 @@ If a step fails:
 
 ---
 
-## 5. Memory System Overview
+## 6. Memory System (4-Tier)
 
 The exocortex uses a **4-tier memory** system based on Conway's autobiographical memory model:
 
@@ -130,7 +176,7 @@ API calls go through `_api_helpers.py` — validates keys, detects auth errors, 
 
 ---
 
-## 6. Event System
+## 7. Event System
 
 Events are the raw data for memory. Stored in `.exocortex/events/` as markdown files:
 - **Filename format:** `YYYY-MM-DD_HH-MM-SS_machine-editor.md`
@@ -139,32 +185,48 @@ Events are the raw data for memory. Stored in `.exocortex/events/` as markdown f
 
 ---
 
-## 7. Key Files
+## 8. File Structure
 
 ```
 .exocortex/
-├── AI_BOOTSTRAP.md          ← YOU ARE HERE — execution protocol
-├── .env                     ← API keys (OPENAI_API_KEY, ANTHROPIC_API_KEY)
-├── commands/                ← JSON command specifications (20 total)
-│   └── work.json            ← Start here: context + next task
-├── scripts/                 ← Processing scripts
-│   ├── _api_helpers.py      ← Shared API call + error handling
-│   ├── get_rightnow_memory.py
+├── AI_BOOTSTRAP.md              ← YOU ARE HERE — single source of truth
+├── .env                         ← API keys (gitignored)
+├── .env.example                 ← API key template
+├── COMMAND_SYSTEM.md            ← Full command schema reference
+├── PERSONA_AND_COMMANDS.md      ← AI persona & mode documentation
+├── MEMORY_TIERS.md              ← Memory architecture details
+├── PROJECT_MEMORY.md            ← System purpose, philosophy, constraints
+├── SESSION_CONTEXT.md           ← Current work state
+├── TODO.md                      ← Task board
+├── LESSONS.md                   ← Project-specific lessons
+├── OPEN_DECISIONS.md            ← Unresolved decisions
+├── commands/                    ← 20 JSON command specs
+├── control/                     ← Human-controlled planning
+│   ├── INTERRUPTS.md            ← Parking lot for ideas
+│   ├── BACKLOG.md               ← Investigation items
+│   ├── ROADMAP.md               ← Strategic direction
 │   └── ...
-├── events/                  ← Append-only work event storage
-├── control/                 ← Human-controlled planning docs
-│   ├── TODO.md              ← Current task queue
-│   ├── INTERRUPTS.md        ← Parking lot for ideas
-│   ├── BACKLOG.md           ← Non-executable investigation
-│   └── ROADMAP.md           ← Strategic direction
-├── COMMAND_SYSTEM.md        ← Full command reference
-├── MEMORY_TIERS.md          ← Memory architecture details
-└── PERSONA_AND_COMMANDS.md  ← AI persona + all 20 commands listed
+├── docs/                        ← System documentation
+├── events/                      ← Append-only work events
+├── reference/                   ← Quick reference files
+│   ├── MEMORY.md                ← Memory entry point (read-order guide)
+│   ├── ESSENTIAL_FILES.md       ← File location map
+│   ├── QUICK_REFERENCE.md       ← Fast lookup
+│   └── CHEAT_SHEET.md           ← One-page cheat sheet
+└── scripts/                     ← Shell + Python automation
+    ├── _api_helpers.py           ← Shared API module
+    ├── get_rightnow_memory.py    ← RIGHT NOW (0-7 days)
+    ├── get_shortterm_memory.py   ← SHORT-TERM (7-31 days)
+    ├── get_longterm_memory.py    ← LONG-TERM (31+ days)
+    ├── get_subconscious_memory.py ← SUBCONSCIOUS (all events)
+    ├── get_subconscious_nudge.py ← DMN activation nudge
+    ├── drill_memory.py           ← Topic deep-dive
+    └── *.sh                      ← Shell automation scripts
 ```
 
 ---
 
-## 8. Getting Started
+## 9. Getting Started
 
 The first command to run is always:
 
@@ -172,8 +234,18 @@ The first command to run is always:
 /work
 ```
 
-This loads RIGHT NOW + SHORT-TERM memory, fires a subconscious nudge, reads git state and TODO.md, then presents the user with options to start their next task.
+This loads RIGHT NOW + SHORT-TERM memory, fires a subconscious nudge, reads git state and TODO.md, then presents you with options to start your next task.
 
 ---
 
-*Last updated: February 2026*
+## 10. Emergency Recovery
+
+If the AI seems to not know workflow commands:
+1. Type: "Read `.exocortex/AI_BOOTSTRAP.md`"
+2. Confirm it loaded
+3. Then proceed with your command
+
+---
+
+**Version:** Exocortex v3
+**Last updated:** February 2026

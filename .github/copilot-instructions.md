@@ -1,4 +1,4 @@
-# Cursor Rules
+# GitHub Copilot Instructions
 
 **Read `.exocortex/AI_BOOTSTRAP.md` immediately.** It contains the complete command protocol, all 20 commands, memory system, and file structure for this project.
 
