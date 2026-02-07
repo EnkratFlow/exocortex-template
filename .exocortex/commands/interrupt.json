@@ -1,0 +1,18 @@
+{
+  "name": "/interrupt",
+  "description": "Control Center: Quickly capture idea during active work",
+  "steps": [
+    {
+      "type": "ai",
+      "command": "Ask the user what they want to capture as an interrupt. Get a brief description (1-2 sentences). Then ask what type it is: BUG, IDEA, THOUGHT, CONCERN, QUESTION, or GENERAL. Once you have both, call the capture script.",
+      "description": "Capturing interrupt details",
+      "success_format": "✓ Interrupt details collected"
+    },
+    {
+      "type": "shell",
+      "command": ".exocortex/scripts/capture_interrupt.sh",
+      "description": "Saving interrupt to control system",
+      "success_format": "✓ Interrupt captured and saved"
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "name": "/ai-export",
+  "description": "Generate comprehensive system understanding document from actual code (not planning docs)",
+  "steps": [
+    {
+      "type": "ai",
+      "action": "Read actual code and generate AI export document",
+      "context": "Read core engine files: scenarioRegistry.ts, messageResolver.ts, technicalCoaching.ts, tradeLogic.ts, ConsoleCard.tsx, TechnicalGate.tsx, trade.ts types. Run test list. Read PROJECT_MEMORY.md, LESSONS.md, design system HTML. Build 7-section document: 1) System Overview, 2) Architecture, 3) Component Responsibilities (with actual code snippets), 4) Data Flow (actual execution paths), 5) QA Strategy (real test counts), 6) Constraints & Invariants, 7) Risks & Gaps. Must read actual code, not planning docs. Write to AI_EXPORT_v{N}.md with changelog, confidence assessment, and validation date."
+    }
+  ]
+}

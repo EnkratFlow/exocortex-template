@@ -1,0 +1,16 @@
+{
+  "name": "/weekly-review",
+  "description": "End-of-week review: what shipped, what stalled, interrupt triage",
+  "steps": [
+    {
+      "type": "ai",
+      "action": "Summarize the week and review interrupts",
+      "context": "Read .exocortex/TODO.md, recent events from .exocortex/events/, .exocortex/control/INTERRUPTS.md, and .exocortex/OPEN_DECISIONS.md. Summarize: what shipped, what stalled. Review interrupts grouped by type. Ask 3 questions: 1) Promote any to next-week focus? 2) Keep parked? 3) Delete? No rewriting history — promote only what earns attention."
+    },
+    {
+      "type": "ai",
+      "action": "Propose and apply updates",
+      "context": "Propose specific updates to TODO.md (next-week focus) and SESSION_CONTEXT.md (if direction changed). Show full diff. Ask 'Approve these changes for next week?' Only write after explicit approval."
+    }
+  ]
+}

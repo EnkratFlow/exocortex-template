@@ -1,0 +1,20 @@
+{
+  "name": "/ecosystem",
+  "description": "Cross-project activity view from EnkratFlow hub (read-only)",
+  "steps": [
+    {
+      "type": "ai",
+      "action": "Read hub data and display ecosystem view",
+      "context": "Read ~/EnkratFlow/EnkratFlow-Project/.exocortex/hub/activity_stream.txt (last 50 lines) and hub/projects/*.txt. If hub directory doesn't exist, say so and exit gracefully. Group events by project, show last 24h activity, show last known state per project. Suggest focus based on activity patterns (most active, stale, recent switches). Read-only — no modifications."
+    },
+    {
+      "type": "user_choice",
+      "options": [
+        "A) Continue current project — run /work",
+        "B) Switch to another project",
+        "C) Review a specific project",
+        "D) Close"
+      ]
+    }
+  ]
+}

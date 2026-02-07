@@ -1,0 +1,11 @@
+{
+  "name": "/init-exocortex",
+  "description": "Bootstrap a new .exocortex directory for any project",
+  "steps": [
+    {
+      "type": "ai",
+      "action": "Create .exocortex directory structure with template files",
+      "context": "Create the full .exocortex/ directory tree: TODO.md (empty ready/in-progress/done sections), SESSION_CONTEXT.md (project name, current focus placeholder), PROJECT_MEMORY.md (project description placeholder), LESSONS.md (empty), OPEN_DECISIONS.md (empty), control/ (INTERRUPTS.md, BACKLOG.md, ROADMAP.md — all empty templates), events/ (empty dir), scripts/ (empty dir), commands/ (copy schema reference from COMMAND_SYSTEM.md), reference/ (MEMORY.md with tier explanation), .env.example (OPENAI_API_KEY= placeholder). Ask for project name and one-line description before creating. Only create files that don't already exist."
+    }
+  ]
+}

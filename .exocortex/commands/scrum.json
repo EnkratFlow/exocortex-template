@@ -1,0 +1,18 @@
+{
+  "name": "/scrum",
+  "description": "Control Center: Daily standup (yesterday/today/blockers)",
+  "steps": [
+    {
+      "type": "shell",
+      "command": ".exocortex/scripts/run_scrum.sh",
+      "description": "Running daily standup routine",
+      "success_format": "✓ Daily standup complete"
+    },
+    {
+      "type": "ai", 
+      "command": "Based on the standup output, identify the top 1-2 priorities for today and any critical blockers that need immediate attention. Provide a focused action plan.",
+      "description": "Generating daily action plan",
+      "success_format": "✓ Action plan: {priorities}"
+    }
+  ]
+}

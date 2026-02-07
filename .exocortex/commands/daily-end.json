@@ -1,0 +1,18 @@
+{
+  "name": "/daily-end",
+  "description": "Control Center: End of day workflow review",
+  "steps": [
+    {
+      "type": "shell",
+      "command": ".exocortex/scripts/run_end_day.sh",
+      "description": "Running end of day review",
+      "success_format": "✓ End of day review complete"
+    },
+    {
+      "type": "ai",
+      "command": "Based on the end of day review, help the user reflect on what was accomplished today and what should be the priority for tomorrow. Suggest any cleanup actions needed (commits, interrupt grooming, etc.).",
+      "description": "Generating day reflection and tomorrow's priorities",
+      "success_format": "✓ Day closed with reflection and tomorrow's plan"
+    }
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "name": "/save",
+  "description": "Control Center: Save current work state checkpoint", 
+  "steps": [
+    {
+      "type": "ai",
+      "command": "Ask the user to describe their current work state in one sentence - what they're focused on right now. This will be saved as a checkpoint they can return to later.",
+      "description": "Collecting current work state",
+      "success_format": "✓ Work state description collected"
+    },
+    {
+      "type": "shell",
+      "command": ".exocortex/scripts/save_work_state.sh",
+      "description": "Saving work state checkpoint",
+      "success_format": "✓ Work state saved to SESSION_CONTEXT.md"
+    }
+  ]
+}

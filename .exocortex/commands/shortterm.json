@@ -1,0 +1,21 @@
+{
+  "name": "/shortterm",
+  "description": "Display short-term memory (7-31 days) with AI analysis",
+  "steps": [
+    {
+      "type": "shell",
+      "command": "python3 .exocortex/scripts/get_shortterm_memory.py",
+      "description": "Extract and analyze 7-31 day memory with AI",
+      "outputs": {
+        "event_count": "Number of events in period",
+        "ai_provider": "Which AI analyzed the memory"
+      }
+    },
+    {
+      "type": "ai",
+      "action": "Display the short-term memory analysis to user with formatting",
+      "inputs": ["Output from get_shortterm_memory.py"],
+      "context": "Show progression, themes, completed work, and patterns from the last 7-31 days"
+    }
+  ]
+}

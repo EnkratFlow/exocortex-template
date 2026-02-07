@@ -1,0 +1,16 @@
+{
+  "name": "/monthly-review",
+  "description": "Monthly directional review: vision alignment, trends, course correction",
+  "steps": [
+    {
+      "type": "ai",
+      "action": "High-level reflection and trend analysis",
+      "context": "Read .exocortex/TODO.md, recent events, .exocortex/control/INTERRUPTS.md, .exocortex/OPEN_DECISIONS.md, and .exocortex/control/ROADMAP.md. Reflect: what built/learned, what aligned with vision, what felt wasteful. Review trends: repeated interrupt themes, repeated blockers, energy vs output mismatch. Ask 3 directional questions: 1) What should you stop doing? 2) What deserves more focus? 3) Is the direction still correct?"
+    },
+    {
+      "type": "ai",
+      "action": "Propose directional updates",
+      "context": "Propose updates to PROJECT_MEMORY.md (only if direction changed), SESSION_CONTEXT.md, and high-level TODO priorities. About direction, not productivity. Fewer priorities is better. Ask 'Approve these directional updates?' Only write after explicit approval."
+    }
+  ]
+}
