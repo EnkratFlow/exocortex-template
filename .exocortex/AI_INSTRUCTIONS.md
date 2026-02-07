@@ -635,9 +635,7 @@ All workflows are triggered by typing the command in chat. Each workflow has det
    Ask: "Ready to save this event? (or type 'edit' to modify focus description)"
 
    **If user says "yes" or "save" or "ok":**
-   - Write event file with proper timestamp (MUST be actual ISO 8601 timestamp, NOT shell command)
-   - Run `.exocortex/scripts/generate_context.sh`
-   - Confirm: "✅ Event saved. SESSION_CONTEXT regenerated."
+   - Proceed to step 5 (write event file)
 
    **If user says "edit":**
    - Ask: "What should the focus description be?"
@@ -1065,13 +1063,91 @@ Implemented psychological accountability system to track trader discipline along
    - Can you add anything else?
    - Should I remove anything?
 
-2. **Understand Context:**
+2. **Detect Multi-Repo Work:**
+   Check if user worked on multiple repositories today:
+   
+   **Step A: Check hub activity stream:**
+   ```bash
+   HUB_DIR="$HOME/EnkratFlow/EnkratFlow-Project/.exocortex/hub"
+   TODAY=$(date +%Y-%m-%d)
+   
+   if [ -f "$HUB_DIR/activity_stream.txt" ]; then
+       # Extract repos with activity today
+       grep "$TODAY" "$HUB_DIR/activity_stream.txt" | grep -o "project: [a-z-]*" | sort -u
+   fi
+   ```
+   
+   **Step B: Check known EnkratFlow repos for today's commits:**
+   ```bash
+   # Check common EnkratFlow repos
+   REPOS=("trading-journal" "enkratflow-rag-api" "enkratflow-pkb-api" "exocenter")
+   ACTIVE_REPOS=()
+   
+   for repo in "${REPOS[@]}"; do
+       REPO_PATH="$HOME/EnkratFlow/$repo"
+       if [ -d "$REPO_PATH" ]; then
+           # Check for commits today
+           cd "$REPO_PATH"
+           if git log --since="midnight" --oneline 2>/dev/null | grep -q .; then
+               ACTIVE_REPOS+=("$repo")
+           fi
+       fi
+   done
+   ```
+   
+   **Step C: If multiple repos detected, ask user:**
+   
+   If 2+ repos have activity today, display:
+   ```
+   📦 Multi-Repo Work Detected
+   
+   I found activity in these repos today:
+   - [current-repo] (current workspace)
+   - [repo-2]
+   - [repo-3]
+   
+   Which repos should I update with daily-end?
+   
+   Options:
+   - A) All repos (update all that had activity)
+   - B) Select specific repos (you choose which ones)
+   - C) Current repo only (just this one)
+   
+   Your choice: (a/b/c)
+   ```
+   
+   **Step D: Handle user choice:**
+   
+   **If user chooses "A) All repos":**
+   - Process each active repo (including current)
+   - For each repo: run steps 3-6 (Understand Context through Write Updates)
+   - Then update project-level memory with cross-repo summary
+   
+   **If user chooses "B) Select specific repos":**
+   - Show list of active repos
+   - Ask: "Which repos? (comma-separated: trading-journal, enkratflow-rag-api)"
+   - Process only selected repos
+   - Then update project-level memory
+   
+   **If user chooses "C) Current repo only":**
+   - Continue with normal single-repo workflow (skip to step 3)
+   
+   **If only one repo detected (or hub not available):**
+   - Continue with normal single-repo workflow (skip to step 3)
+   
+   **Important:** When processing multiple repos:
+   - For each repo, switch context to that repo's directory
+   - Run the full workflow (steps 3-6) for each repo
+   - Collect summaries from all repos
+   - Update project-level memory with combined summary
+
+3. **Understand Context:**
    Ask (one at a time):
    - A. What is the current state of this work? (done | paused | blocked)
    - B. Did anything important change in direction, scope, or understanding?
    - C. Are you mentally done with this work for now?
 
-3. **Handle Interrupts:**
+4. **Handle Interrupts:**
    Read `docs/control/INTERRUPTS.md` (READ-ONLY)
    Group any new interrupts by type:
    - idea, bug, concern, refactor, feels wrong / not now
@@ -1081,7 +1157,7 @@ Implemented psychological accountability system to track trader discipline along
    - Update SESSION_CONTEXT
    - Leave parked
 
-4. **Capture Lessons:**
+5. **Capture Lessons:**
    Ask: "Did you learn anything today worth capturing for future sessions?"
    - Anti-patterns discovered
    - Working patterns confirmed
@@ -1095,7 +1171,7 @@ Implemented psychological accountability system to track trader discipline along
    If no:
    - Move on
 
-5. **Propose Memory Updates:**
+6. **Propose Memory Updates:**
    Show EXACTLY what will be written to memory files:
    
    **FOR REPO-LEVEL .exocortex/SESSION_CONTEXT.md:**
@@ -1133,19 +1209,24 @@ Implemented psychological accountability system to track trader discipline along
    
    Ask: "Ready to approve these memory updates?"
 
-6. **Write Updates:**
+7. **Write Updates:**
    If approved:
-   1. Update repo-level `.exocortex/SESSION_CONTEXT.md`
-   2. Update repo-level `.exocortex/TODO.md`
-   3. Update repo-level `.exocortex/LESSONS.md` (if lesson captured)
-   4. Update repo-level `.exocortex/PROJECT_MEMORY.md` (if constraints added)
-   5. Update project-level `.exocortex/SESSION_CONTEXT.md`
-   6. Update project-level LESSONS_LEARNED.md (if global lesson)
-   7. Update `.exocortex/OPEN_DECISIONS.md` (if applicable)
-   8. Confirm all writes successful
-   9. Summarize what was captured
+   
+   **For each selected repo (if multi-repo):**
+   1. Switch to repo directory: `cd ~/EnkratFlow/[repo-name]`
+   2. Update repo-level `.exocortex/SESSION_CONTEXT.md`
+   3. Update repo-level `.exocortex/TODO.md`
+   4. Update repo-level `.exocortex/LESSONS.md` (if lesson captured)
+   5. Update repo-level `.exocortex/PROJECT_MEMORY.md` (if constraints added)
+   6. Update `.exocortex/OPEN_DECISIONS.md` (if applicable)
+   
+   **After all repos processed:**
+   7. Update project-level `~/EnkratFlow/EnkratFlow-Project/.exocortex/SESSION_CONTEXT.md` with cross-repo summary
+   8. Update project-level `~/EnkratFlow/EnkratFlow-Project/docs/WORKFLOWS/LESSONS_LEARNED.md` (if global lesson)
+   9. Confirm all writes successful
+   10. Summarize what was captured (all repos)
 
-7. **Close:**
+8. **Close:**
    Ask: "Ready to close the session?"
    If yes:
    - Acknowledge closure and what was captured
