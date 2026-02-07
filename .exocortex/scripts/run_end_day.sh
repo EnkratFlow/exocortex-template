@@ -100,7 +100,8 @@ if [ -f "$TODO_FILE" ]; then
     echo ""
 
     # Ready count
-    READY_COUNT=$(sed -n '/## 🟨 Ready/,/^## /p' "$TODO_FILE" | grep -c "^\- \[" 2>/dev/null || echo "0")
+    READY_COUNT=$(sed -n '/## 🟨 Ready/,/^## /p' "$TODO_FILE" 2>/dev/null | grep -c "^\- \[" 2>/dev/null || true)
+    READY_COUNT=${READY_COUNT:-0}
     echo "Ready queue: $READY_COUNT item(s)"
     echo ""
 
@@ -121,8 +122,10 @@ echo "## UNRESOLVED INTERRUPTS"
 INTERRUPTS_FILE="$EXOCORTEX_DIR/control/INTERRUPTS.md"
 if [ -f "$INTERRUPTS_FILE" ]; then
     # Total interrupt headings
-    TOTAL_INTERRUPTS=$(grep -c "^## [0-9]" "$INTERRUPTS_FILE" 2>/dev/null || echo "0")
-    RESOLVED=$(grep -c "Status.*✅" "$INTERRUPTS_FILE" 2>/dev/null || echo "0")
+    TOTAL_INTERRUPTS=$(grep -c "^## [0-9]" "$INTERRUPTS_FILE" 2>/dev/null || true)
+    TOTAL_INTERRUPTS=${TOTAL_INTERRUPTS:-0}
+    RESOLVED=$(grep -c "Status.*✅" "$INTERRUPTS_FILE" 2>/dev/null || true)
+    RESOLVED=${RESOLVED:-0}
     PENDING=$((TOTAL_INTERRUPTS - RESOLVED))
 
     echo "Total: $TOTAL_INTERRUPTS | Resolved: $RESOLVED | Pending: $PENDING"
