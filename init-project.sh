@@ -1,56 +1,52 @@
 #!/bin/bash
 
-# Exocortex Template Initialization Script
+# Exocortex v3 — Project Initialization Script
 # Replaces placeholders with your project-specific values
 #
 # USAGE: Run this script from your PROJECT ROOT directory after copying
-#        the .exocortex/ and docs/control/ directories to your project.
+#        the .exocortex/ directory and .cursorrules to your project.
+#
+# This script is run automatically by install.sh, or manually:
+#   cd /path/to/your-project
+#   bash .exocortex/init-project.sh
+
+set -e
 
 echo ""
-echo "🧠 Exocortex Template Initialization"
-echo "===================================="
+echo "🧠 Exocortex v3 — Project Initialization"
+echo "========================================="
 echo ""
 
-# Check if .exocortex directory exists
-if [ ! -d ".exocortex" ]; then
-    echo "❌ Error: .exocortex directory not found in current directory"
+# Find .exocortex directory (could be run from project root or from .exocortex/)
+if [ -d ".exocortex" ]; then
+    EXOCORTEX_DIR=".exocortex"
+elif [ -d "../.exocortex" ] && [ "$(basename "$(pwd)")" = ".exocortex" ]; then
+    cd ..
+    EXOCORTEX_DIR=".exocortex"
+else
+    echo "❌ Error: .exocortex directory not found"
     echo ""
-    echo "Please run this script from your project root after copying:"
-    echo "  - .exocortex/"
-    echo "  - docs/control/"
-    echo ""
-    echo "Example:"
+    echo "Run this script from your project root:"
     echo "  cd /path/to/your-project"
-    echo "  bash init-project.sh"
+    echo "  bash .exocortex/init-project.sh"
     echo ""
     exit 1
 fi
 
-# Check if docs/control directory exists
-if [ ! -d "docs/control" ]; then
-    echo "❌ Error: docs/control directory not found"
-    echo ""
-    echo "Please ensure you've copied both:"
-    echo "  - .exocortex/"
-    echo "  - docs/control/"
-    echo ""
-    exit 1
-fi
-
-echo "✓ Found .exocortex/ and docs/control/ directories"
+echo "✓ Found $EXOCORTEX_DIR/"
 echo ""
 
-# Prompt for project name
-read -p "📝 Enter your project name (e.g., my-awesome-app): " PROJECT_NAME
-if [ -z "$PROJECT_NAME" ]; then
-    echo "❌ Error: Project name cannot be empty"
-    exit 1
-fi
+# ── Prompt for project name ────────────────────────────────────────────
 
-# Prompt for parent project (optional)
-read -p "📝 Enter parent project name (optional, press Enter to skip): " PARENT_PROJECT
-if [ -z "$PARENT_PROJECT" ]; then
-    PARENT_PROJECT="None"
+if [ -n "$1" ]; then
+    PROJECT_NAME="$1"
+    echo "📝 Project name: $PROJECT_NAME (from argument)"
+else
+    read -p "📝 Enter your project name (e.g., my-awesome-app): " PROJECT_NAME
+    if [ -z "$PROJECT_NAME" ]; then
+        echo "❌ Error: Project name cannot be empty"
+        exit 1
+    fi
 fi
 
 # Get current date
@@ -60,109 +56,132 @@ CURRENT_DATE=$(date +%Y-%m-%d)
 echo ""
 echo "📋 Summary:"
 echo "  Project Name:    $PROJECT_NAME"
-echo "  Parent Project:  $PARENT_PROJECT"
 echo "  Date:            $CURRENT_DATE"
 echo ""
 
-# Confirm
-read -p "✅ Continue with initialization? (y/n): " -n 1 -r
-echo ""
-if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-    echo "❌ Initialization cancelled"
-    exit 0
+# Confirm (skip if project name was passed as argument — means automated install)
+if [ -z "$1" ]; then
+    read -p "✅ Continue with initialization? (y/n): " -n 1 -r
+    echo ""
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        echo "❌ Initialization cancelled"
+        exit 0
+    fi
 fi
 
 echo ""
 echo "🔄 Replacing placeholders..."
 
-# Detect OS for sed compatibility
+# ── Detect OS for sed compatibility ────────────────────────────────────
+
 if [[ "$OSTYPE" == "darwin"* ]]; then
-    # macOS
     SED_INPLACE="sed -i .bak"
 else
-    # Linux
     SED_INPLACE="sed -i.bak"
 fi
 
-# Find all .md files in .exocortex/ and docs/control/
-# Replace placeholders in each file
+# ── Replace placeholders in all .md files ──────────────────────────────
+
 FILE_COUNT=0
 
-for file in .exocortex/*.md docs/control/*.md; do
+# Process all .md files recursively in .exocortex/
+while IFS= read -r -d '' file; do
     if [ -f "$file" ]; then
         $SED_INPLACE "s/\[PROJECT_NAME\]/$PROJECT_NAME/g" "$file"
-        $SED_INPLACE "s/\[PARENT_PROJECT\]/$PARENT_PROJECT/g" "$file"
         $SED_INPLACE "s/\[DATE\]/$CURRENT_DATE/g" "$file"
         ((FILE_COUNT++))
-        echo "  ✓ Updated $file"
+        echo "  ✓ $file"
     fi
-done
+done < <(find "$EXOCORTEX_DIR" -name "*.md" -print0)
 
-# Update .cursorrules file (pointer to AI_INSTRUCTIONS.md)
+# Update .cursorrules if it exists
 if [ -f ".cursorrules" ]; then
     $SED_INPLACE "s/\[PROJECT_NAME\]/$PROJECT_NAME/g" ".cursorrules"
     $SED_INPLACE "s/\[DATE\]/$CURRENT_DATE/g" ".cursorrules"
-    echo "  ✓ Updated .cursorrules"
-fi
-
-if [ "$FILE_COUNT" -eq 0 ]; then
-    echo ""
-    echo "⚠️  Warning: No .md files found to process"
-    echo "   Make sure .exocortex/ and docs/control/ directories contain .md files"
-    echo ""
-    exit 1
+    echo "  ✓ .cursorrules"
 fi
 
 echo ""
 echo "🧹 Cleaning up backup files..."
-
-# Remove backup files created by sed
-if ! find .exocortex/ docs/control/ .cursorrules -name "*.bak" -type f -delete 2>/dev/null; then
-    echo "  ⚠️  Warning: Some backup files could not be deleted (check permissions)"
-else
-    echo "  ✓ Cleaned up backup files"
-fi
+find "$EXOCORTEX_DIR" -name "*.bak" -type f -delete 2>/dev/null
+find . -maxdepth 1 -name "*.bak" -type f -delete 2>/dev/null
+echo "  ✓ Cleaned up"
 
 echo ""
 echo "🔧 Making scripts executable..."
 
-# Make event system scripts executable
-if [ -f ".exocortex/scripts/generate_context.sh" ]; then
-    chmod +x .exocortex/scripts/generate_context.sh
-    echo "  ✓ Made generate_context.sh executable"
+# Make ALL scripts in scripts/ executable
+if [ -d "$EXOCORTEX_DIR/scripts" ]; then
+    chmod +x "$EXOCORTEX_DIR/scripts/"*.sh 2>/dev/null && echo "  ✓ Shell scripts (.sh)" || true
+    chmod +x "$EXOCORTEX_DIR/scripts/"*.py 2>/dev/null && echo "  ✓ Python scripts (.py)" || true
 fi
 
-if [ -f ".exocortex/scripts/archive_events.sh" ]; then
-    chmod +x .exocortex/scripts/archive_events.sh
-    echo "  ✓ Made archive_events.sh executable"
-fi
-
-if [ -f ".exocortex/scripts/post_to_hub.sh" ]; then
-    chmod +x .exocortex/scripts/post_to_hub.sh
-    echo "  ✓ Made post_to_hub.sh executable"
-fi
+# ── API Key setup (optional) ──────────────────────────────────────────
 
 echo ""
-echo "✅ Initialization Complete!"
+echo "🔑 API Key Setup"
+echo ""
+echo "  The exocortex AI memory features (short-term, long-term, subconscious)"
+echo "  require an OpenAI API key. An Anthropic key is optional (fallback)."
+echo ""
+
+ENV_FILE="$EXOCORTEX_DIR/.env"
+
+if [ -f "$ENV_FILE" ]; then
+    echo "  ⚠️  .env already exists — skipping"
+elif [ -z "$1" ]; then
+    read -p "  Set up API keys now? (y/n): " -n 1 -r
+    echo ""
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        echo ""
+        read -p "  OpenAI API key (sk-...): " OPENAI_KEY
+        read -p "  Anthropic API key (sk-ant-..., or press Enter to skip): " ANTHROPIC_KEY
+
+        if [ -n "$OPENAI_KEY" ] || [ -n "$ANTHROPIC_KEY" ]; then
+            echo "OPENAI_API_KEY=${OPENAI_KEY}" > "$ENV_FILE"
+            echo "ANTHROPIC_API_KEY=${ANTHROPIC_KEY}" >> "$ENV_FILE"
+            echo ""
+            echo "  ✓ API keys saved to $ENV_FILE"
+            echo "  ℹ️  This file is gitignored — your keys won't be committed"
+        fi
+    else
+        echo ""
+        echo "  ℹ️  You can set up keys later by copying .env.example to .env"
+    fi
+else
+    echo "  ℹ️  Skipping API key setup (automated install)"
+    echo "  ℹ️  Copy .env.example to .env and add your keys later"
+fi
+
+# ── Verify .gitignore covers .env ─────────────────────────────────────
+
+if [ -f "$EXOCORTEX_DIR/.gitignore" ]; then
+    if grep -q "\.env" "$EXOCORTEX_DIR/.gitignore"; then
+        echo ""
+        echo "  ✓ .gitignore protects .env files"
+    fi
+fi
+
+# ── Done ──────────────────────────────────────────────────────────────
+
+echo ""
+echo "════════════════════════════════════════════"
+echo "  ✅ Exocortex v3 Initialized!"
+echo "════════════════════════════════════════════"
 echo ""
 echo "📁 Files updated: $FILE_COUNT"
 echo ""
 echo "🎯 Next Steps:"
 echo "  1. Customize .exocortex/PROJECT_MEMORY.md (describe your system)"
-echo "  2. Customize .exocortex/ESSENTIAL_FILES.md (map your file locations)"
+echo "  2. Map your files in .exocortex/reference/ESSENTIAL_FILES.md"
 echo "  3. Add your first tasks to .exocortex/TODO.md"
 echo "  4. Start working with '/work' command"
 echo ""
-echo "📖 Documentation:"
-echo "  - .exocortex/README.md - Complete usage guide"
-echo "  - .exocortex/EVENT_SYSTEM_USAGE.md - Event system quick start"
-echo "  - .exocortex/AI_INSTRUCTIONS.md - Full workflow commands"
-echo ""
-echo "✨ Event System v2.0:"
-echo "  - Use /save to create work events (no overwrites!)"
-echo "  - Use /work to view current context"
-echo "  - Use /history to search older work"
-echo "  - VS Code and Cursor work simultaneously"
+echo "📖 Key Documents:"
+echo "  - .exocortex/AI_BOOTSTRAP.md       — Command protocol (start here)"
+echo "  - .exocortex/COMMAND_SYSTEM.md      — Full command reference"
+echo "  - .exocortex/reference/MEMORY.md    — Memory entry point"
+echo "  - .cursorrules                      — Auto-loaded in Cursor"
 echo ""
 echo "🚀 Happy coding!"
 echo ""

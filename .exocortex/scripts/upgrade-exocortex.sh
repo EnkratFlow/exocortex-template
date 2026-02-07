@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # upgrade-exocortex.sh — Safely propagate CODE files to target project
 # 
-# Source of truth: trading-journal/.exocortex/
+# Source of truth: exocortex-template/.exocortex/
 # NEVER overwrites DATA files (events, SESSION_CONTEXT, TODO, LESSONS, etc.)
 #
 # Usage:

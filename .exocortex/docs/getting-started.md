@@ -223,7 +223,7 @@ cat .exocortex/.env  # Ensure API keys are set
 
 **Example:**
 ```markdown
-# Trading Journal UI Refactor
+# Feature Implementation
 
 ## What I Did
 - Simplified the position entry form by removing redundant fields
@@ -255,7 +255,7 @@ You can have multiple exocortex installations:
 
 ```
 ~/projects/
-├── trading-journal/.exocortex/     # Project-specific
+├── my-project/.exocortex/     # Project-specific
 ├── personal-site/.exocortex/       # Project-specific  
 └── .exocortex/                     # Global (for general development)
 ```

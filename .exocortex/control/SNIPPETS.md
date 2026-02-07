@@ -1,7 +1,8 @@
 # Workflow Snippets Reference
 
 **Purpose:** Catalog of all Cursor snippets available for workflow management  
-**Location:** Global snippets in `/Users/guyrobo/Library/Application Support/Cursor/User/snippets/`  
+**Location:** Global snippets in `~/Library/Application Support/Cursor/User/snippets/  (macOS)
+# or ~/.config/Code/User/snippets/  (Linux)`  
 **Last Updated:** February 7, 2026
 
 ---
@@ -307,7 +308,8 @@
 
 All snippets are stored in:
 ```
-/Users/guyrobo/Library/Application Support/Cursor/User/snippets/
+~/Library/Application Support/Cursor/User/snippets/  (macOS)
+# or ~/.config/Code/User/snippets/  (Linux)
 ```
 
 **Core Workflow Snippets:**

@@ -1,7 +1,7 @@
 # Exocortex File Classification & Upgrade Manifest
 
 > Last updated: Feb 7, 2026 · v1.0
-> Source of truth: trading-journal/.exocortex/ (most advanced implementation)
+> Source of truth: exocortex-template/.exocortex/ (canonical implementation)
 
 ## The Three Planes
 

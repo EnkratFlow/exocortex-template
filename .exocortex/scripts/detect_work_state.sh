@@ -19,7 +19,7 @@ fi
 # Get last event date/time
 LAST_EVENT=""
 if [ -d ".exocortex/events" ]; then
-  LAST_EVENT=$(ls -t .exocortex/events/*.md 2>/dev/null | head -1 | xargs basename | sed 's/_macbook.*//; s/_guys.*//; s/_desktop.*//' | sed 's/_/ /g')
+  LAST_EVENT=$(ls -t .exocortex/events/*.md 2>/dev/null | head -1 | xargs basename | sed 's/_[a-zA-Z]*\.md$//' | sed 's/_/ /g')
 fi
 
 # Output JSON

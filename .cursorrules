@@ -1,54 +1,105 @@
-# Cursor Rules - [PROJECT_NAME]
+# Cursor Rules — [PROJECT_NAME]
 
-**🔴 IMPORTANT: Load full AI instructions before responding to any command**
+**🔴 IMPORTANT: Load the command protocol before responding to any command**
 
 **When you read this file, immediately also read:**
-→ `.exocortex/AI_INSTRUCTIONS.md` (contains all workflow commands and patterns)
-→ `.exocortex/MEMORY.md` (project memory entry point)
+→ `.exocortex/AI_BOOTSTRAP.md` (command protocol — how to discover and execute all commands)
+→ `.exocortex/reference/MEMORY.md` (project memory entry point)
 
 This enables workflow commands to work in ANY editor (Cursor, VS Code, Claude Desktop).
+
+---
 
 ## How This Works
 
 **In Cursor:**
 - Automatically reads this file on every response
-- Automatically loads AI_INSTRUCTIONS.md (because this file tells it to)
-- Commands work natively: /save, /work, /history, /groom, /daily-end, /scrum
+- Then loads AI_BOOTSTRAP.md → discovers all commands
+- Commands work natively: /save, /work, /history, /groom, /daily-end, /scrum, etc.
 
 **In VS Code / Other Editors:**
 - Type once per conversation: "Read .cursorrules"
-- AI reads this file → sees instruction to read AI_INSTRUCTIONS.md → loads everything
-- Then commands work for entire session: work, save, groom, history, etc.
-
-## Quick Command Reference
-
-- `/save` - Save work event (append-only, no overwrites)
-- `/work` - Load context and start working
-- `/ecosystem` - View cross-project activity (if hub configured)
-- `/history` - Search older events (7+ days)
-- `/groom` - Review and organize tasks
-- `/daily-end` - End of day workflow
-- `/scrum` - Daily standup
-
-**Full instructions with detailed workflows:** `.exocortex/AI_INSTRUCTIONS.md`
+- AI reads this → loads AI_BOOTSTRAP.md → discovers commands
+- Then commands work for the entire session
 
 ---
 
-## File Structure
+## Quick Command Reference (20 commands)
+
+### Daily Workflow
+| Command | Purpose |
+|---------|---------|
+| `/work` | Load context, see what to work on |
+| `/scrum` | Daily standup (yesterday/today/blockers) |
+| `/save` | Save work state before breaks |
+| `/daily-end` | End of day review |
+| `/interrupt` | Capture ideas without breaking flow |
+| `/brief` | Quick status check |
+
+### Memory
+| Command | Purpose |
+|---------|---------|
+| `/shortterm` | 7-31 day semantic memory (AI) |
+| `/longterm` | 31+ day compressed memory (AI) |
+| `/subconscious` | Cross-cutting pattern detection (AI) |
+| `/drill <topic>` | Deep-dive on a specific topic (AI) |
+| `/history` | Search older events (7+ days) |
+
+### Planning
+| Command | Purpose |
+|---------|---------|
+| `/groom` | Process interrupts to backlog/TODO |
+| `/refine-backlog` | Promote backlog items to TODO |
+| `/prioritize` | Reorder TODO items |
+| `/weekly-review` | Weekly planning & review |
+| `/monthly-review` | Monthly strategic review |
+
+### System
+| Command | Purpose |
+|---------|---------|
+| `/system-scan` | Repository health check |
+| `/ai-export` | Generate system understanding document |
+| `/ecosystem` | Cross-project activity view |
+| `/init-exocortex` | Initialize exocortex for a new project |
+
+**Full protocol:** `.exocortex/AI_BOOTSTRAP.md`
+**Command schemas:** `.exocortex/commands/*.json`
+**Command index:** `.exocortex/COMMAND_SYSTEM.md`
+
+---
+
+## File Structure (v3)
 
 ```
-.cursorrules                          # This file (pointer + quick reference)
+.cursorrules                              # This file (pointer + quick reference)
 .exocortex/
-  ├── AI_INSTRUCTIONS.md              # Full workflow commands
-  ├── MEMORY.md                       # Entry point to project memory
-  ├── PROJECT_MEMORY.md               # System purpose, philosophy, constraints
-  ├── SESSION_CONTEXT.md              # Current work (generated from events)
-  ├── TODO.md                         # Task board
-  ├── LESSONS.md                      # Project-specific lessons
-  ├── events/                         # Append-only work events
-  └── scripts/
-      ├── generate_context.sh         # Regenerate SESSION_CONTEXT from events
-      └── archive_events.sh           # Archive old events (7+ days)
+  ├── AI_BOOTSTRAP.md                     # Command protocol (start here)
+  ├── COMMAND_SYSTEM.md                   # Schema reference & full command index
+  ├── PERSONA_AND_COMMANDS.md             # AI persona & mode documentation
+  ├── MEMORY_TIERS.md                     # Memory tier architecture
+  ├── PROJECT_MEMORY.md                   # System purpose, philosophy, constraints
+  ├── SESSION_CONTEXT.md                  # Current work state
+  ├── TODO.md                             # Task board
+  ├── LESSONS.md                          # Project-specific lessons
+  ├── OPEN_DECISIONS.md                   # Unresolved decisions
+  ├── commands/                           # 20 JSON command specs
+  ├── control/                            # Interrupts, backlog, roadmap, QA
+  ├── docs/                               # System documentation
+  ├── events/                             # Append-only work events
+  ├── reference/                          # Quick reference files
+  │   ├── MEMORY.md                       # Memory entry point (read-order guide)
+  │   ├── ESSENTIAL_FILES.md              # File location map
+  │   ├── QUICK_REFERENCE.md             # Fast lookup
+  │   └── CHEAT_SHEET.md                 # One-page cheat sheet
+  └── scripts/                            # Shell + Python automation
+      ├── _api_helpers.py                 # Shared API module
+      ├── get_rightnow_memory.py          # RIGHT NOW tier (0-7 days)
+      ├── get_shortterm_memory.py         # SHORT-TERM tier (7-31 days)
+      ├── get_longterm_memory.py          # LONG-TERM tier (31+ days)
+      ├── get_subconscious_memory.py      # SUBCONSCIOUS tier (all events)
+      ├── get_subconscious_nudge.py       # DMN activation nudge
+      ├── drill_memory.py                 # Topic deep-dive
+      └── *.sh                            # Shell automation scripts
 ```
 
 ---
@@ -56,11 +107,11 @@ This enables workflow commands to work in ANY editor (Cursor, VS Code, Claude De
 ## Emergency Recovery
 
 If the AI seems to not know workflow commands:
-1. Type: "Read .exocortex/AI_INSTRUCTIONS.md"
+1. Type: "Read .exocortex/AI_BOOTSTRAP.md"
 2. Confirm it loaded successfully
 3. Then proceed with your command
 
 ---
 
 **Last Updated:** [DATE]
-**Version:** Event-Based Memory System v2.0
+**Version:** Exocortex v3

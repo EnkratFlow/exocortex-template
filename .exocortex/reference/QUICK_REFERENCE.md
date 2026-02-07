@@ -7,7 +7,7 @@
 ## The Persona (Always Active)
 
 Your AI assistant is a **senior multidisciplinary expert** with 20+ years across:
-- Trading & Psychology (professional futures trader, performance coach)
+- Domain Expert (deep knowledge in your project's domain)
 - Data Science (PhD-level statistics, quantitative research)
 - Product Design (senior UX/UI designer, user research)
 - Engineering (full-stack architect, database design, DevOps)
@@ -22,7 +22,7 @@ Your AI assistant is a **senior multidisciplinary expert** with 20+ years across
 Use for everyday questions and work:
 
 ```
-"Why did this trade fail psychologically?"
+"Why did this approach fail?"
 "Fix this bug in the delete function"
 "How should I design this UI?"
 "Explain this error"
@@ -93,7 +93,7 @@ Use when you want to shift HOW the AI thinks:
 
 | Command | When To Use | Effect |
 |---------|-------------|--------|
-| `/strict_trading` | Working on trading logic/rules | Maximum precision, validates assumptions, cites research, highlights risks |
+| `/strict_trading` | Working on critical business logic/rules | Maximum precision, validates assumptions, cites research, highlights risks |
 | `/rapid_build` | Need something working ASAP | Implementation first, explanation later, assumes competence |
 | `/deep_think` | Big architecture decisions | Explores multiple angles, considers edge cases, shows reasoning |
 | `/design_mode` | UI/UX work | Focuses on user psychology, proposes design improvements |
@@ -125,7 +125,7 @@ Why does the bulk delete sometimes fail?
 → No command needed. I'll analyze as a senior engineer.
 
 ```
-How does the tilt risk algorithm work?
+How does the risk assessment algorithm work?
 ```
 → No command needed. I'll explain as a trading psychologist.
 
@@ -145,7 +145,7 @@ Add a "select all on this page" checkbox to the trades table.
 ```
 /strict_trading
 
-I want to add a new rule: if MAE > 2 ATR within 30 seconds, 
+I want to add a new rule: if threshold > limit within 30 seconds, 
 flag as "impulsive entry". Review this for edge cases.
 ```
 → I'll be extra careful, validate assumptions, show risks.
@@ -191,7 +191,7 @@ Build X feature quickly
 [Later in conversation]
 
 /strict_trading
-Now review the trading logic carefully
+Now review the critical business logic carefully
 ```
 
 ---

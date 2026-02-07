@@ -5,7 +5,7 @@ No commands needed. The expert persona is always active.
 
 ```
 "Fix this bug"
-"Why did this trade fail?"
+"Why did this fail?"
 "How should I design this?"
 ```
 
@@ -27,7 +27,7 @@ No commands needed. The expert persona is always active.
 ## Mode Commands (Thinking Style)
 
 ```
-/strict_trading    Extra careful, validate assumptions (use for trading logic)
+/strict            Extra careful, validate assumptions (use for critical logic)
 /rapid_build       Fast code, minimal explanation
 /deep_think        Explore alternatives, show tradeoffs
 /design_mode       UX/product focus

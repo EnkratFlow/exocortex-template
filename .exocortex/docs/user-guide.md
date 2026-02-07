@@ -80,7 +80,7 @@ complex.
 **Example output:**
 ```
 **Q4 2023: Foundation Building (31-120 days ago)**
-Established core architecture decisions for the trading journal. Chose React + 
+Established core architecture decisions for the the project. Chose React + 
 TypeScript frontend with Node.js backend. Major debates around database choice 
 (PostgreSQL vs MongoDB) and authentication approach. Set up Docker development 
 environment and CI/CD pipeline.
@@ -307,7 +307,7 @@ Each project can have its own exocortex instance:
 
 **Project-specific setup:**
 ```
-~/projects/trading-journal/.exocortex/  
+~/projects/my-project/.exocortex/  
 ~/projects/mobile-app/.exocortex/  
 ~/projects/analytics-dashboard/.exocortex/
 ```
