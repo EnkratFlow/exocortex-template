@@ -1,8 +1,14 @@
 # Exocortex Documentation
 
+> **🚀 Installing Exocortex?** See the [root README](../README.md) for installation instructions and quick-start guide.
+
+---
+
 ## Overview
 
 The **Exocortex** is a neuroscience-inspired external memory system for software developers. It provides persistent context, intelligent memory retrieval, and workflow automation designed to eliminate the cognitive overhead of project re-entry and context switching.
+
+**This documentation hub** provides comprehensive details about the exocortex system architecture, philosophy, and usage patterns.
 
 ## Table of Contents
 
@@ -28,16 +34,11 @@ The **Exocortex** is a neuroscience-inspired external memory system for software
 
 ## Quick Start
 
+**New to Exocortex?** See the [installation guide in the root README](../README.md#install-one-command) for one-command setup.
+
+**Already installed?** Start working with:
 ```bash
-# 1. Initialize exocortex in your project
-mkdir .exocortex
-cp templates/* .exocortex/
-
-# 2. Set up API keys for AI memory curation
-echo "OPENAI_API_KEY=sk-..." > .exocortex/.env
-
-# 3. Start working 
-/work
+/work    # Load context and see your next task
 ```
 
 ## Key Features

@@ -2,6 +2,10 @@
 
 > A portable memory system for developers and AI assistants that never forgets context.
 
+> **📚 Full Documentation**: For comprehensive architecture, user guides, and system details, see [.exocortex/README.md](.exocortex/README.md)
+
+---
+
 ## What is This?
 
 The **Exocortex** is an external memory system for your development projects. It helps you (and AI coding assistants) maintain context, track decisions, capture lessons, and manage daily work — across sessions, machines, and editors.
