@@ -38,8 +38,10 @@ curl -sL https://raw.githubusercontent.com/EnkratFlow/exocortex-template/main/in
 - `.windsurfrules` → Windsurf (thin pointer to AI_BOOTSTRAP.md)
 
 **Cursor commands & rules:**
-- If you don't have a `.cursor/` directory, the installer creates one with 20 exocortex commands
-- If you already have `.cursor/`, it copies to `.cursor-example/` for reference instead
+- Template includes `.cursor-example/` with 20 exocortex commands & rules
+- Installer automatically:
+  - Creates `.cursor/` from template if you don't have one
+  - Keeps `.cursor-example/` for reference if you already have `.cursor/`
 - This prevents overwriting your existing Cursor setup
 
 ---
@@ -71,6 +73,11 @@ rm -rf /tmp/exocortex
 CLAUDE.md                                 ← Thin pointer (Claude Code auto-loads)
 .windsurfrules                            ← Thin pointer (Windsurf auto-loads)
 .github/copilot-instructions.md           ← Thin pointer (VS Code Copilot auto-loads)
+.cursor-example/                          ← Cursor commands & rules (20 commands)
+  ├── commands/                           ← Exocortex workflow commands
+  │   ├── work.md, save.md, ...           ← One file per command
+  └── rules/                              ← Cursor rules for project bootstrap
+      └── 05-project-bootstrap.mdc
 .exocortex/
   ├── AI_BOOTSTRAP.md                     ← HEAVY — single source of truth
   ├── COMMAND_SYSTEM.md                   ← Schema reference & full command index
