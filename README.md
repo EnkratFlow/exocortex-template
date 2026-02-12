@@ -32,12 +32,15 @@ curl -sL https://raw.githubusercontent.com/EnkratFlow/exocortex-template/main/in
 6. Update `.gitignore` to protect secrets
 
 **Editor pointer files created:**
-- `.cursorrules` → Cursor
-- `CLAUDE.md` → Claude Code
-- `.github/copilot-instructions.md` → VS Code Copilot
-- `.windsurfrules` → Windsurf
+- `.cursorrules` → Cursor (thin pointer to AI_BOOTSTRAP.md)
+- `CLAUDE.md` → Claude Code (thin pointer to AI_BOOTSTRAP.md)
+- `.github/copilot-instructions.md` → VS Code Copilot (thin pointer to AI_BOOTSTRAP.md)
+- `.windsurfrules` → Windsurf (thin pointer to AI_BOOTSTRAP.md)
 
-All point to the same source: `.exocortex/AI_BOOTSTRAP.md`
+**Cursor commands & rules:**
+- If you don't have a `.cursor/` directory, the installer creates one with 20 exocortex commands
+- If you already have `.cursor/`, it copies to `.cursor-example/` for reference instead
+- This prevents overwriting your existing Cursor setup
 
 ---
 
@@ -184,6 +187,13 @@ Memory scripts use OpenAI (primary) with Anthropic fallback. Requires API key in
 2. **Map files** in `.exocortex/reference/ESSENTIAL_FILES.md`
 3. **Add tasks** to `.exocortex/TODO.md`
 4. **Start working** with `/work`
+
+### For Cursor Users
+
+If you have existing Cursor commands/rules, the installer will copy exocortex commands to `.cursor-example/` instead of overwriting your `.cursor/` directory. You can:
+- Keep using your existing setup (exocortex still works via `.cursorrules`)
+- Manually merge commands from `.cursor-example/` if desired
+- Delete `.cursor-example/` if not needed
 
 ---
 

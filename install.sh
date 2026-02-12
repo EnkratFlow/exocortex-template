@@ -103,6 +103,21 @@ if [ -f "$TMPDIR/exocortex-template/.github/copilot-instructions.md" ]; then
     fi
 fi
 
+# Handle .cursor-example (Cursor commands and rules)
+# Only copy to .cursor if user doesn't already have .cursor directory
+if [ -d "$TMPDIR/exocortex-template/.cursor-example" ]; then
+    if [ -d ".cursor" ]; then
+        # User already has .cursor - copy to .cursor-example instead
+        cp -r "$TMPDIR/exocortex-template/.cursor-example" .
+        echo "  ⚠️  .cursor already exists — copied to .cursor-example for reference"
+        echo "     You can manually merge exocortex commands if desired"
+    else
+        # No existing .cursor - safe to copy
+        cp -r "$TMPDIR/exocortex-template/.cursor-example" .cursor
+        echo "  ✓ Copied .cursor-example/ → .cursor/ (exocortex commands & rules)"
+    fi
+fi
+
 # Merge .gitignore entries
 echo ""
 echo "📝 Updating .gitignore..."
