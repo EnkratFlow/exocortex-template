@@ -1,0 +1,12 @@
+---
+alwaysApply: true
+---
+
+On first interaction with this project:
+
+Read `.exocortex/AI_BOOTSTRAP.md` immediately.
+This file defines the command protocol, workflows, and project operating rules.
+
+Then read `.exocortex/reference/MEMORY.md` as the project memory entry point.
+
+Follow the instructions in those files before taking action.
