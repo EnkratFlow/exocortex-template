@@ -1,0 +1,40 @@
+name: Test install.sh
+
+on:
+  push:
+    paths:
+      - 'install.sh'
+      - 'tests/**'
+      - '.exocortex/**'
+      - '.cursor/**'
+      - '.github/skills/**'
+      - '.claude/**'
+  pull_request:
+    paths:
+      - 'install.sh'
+      - 'tests/**'
+
+jobs:
+  test:
+    name: Run install.sh test suite
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y git
+
+      - name: Run test suite
+        run: bash tests/run_tests.sh
+
+      - name: Upload test output on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-output
+          path: /tmp/exo-test-*.txt
+          retention-days: 7

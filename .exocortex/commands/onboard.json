@@ -1,0 +1,38 @@
+{
+  "name": "/onboard",
+  "description": "Read and understand the codebase before starting work. Builds a working mental model of the project structure, entry points, architecture, and current context.",
+  "steps": [
+    {
+      "type": "ai",
+      "action": "Detect project type and read foundational files",
+      "context": "Read the project root directory tree (2-3 levels, filenames only). Read whichever exist: package.json, requirements.txt, pyproject.toml, Cargo.toml, go.mod, README.md. Identify: language, framework, package manager, approximate size."
+    },
+    {
+      "type": "ai",
+      "action": "Read structure and config files",
+      "context": "Read whichever exist: Dockerfile, docker-compose*.yml, tsconfig.json, next.config.*, .env.example, Makefile, .github/workflows/*.yml. Identify how the project builds, runs, and deploys."
+    },
+    {
+      "type": "ai",
+      "action": "Read entry points and core architecture",
+      "context": "Based on the detected framework, read the main entry point files and up to 10 core source files. Focus on: API routes/endpoints, service modules, data models/schemas, type definitions. Read signatures and structure, not full implementations. Skip node_modules, .git, __pycache__, dist, build, .next."
+    },
+    {
+      "type": "read",
+      "files": [
+        ".exocortex/PROJECT_MEMORY.md",
+        ".exocortex/SESSION_CONTEXT.md",
+        ".exocortex/LESSONS.md",
+        ".exocortex/TODO.md",
+        ".exocortex/reference/ESSENTIAL_FILES.md"
+      ],
+      "description": "Load project memory and current context",
+      "on_error": "continue"
+    },
+    {
+      "type": "ai",
+      "action": "Synthesize and display onboarding summary",
+      "context": "Display a structured summary with: Project name, Stack (language/framework/deps), Structure (how source is organized), Entry points, Key modules, Data (database/storage), Deployment (how it runs), Context (from exocortex files: current work, recent lessons, active tasks). End with: 'Ready to work. What do you need?'"
+    }
+  ]
+}

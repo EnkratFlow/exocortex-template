@@ -1,0 +1,16 @@
+{
+  "name": "/refine-backlog",
+  "description": "Process backlog items: promote to TODO, defer, or delete",
+  "steps": [
+    {
+      "type": "ai",
+      "action": "Review backlog and guide refinement",
+      "context": "Read .exocortex/control/BACKLOG.md and .exocortex/TODO.md. Show summary of both. For each backlog item one at a time, ask: (A) Promote to TODO — then ask for executable task title + scope, (B) Not yet — ask what's needed, update backlog notes, (C) Defer — leave as-is, (D) Delete. Also check TODO for completed [x] items, ask to remove each."
+    },
+    {
+      "type": "ai",
+      "action": "Apply approved changes",
+      "context": "Show full proposed diff for both BACKLOG.md and TODO.md before writing. Ask 'Ready to apply?' Only write after explicit approval. Suggest /prioritize as next step."
+    }
+  ]
+}

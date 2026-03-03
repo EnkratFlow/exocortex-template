@@ -1,0 +1,18 @@
+{
+  "name": "/groom",
+  "description": "Control Center: Process captured interrupts",
+  "steps": [
+    {
+      "type": "shell",
+      "command": ".exocortex/scripts/groom_interrupts.sh",
+      "description": "Reviewing captured interrupts",
+      "success_format": "✓ Interrupts reviewed"
+    },
+    {
+      "type": "ai",
+      "command": "Read the .exocortex/control/INTERRUPTS.md file and help the user process each interrupt. For each one, ask: Should this be (A) moved to BACKLOG for investigation, (B) added to TODO as urgent, (C) deleted as not relevant, or (D) kept in interrupts for later? Process them one by one and update the files accordingly.",
+      "description": "Interactive interrupt processing",
+      "success_format": "✓ Interrupts processed and filed"
+    }
+  ]
+}

@@ -1,0 +1,44 @@
+{
+  "name": "/work",
+  "description": "Load context and identify next task",
+  "steps": [
+    {
+      "type": "shell",
+      "command": "python3 .exocortex/scripts/get_rightnow_memory.py",
+      "description": "Curate RIGHT NOW memory (0-7 days, OpenAI 2-pass)",
+      "outputs": { "right_now_section": "AI-curated episodic memory" }
+    },
+    {
+      "type": "shell",
+      "command": "python3 .exocortex/scripts/get_shortterm_memory.py",
+      "description": "Curate SHORT-TERM memory (7-31 days, OpenAI 2-pass)",
+      "outputs": { "shortterm_memory": "AI-curated semantic memory" }
+    },
+    {
+      "type": "shell",
+      "command": "python3 .exocortex/scripts/get_subconscious_nudge.py",
+      "description": "Subconscious nudge — single-sentence pattern probe (DMN activation)",
+      "outputs": { "subconscious_nudge": "One-sentence 💭 insight or empty if insufficient data" }
+    },
+    {
+      "type": "shell",
+      "command": "command -v qmd >/dev/null 2>&1 && qmd search \"$(basename $PWD)\" -c enkratflow -n 3 --min-score 0.4 2>/dev/null || echo ''",
+      "description": "Surface cross-project context from QMD (skipped silently if not installed)",
+      "outputs": { "qmd_context": "Top 3 related cross-project docs, empty if qmd not available" }
+    },
+    {
+      "type": "ai",
+      "action": "Format and display the work brief",
+      "inputs": ["right_now_section", "shortterm_memory", "subconscious_nudge", "qmd_context"],
+      "context": "Read git state (branch, uncommitted count) and TODO.md (next Ready task) natively. Display: 1) RIGHT NOW section verbatim, 2) SHORT-TERM section verbatim, 3) Subconscious nudge (💭 line) if non-empty, 4) Git state one-liner, 5) Next task. If qmd_context is non-empty, add a 'Related context' section with the results."
+    },
+    {
+      "type": "user_choice",
+      "options": [
+        "A) Start next task",
+        "B) Commit uncommitted first",
+        "C) Something else"
+      ]
+    }
+  ]
+}

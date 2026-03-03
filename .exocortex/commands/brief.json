@@ -1,0 +1,26 @@
+{
+  "name": "/brief",
+  "description": "Quick status check - current state and priorities",
+  "steps": [
+    {
+      "type": "shell",
+      "command": ".exocortex/scripts/run_brief_status.sh",
+      "description": "Running quick status scan",
+      "success_format": "✓ Status scan complete"
+    },
+    {
+      "type": "ai",
+      "command": "Based on the status scan, provide a concise 3-bullet summary: 1) Current priority/focus, 2) Any immediate blockers or interrupts, 3) Quick wins available. Keep it actionable and under 30 words total.",
+      "description": "Generating priority brief",
+      "success_format": "✓ Priority brief: {summary}"
+    },
+    {
+      "type": "user_choice",
+      "options": [
+        "Ready - run '/work' to start deep context",
+        "Process interrupts with '/groom' first",
+        "Something else"
+      ]
+    }
+  ]
+}

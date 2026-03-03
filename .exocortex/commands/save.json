@@ -1,0 +1,41 @@
+{
+  "name": "/save",
+  "description": "Save current work state as an event",
+  "steps": [
+    {
+      "type": "ai",
+      "action": "Ask the user for their current focus in one sentence",
+      "context": "Ask: 'In one sentence, what are you focused on right now?' Wait for the user's reply. This will be the main content of the checkpoint event."
+    },
+    {
+      "type": "ai",
+      "action": "Write checkpoint event body to temp file",
+      "inputs": ["focus_sentence"],
+      "context": "You have the user's focus sentence. Read git state (branch, uncommitted count) from the repo. Write a short event body to /tmp/save_event.md using your FILE EDITOR TOOL (create_file or edit tool) — NOT a terminal command. Writing via terminal heredocs causes content corruption in VS Code Copilot.\n\nUse this format:\n\n# Save checkpoint — {date}\n\n## Focus\n{user's sentence}\n\n## State\n- Branch: {branch}\n- Uncommitted: {count} files\n\nAdd 1-2 lines of context from the conversation only if it helps. Keep it brief. After writing the file, show the user the event content."
+    },
+    {
+      "type": "shell",
+      "command": "bash .exocortex/scripts/create_event.sh --body-file /tmp/save_event.md",
+      "description": "Create event file and regenerate SESSION_CONTEXT",
+      "outputs": { "event_path": "Path to created event file" }
+    },
+    {
+      "type": "shell",
+      "command": "bash .exocortex/scripts/sync_event_to_vault.sh $(ls -t .exocortex/events/*.md 2>/dev/null | head -1)",
+      "description": "Sync event to EnkratFlowVault",
+      "outputs": { "vault_sync": "sync result" },
+      "on_error": "continue"
+    },
+    {
+      "type": "ai",
+      "action": "If vault_sync shows success, note it briefly. If it failed, note it but do not block — the nightly cron will catch it.",
+      "inputs": ["vault_sync"]
+    },
+    {
+      "type": "ai",
+      "action": "Confirm save and next steps",
+      "inputs": ["event_path"],
+      "context": "Confirm the event was created (show the path from the script output). Tell the user SESSION_CONTEXT was regenerated. Suggest: '/work' after a break, or '/daily-end' at end of day."
+    }
+  ]
+}
