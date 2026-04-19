@@ -1,0 +1,16 @@
+{
+  "name": "/prioritize",
+  "description": "Reorder TODO.md by strategic importance through guided questions",
+  "steps": [
+    {
+      "type": "ai",
+      "action": "Read TODO.md and guide prioritization",
+      "context": "Read .exocortex/TODO.md. Show current Ready items. Ask 5 strategic questions one at a time: 1) What blocks other work? 2) Highest business value? 3) Most urgent? 4) Dependencies between items? 5) Proposed final order with reasons. Iterate if user disagrees."
+    },
+    {
+      "type": "ai",
+      "action": "Apply approved priority order",
+      "context": "Show proposed new TODO.md order. Ask 'Does this order feel right?' Only rewrite the Ready section of TODO.md after explicit approval. Never auto-write."
+    }
+  ]
+}

@@ -1,0 +1,57 @@
+{
+  "name": "/work",
+  "description": "Load context and identify next task",
+  "steps": [
+    {
+      "type": "shell",
+      "command": "python3 .exocortex/scripts/get_rightnow_memory.py",
+      "description": "Curate RIGHT NOW memory (0-7 days, OpenAI 2-pass)",
+      "outputs": {
+        "right_now_section": "AI-curated episodic memory"
+      }
+    },
+    {
+      "type": "shell",
+      "command": "python3 .exocortex/scripts/get_shortterm_memory.py",
+      "description": "Curate SHORT-TERM memory (7-31 days, OpenAI 2-pass)",
+      "outputs": {
+        "shortterm_memory": "AI-curated semantic memory"
+      }
+    },
+    {
+      "type": "shell",
+      "command": "python3 .exocortex/scripts/get_subconscious_nudge.py",
+      "description": "Subconscious nudge \u2014 single-sentence pattern probe (DMN activation)",
+      "outputs": {
+        "subconscious_nudge": "One-sentence \ud83d\udcad insight or empty if insufficient data"
+      }
+    },
+    {
+      "type": "shell",
+      "command": "command -v qmd >/dev/null 2>&1 && qmd search \"$(basename $PWD)\" -c enkratflow -n 3 --min-score 0.4 2>/dev/null || echo ''",
+      "description": "Surface cross-project context from QMD (skipped silently if not installed)",
+      "outputs": {
+        "qmd_context": "Top 3 related cross-project docs, empty if qmd not available"
+      }
+    },
+    {
+      "type": "ai",
+      "action": "Format and display the work brief",
+      "inputs": [
+        "right_now_section",
+        "shortterm_memory",
+        "subconscious_nudge",
+        "qmd_context"
+      ],
+      "context": "You are producing a work brief to re-orient the user into their project. Read git state and TODO.md natively before generating the brief.\n\nGenerate a rich, structured brief in this order:\n\n1. RIGHT NOW - display right_now_section verbatim. IF right_now_section says 'No recent events found' or is empty or has fewer than 3 lines of real content: do NOT just show that message. Run 'ls -t .exocortex/events/*.md | head -3' and cat the 2 most recent event files directly. Reconstruct episodic context from those events. Label the section 'RIGHT NOW (last save: {date from filename} - no saves in last 7 days)' and summarise: what was last worked on, what decisions were made, what was flagged as next, any overdue items mentioned.\n\n2. SHORT-TERM - display shortterm_memory verbatim.\n\n3. SUBCONSCIOUS NUDGE - display subconscious_nudge prefixed with a thought bubble emoji if non-empty.\n\n4. GIT STATE - run 'git status --short' and 'git branch --show-current' and 'git log --oneline -5'. Show: branch name, then list EVERY untracked and modified file by name. Do not just say 'N uncommitted files' - list them individually. Show the last 5 commits. Flag any branch name that looks pending a merge (feature/*, fix/*, phase/*).\n\n5. OPEN ITEMS - read .exocortex/OPEN_DECISIONS.md if it exists and list unresolved decisions. Also scan the last 2 event files for overdue actions: pending API key rotations, pending branch merges, tasks held waiting for confirmation, known bugs not yet fixed.\n\n6. NEXT TASK - show the first incomplete task group from the Ready section of .exocortex/TODO.md with all its sub-tasks.\n\n7. RELATED CONTEXT - if qmd_context is non-empty, add a brief section with results.\n\nThen show the A/B/C choice.\n\nQuality bar: name actual files, branches, and decisions - not generic summaries. The brief must make the user feel immediately oriented and ready to work, not vaguely aware. If something was broken or blocked last session, say so explicitly."
+    },
+    {
+      "type": "user_choice",
+      "options": [
+        "A) Start next task",
+        "B) Commit uncommitted first",
+        "C) Something else"
+      ]
+    }
+  ]
+}

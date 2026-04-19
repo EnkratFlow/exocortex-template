@@ -1,0 +1,17 @@
+{
+  "name": "/history",
+  "description": "Search older work events by keyword, date, or browse all",
+  "requires_argument": false,
+  "steps": [
+    {
+      "type": "ai",
+      "action": "Ask the user what they want to search for",
+      "context": "Ask: 'What are you looking for?' Options: (A) Keyword search, (B) Date range, (C) Browse recent 50. Then execute the appropriate search against .exocortex/events/ directory using grep, find, or ls."
+    },
+    {
+      "type": "ai",
+      "action": "Display matching events and offer next steps",
+      "context": "Show matching events with timestamp, machine, and work focus summary. Then offer: (A) Read full event, (B) Search again, (C) Back to work."
+    }
+  ]
+}

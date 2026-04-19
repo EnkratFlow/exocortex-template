@@ -1,0 +1,42 @@
+{
+  "name": "/pattern-review",
+  "description": "Analyze recurring themes, repeated context, and friction patterns across recent sessions — surfaces what should become skills, PROJECT_MEMORY entries, or code improvements",
+  "steps": [
+    {
+      "type": "ai",
+      "action": "Query RAG memory for conversation patterns and friction signals from recent events",
+      "context": "Search memory for recurring topics and friction patterns across the past 30 days.\n\nRun these searches using the RAG memory tool (mcp_enkratflow-me_query_memory):\n  1. query='conversation patterns friction recurring topics' project='{current_project}' limit=10\n  2. query='candidate skill PROJECT_MEMORY repeated question' project='{current_project}' limit=10\n  3. query='what was re-explained context gap' project='{current_project}' limit=10\n\nAlso check local event files for ## Conversation patterns sections:\n  grep -r 'Recurring\\|Friction\\|Candidate skill\\|Candidate PROJECT_MEMORY\\|Context gap' .exocortex/events/ 2>/dev/null | sort | head -50\n\nThen compile a PATTERN REPORT:\n\n=== PATTERN REPORT — {YYYY-MM-DD} ===\n\n## Hot topics (appeared 2+ times)\n(List topics that recur across events and sessions — these are re-explanation tax)\n- [topic]: appeared [N] times — [brief description of what keeps getting re-explained]\n\n## Friction hotspots (things that took too long)\n- [friction point]: [what made it slow/hard]\n\n## Skill candidates (repeating how-to patterns)\n- [skill name]: [what it would cover and why it keeps coming up]\n\n## PROJECT_MEMORY candidates (gotchas that keep appearing)\n- [entry]: [the permanent fact that should be documented so no AI ever rediscovers it]\n\n## Context gaps (things not written down anywhere)\n- [gap]: [what a future agent would need to know]\n\n## Recommended actions\n1. [Most impactful action — e.g. create skill X]\n2. [Second action]\n3. [Third action]\n\nIf there are no ## Conversation patterns sections in events yet (this is the first run), note that and instead analyze the session summaries for recurring themes.\n\nPresent the full report to the user."
+    },
+    {
+      "type": "user_choice",
+      "prompt": "Pattern report ready. What would you like to act on?",
+      "options": [
+        {
+          "label": "Create skill from top candidate",
+          "action": "Draft a new SKILL.md for the top skill candidate and save it to .exocortex/skills/<name>/SKILL.md — use the existing skill format"
+        },
+        {
+          "label": "Add entries to PROJECT_MEMORY",
+          "action": "Append all PROJECT_MEMORY candidates to .exocortex/PROJECT_MEMORY.md in the appropriate section — use SPECIFIC wording so future AI never rediscovers these gotchas"
+        },
+        {
+          "label": "Capture all as interrupts",
+          "action": "Call mcp_enkratflow-me_capture_interrupt for each candidate (skill, memory, code fix) so they queue for /groom processing"
+        },
+        {
+          "label": "Full action — do all three",
+          "action": "Create skill, update PROJECT_MEMORY, AND capture remaining items as interrupts — do all in sequence"
+        },
+        {
+          "label": "Just show the report — no action yet",
+          "action": "Acknowledge and hold — user will decide later"
+        }
+      ]
+    },
+    {
+      "type": "ai",
+      "action": "Execute chosen action, confirm what was created/updated, and note when to run /pattern-review again",
+      "context": "Execute the chosen action from the previous step. Be specific about what was written and where.\n\nAfter completing, remind the user:\n'Tip: /pattern-review gets more powerful as ## Conversation patterns sections accumulate in events. Run it monthly or after any sprint where you noticed heavy context re-explanation. Each run should reduce the re-explanation tax for the next month.'"
+    }
+  ]
+}

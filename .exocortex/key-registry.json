@@ -1,0 +1,71 @@
+{
+  "_comment": "Key registry \u2014 add new providers here, no script changes needed. NEVER put real key values in this file.",
+  "files": {
+    "global": "~/.exocortex/.env"
+  },
+  "services": {
+    "openai": {
+      "name": "OpenAI",
+      "test_url": "https://api.openai.com/v1/models",
+      "method": "GET",
+      "auth": "bearer",
+      "rotate_url": "https://platform.openai.com/api-keys"
+    },
+    "anthropic": {
+      "name": "Anthropic",
+      "test_url": "https://api.anthropic.com/v1/messages",
+      "method": "POST",
+      "auth": "x-api-key",
+      "rotate_url": "https://console.anthropic.com/settings/keys"
+    },
+    "google": {
+      "name": "Google AI",
+      "test_url": "https://generativelanguage.googleapis.com/v1beta/models",
+      "method": "GET",
+      "auth": "query_param",
+      "rotate_url": "https://aistudio.google.com/app/apikey"
+    },
+    "ollama": {
+      "name": "Ollama (local)",
+      "test_url": "http://localhost:11434/api/tags",
+      "method": "GET",
+      "auth": "none",
+      "rotate_url": null
+    },
+    "cohere": {
+      "name": "Cohere",
+      "test_url": "https://api.cohere.com/v1/models",
+      "method": "GET",
+      "auth": "bearer",
+      "rotate_url": "https://dashboard.cohere.com/api-keys"
+    },
+    "mistral": {
+      "name": "Mistral",
+      "test_url": "https://api.mistral.ai/v1/models",
+      "method": "GET",
+      "auth": "bearer",
+      "rotate_url": "https://console.mistral.ai/api-keys"
+    },
+    "groq": {
+      "name": "Groq",
+      "test_url": "https://api.groq.com/openai/v1/models",
+      "method": "GET",
+      "auth": "bearer",
+      "rotate_url": "https://console.groq.com/keys"
+    }
+  },
+  "keys": [
+    {
+      "var": "OPENAI_API_KEY_PERSONAL",
+      "service": "openai",
+      "purpose": "Personal OpenAI key",
+      "file": "global"
+    },
+    {
+      "var": "ANTHROPIC_API_KEY_PERSONAL",
+      "service": "anthropic",
+      "purpose": "Personal Anthropic key",
+      "file": "global"
+    }
+  ]
+}

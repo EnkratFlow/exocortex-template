@@ -1,0 +1,23 @@
+{
+  "name": "/drill",
+  "description": "Deep-dive into a specific topic from memory. Usage: /drill <topic>",
+  "requires_argument": true,
+  "argument_name": "topic",
+  "argument_description": "The topic, feature, or theme to drill into (e.g., 'emotional grading', 'supabase migration', 'accountability system')",
+  "steps": [
+    {
+      "type": "shell",
+      "command": "python3 .exocortex/scripts/drill_memory.py \"{topic}\"",
+      "description": "Search ALL events for topic-relevant content, then do 2-pass AI reconstruction for deep detail",
+      "outputs": {
+        "detailed_memory": "Full detailed reconstruction of the topic across all time periods"
+      }
+    },
+    {
+      "type": "ai",
+      "action": "Display the detailed memory reconstruction to user",
+      "inputs": ["Output from drill_memory.py"],
+      "context": "This is a deep-dive into a specific topic. Show the output verbatim — it's already formatted. If the user wants to act on anything surfaced, offer to help."
+    }
+  ]
+}

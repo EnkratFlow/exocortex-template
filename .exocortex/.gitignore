@@ -1,0 +1,15 @@
+# Exocortex .gitignore — protect sensitive and transient files
+# This lives inside .exocortex/ as a safety layer
+
+# API keys — NEVER commit
+.env
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Backup files from upgrades
+archive/pre-upgrade-*/
+
+# Session context backups
+SESSION_CONTEXT_BACKUP_*.md

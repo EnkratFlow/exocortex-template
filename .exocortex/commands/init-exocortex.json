@@ -1,0 +1,21 @@
+{
+  "name": "/init-exocortex",
+  "description": "Bootstrap a new .exocortex directory for any project",
+  "steps": [
+    {
+      "type": "ai",
+      "action": "Create .exocortex directory structure with template files",
+      "context": "Create the full .exocortex/ directory tree: TODO.md (empty ready/in-progress/done sections), SESSION_CONTEXT.md (project name, current focus placeholder), PROJECT_MEMORY.md (project description placeholder), LESSONS.md (empty), OPEN_DECISIONS.md (empty), control/ (INTERRUPTS.md, BACKLOG.md, ROADMAP.md — all empty templates), events/ (empty dir), scripts/ (empty dir), commands/ (copy schema reference from COMMAND_SYSTEM.md), reference/ (MEMORY.md with tier explanation), .env.example (OPENAI_API_KEY= placeholder). Ask for project name and one-line description before creating. Only create files that don't already exist."
+    },
+    {
+      "type": "ai",
+      "action": "Offer opt-in: macOS auto-snapshot agent",
+      "context": "Ask the user: 'Install the auto-snapshot agent? It writes a raw git state event every 60 min whenever VS Code / Cursor / Claude Code is running — no /save discipline required. Runs as a background launchd agent. macOS only. [y/n]'\n\nIf yes: run `bash .exocortex/scripts/launchd/install_autosave.sh` and confirm it completed.\nIf no: say 'You can install it later with: bash .exocortex/scripts/launchd/install_autosave.sh' and move on.\nIf not macOS: skip silently."
+    },
+    {
+      "type": "ai",
+      "action": "Offer opt-in: OpenClaw Telegram reminder",
+      "context": "Ask the user: 'Do you use OpenClaw (self-hosted VPS AI gateway with Telegram)? It can send you a 90-min nudge to run /save while you're coding. [y/n]'\n\nIf yes: run `bash .exocortex/scripts/install_openclaw_reminder.sh` — it will print the exact VPS deployment commands.\nIf no: skip silently. Do not explain what OpenClaw is unless they ask."
+    }
+  ]
+}
