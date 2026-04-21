@@ -4,15 +4,15 @@ on:
   push:
     paths:
       - 'install.sh'
+      - 'init-project.sh'
       - 'tests/**'
       - '.exocortex/**'
       - '.cursor/**'
       - '.github/skills/**'
       - '.claude/**'
   pull_request:
-    paths:
-      - 'install.sh'
-      - 'tests/**'
+    # Run on all PRs so the required status check always reports.
+    # The job itself skips the test suite for docs-only changes.
 
 jobs:
   test:
@@ -20,15 +20,34 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect changed files
+        id: changes
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            base="${{ github.event.pull_request.base.sha }}"
+            head="${{ github.event.pull_request.head.sha }}"
+            changed=$(git diff --name-only "$base" "$head")
+          else
+            changed=$(git diff --name-only HEAD~1 HEAD 2>/dev/null || echo "install.sh")
+          fi
+          echo "Changed files: $changed"
+          if echo "$changed" | grep -qE '^install\.sh$|^init-project\.sh$|^tests/|^\.exocortex/|^\.cursor/|^\.claude/|^\.github/skills/'; then
+            echo "run_tests=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "run_tests=false" >> "$GITHUB_OUTPUT"
+            echo "Docs-only change — skipping install tests."
+          fi
 
       - name: Install dependencies
-        run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y git
+        if: steps.changes.outputs.run_tests == 'true'
+        run: sudo apt-get update -qq && sudo apt-get install -y git rsync
 
       - name: Run test suite
+        if: steps.changes.outputs.run_tests == 'true'
         run: bash tests/run_tests.sh
 
       - name: Upload test output on failure
