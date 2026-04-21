@@ -390,6 +390,37 @@ See [LICENSE](LICENSE) for the full text.
 
 ---
 
+## Verifying the Installer
+
+The installer runs a built-in integrity check automatically — it verifies every downloaded script against the published `SHA256SUMS` file before copying anything to your project. If anything fails, the install is aborted.
+
+If you want to verify manually before running:
+
+```bash
+# Download the script and checksums separately
+curl -sL https://raw.githubusercontent.com/EnkratFlow/exocortex-template/main/install.sh -o install.sh
+curl -sL https://raw.githubusercontent.com/EnkratFlow/exocortex-template/main/SHA256SUMS -o SHA256SUMS
+
+# Inspect the script yourself
+less install.sh
+
+# Verify the script hash matches
+shasum -a 256 install.sh
+# Compare against the install.sh line in SHA256SUMS
+
+# Run when satisfied
+bash install.sh "my-project"
+```
+
+Alternatively, clone the repo directly — git's transfer protocol is integrity-verified end-to-end:
+
+```bash
+git clone https://github.com/EnkratFlow/exocortex-template.git
+bash exocortex-template/install.sh "my-project"
+```
+
+---
+
 ## Disclaimer
 
 This software is provided **"as is"**, without warranty of any kind. By installing or using this software you accept full responsibility for any consequences. The author(s) are not liable for data loss, security issues, unexpected behaviour, or any other outcome resulting from use of this software.

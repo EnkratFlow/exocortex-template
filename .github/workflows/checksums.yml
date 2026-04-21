@@ -1,0 +1,44 @@
+name: Publish checksums
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'install.sh'
+      - 'init-project.sh'
+      - '.exocortex/scripts/**'
+
+permissions:
+  contents: write
+
+jobs:
+  checksums:
+    name: Generate and commit SHA256SUMS
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Generate SHA256SUMS
+        run: |
+          # Hash all user-facing scripts that run on the user's machine
+          sha256sum \
+            install.sh \
+            init-project.sh \
+            $(find .exocortex/scripts -name "*.sh" -o -name "*.py" | sort) \
+            > SHA256SUMS
+
+      - name: Commit SHA256SUMS if changed
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add SHA256SUMS
+          if git diff --cached --quiet; then
+            echo "SHA256SUMS unchanged — nothing to commit"
+          else
+            git commit -m "chore: update SHA256SUMS [skip ci]"
+            git push
+          fi

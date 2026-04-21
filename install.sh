@@ -160,6 +160,45 @@ echo "📦 Downloading exocortex template..."
 git clone --quiet --depth 1 --branch "$BRANCH" "$REPO_URL" "$_EXOCORTEX_TMP/exocortex-template" 2>&1 | grep -v "^$" || true
 echo "  ✓ Downloaded"
 
+# ── Integrity check ───────────────────────────────────────────────────
+# Verify the cloned content against the published SHA256SUMS file.
+# This catches tampering in transit (MITM, CDN compromise, etc.).
+# Skipped automatically if SHA256SUMS is missing (e.g. local installs).
+SUMS_FILE="$_EXOCORTEX_TMP/exocortex-template/SHA256SUMS"
+if [ -f "$SUMS_FILE" ]; then
+    echo ""
+    echo "🔒 Verifying integrity..."
+    _verify_failed=0
+    while IFS= read -r line; do
+        [[ "$line" =~ ^#.*$ || -z "$line" ]] && continue
+        expected_hash="${line%% *}"
+        rel_path="${line##* }"
+        actual_file="$_EXOCORTEX_TMP/exocortex-template/$rel_path"
+        if [ ! -f "$actual_file" ]; then
+            echo "  ⚠️  Missing: $rel_path (skipping)"
+            continue
+        fi
+        actual_hash=$(shasum -a 256 "$actual_file" 2>/dev/null | awk '{print $1}')
+        if [ "$actual_hash" != "$expected_hash" ]; then
+            echo "  ❌ INTEGRITY FAIL: $rel_path"
+            echo "     Expected: $expected_hash"
+            echo "     Got:      $actual_hash"
+            _verify_failed=1
+        fi
+    done < "$SUMS_FILE"
+    if [ "$_verify_failed" -eq 1 ]; then
+        echo ""
+        echo "❌ Integrity check failed — installation aborted."
+        echo "   The downloaded files do not match the published checksums."
+        echo "   This could indicate a network issue or tampered content."
+        echo "   Try again, or install from a direct git clone:"
+        echo "     git clone https://github.com/EnkratFlow/exocortex-template.git"
+        echo "     bash exocortex-template/install.sh"
+        exit 1
+    fi
+    echo "  ✓ All files verified"
+fi
+
 # ── Copy files ────────────────────────────────────────────────────────
 
 echo ""
