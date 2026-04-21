@@ -349,26 +349,41 @@ GitHub Actions runs the same test suite on every push and pull request that modi
 
 ## API Key Setup
 
-API keys are optional — the system works without them, but `/work`, `/shortterm`, `/longterm`, `/subconscious`, and `/drill` use AI to summarize your memory, so they'll show raw event data instead of summaries without a key.
+**Keys are optional.** The system works without them — `/save`, `/daily-end`, `/interrupt`, and all planning commands work with no key at all. Your events are stored as plain markdown files on your machine.
 
-**Recommended — one global file for all projects:**
+The commands that need a key are the AI memory summarisers: `/work`, `/shortterm`, `/longterm`, `/subconscious`, and `/drill`. Without a key, these commands display your raw event files. With a key, they send your events to an LLM and return a readable, compressed summary of what you've been working on.
+
+### What data leaves your machine
+
+When you run a memory command, the content of your event files (your work journal entries) is sent to OpenAI or Anthropic over HTTPS. This includes whatever you wrote in `/save` and `/daily-end` — typically: what you worked on, decisions made, git state. **Do not use AI memory features if your work is under NDA or you are uncomfortable with work logs leaving your machine.**
+
+### What it costs
+
+Keys are billed to your own account — exocortex has no subscription and takes no cut. The default model is `gpt-4o-mini`, one of OpenAI's cheapest. A typical `/work` call costs less than $0.01. Most developers running this daily spend **under $1/month**.
+
+### Setup (one-time, covers all your projects)
 
 ```bash
 mkdir -p ~/.exocortex
-nano ~/.exocortex/.env   # or open it in your editor
+nano ~/.exocortex/.env   # or open in your editor
 ```
 
 Add your keys:
-```
+
+```bash
 OPENAI_API_KEY=sk-...
-ANTHROPIC_API_KEY=sk-ant-...   # optional fallback
+ANTHROPIC_API_KEY=sk-ant-...   # optional — used as fallback if OpenAI fails
 ```
 
-Every exocortex project on your machine reads this file automatically. When you rotate a key, you update **one file** and all projects are fixed.
+Every exocortex project on your machine reads this one file automatically. When you rotate a key, update it here and all projects are fixed instantly.
 
-If you need a project-specific key (different billing account, rate limit, etc.), add it to `.exocortex/.env` inside that project — it overrides the global one.
+If you need a project-specific key (separate billing account, different rate limit), add it to `.exocortex/.env` inside that project — it overrides the global one for that project only.
 
 Get keys: [OpenAI](https://platform.openai.com/api-keys) · [Anthropic](https://console.anthropic.com/settings/keys)
+
+### Keys are never committed
+
+`.exocortex/.env` and `~/.exocortex/.env` are both gitignored. Your keys stay on your machine. The repo contains no credentials of any kind.
 
 ---
 
