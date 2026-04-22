@@ -17,6 +17,27 @@ deploys, and other deterministic work. Doing the entire plan in Opus
 costs ~3-5x more than necessary. The fix is a deliberate two-tier
 pattern: Opus orchestrates, cheaper models execute.
 
+## Model pins (single source of truth — bump here, not inline)
+
+The rule references named pins below instead of literal model slugs.
+When a model gets bumped (new haiku, new sonnet, etc.), update the
+pin here and every reference downstream picks it up automatically.
+
+| Pin name             | Current value                  | Used for                                              |
+|----------------------|--------------------------------|-------------------------------------------------------|
+| `<ORCHESTRATOR>`     | claude-4.7-opus (or 4.6)       | Parent turn for plan-class work (Step 1)              |
+| `<SCAFFOLDER>`       | composer-2-fast                | Mechanical scaffolding, well-specified file edits     |
+| `<EXECUTOR>`         | gpt-5.3-codex                  | Standard implementation phases (Phase 2 of port etc.) |
+| `<UI_IMPLEMENTER>`   | claude-4.6-sonnet-medium-thinking | UI work needing judgment + standard implementation |
+| `<TEST_WRITER>`      | gpt-5.3-codex                  | Test writing, smoke verification                      |
+| `<SAVE_FORMATTER>`   | claude-4.5-haiku-thinking      | /save event drafting (Step 5b hybrid pattern)         |
+| `<DOC_DRAFTER>`      | claude-4.5-haiku-thinking      | Drafting documentation from notes                     |
+| `<DEEP_REVIEWER>`    | claude-4.6-opus-high-thinking  | Architecture / security review (Step 3 routing table) |
+
+The routing table in Step 3 below is a duplicate view of the same
+information for quick lookup during planning. If the two ever drift,
+this pin table wins.
+
 ## Step 1: Confirm orchestration tier
 
 When the user starts a plan-class request, the parent turn (the
@@ -119,10 +140,12 @@ reflection events; pay full price for full quality).
    sees what is being saved (`show_collapsed` mode). Example:
    `"Checkpointing Phase 2: alerts library (4 files added, 1 commit, smoke tests green). Drafting event via subagent."`
 
-2. Parent spawns a Task subagent for the LLM-heavy event drafting:
+2. Parent spawns a Task subagent for the LLM-heavy event drafting.
+   Resolve `<SAVE_FORMATTER>` from the Model pins section at the top
+   of this rule (currently `claude-4.5-haiku-thinking`):
    ```
    Task(
-     model="claude-4.5-haiku-thinking",
+     model=<SAVE_FORMATTER>,
      description="phase-save-format",
      prompt="""
        Phase summary: <the 5-bullet inline summary the parent already
@@ -134,14 +157,26 @@ reflection events; pay full price for full quality).
        - the 3 most recent files in .exocortex/events/
 
        Write the full save event to /tmp/save_event.md using the format
-       in .exocortex/commands/save.json step 1 (Phase checkpoint header,
-       What was accomplished, Decisions made, Code state, What's next,
-       Conversation patterns). Be specific. Quote real file paths and
-       symbol names from the summary.
+       in .exocortex/commands/save.json step 1.
 
-       Do NOT include any metadata block (no `<!-- Event Metadata -->`,
-       no timestamp/machine/editor/branch fields). create_event.sh adds
-       that block automatically — including one yourself causes duplication.
+       CRITICAL FORMATTING RULES:
+       - Do NOT include any metadata block at the top of the file.
+         No `<!-- Event Metadata -->` header. No `timestamp:`, `machine:`,
+         `editor:`, `project:`, or `branch:` lines. The `create_event.sh`
+         script adds those automatically — including them in the body
+         produces a duplicate metadata block in the saved event.
+       - Start the file directly with the `# Phase checkpoint —` header
+         on line 1. Nothing before it.
+
+       Required sections after the header:
+         - ## What was accomplished
+         - ## Decisions made
+         - ## Code state
+         - ## What's next
+         - ## Conversation patterns
+
+       Be specific. Quote real file paths and symbol names from the
+       summary.
      """,
    )
    ```

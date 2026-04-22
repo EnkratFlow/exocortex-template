@@ -1,24 +1,18 @@
-What's new in 3.1.0
+What's new in 3.1.1
 ─────────────────────
 
-✦ Plan orchestration is now a global Cursor rule. Plan-class tasks
-  decompose into named phases, each phase runs on the cheapest model
-  that can do the job, Opus stays for orchestration. Typical cost
-  saving: 3-5x versus all-Opus.
+✦ Plan-orchestrate rule now has a Model pins table at the top.
+  Bump a model (new haiku, new sonnet) in one place and every
+  reference in the rule picks it up. Eliminates search-and-replace
+  on future model upgrades.
 
-✦ Auto-save phase hook. When a phase subagent finishes
-  ("Phase N: ..."), an exocortex `/save` is injected automatically
-  so checkpoints are never forgotten.
+✦ Step 5b /save prompt template tightened. The CRITICAL FORMATTING
+  RULES block now spells out every forbidden metadata field by
+  name, so the haiku save subagent never produces duplicate
+  `<!-- Event Metadata -->` headers.
 
-✦ Batch updater. Run `bash scripts/update-all-repos.sh ~/code` to
-  bring every exocortex-installed project under a directory up to
-  this template version (interactive by default; `--yes` to skip
-  prompts, `--dry-run` to list only).
-
-Read the full notes:
+For everything else, see 3.1.0:
   https://github.com/EnkratFlow/exocortex-template/blob/main/CHANGELOG.md
 
-Optional: during install you'll be asked whether to also install
-the plan-orchestrate rule and the auto-save hook globally to
-~/.cursor/ so they apply to non-exocortex projects too. Default is
-yes; press Enter to accept.
+(3.1.0 shipped plan orchestration, the auto-save phase hook, and
+the batch updater. 3.1.1 is a docs-only patch on top.)

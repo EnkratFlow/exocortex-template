@@ -4,6 +4,17 @@ All notable changes to this project will be documented here.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.1.1] — 2026-04-22
+
+### Added
+- **Model pins section** in `.cursor/rules/plan-orchestrate.mdc` — single source of truth table mapping named pins (`<ORCHESTRATOR>`, `<SCAFFOLDER>`, `<EXECUTOR>`, `<UI_IMPLEMENTER>`, `<TEST_WRITER>`, `<SAVE_FORMATTER>`, `<DOC_DRAFTER>`, `<DEEP_REVIEWER>`) to current model slugs. Bump a model in one place; every reference downstream picks it up. The Step 3 routing table is now an explicit duplicate view; the pin table wins on drift.
+
+### Changed
+- **Step 5b `/save` prompt template strengthened** — replaced the brief "Do NOT include any metadata block" guidance with a `CRITICAL FORMATTING RULES` block that enumerates every forbidden field (`<!-- Event Metadata -->`, `timestamp:`, `machine:`, `editor:`, `project:`, `branch:`), pins the file's first line to the `# Phase checkpoint —` header, and lists the five required sections explicitly. Materially reduces duplicate-metadata events when the haiku save subagent drafts an event body.
+- **Step 5b `Task` example** now references `model=<SAVE_FORMATTER>` (with an inline current-value reminder) instead of the literal model slug, so future haiku-tier bumps need a single edit at the top of the rule.
+
+[3.1.1]: https://github.com/EnkratFlow/exocortex-template/releases/tag/v3.1.1
+
 ## [3.1.0] — 2026-04-22
 
 ### Added
