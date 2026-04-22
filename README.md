@@ -190,11 +190,13 @@ CLAUDE.md                                 <-- Thin pointer (Claude Code auto-loa
 **Cursor-specific (per-project, installed by installer):**
 
 ```
-.cursor/commands/                         <-- Cursor slash command triggers
-  |-- work.md                             <-- /work command
-  |-- save.md                             <-- /save command
-  |-- onboard.md                          <-- /onboard command
-  |-- ...                                 <-- 18 more command triggers
+.cursor/
+  |-- commands/                           <-- Cursor slash command triggers (work, save, onboard, ...)
+  |-- skills/                             <-- Specialist skills (project-scoped copy)
+  |-- rules/                              <-- Auto-loaded rules (incl. plan-orchestrate.mdc)
+  |-- agents/                             <-- Cursor subagent definitions
+  |-- hooks/                              <-- Lifecycle hooks (auto-save-phase.sh)
+  |-- hooks.json                          <-- Hook registration manifest (subagentStop)
 ```
 
 **Cursor-specific (global, installed separately):**
@@ -208,6 +210,24 @@ CLAUDE.md                                 <-- Thin pointer (Claude Code auto-loa
   |-- engineer/SKILL.md                   <-- Code quality, patterns
   |-- ...                                 <-- 12 more specialist skills
 ```
+
+---
+
+## Plan Orchestration & Auto-Save Hook
+
+For multi-phase work (refactors, feature builds, design + implementation), exocortex ships a Cursor rule and a `subagentStop` hook that together cut Opus spend by roughly 3-5x without losing planning quality.
+
+**The rule** (`.cursor/rules/plan-orchestrate.mdc`) tells Opus to:
+
+1. Decompose plan-class work into numbered phases before any execution.
+2. Route each phase to the cheapest model that can do the job (composer-2-fast for mechanical edits, gpt-5.3-codex for feature code and tests, claude-4.5-haiku-thinking for docs, claude-4.6-sonnet-medium-thinking for tricky debugging).
+3. Keep Opus for orchestration, review, and architectural calls only.
+
+**The hook** (`.cursor/hooks/auto-save-phase.sh`, registered via `.cursor/hooks.json`) fires when any subagent stops. If the subagent's description matches `Phase N: ...` or `phase-N-...`, the hook injects a follow-up message telling the parent agent to run `/save` before starting the next phase. Non-phase subagents (exploration, browser automation, quick lookups) are silently ignored.
+
+A hybrid `/save` pattern uses claude-4.5-haiku-thinking for the LLM-heavy event drafting, with the parent shelling out for the `create_event.sh` and `sync_event_to_vault.sh` steps. Manual saves, `/daily-end`, `/weekly-review`, and `/monthly-review` still run on the parent for full reflection quality.
+
+During fresh install, `install.sh` asks whether to also copy these files to `~/.cursor/` so they apply to non-exocortex projects too. Default is yes.
 
 ---
 
@@ -433,6 +453,53 @@ Alternatively, clone the repo directly — git's transfer protocol is integrity-
 git clone https://github.com/EnkratFlow/exocortex-template.git
 bash exocortex-template/install.sh "my-project"
 ```
+
+---
+
+## Updating an Existing Install
+
+Re-running the installer in a project is always safe: `install.sh` detects an existing `.exocortex/` and switches to update mode. User data (`PROJECT_MEMORY.md`, `LESSONS.md`, `TODO.md`, `SESSION_CONTEXT.md`, `events/`) is never touched. System files you've modified are preserved. Files you haven't touched are updated to the latest version. The flow is the same as a fresh install:
+
+```bash
+cd /path/to/your-project
+curl -sL https://raw.githubusercontent.com/EnkratFlow/exocortex-template/main/install.sh | bash
+```
+
+After install, you'll see the version transition and the `WHATSNEW.md` blurb for that release.
+
+### Update many projects at once
+
+If you have several projects on this template, the batch updater handles them in one pass:
+
+```bash
+git clone https://github.com/EnkratFlow/exocortex-template.git /tmp/exocortex-template
+cd /tmp/exocortex-template
+
+# List what would update (no writes)
+bash scripts/update-all-repos.sh ~/code --dry-run
+
+# Walk ~/code, prompt before each repo
+bash scripts/update-all-repos.sh ~/code
+
+# Skip prompts entirely
+bash scripts/update-all-repos.sh ~/code --yes
+```
+
+The script:
+- Walks the root directory looking for any project with a `.exocortex/` subdirectory.
+- Skips repos with a dirty git working tree (commit or stash first, then re-run).
+- Uses `EXOCORTEX_LOCAL_SOURCE` to avoid re-cloning the template once per repo.
+- Prints a summary at the end (updated, skipped, failed counts).
+
+### Offline / vendored install
+
+If you can't reach GitHub from a build machine, point `install.sh` at a local copy of the template:
+
+```bash
+EXOCORTEX_LOCAL_SOURCE=/path/to/exocortex-template bash /path/to/exocortex-template/install.sh
+```
+
+The installer skips the clone step and copies from the directory you provided.
 
 ---
 

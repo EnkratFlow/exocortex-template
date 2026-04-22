@@ -7,6 +7,9 @@ on:
       - 'install.sh'
       - 'init-project.sh'
       - '.exocortex/scripts/**'
+      - '.cursor/hooks/**'
+      - '.cursor/hooks.json'
+      - 'VERSION'
 
 permissions:
   contents: write
@@ -28,6 +31,9 @@ jobs:
           sha256sum \
             install.sh \
             init-project.sh \
+            VERSION \
+            $(find .cursor/hooks -type f 2>/dev/null | sort) \
+            .cursor/hooks.json \
             $(find .exocortex/scripts -name "*.sh" -o -name "*.py" | sort) \
             > SHA256SUMS
 

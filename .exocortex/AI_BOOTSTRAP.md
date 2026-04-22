@@ -159,6 +159,22 @@ This ensures events, SESSION_CONTEXT, TODO updates, and all other exocortex writ
 
 ---
 
+## 3.2 Plan orchestration
+
+For multi-phase work, follow `~/.cursor/rules/plan-orchestrate.mdc`
+(or the project-level copy at `.cursor/rules/plan-orchestrate.mdc`).
+Decompose the work into named phases, declare a model per phase,
+delegate execution to Task subagents, and `/save` after every phase
+completes (the `subagentStop` hook at `.cursor/hooks/auto-save-phase.sh`
+enforces this when subagent descriptions follow the `"Phase N: ..."`
+or `"phase-N-..."` convention).
+
+For phase saves the auto-save hook fires, use the Step 5b hybrid
+pattern in the rule (parent summarizes inline, haiku-tier subagent
+drafts the event body, parent runs the shell steps).
+
+---
+
 ## 4. Response Format
 
 After executing all steps, show a compact summary:

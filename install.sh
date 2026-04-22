@@ -10,10 +10,13 @@
 #   bash install.sh
 #   bash install.sh my-project
 #
+# Offline / vendored install (use a local copy of the template instead of cloning):
+#   EXOCORTEX_LOCAL_SOURCE=/path/to/exocortex-template bash /path/to/exocortex-template/install.sh
+#
 # What this does:
-#   1. Clones exocortex-template to a temp directory
+#   1. Clones exocortex-template to a temp directory (or uses $EXOCORTEX_LOCAL_SOURCE if set)
 #   2. Copies .exocortex/ and editor pointer files to the current directory
-#   3. Copies .cursor/ (commands, skills, rules, agents) — safe merge, never overwrites modified files
+#   3. Copies .cursor/ (commands, skills, rules, agents, hooks) + hooks.json — safe merge, never overwrites modified files
 #   4. Copies .github/skills/ — role skills for VS Code Copilot
 #   5. Copies .claude/skills/ — workflow commands for VS Code Copilot and Claude CLI
 #   6. Runs init-project.sh to replace placeholders and set up API keys
@@ -55,7 +58,12 @@ fi
 # ── Detect: update vs fresh install ─────────────────────────────────
 if [ -d ".exocortex" ]; then
     IS_UPDATE=true
-    INSTALLED_VERSION="$(grep -m1 'version' .exocortex/AI_BOOTSTRAP.md 2>/dev/null | awk '{print $NF}' || echo 'unknown')"
+    if [ -f .exocortex/.version ]; then
+        INSTALLED_VERSION="$(cat .exocortex/.version 2>/dev/null | tr -d '[:space:]')"
+    else
+        INSTALLED_VERSION="$(grep -m1 'version' .exocortex/AI_BOOTSTRAP.md 2>/dev/null | awk '{print $NF}' || echo 'unknown')"
+    fi
+    [ -z "$INSTALLED_VERSION" ] && INSTALLED_VERSION="unknown"
     echo "🔄 Mode: UPDATE"
     echo "   Existing installation found."
     echo "   System files will update. Your data is never touched."
@@ -156,9 +164,67 @@ safe_copy_dir() {
     echo "  ✓ $label: ${parts:-nothing to do}"
 }
 
+# ── Helper: safe merge a single file ───────────────────────────────────
+# Applies the same manifest-aware update semantics as safe_copy_dir.
+# Usage: safe_copy_file <src_file> <target_file> <label>
+safe_copy_file() {
+    local src_file="$1"
+    local target_file="$2"
+    local label="$3"
+
+    [ -f "$src_file" ] || return 0
+    mkdir -p "$(dirname "$target_file")"
+
+    local src_hash
+    src_hash=$(file_hash "$src_file")
+
+    if [ -f "$target_file" ]; then
+        local current_hash
+        current_hash=$(file_hash "$target_file")
+        local installed_hash
+        installed_hash=$(manifest_get "$target_file")
+
+        if [ "$src_hash" = "$current_hash" ]; then
+            echo "${target_file} ${src_hash}" >> "$MANIFEST_TMP"
+            echo "  ✓ $label: current"
+        elif [ -n "$installed_hash" ] && [ "$current_hash" = "$installed_hash" ]; then
+            cp "$src_file" "$target_file"
+            echo "${target_file} ${src_hash}" >> "$MANIFEST_TMP"
+            echo "  ✓ $label: updated"
+        else
+            if [ -n "$installed_hash" ]; then
+                echo "${target_file} ${installed_hash}" >> "$MANIFEST_TMP"
+            fi
+            echo "  ✓ $label: skipped (user-modified)"
+        fi
+    else
+        cp "$src_file" "$target_file"
+        echo "${target_file} ${src_hash}" >> "$MANIFEST_TMP"
+        echo "  ✓ $label: new"
+    fi
+}
+
 echo "📦 Downloading exocortex template..."
-git clone --quiet --depth 1 --branch "$BRANCH" "$REPO_URL" "$_EXOCORTEX_TMP/exocortex-template" 2>&1 | grep -v "^$" || true
-echo "  ✓ Downloaded"
+if [ -n "${EXOCORTEX_LOCAL_SOURCE:-}" ]; then
+    if [ ! -d "$EXOCORTEX_LOCAL_SOURCE" ]; then
+        echo "❌ EXOCORTEX_LOCAL_SOURCE is set but not a directory: $EXOCORTEX_LOCAL_SOURCE"
+        exit 1
+    fi
+    echo "  📂 Using local source: $EXOCORTEX_LOCAL_SOURCE"
+    # Copy the directory contents (including .git? no — we only need the working tree)
+    mkdir -p "$_EXOCORTEX_TMP/exocortex-template"
+    # Use rsync if available (handles dotfiles cleanly), fall back to cp
+    if command -v rsync >/dev/null 2>&1; then
+        rsync -a --exclude='.git' "$EXOCORTEX_LOCAL_SOURCE/" "$_EXOCORTEX_TMP/exocortex-template/"
+    else
+        # cp -R with a trailing dot to copy dotfiles
+        (cd "$EXOCORTEX_LOCAL_SOURCE" && tar cf - --exclude='.git' . ) | (cd "$_EXOCORTEX_TMP/exocortex-template" && tar xf -)
+    fi
+    echo "  ✓ Copied"
+else
+    git clone --quiet --depth 1 --branch "$BRANCH" "$REPO_URL" "$_EXOCORTEX_TMP/exocortex-template" 2>&1 | grep -v "^$" || true
+    echo "  ✓ Downloaded"
+fi
 
 # ── Integrity check ───────────────────────────────────────────────────
 # Verify the cloned content against the published SHA256SUMS file.
@@ -199,6 +265,16 @@ if [ -f "$SUMS_FILE" ]; then
     echo "  ✓ All files verified"
 fi
 
+# ── Read template version ─────────────────────────────────────────────
+TEMPLATE_VERSION="unknown"
+if [ -f "$_EXOCORTEX_TMP/exocortex-template/VERSION" ]; then
+    TEMPLATE_VERSION="$(tr -d '[:space:]' < "$_EXOCORTEX_TMP/exocortex-template/VERSION")"
+fi
+if [ "$IS_UPDATE" = "true" ]; then
+    echo ""
+    echo "📌 Version: ${INSTALLED_VERSION:-unknown} → ${TEMPLATE_VERSION}"
+fi
+
 # ── Copy files ────────────────────────────────────────────────────────
 
 echo ""
@@ -207,6 +283,11 @@ echo "📁 Installing to $(pwd)/"
 # Merge .exocortex/ — system files (commands, scripts, docs, bootstrap) update;
 # user data (memory, todos, sessions, lessons) is never overwritten
 safe_copy_dir "$_EXOCORTEX_TMP/exocortex-template/.exocortex" ".exocortex" ".exocortex/"
+
+# Track installed version
+if [ -f "$_EXOCORTEX_TMP/exocortex-template/VERSION" ]; then
+    cp "$_EXOCORTEX_TMP/exocortex-template/VERSION" ".exocortex/.version"
+fi
 
 # Copy editor pointer files (thin pointers to AI_BOOTSTRAP.md)
 for pfile in CLAUDE.md .windsurfrules .rules; do
@@ -239,6 +320,15 @@ safe_copy_dir "$_EXOCORTEX_TMP/exocortex-template/.cursor/commands" ".cursor/com
 safe_copy_dir "$_EXOCORTEX_TMP/exocortex-template/.cursor/skills"   ".cursor/skills"   "skills"
 safe_copy_dir "$_EXOCORTEX_TMP/exocortex-template/.cursor/rules"    ".cursor/rules"    "rules"
 safe_copy_dir "$_EXOCORTEX_TMP/exocortex-template/.cursor/agents"   ".cursor/agents"   "agents"
+safe_copy_dir "$_EXOCORTEX_TMP/exocortex-template/.cursor/hooks"    ".cursor/hooks"    "hooks"
+safe_copy_file "$_EXOCORTEX_TMP/exocortex-template/.cursor/hooks.json" ".cursor/hooks.json" "hooks.json"
+
+# Ensure hook scripts stay executable after merge.
+if [ -d ".cursor/hooks" ]; then
+    while IFS= read -r hook_script; do
+        chmod +x "$hook_script"
+    done < <(find ".cursor/hooks" -type f -name "*.sh" | sort)
+fi
 
 # ── VS Code Copilot role skills (.github/skills/) ─────────────────────
 
@@ -315,6 +405,27 @@ else
     echo "  ⏭️  Skipping initialization (update mode — your config is preserved)"
 fi
 
+# ── Optional: install global plan-orchestrate rule + auto-save hook ───
+GLOBAL_PLAN_HOOK_STATUS="skipped (non-interactive)"
+if [ -f "$HOME/.cursor/rules/plan-orchestrate.mdc" ]; then
+    echo "  ✓ Global plan-orchestrate rule already installed (skipping)"
+    GLOBAL_PLAN_HOOK_STATUS="already installed"
+elif [ -t 0 ]; then
+    read -r -p "Install the plan-orchestrate rule + auto-save hook globally so they apply to non-exocortex projects too? [Y/n] " GLOBAL_INSTALL_REPLY
+    if [[ -z "$GLOBAL_INSTALL_REPLY" || "$GLOBAL_INSTALL_REPLY" =~ ^[Yy]$ ]]; then
+        mkdir -p "$HOME/.cursor/rules" "$HOME/.cursor/hooks"
+        cp ".cursor/rules/plan-orchestrate.mdc" "$HOME/.cursor/rules/plan-orchestrate.mdc"
+        cp ".cursor/hooks.json" "$HOME/.cursor/hooks.json"
+        cp ".cursor/hooks/auto-save-phase.sh" "$HOME/.cursor/hooks/auto-save-phase.sh"
+        chmod +x "$HOME/.cursor/hooks/auto-save-phase.sh"
+        echo "  ✓ Global plan-orchestrate rule + auto-save hook installed"
+        GLOBAL_PLAN_HOOK_STATUS="installed"
+    else
+        echo "  ⊘ Skipped global install. Project-level files installed normally."
+        GLOBAL_PLAN_HOOK_STATUS="skipped by user"
+    fi
+fi
+
 # ── Cleanup ───────────────────────────────────────────────────────────
 # Temp dir cleaned up by trap
 
@@ -356,8 +467,19 @@ else
     echo "  Your project now has AI-powered memory."
 fi
 echo ""
+# Show release notes if the template ships a WHATSNEW.md
+if [ -f "$_EXOCORTEX_TMP/exocortex-template/WHATSNEW.md" ]; then
+    echo ""
+    echo "📰 What's new in this release:"
+    echo "────────────────────────────────"
+    cat "$_EXOCORTEX_TMP/exocortex-template/WHATSNEW.md"
+    echo "────────────────────────────────"
+    echo ""
+fi
+
 echo "  Commands in Cursor or VS Code:"
 echo "    /work      — Load context, see what to work on"
 echo "    /save      — Save your progress"
 echo "    /interrupt — Capture ideas without breaking flow"
+echo "  ✓ Plan orchestration + auto-save hook: project-level installed (global: $GLOBAL_PLAN_HOOK_STATUS)"
 echo ""

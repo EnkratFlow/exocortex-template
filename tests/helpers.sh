@@ -166,6 +166,18 @@ run_install() {
     git -C "$template" diff --cached --name-only --diff-filter=D 2>/dev/null | while IFS= read -r f; do
         rm -f "$snap/$f"
     done
+    # Overlay unstaged working-tree modifications (tracked files edited but not added)
+    git -C "$template" diff --name-only 2>/dev/null | while IFS= read -r f; do
+        [ -f "$template/$f" ] && mkdir -p "$snap/$(dirname "$f")" && \
+            cp "$template/$f" "$snap/$f"
+    done
+    # Overlay untracked-but-not-gitignored files (new files not yet `git add`ed).
+    # Critical: lets the test suite see new files in the working tree (e.g. brand
+    # new hooks, scripts, rules) before they have been committed.
+    git -C "$template" ls-files --others --exclude-standard 2>/dev/null | while IFS= read -r f; do
+        [ -f "$template/$f" ] && mkdir -p "$snap/$(dirname "$f")" && \
+            cp -p "$template/$f" "$snap/$f"
+    done
     # Initialize as a fresh git repo on branch 'main' and commit the snapshot
     git -C "$snap" -c init.defaultBranch=main init -q >/dev/null 2>&1
     git -C "$snap" -c user.email="test@exocortex" -c user.name="exocortex-test" \

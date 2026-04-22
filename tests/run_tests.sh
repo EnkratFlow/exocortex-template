@@ -304,6 +304,49 @@ test_08_events_not_in_manifest() {
     end_test
 }
 
+test_09_hooks_installed_and_executable() {
+    begin_test "T09: fresh install copies .cursor/hooks/ + hooks.json with exec bit"
+
+    local dir
+    dir=$(make_fresh_project)
+    run_install "$dir"
+
+    assert_file_exists "hooks.json installed" "$dir/.cursor/hooks.json"
+    assert_file_exists "auto-save-phase.sh installed" "$dir/.cursor/hooks/auto-save-phase.sh"
+    assert_file_contains "hooks.json registers subagentStop" "$dir/.cursor/hooks.json" "subagentStop"
+
+    if [ -x "$dir/.cursor/hooks/auto-save-phase.sh" ]; then
+        echo "    ✅ auto-save-phase.sh is executable"
+        TEST_PASS=$((TEST_PASS+1))
+    else
+        echo "    ❌ auto-save-phase.sh is NOT executable"
+        TEST_FAIL=$((TEST_FAIL+1))
+    fi
+
+    rm -rf "$dir"
+    end_test
+}
+
+test_10_hook_user_modified_preserved() {
+    begin_test "T10: user-modified hook script is never overwritten"
+
+    local dir
+    dir=$(make_installed_project)
+
+    local hook="$dir/.cursor/hooks/auto-save-phase.sh"
+    printf '\n# T10_USER_CUSTOMIZATION\n' >> "$hook"
+    local modified_hash
+    modified_hash=$(file_hash "$hook")
+
+    run_install "$dir"
+
+    assert_hash_unchanged "user-modified hook preserved" "$hook" "$modified_hash"
+    assert_file_contains  "user marker still present"   "$hook" "T10_USER_CUSTOMIZATION"
+
+    rm -rf "$dir"
+    end_test
+}
+
 # ──────────────────────────────────────────────────────────────────────────────
 # Runner
 # ──────────────────────────────────────────────────────────────────────────────
@@ -316,6 +359,8 @@ test_05_idempotent
 test_06_critical_data_files
 test_07_events_preserved
 test_08_events_not_in_manifest
+test_09_hooks_installed_and_executable
+test_10_hook_user_modified_preserved
 
 echo ""
 echo "══════════════════════════════════════════════════════"

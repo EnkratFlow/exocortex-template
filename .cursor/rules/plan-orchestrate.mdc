@@ -1,0 +1,185 @@
+---
+description: Plan-class work uses Opus as orchestrator, delegates phases to cheaper models, and saves between phases
+alwaysApply: true
+---
+
+# Plan-orchestrate protocol
+
+Applies to any task that decomposes into 2+ phases (planning, multi-file
+refactors, feature builds, design + implementation work). Skip for
+single-step questions, trivial fixes, or pure information requests.
+
+## Why this exists
+
+Opus-tier models are best for planning and judgment but overkill (and
+expensive) for executing well-specified file edits, smoke tests,
+deploys, and other deterministic work. Doing the entire plan in Opus
+costs ~3-5x more than necessary. The fix is a deliberate two-tier
+pattern: Opus orchestrates, cheaper models execute.
+
+## Step 1: Confirm orchestration tier
+
+When the user starts a plan-class request, the parent turn (the
+conversation they're in) MUST be Opus 4.6 or 4.7. If it isn't, stop
+and tell the user:
+
+> "This is plan-class work. Switch to claude-4.7-opus before I draft
+> the plan so the orchestration brain has enough headroom. Sonnet or
+> Composer can take it from here once the plan is broken into phases."
+
+Do not silently downgrade. Do not draft the plan in a weaker model and
+hope it works. Wait for the switch.
+
+## Step 2: Decompose into named phases
+
+Every plan must produce a numbered phase list before any execution
+starts. Each phase declares:
+
+- A specific deliverable (not "investigate" — "produce X file with Y").
+- An execution model from the routing table below.
+- A boolean: needs_opus_review (defaults false; true only when
+  ambiguous trade-offs need to be resolved mid-phase).
+
+Show the phase list to the user before starting Phase 1.
+
+## Step 3: Model routing table
+
+Use these defaults. Pick the cheapest tier the work actually needs.
+
+| Phase type                                                | Model                              |
+|-----------------------------------------------------------|------------------------------------|
+| File scaffolding from a clear spec                        | composer-2-fast                    |
+| Mechanical refactors / renames across files               | composer-2-fast                    |
+| Running smoke tests, lint, build, deploy                  | composer-2-fast or shell subagent  |
+| Standard feature implementation (clear spec, low novelty) | gpt-5.3-codex or claude-4.6-sonnet |
+| Test writing (unit, integration)                          | gpt-5.3-codex                      |
+| Codebase exploration / search-heavy phases                | explore subagent (haiku-tier)      |
+| Documentation drafting from notes                         | claude-4.5-haiku-thinking          |
+| Tricky debugging across many files                        | claude-4.6-sonnet-medium-thinking  |
+| Architecture decisions, trade-off analysis                | parent turn (Opus, no delegation)  |
+| Security review, threat modeling                          | parent turn (Opus, no delegation)  |
+
+The parent (Opus) keeps these for itself: planning, reviewing each
+phase's output, deciding when to escalate, and final integration.
+
+## Step 4: Spawn each phase as a Task subagent
+
+For phases that delegate, use the `Task` tool with explicit `model:`.
+Provide the subagent everything it needs: file paths, expected output,
+acceptance criteria, edge cases. Subagents have no memory of the
+parent conversation, so context discipline matters.
+
+After each subagent returns, the parent (Opus) reviews the result
+before starting the next phase. If something is off, decide: retry the
+subagent with more context, escalate to a stronger model, or take it
+back to the parent turn.
+
+## Step 5a: /save between phases (auto-enforced)
+
+After every completed phase, run the exocortex `/save` command before
+starting the next phase. No exceptions.
+
+This is enforced by a `subagentStop` hook at
+`~/.cursor/hooks/auto-save-phase.sh`. When a phase subagent stops, the
+hook injects a follow-up message instructing the parent agent to run
+`/save`. For the hook to fire, the subagent's `description` argument
+to the `Task` tool MUST follow one of these conventions:
+
+- `"Phase N: <short name>"` (canonical, e.g. `"Phase 2: scaffold alerts library"`)
+- `"phase-N-<short-name>"` (kebab-case, e.g. `"phase-2-scaffold-alerts"`)
+
+If the subagent description doesn't include a phase marker, the hook
+silently does nothing — useful for non-phase subagents (quick lookups,
+explore agents, browser automation) that don't warrant a checkpoint.
+
+The save event should name the phase explicitly in its header, e.g.
+`"Phase checkpoint — Phase 2: alerts library shipped"`. The hook's
+follow-up message will already include this format.
+
+If the save itself fails (vault sync down, etc.), continue with the
+next phase but flag it in the running summary; the local event file
+will still be created and nightly cron will retry the vault push.
+
+For phases the parent agent (Opus) executes directly without a
+subagent, the hook can't fire, so the parent must `/save` manually
+before moving on. The rule still applies; the hook is just a safety
+net for the delegation path.
+
+## Step 5b: /save model routing (hybrid)
+
+`/save` is expensive on Opus because Step 1 (drafting the event body)
+does conversation-pattern reflection. For auto-fired phase saves, use
+the hybrid pattern below. For manual saves, daily-end, weekly-review,
+and monthly-review, keep them on the parent (those are high-value
+reflection events; pay full price for full quality).
+
+### Hybrid /save pattern (auto-fired phase saves only)
+
+1. Parent writes a brief 1-2 line "checkpointing X" line so the user
+   sees what is being saved (`show_collapsed` mode). Example:
+   `"Checkpointing Phase 2: alerts library (4 files added, 1 commit, smoke tests green). Drafting event via subagent."`
+
+2. Parent spawns a Task subagent for the LLM-heavy event drafting:
+   ```
+   Task(
+     model="claude-4.5-haiku-thinking",
+     description="phase-save-format",
+     prompt="""
+       Phase summary: <the 5-bullet inline summary the parent already
+       holds in working memory>
+
+       Read these for style and context:
+       - git status --porcelain
+       - git log --since='6 hours ago' --format='%h %s'
+       - the 3 most recent files in .exocortex/events/
+
+       Write the full save event to /tmp/save_event.md using the format
+       in .exocortex/commands/save.json step 1 (Phase checkpoint header,
+       What was accomplished, Decisions made, Code state, What's next,
+       Conversation patterns). Be specific. Quote real file paths and
+       symbol names from the summary.
+
+       Do NOT include any metadata block (no `<!-- Event Metadata -->`,
+       no timestamp/machine/editor/branch fields). create_event.sh adds
+       that block automatically — including one yourself causes duplication.
+     """,
+   )
+   ```
+
+3. Parent runs the shell steps of save.json (`create_event.sh`,
+   `sync_event_to_vault.sh`) directly — those are not LLM work, no
+   delegation needed.
+
+4. Parent confirms briefly to the user.
+
+Notably this subagent description does NOT match the phase regex
+(it is `phase-save-format`, not `phase-N-something`), so the
+auto-save hook will not re-fire when this subagent stops. No loop.
+
+### When to bypass the hybrid (use parent for the full /save)
+
+- Manual `/save` requested by the user (they're paying attention).
+- `/daily-end`, `/weekly-review`, `/monthly-review` (reflection-heavy).
+- The phase being saved involved cross-file architectural decisions
+  the haiku-tier model would not capture well.
+- The user has explicitly said "use Opus for the save".
+
+## Step 6: End-of-plan summary
+
+After the final phase, the parent (Opus) writes one summary covering:
+
+- Each phase, the model it ran on, and the result.
+- Any escalations from cheap to expensive models, with the reason.
+- Total subagent count and a rough cost-tier estimate (3 cheap + 1
+  Opus review beats "all Opus").
+
+This trains the next planning round: if a phase consistently needed
+escalation, raise its default model in the routing table.
+
+## When to ignore this rule
+
+- Single-file tweaks or one-line fixes.
+- Pure Q&A about existing code.
+- The user explicitly says "just do it" or "no plan needed".
+- A genuine emergency (production down, security incident) where
+  speed beats efficiency.

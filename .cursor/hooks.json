@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "hooks": {
+    "subagentStop": [
+      {
+        "command": "./hooks/auto-save-phase.sh",
+        "loop_limit": 1,
+        "timeout": 5
+      }
+    ]
+  }
+}
