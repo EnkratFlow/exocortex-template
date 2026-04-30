@@ -144,14 +144,15 @@
 ### `/save` - Save Work State
 **Purpose:** Quick memory checkpoint without closing session  
 **When:** Before breaks, mid-day checkpoints, interruptions, context switches  
-**Writes:** `.exocortex/SESSION_CONTEXT.md` (🟢 RIGHT NOW section), optionally `.exocortex/docs/LESSONS.md`
+**Writes:** `.exocortex/events/*.md`; regenerates `.exocortex/SESSION_CONTEXT.md`
 
 **Process:**
-1. Detects current state (last commits, uncommitted changes, current file)
-2. Asks: "In one sentence, what's your current focus right now?"
-3. Optional: Captures quick lesson learned (one-liner)
-4. Proposes update to RIGHT NOW section
-5. Writes if approved
+1. Reads the current conversation context and gathers git state
+2. Drafts a rich phase checkpoint event without asking extra questions
+3. Writes the event body to `/tmp/save_event.md`
+4. Runs `.exocortex/scripts/create_event.sh --body-file /tmp/save_event.md`
+5. Regenerates `SESSION_CONTEXT.md` from recent events
+6. Optionally syncs the event to the vault/RAG path when configured
 
 **Next Step:** Run `/work` when you return
 
@@ -355,4 +356,3 @@ All snippets are stored in:
 ---
 
 **End of Snippets Reference**
-

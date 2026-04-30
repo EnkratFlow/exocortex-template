@@ -407,6 +407,32 @@ test_13_template_does_not_ship_live_session_data() {
     end_test
 }
 
+test_14_save_surfaces_do_not_use_legacy_prompt() {
+    begin_test "T14: save docs and bridges do not use legacy prompt flow"
+
+    local files=(
+        "$TEMPLATE_DIR/.exocortex/control/SNIPPETS.md"
+        "$TEMPLATE_DIR/.exocortex/docs/EVENT_SYSTEM_USAGE.md"
+        "$TEMPLATE_DIR/.claude/skills/save/SKILL.md"
+        "$TEMPLATE_DIR/.cursor/commands/save.md"
+        "$TEMPLATE_DIR/.exocortex/commands/save.json"
+    )
+
+    local file
+    for file in "${files[@]}"; do
+        assert_file_exists "save surface exists: ${file#$TEMPLATE_DIR/}" "$file"
+        assert_file_not_contains "no 'Ask ONE question' in ${file#$TEMPLATE_DIR/}" "$file" "Ask ONE question"
+        assert_file_not_contains "no legacy focus prompt in ${file#$TEMPLATE_DIR/}" "$file" "focus right now"
+        assert_file_not_contains "no quick lesson prompt in ${file#$TEMPLATE_DIR/}" "$file" "Any quick lesson"
+    done
+
+    assert_file_contains "save command remains autonomous" \
+        "$TEMPLATE_DIR/.exocortex/commands/save.json" \
+        "Do NOT ask the user any questions"
+
+    end_test
+}
+
 # ──────────────────────────────────────────────────────────────────────────────
 # Runner
 # ──────────────────────────────────────────────────────────────────────────────
@@ -424,6 +450,7 @@ test_10_hook_user_modified_preserved
 test_11_ai_export_is_project_generic
 test_12_data_plane_not_manifest_tracked
 test_13_template_does_not_ship_live_session_data
+test_14_save_surfaces_do_not_use_legacy_prompt
 
 echo ""
 echo "══════════════════════════════════════════════════════"

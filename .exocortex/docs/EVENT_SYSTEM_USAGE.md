@@ -46,12 +46,11 @@ The overwrite problem is **SOLVED**. You can now use VS Code and Cursor simultan
 /save
 ```
 
-**You'll be asked:**
-1. "In one sentence, what's your current focus right now?"
-   - Answer: e.g., "Working on circuit breaker testing"
-
-2. "Any quick lesson learned?" (optional)
-   - Answer: "yes" or "no"
+**Current behavior:**
+- Reads the current conversation context
+- Gathers git state automatically
+- Drafts a rich phase checkpoint event without asking extra questions
+- Runs the canonical `.exocortex/commands/save.json` steps
 
 **What happens:**
 - ✅ Creates event file: `.exocortex/events/YYYY-MM-DD_HH-MM-SS_machine-editor.md`

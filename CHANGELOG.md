@@ -4,6 +4,17 @@ All notable changes to this project will be documented here.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.1.3] - 2026-04-30
+
+### Fixed
+- **Save bridge cleanup** - removed the legacy "ask one question" save flow from the Claude save bridge. The bridge now delegates to `.exocortex/commands/save.json`, keeping the JSON command as the source of truth.
+- **Save documentation cleanup** - updated `SNIPPETS.md` and `EVENT_SYSTEM_USAGE.md` so they describe the current autonomous event-based `/save` flow.
+
+### Tests
+- Added a regression test that fails if active save docs or bridge files reintroduce the legacy focus prompt.
+
+[3.1.3]: https://github.com/EnkratFlow/exocortex-template/releases/tag/v3.1.3
+
 ## [3.1.2] — 2026-04-30
 
 ### Fixed
