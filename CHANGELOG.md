@@ -4,6 +4,17 @@ All notable changes to this project will be documented here.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.1.4] - 2026-04-30
+
+### Added
+- **Other IDE adapter guidance** - added `.exocortex/docs/IDE_INTEGRATION_GUIDE.md` with a universal adapter prompt for Codex, Zed, VS Code, Cursor, Claude, Windsurf, and unknown AI-capable editors.
+- **Installer onboarding output** - `install.sh` now prints the practical other-IDE setup instructions directly in the terminal instead of only pointing users to documentation.
+
+### Tests
+- Added coverage proving the IDE guide exists, installs into fresh projects, and the installer prints the copy-paste adapter prompt.
+
+[3.1.4]: https://github.com/EnkratFlow/exocortex-template/releases/tag/v3.1.4
+
 ## [3.1.3] - 2026-04-30
 
 ### Fixed

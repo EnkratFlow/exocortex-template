@@ -1,16 +1,12 @@
-# What's New in 3.1.3
+# What's New in 3.1.4
 
-This release removes the last legacy `/save` prompt wording from the template's active command surfaces.
+This release makes Exocortex easier to use from editors we do not know about yet.
 
 What changed:
 
-- `.claude/skills/save/SKILL.md` is now a thin bridge into `.exocortex/commands/save.json`
-- `.exocortex/control/SNIPPETS.md` describes the current event-based `/save`
-- `.exocortex/docs/EVENT_SYSTEM_USAGE.md` no longer says `/save` asks for a focus sentence
-- The test suite now checks that the old save prompt cannot return
+- Added `.exocortex/docs/IDE_INTEGRATION_GUIDE.md`
+- Added a universal adapter prompt for Codex, Zed, VS Code, Cursor, Claude, Windsurf, and unknown AI editors
+- `install.sh` now prints the useful other-IDE setup instructions directly in the terminal
+- Added tests so the guide is installed and the terminal instructions stay visible
 
-To update an existing install, run this from the project root:
-
-```bash
-curl -sL https://raw.githubusercontent.com/EnkratFlow/exocortex-template/main/install.sh | bash
-```
+The key rule is simple: IDE adapters stay thin, and `.exocortex/commands/*.json` remains the source of truth.

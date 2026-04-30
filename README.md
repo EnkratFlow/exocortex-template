@@ -135,6 +135,8 @@ For non-Cursor editors, thin pointer files are created in your project during in
 
 All point to `.exocortex/AI_BOOTSTRAP.md` as the single source of truth.
 
+For any other AI-capable editor or IDE, the installer prints a copy-paste adapter prompt. The full reference is saved at `.exocortex/docs/IDE_INTEGRATION_GUIDE.md`.
+
 ---
 
 ## Upgrading

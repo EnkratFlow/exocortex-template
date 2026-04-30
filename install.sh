@@ -585,6 +585,32 @@ if [ -f "$_EXOCORTEX_TMP/exocortex-template/WHATSNEW.md" ]; then
     echo ""
 fi
 
+cat <<'EOF'
+🧩 Other IDE / LLM setup
+────────────────────────
+If your editor is not listed, add this instruction to whatever system prompt,
+rules file, project instruction file, command snippet, custom mode, or agent
+memory your IDE supports:
+
+When the user types an Exocortex command like /work, /save, /ai-export, work,
+save, or ai-export:
+
+1. Read .exocortex/AI_BOOTSTRAP.md first.
+2. Find .exocortex/commands/{command}.json.
+3. Execute the JSON steps in order.
+4. The JSON command is the source of truth if any instruction conflicts.
+5. Do not invent extra prompts or duplicate command behavior in the adapter.
+6. Never read, print, log, echo, or expose secret values.
+7. In a multi-root workspace, identify the target repo before running shell steps.
+
+If slash commands are not supported, use this in the AI chat:
+
+Read .exocortex/AI_BOOTSTRAP.md, then run the Exocortex command /work.
+
+Full adapter examples:
+.exocortex/docs/IDE_INTEGRATION_GUIDE.md
+EOF
+
 echo "  Commands in Cursor or VS Code:"
 echo "    /work      — Load context, see what to work on"
 echo "    /save      — Save your progress"

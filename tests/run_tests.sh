@@ -433,6 +433,35 @@ test_14_save_surfaces_do_not_use_legacy_prompt() {
     end_test
 }
 
+test_15_other_ide_adapter_guidance_installed_and_printed() {
+    begin_test "T15: other IDE adapter guidance is installed and printed"
+
+    local guide="$TEMPLATE_DIR/.exocortex/docs/IDE_INTEGRATION_GUIDE.md"
+
+    assert_file_exists "IDE integration guide exists" "$guide"
+    assert_file_contains "guide names Universal Adapter Prompt" "$guide" "Universal Adapter Prompt"
+    assert_file_contains "guide points to AI_BOOTSTRAP" "$guide" ".exocortex/AI_BOOTSTRAP.md"
+    assert_file_contains "guide points to command JSON" "$guide" ".exocortex/commands/{command}.json"
+    assert_file_contains "guide says JSON is source of truth" "$guide" "source of truth"
+    assert_file_contains "guide includes Codex adapter location" "$guide" ".agents/skills"
+    assert_file_contains "guide includes Zed or another AI editor" "$guide" "Zed or another AI editor"
+
+    assert_file_contains "installer prints other IDE setup heading" "$TEMPLATE_DIR/install.sh" "Other IDE / LLM setup"
+    assert_file_contains "installer prints copy-paste adapter prompt" "$TEMPLATE_DIR/install.sh" "add this instruction to whatever system prompt"
+    assert_file_contains "installer prints fallback chat prompt" "$TEMPLATE_DIR/install.sh" "Read .exocortex/AI_BOOTSTRAP.md, then run the Exocortex command /work."
+    assert_file_contains "installer references guide path" "$TEMPLATE_DIR/install.sh" ".exocortex/docs/IDE_INTEGRATION_GUIDE.md"
+
+    local dir
+    dir=$(make_fresh_project)
+    run_install "$dir"
+
+    assert_file_exists "IDE guide installed" "$dir/.exocortex/docs/IDE_INTEGRATION_GUIDE.md"
+    assert_file_contains "installed guide keeps adapter prompt" "$dir/.exocortex/docs/IDE_INTEGRATION_GUIDE.md" "Universal Adapter Prompt"
+
+    rm -rf "$dir"
+    end_test
+}
+
 # ──────────────────────────────────────────────────────────────────────────────
 # Runner
 # ──────────────────────────────────────────────────────────────────────────────
@@ -451,6 +480,7 @@ test_11_ai_export_is_project_generic
 test_12_data_plane_not_manifest_tracked
 test_13_template_does_not_ship_live_session_data
 test_14_save_surfaces_do_not_use_legacy_prompt
+test_15_other_ide_adapter_guidance_installed_and_printed
 
 echo ""
 echo "══════════════════════════════════════════════════════"
