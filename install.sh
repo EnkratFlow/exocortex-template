@@ -87,6 +87,32 @@ file_hash() {
     shasum -a 256 "$1" 2>/dev/null | awk '{print $1}'
 }
 
+is_exocortex_data_path() {
+    local target="$1"
+    local rel="$2"
+
+    # Only apply data-plane exclusions when merging the .exocortex tree.
+    case "$target" in
+        .exocortex|*/.exocortex) ;;
+        *) return 1 ;;
+    esac
+
+    case "$rel" in
+        SESSION_CONTEXT.md|TODO.md|LESSONS.md|PROJECT_MEMORY.md|OPEN_DECISIONS.md|subconscious_patterns.md|.env|.hub_enabled|.hub_disabled|.install-manifest)
+            return 0
+            ;;
+        events/*|archive/*|hub/*|planning/*|local/*)
+            return 0
+            ;;
+        control/INTERRUPTS.md|control/BACKLOG.md|control/ROADMAP.md|control/ARCH_OVERVIEW.md|control/REPO_ORGANIZATION_REPORT.md)
+            return 0
+            ;;
+        *)
+            return 1
+            ;;
+    esac
+}
+
 # ── Helper: look up installed hash from manifest ─────────────────────
 # Uses awk for literal string matching (no regex issues with file paths)
 manifest_get() {
@@ -118,6 +144,14 @@ safe_copy_dir() {
         local rel="${src_file#$src/}"
         local target_file="$target/$rel"
         mkdir -p "$(dirname "$target_file")"
+
+        if is_exocortex_data_path "$target" "$rel"; then
+            # Data-plane files are user/project state. They are created as blank
+            # stubs when missing, but never copied from the public template and
+            # never manifest-tracked.
+            n_skip=$((n_skip + 1))
+            continue
+        fi
 
         local src_hash
         src_hash=$(file_hash "$src_file")
@@ -204,6 +238,79 @@ safe_copy_file() {
     fi
 }
 
+ensure_exocortex_data_stubs() {
+    mkdir -p ".exocortex/events" ".exocortex/control"
+
+    if [ ! -f ".exocortex/SESSION_CONTEXT.md" ]; then
+        cat > ".exocortex/SESSION_CONTEXT.md" << 'EOF_SESSION'
+# Session Context
+
+## RIGHT NOW
+
+_No active session context yet. Run /work or /save to populate this file._
+EOF_SESSION
+    fi
+
+    if [ ! -f ".exocortex/TODO.md" ]; then
+        cat > ".exocortex/TODO.md" << 'EOF_TODO'
+# TODO
+
+## Ready
+
+_No tasks captured yet._
+EOF_TODO
+    fi
+
+    if [ ! -f ".exocortex/LESSONS.md" ]; then
+        cat > ".exocortex/LESSONS.md" << 'EOF_LESSONS'
+# Lessons
+
+_No lessons captured yet._
+EOF_LESSONS
+    fi
+
+    if [ ! -f ".exocortex/PROJECT_MEMORY.md" ]; then
+        cat > ".exocortex/PROJECT_MEMORY.md" << 'EOF_MEMORY'
+# Project Memory
+
+_No project-specific memory captured yet._
+EOF_MEMORY
+    fi
+
+    if [ ! -f ".exocortex/control/INTERRUPTS.md" ]; then
+        cat > ".exocortex/control/INTERRUPTS.md" << 'EOF_INTERRUPTS'
+# Interrupts
+
+> Capture lane - things that come up while working on something else.
+> Run /groom periodically to move items to BACKLOG or TODO.
+
+_No interrupts captured yet._
+EOF_INTERRUPTS
+    fi
+
+    if [ ! -f ".exocortex/control/BACKLOG.md" ]; then
+        cat > ".exocortex/control/BACKLOG.md" << 'EOF_BACKLOG'
+# Backlog
+
+> Items under investigation. Moved here from INTERRUPTS after grooming.
+> Run /refine-backlog to promote items to TODO.
+
+_No backlog items yet._
+EOF_BACKLOG
+    fi
+
+    if [ ! -f ".exocortex/control/ROADMAP.md" ]; then
+        cat > ".exocortex/control/ROADMAP.md" << 'EOF_ROADMAP'
+# Roadmap
+
+> Strategic planning for this project.
+> Updated periodically during reviews.
+
+_No roadmap defined yet._
+EOF_ROADMAP
+    fi
+}
+
 echo "📦 Downloading exocortex template..."
 if [ -n "${EXOCORTEX_LOCAL_SOURCE:-}" ]; then
     if [ ! -d "$EXOCORTEX_LOCAL_SOURCE" ]; then
@@ -283,6 +390,7 @@ echo "📁 Installing to $(pwd)/"
 # Merge .exocortex/ — system files (commands, scripts, docs, bootstrap) update;
 # user data (memory, todos, sessions, lessons) is never overwritten
 safe_copy_dir "$_EXOCORTEX_TMP/exocortex-template/.exocortex" ".exocortex" ".exocortex/"
+ensure_exocortex_data_stubs
 
 # Track installed version
 if [ -f "$_EXOCORTEX_TMP/exocortex-template/VERSION" ]; then

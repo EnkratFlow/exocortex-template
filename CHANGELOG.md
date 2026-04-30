@@ -4,6 +4,24 @@ All notable changes to this project will be documented here.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.1.2] — 2026-04-30
+
+### Fixed
+- **`/ai-export` is now project-generic** — removed Trading Journal-specific file names from `.exocortex/commands/ai-export.json`. The command now discovers the current project structure and exports evidence-backed architecture from files that actually exist in the installed repo.
+- **Installer data-plane boundary hardened** — `install.sh` no longer copies or manifest-tracks project memory/state files from the public template. Existing user data remains untouched, and fresh installs receive blank local stubs where needed.
+- **Public template data cleaned** — removed live template session context and release checkpoint events from the public install surface; only the example event remains.
+
+### Security
+- **User data preservation is now enforced by tests** — added coverage proving Exocortex data-plane files are not tracked in `.exocortex/.install-manifest`, reducing the risk that future template updates overwrite local memory, events, todos, lessons, or project state.
+- **Template privacy guard added** — added coverage that prevents live session context or real event markdown files from shipping in the public template.
+
+### Upgrade Notes
+- If you installed a version where `/ai-export` mentioned Trading Journal files, rerun the installer from your project root after this release:
+  `curl -sL https://raw.githubusercontent.com/EnkratFlow/exocortex-template/main/install.sh | bash`
+- The update preserves user-modified files and never overwrites `.exocortex/events/`, `.exocortex/SESSION_CONTEXT.md`, `.exocortex/TODO.md`, `.exocortex/LESSONS.md`, or `.exocortex/PROJECT_MEMORY.md`.
+
+[3.1.2]: https://github.com/EnkratFlow/exocortex-template/releases/tag/v3.1.2
+
 ## [3.1.1] — 2026-04-22
 
 ### Added

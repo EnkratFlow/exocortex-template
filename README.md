@@ -59,6 +59,7 @@ bash ~/EnkratFlow/exocortex-template/install.sh "my-new-project"
   - File modified by you since install → **preserve your version, never overwrite**
   - File not in manifest (new user-created file) → skip
 - **User data files always preserved:** `PROJECT_MEMORY.md`, `LESSONS.md`, `TODO.md`, `SESSION_CONTEXT.md`, and everything under `events/` are hardcoded as untouchable regardless of manifest state.
+- **Template update standard:** code-plane files may update; data-plane files are never copied from the public template and are never tracked in `.exocortex/.install-manifest`.
 
 ---
 
@@ -466,6 +467,17 @@ curl -sL https://raw.githubusercontent.com/EnkratFlow/exocortex-template/main/in
 ```
 
 After install, you'll see the version transition and the `WHATSNEW.md` blurb for that release.
+
+### If you installed the affected `/ai-export`
+
+Some earlier template installs shipped an `/ai-export` command that mentioned Trading Journal-specific files. Update from your project root to receive the fixed project-generic command:
+
+```bash
+cd /path/to/your-project
+curl -sL https://raw.githubusercontent.com/EnkratFlow/exocortex-template/main/install.sh | bash
+```
+
+This update does not overwrite your Exocortex memory or project state. The installer preserves `.exocortex/events/`, `.exocortex/SESSION_CONTEXT.md`, `.exocortex/TODO.md`, `.exocortex/LESSONS.md`, `.exocortex/PROJECT_MEMORY.md`, `.exocortex/.env`, and any user-modified system files.
 
 ### Update many projects at once
 

@@ -1,11 +1,11 @@
 {
   "name": "/ai-export",
-  "description": "Generate comprehensive system understanding document from actual code (not planning docs)",
+  "description": "Generate a comprehensive system understanding document from the current project",
   "steps": [
     {
       "type": "ai",
-      "action": "Read actual code and generate AI export document",
-      "context": "Read core engine files: scenarioRegistry.ts, messageResolver.ts, technicalCoaching.ts, tradeLogic.ts, ConsoleCard.tsx, TechnicalGate.tsx, trade.ts types. Run test list. Read PROJECT_MEMORY.md, LESSONS.md, design system HTML. Build 7-section document: 1) System Overview, 2) Architecture, 3) Component Responsibilities (with actual code snippets), 4) Data Flow (actual execution paths), 5) QA Strategy (real test counts), 6) Constraints & Invariants, 7) Risks & Gaps. Must read actual code, not planning docs. Write to AI_EXPORT_v{N}.md with changelog, confidence assessment, and validation date."
+      "action": "Discover the current project and generate an AI export document",
+      "context": "Generate an external-AI handoff for the project that contains this .exocortex directory. First identify the project root, repository type, primary languages/frameworks, package/build files, entrypoints, source directories, tests, docs, and Exocortex memory files that exist in this project. Read actual project files; do not assume app-specific filenames, frameworks, domains, or architecture. Prefer source-of-truth files such as README files, package manifests, pyproject.toml, Cargo.toml, go.mod, composer.json, src/, app/, lib/, tests/, docs/, .exocortex/PROJECT_MEMORY.md, .exocortex/LESSONS.md, and .exocortex/control/ARCH_OVERVIEW.md when present. Do not read secrets or expose secret values; avoid .env files and credential stores. Build a 7-section markdown document: 1) System Overview, 2) Architecture, 3) Component Responsibilities with brief evidence-backed file references, 4) Data Flow and execution paths, 5) QA Strategy with real test commands/counts when discoverable, 6) Constraints & Invariants from code/docs/memory, 7) Risks, Gaps, and Unknowns. If evidence is missing, say so clearly instead of guessing. Write to AI_EXPORT_v{N}.md with changelog, confidence assessment, validation date, and a short list of files inspected."
     }
   ]
 }

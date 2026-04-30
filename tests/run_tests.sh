@@ -347,6 +347,66 @@ test_10_hook_user_modified_preserved() {
     end_test
 }
 
+test_11_ai_export_is_project_generic() {
+    begin_test "T11: ai-export command is project-generic"
+
+    local cmd="$TEMPLATE_DIR/.exocortex/commands/ai-export.json"
+
+    assert_file_exists       "ai-export command exists" "$cmd"
+    assert_file_contains     "ai-export discovers current project" "$cmd" "current project"
+    assert_file_not_contains "no scenarioRegistry trading leak" "$cmd" "scenarioRegistry"
+    assert_file_not_contains "no messageResolver trading leak" "$cmd" "messageResolver"
+    assert_file_not_contains "no technicalCoaching trading leak" "$cmd" "technicalCoaching"
+    assert_file_not_contains "no tradeLogic trading leak" "$cmd" "tradeLogic"
+    assert_file_not_contains "no ConsoleCard trading leak" "$cmd" "ConsoleCard"
+    assert_file_not_contains "no TechnicalGate trading leak" "$cmd" "TechnicalGate"
+
+    end_test
+}
+
+test_12_data_plane_not_manifest_tracked() {
+    begin_test "T12: data-plane files are never install-manifest tracked"
+
+    local dir
+    dir=$(make_fresh_project)
+    run_install "$dir"
+
+    assert_file_exists "SESSION_CONTEXT.md stub created" "$dir/.exocortex/SESSION_CONTEXT.md"
+    assert_file_exists "TODO.md stub created" "$dir/.exocortex/TODO.md"
+    assert_file_exists "LESSONS.md stub created" "$dir/.exocortex/LESSONS.md"
+    assert_file_exists "PROJECT_MEMORY.md stub created" "$dir/.exocortex/PROJECT_MEMORY.md"
+    assert_file_exists "events dir created" "$dir/.exocortex/events"
+
+    assert_manifest_missing_pattern "SESSION_CONTEXT.md not manifest-tracked" "$dir" ".exocortex/SESSION_CONTEXT.md"
+    assert_manifest_missing_pattern "TODO.md not manifest-tracked" "$dir" ".exocortex/TODO.md"
+    assert_manifest_missing_pattern "LESSONS.md not manifest-tracked" "$dir" ".exocortex/LESSONS.md"
+    assert_manifest_missing_pattern "PROJECT_MEMORY.md not manifest-tracked" "$dir" ".exocortex/PROJECT_MEMORY.md"
+    assert_manifest_missing_pattern "events directory not manifest-tracked" "$dir" ".exocortex/events/"
+    assert_manifest_missing_pattern "control backlog not manifest-tracked" "$dir" ".exocortex/control/BACKLOG.md"
+
+    rm -rf "$dir"
+    end_test
+}
+
+test_13_template_does_not_ship_live_session_data() {
+    begin_test "T13: public template does not ship live session memory"
+
+    assert_file_missing "template source has no live SESSION_CONTEXT.md" "$TEMPLATE_DIR/.exocortex/SESSION_CONTEXT.md"
+
+    local live_events
+    live_events=$(find "$TEMPLATE_DIR/.exocortex/events" -type f -name "*.md" ! -name "2000-01-01_00-00-00_example-event.md" 2>/dev/null | sort)
+    if [ -z "$live_events" ]; then
+        echo "    ✅ no live event markdown files in template"
+        TEST_PASS=$((TEST_PASS+1))
+    else
+        echo "    ❌ live event markdown files found in template:"
+        printf '       %s\n' $live_events
+        TEST_FAIL=$((TEST_FAIL+1))
+    fi
+
+    end_test
+}
+
 # ──────────────────────────────────────────────────────────────────────────────
 # Runner
 # ──────────────────────────────────────────────────────────────────────────────
@@ -361,6 +421,9 @@ test_07_events_preserved
 test_08_events_not_in_manifest
 test_09_hooks_installed_and_executable
 test_10_hook_user_modified_preserved
+test_11_ai_export_is_project_generic
+test_12_data_plane_not_manifest_tracked
+test_13_template_does_not_ship_live_session_data
 
 echo ""
 echo "══════════════════════════════════════════════════════"
