@@ -1,4 +1,19 @@
-# What's New in 3.1.5
+# What's New in 3.1.6
+
+This release cleans up public documentation so it matches the current template.
+
+What changed:
+
+- Updated README command counts, test counts, backlog flow, and editor support notes
+- Clarified that Codex works today through the universal adapter prompt, while native `.agents/skills/*` bridges are planned
+- Updated the command system reference to describe all 23 commands and the editor-neutral JSON command protocol
+- Added a regression test that catches stale README claims about command counts, test counts, Codex, and unknown IDE setup
+
+This is a documentation-only release. It does not add native Codex bridge files yet.
+
+---
+
+# Previous: 3.1.5
 
 This release softens the plan-orchestrate branch and testing guidance so it works better as a public template default.
 

@@ -4,6 +4,8 @@
 
 > A portable memory system for developers and AI assistants that never forgets context.
 
+**Current template version:** 3.1.6
+
 ## What is This?
 
 The **Exocortex** is an external memory system for your development projects. It helps you (and AI coding assistants) maintain context, track decisions, capture lessons, and manage daily work -- across sessions, machines, and editors.
@@ -65,13 +67,13 @@ bash ~/EnkratFlow/exocortex-template/install.sh "my-new-project"
 
 ## Cursor Setup (One-Time, Cursor Users Only)
 
-This section is only relevant if you use Cursor. Skip it entirely if you use VS Code + Copilot, Claude Code, or Windsurf — those editors pick up the pointer files installed above automatically.
+This section is only relevant if you use Cursor. Skip it entirely if you use VS Code + Copilot, Claude Code, Codex, Windsurf, Zed, or another AI-capable editor. Those editors use the pointer files or the universal adapter prompt described below.
 
 Cursor uses **user rules** and **global skills** instead of per-project files. You need to do **both steps below once** — the skills give the AI domain expertise, and the user rules tell it to follow the exocortex command protocol. Without the user rules, the AI won't know what `/work`, `/save`, or any other command means, even if the skills are installed.
 
 ### 1. Install Specialist Skills
 
-The exocortex includes 16 specialist skills (devops, architect, ux-designer, etc.) that give the AI domain expertise when you need it.
+The exocortex includes 17 specialist skills (devops, architect, ux-designer, etc.) that give the AI domain expertise when you need it.
 
 ```bash
 # Clone the template (if you haven't already)
@@ -135,7 +137,11 @@ For non-Cursor editors, thin pointer files are created in your project during in
 
 All point to `.exocortex/AI_BOOTSTRAP.md` as the single source of truth.
 
-For any other AI-capable editor or IDE, the installer prints a copy-paste adapter prompt. The full reference is saved at `.exocortex/docs/IDE_INTEGRATION_GUIDE.md`.
+For Codex, Zed, or any other AI-capable editor/IDE, the installer prints a copy-paste adapter prompt. Add that prompt to the editor's project instructions, agent rules, system prompt, command snippet, custom mode, or memory file.
+
+The full reference is saved at `.exocortex/docs/IDE_INTEGRATION_GUIDE.md`.
+
+**Current Codex support:** Exocortex works in Codex through the universal adapter prompt. Native `.agents/skills/*` bridge files are planned, but are not installed by this template yet.
 
 ---
 
@@ -182,7 +188,7 @@ CLAUDE.md                                 <-- Thin pointer (Claude Code auto-loa
   |-- LESSONS.md                          <-- Lessons learned
   |-- OPEN_DECISIONS.md                   <-- Unresolved decisions
   |-- .install-manifest                   <-- SHA-256 hashes of installed files (safe to commit)
-  |-- commands/                           <-- 20 JSON command specs
+  |-- commands/                           <-- 23 JSON command specs
   |-- control/                            <-- Project control center
   |-- docs/                               <-- System documentation
   |-- events/                             <-- Append-only work events
@@ -205,7 +211,7 @@ CLAUDE.md                                 <-- Thin pointer (Claude Code auto-loa
 **Cursor-specific (global, installed separately):**
 
 ```
-~/.cursor/skills/                         <-- 17 specialist skills (global)
+~/.cursor/skills/                         <-- 17 specialist skills + roster guide (global)
   |-- roster/SKILL.md                     <-- Skill selection guide
   |-- onboard/SKILL.md                    <-- Codebase onboarding
   |-- devops/SKILL.md                     <-- Docker, CI/CD, VPS, nginx
@@ -234,7 +240,7 @@ During fresh install, `install.sh` asks whether to also copy these files to `~/.
 
 ---
 
-## 20 Workflow Commands
+## 23 Workflow Commands
 
 ### Daily
 | Command | Purpose |
@@ -263,6 +269,7 @@ During fresh install, `install.sh` asks whether to also copy these files to `~/.
 | `/prioritize` | Reorder TODO |
 | `/weekly-review` | Weekly planning |
 | `/monthly-review` | Monthly strategic review |
+| `/pattern-review` | Turn recurring friction into skills or memory updates |
 
 ### System
 | Command | Purpose |
@@ -272,6 +279,7 @@ During fresh install, `install.sh` asks whether to also copy these files to `~/.
 | `/ai-export` | Generate system doc |
 | `/ecosystem` | Cross-project view |
 | `/init-exocortex` | Bootstrap new project |
+| `/check-keys` | Validate API key status without exposing values |
 
 ### Codebase Onboarding
 
@@ -316,6 +324,17 @@ Memory scripts use OpenAI (primary) with Anthropic fallback. API keys are loaded
 - `/refine-backlog` -- promote ready items
 - `/prioritize` -- reorder TODO
 
+### Backlog Flow
+
+Exocortex separates ideas from executable work:
+
+1. `INTERRUPTS.md` captures ideas, distractions, and observations while you keep working.
+2. `/groom` reviews interrupts and moves useful investigation items into `control/BACKLOG.md`.
+3. `/refine-backlog` turns ready backlog items into executable tasks in `TODO.md`.
+4. `/prioritize` orders `TODO.md` by strategic importance.
+
+This keeps random thoughts from becoming work automatically.
+
 ---
 
 ## After Installation
@@ -339,7 +358,7 @@ cd exocortex-template
 bash tests/run_tests.sh
 ```
 
-Expected output: `8 passed, 0 failed` with 49 assertions covering:
+Expected output: `ALL 17 TESTS PASSED` covering:
 
 | Test | What it verifies |
 |------|-----------------|
@@ -351,6 +370,15 @@ Expected output: `8 passed, 0 failed` with 49 assertions covering:
 | T06 critical data files | SESSION\_CONTEXT, TODO, LESSONS, PROJECT\_MEMORY untouched |
 | T07 events preserved | Event files byte-for-byte identical after update |
 | T08 events not in manifest | Event files never added to the hash manifest |
+| T09 hooks installed | Cursor hook files are copied and executable |
+| T10 hook user-modified preserved | User-edited hook scripts are not overwritten |
+| T11 ai-export generic | `/ai-export` has no app-specific Trading Journal leak |
+| T12 data-plane boundary | Memory/state files are never manifest-tracked |
+| T13 public template data | Public template does not ship live session memory |
+| T14 save surfaces | Save docs and bridges do not use legacy prompt flow |
+| T15 IDE guidance | Universal adapter guide is installed and printed |
+| T16 orchestration guidance | Branch/testing guidance stays public-safe |
+| T17 README accuracy | README does not drift on command/test/editor support claims |
 
 ### Pre-commit hook (contributor setup, one-time)
 
@@ -416,7 +444,7 @@ Get keys: [OpenAI](https://platform.openai.com/api-keys) · [Anthropic](https://
 - **bash** (macOS/Linux, Windows WSL works too)
 - **OpenAI or Anthropic API key** (optional, for AI memory features — see [API Key Setup](#api-key-setup))
 - **qmd** (optional, for cross-project context in `/work`) — if `qmd` is installed and on your PATH, `/work` automatically surfaces the top 3 related documents from your knowledge base. Silently skipped if not available.
-- **Works with:** Cursor, VS Code + Copilot, Claude Code, Windsurf, any AI that reads files
+- **Works with:** Cursor, VS Code + Copilot, Claude Code, Windsurf, Codex via universal adapter prompt, Zed/other AI editors via copied project instructions
 
 ---
 

@@ -485,6 +485,35 @@ test_16_plan_orchestrate_public_safe_branch_and_test_guidance() {
     end_test
 }
 
+test_17_readme_current_command_test_and_editor_claims() {
+    begin_test "T17: README command, test, backlog, and editor claims are current"
+
+    local readme="$TEMPLATE_DIR/README.md"
+    local command_system="$TEMPLATE_DIR/.exocortex/COMMAND_SYSTEM.md"
+
+    assert_file_contains "README names 23 workflow commands" "$readme" "23 Workflow Commands"
+    assert_file_contains "README includes pattern-review" "$readme" "/pattern-review"
+    assert_file_contains "README includes check-keys" "$readme" "/check-keys"
+    assert_file_contains "README explains backlog flow" "$readme" "INTERRUPTS.md"
+    assert_file_contains "README explains backlog promotion" "$readme" "control/BACKLOG.md"
+    assert_file_contains "README mentions Codex adapter reality" "$readme" "Codex through the universal adapter prompt"
+    assert_file_contains "README mentions unknown IDE setup" "$readme" "any other AI-capable editor/IDE"
+    assert_file_contains "README specialist skill count is current" "$readme" "17 specialist skills"
+    assert_file_contains "README test count is current" "$readme" "ALL 17 TESTS PASSED"
+
+    assert_file_not_contains "README has no old command count heading" "$readme" "20 Workflow Commands"
+    assert_file_not_contains "README has no old test output" "$readme" "8 passed, 0 failed"
+    assert_file_not_contains "README has no old skill count" "$readme" "16 specialist skills"
+
+    assert_file_contains "COMMAND_SYSTEM has current date" "$command_system" "May 2, 2026"
+    assert_file_contains "COMMAND_SYSTEM mentions editor-neutral source of truth" "$command_system" "editor-neutral"
+    assert_file_contains "COMMAND_SYSTEM mentions Codex limitation" "$command_system" "bridges are planned"
+    assert_file_contains "COMMAND_SYSTEM includes pattern-review" "$command_system" "/pattern-review"
+    assert_file_contains "COMMAND_SYSTEM includes check-keys" "$command_system" "/check-keys"
+
+    end_test
+}
+
 # ──────────────────────────────────────────────────────────────────────────────
 # Runner
 # ──────────────────────────────────────────────────────────────────────────────
@@ -505,6 +534,7 @@ test_13_template_does_not_ship_live_session_data
 test_14_save_surfaces_do_not_use_legacy_prompt
 test_15_other_ide_adapter_guidance_installed_and_printed
 test_16_plan_orchestrate_public_safe_branch_and_test_guidance
+test_17_readme_current_command_test_and_editor_claims
 
 echo ""
 echo "══════════════════════════════════════════════════════"
