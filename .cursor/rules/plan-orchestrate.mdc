@@ -199,6 +199,109 @@ auto-save hook will not re-fire when this subagent stops. No loop.
   the haiku-tier model would not capture well.
 - The user has explicitly said "use Opus for the save".
 
+## Step 5c: Branching and rollback guidance
+
+**Applies when:** the phase modifies code that ships to production or a
+shared environment (any code in `src/`, `workspace/scripts/`,
+`packages/*`, deploy configs, migrations, cron jobs, release scripts,
+public template files, etc.).
+
+**Skip when:** trivial edits — single-line fixes, comment-only edits,
+doc-only edits in `docs/` or `README*`, local notes in `.exocortex/`,
+fixture / test data tweaks, or any user-approved fast local change.
+These can stay on the current branch when that matches the user's
+workflow.
+
+### Recommended branch hierarchy
+
+```
+main                              ← stable; only sprint gates merge here
+  └── integration/<sprint-name>   ← phase merges land here for sprint integration testing
+        └── feature/<area>-<phase>   ← active phase work
+        └── fix/<area>-<short-desc>  ← active bug fix
+```
+
+For production or team work, prefer creating `integration/<sprint>`
+off `main` before the first code-shipping phase. For solo/local repos
+without remotes, protected branches, or release gates, the parent may
+use the current branch after stating that choice in the plan.
+
+### Branch rules
+
+| Guideline | Who decides |
+|---|---|
+| For production/team work, start each phase on `feature/<area>-<phase>` or `fix/<area>-<short-desc>` from `integration/<sprint>` | Parent includes this in subagent prompts |
+| If no integration branch exists and the repo is solo/local, state whether the phase uses `main`, current branch, or a new branch | Parent |
+| Commit and push from subagents only when the user/workflow has approved that behavior and a remote exists | Parent + subagent |
+| Subagents do not merge to integration or main | Parent + user handle merges |
+| Force-push is never routine; if considered, ask the user first | Parent |
+| Tag `main` after meaningful public sprint/release merges | Parent at release gate |
+
+### Rollback ladder (cheapest first)
+
+1. **Discard or abandon the phase branch before merge** — used when a
+   phase fails before integration.
+2. **`git revert` the merge commit on integration** — preserves history, undoes the change, keeps the phase branch alive for fixing.
+3. **`git revert` on `main`** — only when an integration-or-main bug ships. Tag the broken state first (`bad-<sprint>.<n>`) so post-mortem can find it.
+4. **Hard reset `main` to a tag** — `git reset --hard v<sprint>.<n>` then force-push. **Forbidden without explicit user approval.** Last resort.
+
+### Phase prompt addition (parent appends to subagent prompt)
+
+```
+**Branch discipline:**
+- For production/team code, start on `feature/<area>-<phase>` or `fix/<area>-<short-desc>`
+- If this is solo/local work, state whether you are using the current branch or a new branch
+- Commit/push only if the parent prompt explicitly asks you to and a remote exists
+- DO NOT merge to integration or main — parent + user handle that
+- DO NOT force-push unless explicitly told
+
+**Rollback awareness:**
+- If your phase fails or breaks something: STOP, report what failed, do NOT try to fix forward
+- Parent will decide: revert, fix in a follow-up phase, or abandon the branch
+```
+
+## Step 5d: Testing quality bar
+
+**Applies when:** the phase adds or changes code that ships to production. Same scope as Step 5c.
+
+**Skip when:** same trivial-edit list as Step 5c.
+
+### What "good tests" means here
+
+| Bar | What it looks like | Anti-pattern to reject |
+|---|---|---|
+| Unit tests cover the logic, not the framework | Branch coverage on the new helper function | `test_function_exists()` |
+| Integration tests hit real boundaries with stubs | Real code path with a fake external client | All-mocks tests that never run the actual code path |
+| One smoke test per phase that runs the real path with `DRY_RUN=1` | Real extractor + real poster, dry-run flag prevents external posts | "It compiled" passing for a smoke test |
+| External service tests gated behind env flag | `RUN_LIVE_TESTS=1` for Discord / OpenAI / Deepgram tests; default skip in CI | Hard-failing in CI when API key absent |
+| Coverage delta is positive | New code: ≥ 80% line coverage in tests added in the same phase | "We'll add tests next phase" |
+| Tests written DURING implementation, not after | Scaffolds exist before logic is finalized | Tests bolted on at the end to pass review |
+
+### Recommended acceptance criteria for every code-shipping phase
+
+For production/team work, the phase should not be considered complete
+until all relevant items below are true. For small solo/local work, use
+the highest-value subset and state what was skipped.
+
+1. ☐ Existing test suite still passes (no regressions)
+2. ☐ New tests cover meaningful new code paths (aim for >= 80% line coverage on new files when coverage tooling exists)
+3. ☐ At least one smoke check exercises the real code path (with stubs / dry-run for external services)
+4. ☐ For pipeline / cron work: a dry-run on the actual deploy environment, results captured in the `/save` event
+5. ☐ For domain logic (engines, calculators, scoring): pure-compute unit tests AND a hand-checked example documented as a fixture
+6. ☐ For UI work: use an E2E/screenshot/manual smoke check appropriate to the project's tooling
+
+### Phase prompt addition (parent appends to subagent prompt)
+
+```
+**Testing requirements:**
+- Existing relevant tests should still pass before reporting back
+- New production code should usually ship with tests in the same phase
+- Coverage on new files: aim for >= 80% line coverage when coverage tooling exists
+- Include one smoke check of the real path when practical
+- For external services (Discord/OpenAI/Deepgram/etc): gate live tests behind RUN_LIVE_TESTS=1 and skip by default
+- Report back the test command + output summary in your final response
+```
+
 ## Step 6: End-of-plan summary
 
 After the final phase, the parent (Opus) writes one summary covering:

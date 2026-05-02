@@ -462,6 +462,29 @@ test_15_other_ide_adapter_guidance_installed_and_printed() {
     end_test
 }
 
+test_16_plan_orchestrate_public_safe_branch_and_test_guidance() {
+    begin_test "T16: plan-orchestrate branching and testing guidance is public-safe"
+
+    local rule="$TEMPLATE_DIR/.cursor/rules/plan-orchestrate.mdc"
+
+    assert_file_exists "plan-orchestrate rule exists" "$rule"
+    assert_file_contains "branching guidance is present" "$rule" "Branching and rollback guidance"
+    assert_file_contains "production/team scope is explicit" "$rule" "production or team work"
+    assert_file_contains "solo/local workflows are allowed" "$rule" "solo/local"
+    assert_file_contains "subagent push requires approval/remote" "$rule" "a remote exists"
+    assert_file_contains "parent/user handles merges" "$rule" "parent + user handle"
+    assert_file_contains "testing guidance is recommended" "$rule" "Recommended acceptance criteria"
+    assert_file_contains "coverage tooling caveat exists" "$rule" "when coverage tooling exists"
+    assert_file_contains "UI smoke can be tool-appropriate" "$rule" "appropriate to the project's tooling"
+
+    assert_file_not_contains "no hard direct-to-main ban" "$rule" "Direct-to-main commits during plan-class work are forbidden"
+    assert_file_not_contains "no mandatory subagent push" "$rule" 'Last action before reporting back: commit + `git push -u origin HEAD`'
+    assert_file_not_contains "no hard phase completion gate" "$rule" "The phase is NOT complete until ALL of"
+    assert_file_not_contains "no hard UI E2E requirement" "$rule" "For UI work: at least one happy-path E2E test"
+
+    end_test
+}
+
 # ──────────────────────────────────────────────────────────────────────────────
 # Runner
 # ──────────────────────────────────────────────────────────────────────────────
@@ -481,6 +504,7 @@ test_12_data_plane_not_manifest_tracked
 test_13_template_does_not_ship_live_session_data
 test_14_save_surfaces_do_not_use_legacy_prompt
 test_15_other_ide_adapter_guidance_installed_and_printed
+test_16_plan_orchestrate_public_safe_branch_and_test_guidance
 
 echo ""
 echo "══════════════════════════════════════════════════════"

@@ -4,6 +4,17 @@ All notable changes to this project will be documented here.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.1.5] - 2026-05-02
+
+### Changed
+- **Plan-orchestrate branching guidance** - softened the new branching/rollback section so it is recommended for production or team code-shipping phases, while solo/local/trivial work can stay on the current branch when that matches the user's workflow.
+- **Plan-orchestrate testing guidance** - changed strict completion language into recommended acceptance criteria, with practical wording for coverage tooling, smoke checks, UI checks, and skipped layers.
+
+### Tests
+- Added coverage that prevents the public template from reintroducing hard direct-to-main bans, mandatory subagent push assumptions, or hard UI E2E requirements.
+
+[3.1.5]: https://github.com/EnkratFlow/exocortex-template/releases/tag/v3.1.5
+
 ## [3.1.4] - 2026-04-30
 
 ### Added
