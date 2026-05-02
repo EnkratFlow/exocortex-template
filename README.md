@@ -14,54 +14,64 @@ The **Exocortex** is an external memory system for your development projects. It
 
 ---
 
-## Install
+## Quick Start
 
-Run this once inside any project you want exocortex to manage:
+### Install Exocortex
+
+Run this once inside any project you want Exocortex to manage:
 
 ```bash
 cd /path/to/your-project
 curl -sL https://raw.githubusercontent.com/EnkratFlow/exocortex-template/main/install.sh | bash
 ```
 
-The memory system will be named **exocortex** by default. You can override this with your own name:
+The memory system is named **exocortex** by default. You can override the project name:
 
 ```bash
 curl -sL https://raw.githubusercontent.com/EnkratFlow/exocortex-template/main/install.sh | bash -s "my-project"
 ```
 
-**Local install** (if you have the template cloned, or for private repos without HTTPS access):
+### Update Exocortex Safely
+
+For existing projects, this is the recommended update path. It creates a restore archive, rehearses the update in a temporary copy, verifies protected memory/data files are unchanged, shows the diff summary, and asks before touching the real project.
 
 ```bash
 cd /path/to/your-project
-bash /path/to/exocortex-template/install.sh "my-project"
+
+curl -sL https://raw.githubusercontent.com/EnkratFlow/exocortex-template/main/scripts/safe-update.sh -o /tmp/exocortex-safe-update.sh
+bash /tmp/exocortex-safe-update.sh
 ```
 
-Example if the template lives at `~/EnkratFlow/exocortex-template`:
+Watch for these lines before approving the update:
 
-```bash
-cd ~/EnkratFlow/my-new-project
-bash ~/EnkratFlow/exocortex-template/install.sh "my-new-project"
+```text
+Backup: /path/to/restore/archive.tar.gz
+Protected data check: PASS
+Apply this update to the real project now? [y/N]
 ```
 
-**The installer will:**
-1. Download the latest exocortex template
-2. Copy `.exocortex/` and editor pointer files to your project
-3. Copy `.cursor/commands/` (Cursor slash commands like `/work`, `/save`, `/onboard`)
-4. Replace all placeholders with your project name
-5. Make scripts executable
-6. Optionally set up API keys for AI memory features
-7. Update `.gitignore` to protect secrets
+Type `y` only after the protected data check passes. If anything goes wrong after applying, the script prints a rollback command using the restore archive it created.
 
-**Safe for existing projects:** The installer detects whether this is a first install or an update and behaves accordingly.
+### Which Command Should I Use?
 
-- **First install** — copies all template files, creates `.exocortex/.install-manifest` (a SHA-256 hash of every installed file)
-- **Update** — reads the manifest to drive a three-way merge per file:
-  - Template file unchanged since last install → skip (already current)
-  - File present in manifest and unmodified by you → update to latest template version
-  - File modified by you since install → **preserve your version, never overwrite**
-  - File not in manifest (new user-created file) → skip
-- **User data files always preserved:** `PROJECT_MEMORY.md`, `LESSONS.md`, `TODO.md`, `SESSION_CONTEXT.md`, and everything under `events/` are hardcoded as untouchable regardless of manifest state.
-- **Template update standard:** code-plane files may update; data-plane files are never copied from the public template and are never tracked in `.exocortex/.install-manifest`.
+| Situation | Use |
+|---|---|
+| New project | `install.sh` |
+| Existing important project | `safe-update.sh` |
+| Existing throwaway/simple project | re-run `install.sh` |
+| Many projects | `scripts/update-all-repos.sh` |
+| Offline/private environment | `EXOCORTEX_LOCAL_SOURCE=/path/to/exocortex-template bash /path/to/exocortex-template/install.sh` |
+
+### What The Installer Protects
+
+The installer detects whether this is a first install or an update. On update, it uses `.exocortex/.install-manifest` to update only files that are safe to update.
+
+- Template file unchanged since last install -> skip
+- File present in manifest and unmodified by you -> update to latest template version
+- File modified by you since install -> preserve your version
+- File not in manifest -> skip
+
+Protected memory/data files are never copied from the public template and are never tracked in `.exocortex/.install-manifest`, including `PROJECT_MEMORY.md`, `LESSONS.md`, `TODO.md`, `SESSION_CONTEXT.md`, `.env`, and everything under `events/`.
 
 ---
 
@@ -142,32 +152,6 @@ For Codex, Zed, or any other AI-capable editor/IDE, the installer prints a copy-
 The full reference is saved at `.exocortex/docs/IDE_INTEGRATION_GUIDE.md`.
 
 **Current Codex support:** Exocortex works in Codex through the universal adapter prompt. Native `.agents/skills/*` bridge files are planned, but are not installed by this template yet.
-
----
-
-## Upgrading
-
-When a new version of the template is released, use `upgrade-exocortex.sh` to propagate code changes to your installed projects without touching your data.
-
-```bash
-# Upgrade one project
-bash .exocortex/scripts/upgrade-exocortex.sh ~/path/to/your-project
-
-# Preview what would change (no writes)
-bash .exocortex/scripts/upgrade-exocortex.sh --dry-run ~/path/to/your-project
-
-# Upgrade all hub-enabled projects at once
-bash .exocortex/scripts/upgrade-exocortex.sh --all
-```
-
-**What the upgrade script does:**
-- Runs the full test suite first — aborts immediately if any test fails
-- Archives the current `.exocortex/` to `.exocortex/archive/pre-upgrade-YYYY-MM-DD/` (backup)
-- Copies updated system files (commands, docs, scripts, skills)
-- **Never touches:** `events/`, `.env`, `SESSION_CONTEXT.md`, `TODO.md`, `LESSONS.md`, `PROJECT_MEMORY.md`
-- Updates `.install-manifest` to reflect the new hashes
-
-The test-guard means a broken template can never reach your live projects.
 
 ---
 
@@ -457,57 +441,54 @@ See [LICENSE](LICENSE) for the full text.
 
 ---
 
-## Verifying the Installer
+## Advanced Maintenance
 
-The installer runs a built-in integrity check automatically — it verifies every downloaded script against the published `SHA256SUMS` file before copying anything to your project. If anything fails, the install is aborted.
+Most users only need the Quick Start commands above. This section is for verification, batch updates, local/offline installs, and release-specific maintenance.
 
-If you want to verify manually before running:
+### Verify The Installer Manually
+
+The installer runs a built-in integrity check automatically. If you want to inspect it before running:
 
 ```bash
-# Download the script and checksums separately
 curl -sL https://raw.githubusercontent.com/EnkratFlow/exocortex-template/main/install.sh -o install.sh
 curl -sL https://raw.githubusercontent.com/EnkratFlow/exocortex-template/main/SHA256SUMS -o SHA256SUMS
 
-# Inspect the script yourself
 less install.sh
-
-# Verify the script hash matches
 shasum -a 256 install.sh
 # Compare against the install.sh line in SHA256SUMS
 
-# Run when satisfied
 bash install.sh "my-project"
 ```
 
-Alternatively, clone the repo directly — git's transfer protocol is integrity-verified end-to-end:
+You can also clone the repo directly:
 
 ```bash
 git clone https://github.com/EnkratFlow/exocortex-template.git
 bash exocortex-template/install.sh "my-project"
 ```
 
----
+### Quick Update Without Rehearsal
 
-## Updating an Existing Install
-
-Re-running the installer in a project is always safe: `install.sh` detects an existing `.exocortex/` and switches to update mode. User data (`PROJECT_MEMORY.md`, `LESSONS.md`, `TODO.md`, `SESSION_CONTEXT.md`, `events/`) is never touched. System files you've modified are preserved. Files you haven't touched are updated to the latest version. The flow is the same as a fresh install:
+For low-risk projects, re-run the installer from the project root:
 
 ```bash
 cd /path/to/your-project
 curl -sL https://raw.githubusercontent.com/EnkratFlow/exocortex-template/main/install.sh | bash
 ```
 
-After install, you'll see the version transition and the `WHATSNEW.md` blurb for that release.
+For important projects, prefer the safe updater from Quick Start.
 
-### Safe update with restore point
-
-For important projects, use the safe updater. It creates a restore archive, rehearses the update in a temporary copy, verifies protected memory/data files are unchanged, shows the diff summary, and asks before touching the real project.
+### Safe Update Options
 
 ```bash
-cd /path/to/your-project
+# Rehearse only; do not apply the real update
+bash /tmp/exocortex-safe-update.sh --dry-run
 
-curl -sL https://raw.githubusercontent.com/EnkratFlow/exocortex-template/main/scripts/safe-update.sh -o /tmp/exocortex-safe-update.sh
-bash /tmp/exocortex-safe-update.sh
+# Use a local template clone instead of downloading latest
+bash /tmp/exocortex-safe-update.sh --template /path/to/exocortex-template
+
+# Rehearse, verify, then apply without prompting
+bash /tmp/exocortex-safe-update.sh --yes
 ```
 
 Protected files/directories checked by the safe updater include:
@@ -524,33 +505,7 @@ Protected files/directories checked by the safe updater include:
 - `.exocortex/control/BACKLOG.md`
 - `.exocortex/control/ROADMAP.md`
 
-Useful options:
-
-```bash
-# Rehearse only; do not apply the real update
-bash /tmp/exocortex-safe-update.sh --dry-run
-
-# Use a local template clone instead of downloading latest
-bash /tmp/exocortex-safe-update.sh --template /path/to/exocortex-template
-
-# Rehearse, verify, then apply without prompting
-bash /tmp/exocortex-safe-update.sh --yes
-```
-
-If anything goes wrong after applying, the script prints a rollback command using the restore archive it created.
-
-### If you installed the affected `/ai-export`
-
-Some earlier template installs shipped an `/ai-export` command that mentioned Trading Journal-specific files. Update from your project root to receive the fixed project-generic command:
-
-```bash
-cd /path/to/your-project
-curl -sL https://raw.githubusercontent.com/EnkratFlow/exocortex-template/main/install.sh | bash
-```
-
-This update does not overwrite your Exocortex memory or project state. The installer preserves `.exocortex/events/`, `.exocortex/SESSION_CONTEXT.md`, `.exocortex/TODO.md`, `.exocortex/LESSONS.md`, `.exocortex/PROJECT_MEMORY.md`, `.exocortex/.env`, and any user-modified system files.
-
-### Update many projects at once
+### Update Many Projects
 
 If you have several projects on this template, the batch updater handles them in one pass:
 
@@ -558,31 +513,31 @@ If you have several projects on this template, the batch updater handles them in
 git clone https://github.com/EnkratFlow/exocortex-template.git /tmp/exocortex-template
 cd /tmp/exocortex-template
 
-# List what would update (no writes)
+# List what would update; no writes
 bash scripts/update-all-repos.sh ~/code --dry-run
 
-# Walk ~/code, prompt before each repo
+# Walk ~/code and prompt before each repo
 bash scripts/update-all-repos.sh ~/code
 
-# Skip prompts entirely
+# Skip prompts
 bash scripts/update-all-repos.sh ~/code --yes
 ```
 
-The script:
-- Walks the root directory looking for any project with a `.exocortex/` subdirectory.
-- Skips repos with a dirty git working tree (commit or stash first, then re-run).
-- Uses `EXOCORTEX_LOCAL_SOURCE` to avoid re-cloning the template once per repo.
-- Prints a summary at the end (updated, skipped, failed counts).
+The script walks the root directory looking for projects with `.exocortex/`, skips dirty git worktrees, uses `EXOCORTEX_LOCAL_SOURCE` to avoid re-cloning the template once per repo, and prints a summary.
 
-### Offline / vendored install
+### Offline / Vendored Install
 
-If you can't reach GitHub from a build machine, point `install.sh` at a local copy of the template:
+If you cannot reach GitHub from a build machine, point `install.sh` at a local copy of the template:
 
 ```bash
 EXOCORTEX_LOCAL_SOURCE=/path/to/exocortex-template bash /path/to/exocortex-template/install.sh
 ```
 
 The installer skips the clone step and copies from the directory you provided.
+
+### If You Installed The Affected `/ai-export`
+
+Some earlier template installs shipped an `/ai-export` command that mentioned Trading Journal-specific files. Any current update path receives the fixed project-generic command while preserving memory and project state.
 
 ---
 

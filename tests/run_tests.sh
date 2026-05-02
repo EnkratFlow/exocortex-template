@@ -493,6 +493,10 @@ test_17_readme_current_command_test_and_editor_claims() {
 
     assert_file_contains "README version is current" "$readme" "Current template version"
     assert_file_contains "README shows current version number" "$readme" "3.1.7"
+    assert_file_contains "README has Quick Start" "$readme" "Quick Start"
+    assert_file_contains "README has safe update near top" "$readme" "Update Exocortex Safely"
+    assert_file_contains "README has command chooser" "$readme" "Which Command Should I Use?"
+    assert_file_contains "README has advanced maintenance" "$readme" "Advanced Maintenance"
     assert_file_contains "README names 23 workflow commands" "$readme" "23 Workflow Commands"
     assert_file_contains "README includes pattern-review" "$readme" "/pattern-review"
     assert_file_contains "README includes check-keys" "$readme" "/check-keys"
@@ -506,6 +510,8 @@ test_17_readme_current_command_test_and_editor_claims() {
     assert_file_not_contains "README has no old command count heading" "$readme" "20 Workflow Commands"
     assert_file_not_contains "README has no old test output" "$readme" "8 passed, 0 failed"
     assert_file_not_contains "README has no old skill count" "$readme" "16 specialist skills"
+    assert_file_not_contains "README has no duplicate upgrading section" "$readme" "## Upgrading"
+    assert_file_not_contains "README has no duplicate updating section" "$readme" "## Updating an Existing Install"
 
     assert_file_contains "COMMAND_SYSTEM has current date" "$command_system" "May 2, 2026"
     assert_file_contains "COMMAND_SYSTEM mentions editor-neutral source of truth" "$command_system" "editor-neutral"
