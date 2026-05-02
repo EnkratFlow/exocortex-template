@@ -4,6 +4,16 @@ All notable changes to this project will be documented here.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.1.7] - 2026-05-02
+
+### Added
+- **Safe update script** - added `scripts/safe-update.sh`, a customer-safe updater that creates a restore archive, rehearses the update in a temporary copy, verifies protected memory/data files are unchanged, shows the diff summary, and asks before applying the real update.
+
+### Tests
+- Added coverage that the safe updater can run in dry-run mode, creates a backup, preserves real project files, and does not apply changes without approval.
+
+[3.1.7]: https://github.com/EnkratFlow/exocortex-template/releases/tag/v3.1.7
+
 ## [3.1.6] - 2026-05-02
 
 ### Changed

@@ -1,4 +1,21 @@
-# What's New in 3.1.6
+# What's New in 3.1.7
+
+This release adds a safer customer update path.
+
+What changed:
+
+- Added `scripts/safe-update.sh`
+- The safe updater creates a restore archive before touching anything
+- It rehearses the update in a temporary copy first
+- It verifies protected Exocortex memory/data files are unchanged
+- It shows the rehearsal diff and asks before applying the real update
+- It supports `--dry-run`, `--yes`, `--template`, and `--backup-dir`
+
+This is the foundation for future npm/npx update tooling.
+
+---
+
+# Previous: 3.1.6
 
 This release cleans up public documentation so it matches the current template.
 

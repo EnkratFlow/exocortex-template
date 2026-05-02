@@ -4,7 +4,7 @@
 
 > A portable memory system for developers and AI assistants that never forgets context.
 
-**Current template version:** 3.1.6
+**Current template version:** 3.1.7
 
 ## What is This?
 
@@ -358,7 +358,7 @@ cd exocortex-template
 bash tests/run_tests.sh
 ```
 
-Expected output: `ALL 17 TESTS PASSED` covering:
+Expected output: `ALL 18 TESTS PASSED` covering:
 
 | Test | What it verifies |
 |------|-----------------|
@@ -379,6 +379,7 @@ Expected output: `ALL 17 TESTS PASSED` covering:
 | T15 IDE guidance | Universal adapter guide is installed and printed |
 | T16 orchestration guidance | Branch/testing guidance stays public-safe |
 | T17 README accuracy | README does not drift on command/test/editor support claims |
+| T18 safe update | Restore-point dry-run rehearses without changing the real project |
 
 ### Pre-commit hook (contributor setup, one-time)
 
@@ -497,6 +498,46 @@ curl -sL https://raw.githubusercontent.com/EnkratFlow/exocortex-template/main/in
 ```
 
 After install, you'll see the version transition and the `WHATSNEW.md` blurb for that release.
+
+### Safe update with restore point
+
+For important projects, use the safe updater. It creates a restore archive, rehearses the update in a temporary copy, verifies protected memory/data files are unchanged, shows the diff summary, and asks before touching the real project.
+
+```bash
+cd /path/to/your-project
+
+curl -sL https://raw.githubusercontent.com/EnkratFlow/exocortex-template/main/scripts/safe-update.sh -o /tmp/exocortex-safe-update.sh
+bash /tmp/exocortex-safe-update.sh
+```
+
+Protected files/directories checked by the safe updater include:
+
+- `.exocortex/events/`
+- `.exocortex/local/`
+- `.exocortex/.env`
+- `.exocortex/SESSION_CONTEXT.md`
+- `.exocortex/TODO.md`
+- `.exocortex/LESSONS.md`
+- `.exocortex/PROJECT_MEMORY.md`
+- `.exocortex/OPEN_DECISIONS.md`
+- `.exocortex/control/INTERRUPTS.md`
+- `.exocortex/control/BACKLOG.md`
+- `.exocortex/control/ROADMAP.md`
+
+Useful options:
+
+```bash
+# Rehearse only; do not apply the real update
+bash /tmp/exocortex-safe-update.sh --dry-run
+
+# Use a local template clone instead of downloading latest
+bash /tmp/exocortex-safe-update.sh --template /path/to/exocortex-template
+
+# Rehearse, verify, then apply without prompting
+bash /tmp/exocortex-safe-update.sh --yes
+```
+
+If anything goes wrong after applying, the script prints a rollback command using the restore archive it created.
 
 ### If you installed the affected `/ai-export`
 

@@ -491,6 +491,8 @@ test_17_readme_current_command_test_and_editor_claims() {
     local readme="$TEMPLATE_DIR/README.md"
     local command_system="$TEMPLATE_DIR/.exocortex/COMMAND_SYSTEM.md"
 
+    assert_file_contains "README version is current" "$readme" "Current template version"
+    assert_file_contains "README shows current version number" "$readme" "3.1.7"
     assert_file_contains "README names 23 workflow commands" "$readme" "23 Workflow Commands"
     assert_file_contains "README includes pattern-review" "$readme" "/pattern-review"
     assert_file_contains "README includes check-keys" "$readme" "/check-keys"
@@ -499,7 +501,7 @@ test_17_readme_current_command_test_and_editor_claims() {
     assert_file_contains "README mentions Codex adapter reality" "$readme" "Codex through the universal adapter prompt"
     assert_file_contains "README mentions unknown IDE setup" "$readme" "any other AI-capable editor/IDE"
     assert_file_contains "README specialist skill count is current" "$readme" "17 specialist skills"
-    assert_file_contains "README test count is current" "$readme" "ALL 17 TESTS PASSED"
+    assert_file_contains "README test count is current" "$readme" "ALL 18 TESTS PASSED"
 
     assert_file_not_contains "README has no old command count heading" "$readme" "20 Workflow Commands"
     assert_file_not_contains "README has no old test output" "$readme" "8 passed, 0 failed"
@@ -511,6 +513,77 @@ test_17_readme_current_command_test_and_editor_claims() {
     assert_file_contains "COMMAND_SYSTEM includes pattern-review" "$command_system" "/pattern-review"
     assert_file_contains "COMMAND_SYSTEM includes check-keys" "$command_system" "/check-keys"
 
+    end_test
+}
+
+test_18_safe_update_dry_run_rehearses_and_preserves_real_project() {
+    begin_test "T18: safe-update dry-run backs up, rehearses, and preserves real project"
+
+    local dir
+    dir=$(make_fresh_project)
+    mkdir -p "$dir/.exocortex/events" "$dir/.exocortex/control"
+    printf '3.1.3\n' > "$dir/.exocortex/.version"
+    printf '# Session\nT18_SESSION_CANARY\n' > "$dir/.exocortex/SESSION_CONTEXT.md"
+    printf '# TODO\nT18_TODO_CANARY\n' > "$dir/.exocortex/TODO.md"
+    printf '# Lessons\nT18_LESSONS_CANARY\n' > "$dir/.exocortex/LESSONS.md"
+    printf '# Project Memory\nT18_MEMORY_CANARY\n' > "$dir/.exocortex/PROJECT_MEMORY.md"
+    printf '# Decisions\nT18_DECISIONS_CANARY\n' > "$dir/.exocortex/OPEN_DECISIONS.md"
+    printf '# Interrupts\nT18_INTERRUPTS_CANARY\n' > "$dir/.exocortex/control/INTERRUPTS.md"
+    printf '# Backlog\nT18_BACKLOG_CANARY\n' > "$dir/.exocortex/control/BACKLOG.md"
+    printf '# Roadmap\nT18_ROADMAP_CANARY\n' > "$dir/.exocortex/control/ROADMAP.md"
+    printf '# Event\nT18_EVENT_CANARY\n' > "$dir/.exocortex/events/2026-05-02-test.md"
+
+    local h_session h_todo h_lessons h_memory h_decisions h_event
+    h_session=$(file_hash "$dir/.exocortex/SESSION_CONTEXT.md")
+    h_todo=$(file_hash "$dir/.exocortex/TODO.md")
+    h_lessons=$(file_hash "$dir/.exocortex/LESSONS.md")
+    h_memory=$(file_hash "$dir/.exocortex/PROJECT_MEMORY.md")
+    h_decisions=$(file_hash "$dir/.exocortex/OPEN_DECISIONS.md")
+    h_event=$(file_hash "$dir/.exocortex/events/2026-05-02-test.md")
+
+    local backup_dir output rc
+    backup_dir="$dir/backups"
+    output="$dir/safe-update-output.txt"
+
+    (
+        cd "$dir" && EXOCORTEX_BACKUP_DIR="$backup_dir" \
+            bash "$TEMPLATE_DIR/scripts/safe-update.sh" --dry-run --template "$TEMPLATE_DIR"
+    ) > "$output" 2>&1
+    rc=$?
+
+    if [ "$rc" -eq 0 ]; then
+        echo "    ✅ safe-update dry-run exits successfully"
+        TEST_PASS=$((TEST_PASS+1))
+    else
+        echo "    ❌ safe-update dry-run failed"
+        sed -n '1,160p' "$output"
+        TEST_FAIL=$((TEST_FAIL+1))
+    fi
+
+    assert_file_contains "safe-update reports protected pass" "$output" "Protected data check: PASS"
+    assert_file_contains "safe-update stops before apply" "$output" "Dry run complete. No real project files were changed."
+    assert_file_exists "safe-update backup directory created" "$backup_dir"
+
+    local backup_count
+    backup_count=$(find "$backup_dir" -type f -name "*-exocortex-before-update-*.tar.gz" 2>/dev/null | wc -l | tr -d ' ')
+    if [ "$backup_count" -gt 0 ]; then
+        echo "    ✅ restore archive created"
+        TEST_PASS=$((TEST_PASS+1))
+    else
+        echo "    ❌ restore archive was not created"
+        TEST_FAIL=$((TEST_FAIL+1))
+    fi
+
+    assert_hash_unchanged "SESSION_CONTEXT unchanged in real project" "$dir/.exocortex/SESSION_CONTEXT.md" "$h_session"
+    assert_hash_unchanged "TODO unchanged in real project" "$dir/.exocortex/TODO.md" "$h_todo"
+    assert_hash_unchanged "LESSONS unchanged in real project" "$dir/.exocortex/LESSONS.md" "$h_lessons"
+    assert_hash_unchanged "PROJECT_MEMORY unchanged in real project" "$dir/.exocortex/PROJECT_MEMORY.md" "$h_memory"
+    assert_hash_unchanged "OPEN_DECISIONS unchanged in real project" "$dir/.exocortex/OPEN_DECISIONS.md" "$h_decisions"
+    assert_hash_unchanged "event unchanged in real project" "$dir/.exocortex/events/2026-05-02-test.md" "$h_event"
+    assert_file_contains "real project version not updated by dry-run" "$dir/.exocortex/.version" "3.1.3"
+    assert_file_missing "real project did not receive IDE guide in dry-run" "$dir/.exocortex/docs/IDE_INTEGRATION_GUIDE.md"
+
+    rm -rf "$dir"
     end_test
 }
 
@@ -535,6 +608,7 @@ test_14_save_surfaces_do_not_use_legacy_prompt
 test_15_other_ide_adapter_guidance_installed_and_printed
 test_16_plan_orchestrate_public_safe_branch_and_test_guidance
 test_17_readme_current_command_test_and_editor_claims
+test_18_safe_update_dry_run_rehearses_and_preserves_real_project
 
 echo ""
 echo "══════════════════════════════════════════════════════"
