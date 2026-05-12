@@ -57,9 +57,13 @@ sed -i.bak "s/REPLACE_COUNT/$EVENT_COUNT/g" "$OUTPUT_FILE"
 sed -i.bak "s/REPLACE_PROJECT/$PROJECT_NAME/g" "$OUTPUT_FILE"
 rm -f "$OUTPUT_FILE.bak"
 
-# Add events to SESSION_CONTEXT (most recent first)
+# Add events to SESSION_CONTEXT (most recent first).
+# Use `while read` rather than `for FILE in $EVENTS` so event paths that
+# contain spaces (e.g. a project installed at "My Project/.exocortex/") are
+# preserved as single entries instead of being word-split on whitespace.
 FIRST_EVENT=true
-for EVENT_FILE in $EVENTS; do
+while IFS= read -r EVENT_FILE; do
+    [ -z "$EVENT_FILE" ] && continue
     if [ "$FIRST_EVENT" = false ]; then
         echo "" >> "$OUTPUT_FILE"
         echo "---" >> "$OUTPUT_FILE"
@@ -87,7 +91,7 @@ for EVENT_FILE in $EVENTS; do
 
     # Add event content (skip metadata section - everything after first ---)
     sed -n '/^---$/,//p' "$EVENT_FILE" | tail -n +2 >> "$OUTPUT_FILE"
-done
+done <<< "$EVENTS"
 
 # Add footer with older history reference
 cat >> "$OUTPUT_FILE" << 'FOOTER'

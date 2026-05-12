@@ -4,6 +4,16 @@ All notable changes to this project will be documented here.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.1.8] - 2026-05-12
+
+### Fixed
+- **`generate_context.sh` paths-with-spaces bug** — the event loop used `for FILE in $EVENTS` which word-splits on whitespace, so project paths containing a space (e.g. `My Project/.exocortex/events/...`) silently produced an empty SESSION_CONTEXT (event count correct, all event bodies blank). Switched to `while IFS= read -r FILE; ... done <<< "$EVENTS"` so spaced paths survive intact.
+
+### Tests
+- Added T19: installs into a project at a path containing spaces, writes an event with a canary string, runs `generate_context.sh`, and asserts the canary appears in `SESSION_CONTEXT.md`. Regression coverage for the word-split bug.
+
+[3.1.8]: https://github.com/EnkratFlow/exocortex-template/releases/tag/v3.1.8
+
 ## [3.1.7] - 2026-05-02
 
 ### Added

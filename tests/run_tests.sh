@@ -594,6 +594,80 @@ test_18_safe_update_dry_run_rehearses_and_preserves_real_project() {
 }
 
 # ──────────────────────────────────────────────────────────────────────────────
+# Test 19 — generate_context.sh handles paths with spaces
+# Scenario: project installed at a parent directory whose name contains a
+# space (e.g. "My Project" or "tradingview indicators"). A `for X in $EVENTS`
+# word-split loop would treat each whitespace-separated token as a separate
+# path, producing a SESSION_CONTEXT with no event bodies. The script must
+# iterate by line so spaced paths survive intact.
+# ──────────────────────────────────────────────────────────────────────────────
+test_19_generate_context_handles_paths_with_spaces() {
+    begin_test "T19: generate_context.sh handles project paths with spaces"
+
+    # Build a parent dir whose name has a space, then create the install inside it.
+    local parent dir
+    parent=$(mktemp -d)
+    dir="$parent/My Project With Spaces"
+    mkdir -p "$dir"
+    git -C "$dir" init -q
+    git -C "$dir" commit --allow-empty -m "init" -q
+
+    # Fresh install (which seeds .exocortex/scripts/generate_context.sh)
+    run_install "$dir"
+
+    # Write a recent event with a distinctive canary string in the body
+    mkdir -p "$dir/.exocortex/events"
+    local event_path today canary
+    today=$(date '+%Y-%m-%d')
+    canary="T19_EVENT_BODY_CANARY_VISIBLE_IN_CONTEXT"
+    event_path="$dir/.exocortex/events/${today}_macbook-cursor.md"
+    cat > "$event_path" <<EVENT
+<!-- Event Metadata -->
+timestamp: ${today}T12:00:00Z
+machine: macbook
+editor: cursor
+project: test
+branch: main
+
+---
+
+# Phase checkpoint — T19 canary event
+
+## What was accomplished
+
+- ${canary}
+EVENT
+
+    # Run generate_context.sh from the spaced path and capture the result
+    local rc
+    (cd "$dir" && bash .exocortex/scripts/generate_context.sh) > /dev/null 2>&1
+    rc=$?
+
+    if [ "$rc" -eq 0 ]; then
+        echo "    ✅ generate_context.sh exits 0 from spaced path"
+        TEST_PASS=$((TEST_PASS+1))
+    else
+        echo "    ❌ generate_context.sh exited $rc"
+        TEST_FAIL=$((TEST_FAIL+1))
+    fi
+
+    # SESSION_CONTEXT must exist
+    assert_file_exists "SESSION_CONTEXT.md written" "$dir/.exocortex/SESSION_CONTEXT.md"
+
+    # Event count line must report 1 (not 0)
+    assert_file_contains "1 event counted" \
+        "$dir/.exocortex/SESSION_CONTEXT.md" "1 events"
+
+    # Most important: the event's body must appear inside SESSION_CONTEXT.
+    # If the for-loop word-split bug regresses, this canary disappears.
+    assert_file_contains "event body inlined in SESSION_CONTEXT" \
+        "$dir/.exocortex/SESSION_CONTEXT.md" "$canary"
+
+    rm -rf "$parent"
+    end_test
+}
+
+# ──────────────────────────────────────────────────────────────────────────────
 # Runner
 # ──────────────────────────────────────────────────────────────────────────────
 
@@ -615,6 +689,7 @@ test_15_other_ide_adapter_guidance_installed_and_printed
 test_16_plan_orchestrate_public_safe_branch_and_test_guidance
 test_17_readme_current_command_test_and_editor_claims
 test_18_safe_update_dry_run_rehearses_and_preserves_real_project
+test_19_generate_context_handles_paths_with_spaces
 
 echo ""
 echo "══════════════════════════════════════════════════════"
