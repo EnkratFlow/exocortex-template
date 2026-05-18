@@ -270,10 +270,10 @@ PATTERN_PROMPTS = [
 - **Rate limits** — 3,500 requests per minute (adequate for personal use)
 - **Context window** — 128k tokens (handles large event sets)
 
-**Fallback provider: Anthropic claude-3-haiku-20240307**
+**Fallback provider: Anthropic claude-sonnet-4-6**
 - **Reliability** — Backup when OpenAI is unavailable
 - **Different strengths** — Sometimes better at pattern recognition
-- **Higher cost** — ~$0.001 per operation (10x OpenAI)
+- **Higher cost** — ~$0.003 per operation (30x OpenAI)
 - **Context window** — 200k tokens (larger capacity)
 
 **Provider selection logic:**

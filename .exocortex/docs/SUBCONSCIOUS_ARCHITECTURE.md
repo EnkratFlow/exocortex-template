@@ -293,7 +293,7 @@ The **subconscious** (Tier 3) is NOT part of Conway's hierarchical model. It map
 | Events directory | `.exocortex/events/*.md` |
 | API keys | `.exocortex/.env` (OPENAI_API_KEY, ANTHROPIC_API_KEY) |
 | Primary model | `gpt-4o-mini` |
-| Fallback model | `claude-3-haiku-20240307` |
+| Fallback model | `claude-sonnet-4-6` |
 | Pattern memory (planned) | `.exocortex/subconscious_patterns.md` |
 | Nudge script (planned) | `.exocortex/scripts/get_subconscious_nudge.py` |
 | Memory tiers doc | `.exocortex/MEMORY_TIERS.md` |

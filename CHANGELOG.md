@@ -4,6 +4,17 @@ All notable changes to this project will be documented here.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.1.9] - 2026-05-18
+
+### Changed
+- **Default Anthropic fallback model** — `.exocortex/scripts/check_keys.py`, `get_rightnow_memory.sh`, `get_shortterm_memory.sh`, `get_longterm_memory.sh`, and `_api_helpers.py` now default the Anthropic fallback to `claude-sonnet-4-6` instead of `claude-3-haiku-20240307`. The primary provider path (OpenAI `gpt-4o-mini`) is unchanged. Users who want the prior fallback can pin `ANTHROPIC_MODEL=claude-3-haiku-20240307` in `.exocortex/.env`.
+- **Documentation** — `MEMORY_TIERS.md`, `docs/architecture.md`, `docs/implementation.md`, `docs/SUBCONSCIOUS_ARCHITECTURE.md`, and `docs/memory-system.md` now describe sonnet as the fallback.
+
+### Upgrade Notes
+- The Anthropic fallback costs roughly 3x more per call than the previous haiku default (sonnet ~$3/$15 per MTok input/output vs haiku ~$1/$5). The fallback only fires when no `OPENAI_API_KEY` is set or OpenAI returns an error. If you rely heavily on it, pin `ANTHROPIC_MODEL=claude-3-haiku-20240307` in `.exocortex/.env` to retain the prior cost profile.
+
+[3.1.9]: https://github.com/EnkratFlow/exocortex-template/releases/tag/v3.1.9
+
 ## [3.1.8] - 2026-05-12
 
 ### Fixed

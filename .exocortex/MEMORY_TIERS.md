@@ -68,7 +68,7 @@ ANTHROPIC_API_KEY=sk-ant-...
 
 **Priority:**
 1. OpenAI `gpt-4o-mini` (fast, cheap ~$0.00015/request)
-2. Anthropic `claude-3-haiku-20240307` (fallback if OpenAI unavailable)
+2. Anthropic `claude-sonnet-4-6` (fallback if OpenAI unavailable)
 
 Each analysis shows which provider was used: `**Analyzed by:** openai`
 

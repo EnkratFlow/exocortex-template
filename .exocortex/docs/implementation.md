@@ -205,7 +205,7 @@ def call_anthropic(prompt, events_text):
     client = anthropic.Anthropic(api_key=os.environ.get('ANTHROPIC_API_KEY'))
     
     response = client.messages.create(
-        model="claude-3-haiku-20240307",
+        model="claude-sonnet-4-6",
         max_tokens=2000,
         messages=[
             {"role": "user", "content": f"{prompt}\n\nEvents:\n{events_text}"}

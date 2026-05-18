@@ -1,4 +1,25 @@
-# What's New in 3.1.7
+# What's New in 3.1.9
+
+This release switches the Anthropic fallback model from haiku to sonnet across the memory scripts.
+
+What changed:
+
+- `.exocortex/scripts/check_keys.py`, `get_rightnow_memory.sh`, `get_shortterm_memory.sh`, `get_longterm_memory.sh`, and `_api_helpers.py` now default `ANTHROPIC_MODEL` to `claude-sonnet-4-6`
+- `MEMORY_TIERS.md`, `docs/architecture.md`, `docs/implementation.md`, `docs/SUBCONSCIOUS_ARCHITECTURE.md`, and `docs/memory-system.md` updated to match
+- Primary path (OpenAI `gpt-4o-mini`) is unchanged
+- Override remains via `.exocortex/.env`: set `ANTHROPIC_MODEL=claude-3-haiku-20240307` to keep the old fallback
+
+Heads up on cost: the Anthropic fallback now costs roughly 3x more per call (sonnet ~$3/$15 per MTok input/output vs haiku ~$1/$5). The fallback only fires when no `OPENAI_API_KEY` is set or OpenAI returns an error, so for most users the bill impact is minimal. If you rely on the Anthropic side, pin haiku via `.env`.
+
+---
+
+# Previous: 3.1.8
+
+Bug fix in `generate_context.sh`. The event loop used `for FILE in $EVENTS`, which word-splits on whitespace, so any project path containing a space silently produced a `SESSION_CONTEXT.md` with the correct event count but all event bodies blank. Switched to `while IFS= read -r FILE; ... done <<< "$EVENTS"`. Added T19 regression test.
+
+---
+
+# Previous: 3.1.7
 
 This release adds a safer customer update path.
 
@@ -27,34 +48,3 @@ What changed:
 - Added a regression test that catches stale README claims about command counts, test counts, Codex, and unknown IDE setup
 
 This is a documentation-only release. It does not add native Codex bridge files yet.
-
----
-
-# Previous: 3.1.5
-
-This release softens the plan-orchestrate branch and testing guidance so it works better as a public template default.
-
-What changed:
-
-- Added public-safe branching and rollback guidance for production or team code-shipping phases
-- Kept solo/local/trivial work exempt when that matches the user's workflow
-- Avoided assuming every subagent can commit and push to a remote
-- Changed hard testing requirements into recommended acceptance criteria with practical skip language
-- Added tests so future edits do not reintroduce too-strict public-template wording
-
-The key rule is simple: stronger orchestration discipline should help teams and production work without making small local work painful.
-
----
-
-# Previous: 3.1.4
-
-This release makes Exocortex easier to use from editors we do not know about yet.
-
-What changed:
-
-- Added `.exocortex/docs/IDE_INTEGRATION_GUIDE.md`
-- Added a universal adapter prompt for Codex, Zed, VS Code, Cursor, Claude, Windsurf, and unknown AI editors
-- `install.sh` now prints the useful other-IDE setup instructions directly in the terminal
-- Added tests so the guide is installed and the terminal instructions stay visible
-
-The key rule is simple: IDE adapters stay thin, and `.exocortex/commands/*.json` remains the source of truth.

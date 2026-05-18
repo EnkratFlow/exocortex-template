@@ -57,7 +57,7 @@ def load_api_keys(exocortex_dir, silent=False):
             print(f"     ANTHROPIC_API_KEY=sk-ant-...", file=sys.stderr)
             print(f"   Or create a project-local .exocortex/.env", file=sys.stderr)
             print(f"   Get keys: https://platform.openai.com/api-keys", file=sys.stderr)
-        return None, None, 'gpt-4o-mini', 'claude-3-haiku-20240307'
+        return None, None, 'gpt-4o-mini', 'claude-sonnet-4-6'
 
     # --- Load keys: global first, local overrides ---
     api_keys = {}
@@ -77,7 +77,7 @@ def load_api_keys(exocortex_dir, silent=False):
         or api_keys.get('ANTHROPIC_API_KEY', '').strip()
     )
     openai_model = api_keys.get('OPENAI_MODEL', 'gpt-4o-mini').strip() or 'gpt-4o-mini'
-    anthropic_model = api_keys.get('ANTHROPIC_MODEL', 'claude-3-haiku-20240307').strip() or 'claude-3-haiku-20240307'
+    anthropic_model = api_keys.get('ANTHROPIC_MODEL', 'claude-sonnet-4-6').strip() or 'claude-sonnet-4-6'
 
     # --- Detect placeholder values ---
     placeholder_hints = ['your-', 'your_', 'placeholder', 'example', 'xxx', 'replace']
@@ -186,7 +186,7 @@ def _handle_anthropic_error(error_dict, silent=False):
 # ---------------------------------------------------------------------------
 
 def call_ai(openai_key, anthropic_key, messages, max_tokens=1500, silent=False,
-            openai_model='gpt-4o-mini', anthropic_model='claude-3-haiku-20240307'):
+            openai_model='gpt-4o-mini', anthropic_model='claude-sonnet-4-6'):
     """
     Call OpenAI (primary) or Anthropic (fallback).
 

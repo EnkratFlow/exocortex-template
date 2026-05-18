@@ -90,7 +90,7 @@ def test_key(key: str, service_config: dict) -> str:
             headers["content-type"] = "application/json"
             # Minimal Anthropic test payload
             data = json.dumps({
-                "model": "claude-haiku-4-5",
+                "model": "claude-sonnet-4-6",
                 "max_tokens": 1,
                 "messages": [{"role": "user", "content": "hi"}]
             }).encode()

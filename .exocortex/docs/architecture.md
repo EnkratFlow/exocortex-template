@@ -164,7 +164,7 @@ User Rule → AI_BOOTSTRAP.md → Command Recognition → JSON Spec → Step Exe
 
 ### AI Provider Architecture
 **Primary:** OpenAI `gpt-4o-mini` (~$0.0001/call)  
-**Fallback:** Anthropic `claude-3-haiku-20240307`
+**Fallback:** Anthropic `claude-sonnet-4-6`
 
 **Rationale:**
 - Cost optimization for frequent memory operations

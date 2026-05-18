@@ -114,7 +114,7 @@ def call_ai(messages, max_tokens=1200):
                     user_msgs.append(msg)
             
             payload = {
-                "model": "claude-3-haiku-20240307",
+                "model": "claude-sonnet-4-6",
                 "max_tokens": max_tokens,
                 "messages": user_msgs
             }
