@@ -535,10 +535,6 @@ EXOCORTEX_LOCAL_SOURCE=/path/to/exocortex-template bash /path/to/exocortex-templ
 
 The installer skips the clone step and copies from the directory you provided.
 
-### If You Installed The Affected `/ai-export`
-
-Some earlier template installs shipped an `/ai-export` command that mentioned Trading Journal-specific files. Any current update path receives the fixed project-generic command while preserving memory and project state.
-
 ---
 
 ## Disclaimer
