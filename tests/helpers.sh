@@ -145,10 +145,13 @@ file_hash() {
 # changes are included in the clone. This is required for the pre-commit hook scenario
 # where files are staged but the commit hasn't landed yet.
 # Passing "test-project" as $1 ensures fresh-install mode skips all read() prompts.
+# Set RUN_INSTALL_LOG to a file path to capture installer stdout/stderr there
+# (default: discarded) so tests can assert on installer output.
 # Usage: run_install <project_dir> [template_dir]
 run_install() {
     local dir="$1"
     local template="${2:-$TEMPLATE_DIR}"
+    local log="${RUN_INSTALL_LOG:-/dev/null}"
 
     # Snapshot committed + staged content into a lightweight temp git repo so that
     # file:// clones see staged-but-not-yet-committed changes (pre-commit hook scenario).
@@ -190,7 +193,7 @@ run_install() {
     sed "s|REPO_URL=\"https://github.com/EnkratFlow/exocortex-template.git\"|REPO_URL=\"file://${snap}\"|" \
         "$template/install.sh" > "$patched"
     chmod +x "$patched"
-    (cd "$dir" && bash "$patched" "test-project") > /dev/null 2>&1
+    (cd "$dir" && bash "$patched" "test-project") > "$log" 2>&1
     local rc=$?
     rm -f "$patched"
     rm -rf "$snap"

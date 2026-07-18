@@ -1,6 +1,13 @@
 #!/bin/bash
 # Exocortex install.sh test suite
 
+# Scrub inherited git hook environment. When this suite runs from a pre-commit
+# hook (especially in a linked worktree, where GIT_DIR is an absolute path),
+# GIT_* variables redirect the suite's scratch-repo git calls at the real
+# repository — polluting its index and branch with test commits. Unset them so
+# every git call resolves its repository from its own working directory.
+unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE
+
 TESTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=helpers.sh
 source "$TESTS_DIR/helpers.sh"
@@ -505,7 +512,7 @@ test_17_readme_current_command_test_and_editor_claims() {
     assert_file_contains "README mentions Codex adapter reality" "$readme" "Codex through the universal adapter prompt"
     assert_file_contains "README mentions unknown IDE setup" "$readme" "any other AI-capable editor/IDE"
     assert_file_contains "README specialist skill count is current" "$readme" "17 specialist skills"
-    assert_file_contains "README test count is current" "$readme" "ALL 18 TESTS PASSED"
+    assert_file_contains "README test count is current" "$readme" "ALL 20 TESTS PASSED"
 
     assert_file_not_contains "README has no old command count heading" "$readme" "20 Workflow Commands"
     assert_file_not_contains "README has no old test output" "$readme" "8 passed, 0 failed"
@@ -668,6 +675,35 @@ EVENT
 }
 
 # ──────────────────────────────────────────────────────────────────────────────
+# Test 20 — version fallback reads the bootstrap Version footer, not prose
+# Scenario: an installed project is missing .exocortex/.version (pre-manifest-era
+# install). install.sh falls back to grepping AI_BOOTSTRAP.md. A case-sensitive
+# grep for 'version' matches an unrelated prose sentence first ("...output final
+# version") and reports the literal word "version" as the installed version.
+# The fallback must match the "**Version:** ..." footer line instead.
+# ──────────────────────────────────────────────────────────────────────────────
+test_20_update_version_fallback_reads_bootstrap_footer() {
+    begin_test "T20: version fallback reads bootstrap Version footer, not prose"
+
+    local dir
+    dir=$(make_installed_project)
+    rm -f "$dir/.exocortex/.version"
+
+    local log="$dir/install-output.txt"
+    RUN_INSTALL_LOG="$log"
+    run_install "$dir"
+    RUN_INSTALL_LOG=""
+
+    assert_file_exists       "installer output captured"                  "$log"
+    assert_file_contains     "re-run detected as update mode"             "$log" "Mode: UPDATE"
+    assert_file_not_contains "fallback does not yield literal 'version'"  "$log" "Version: version"
+    assert_file_contains     "fallback reads bootstrap footer (v3)"       "$log" "Version: v3"
+
+    rm -rf "$dir"
+    end_test
+}
+
+# ──────────────────────────────────────────────────────────────────────────────
 # Runner
 # ──────────────────────────────────────────────────────────────────────────────
 
@@ -690,6 +726,7 @@ test_16_plan_orchestrate_public_safe_branch_and_test_guidance
 test_17_readme_current_command_test_and_editor_claims
 test_18_safe_update_dry_run_rehearses_and_preserves_real_project
 test_19_generate_context_handles_paths_with_spaces
+test_20_update_version_fallback_reads_bootstrap_footer
 
 echo ""
 echo "══════════════════════════════════════════════════════"

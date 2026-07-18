@@ -342,7 +342,7 @@ cd exocortex-template
 bash tests/run_tests.sh
 ```
 
-Expected output: `ALL 18 TESTS PASSED` covering:
+Expected output: `ALL 20 TESTS PASSED` covering:
 
 | Test | What it verifies |
 |------|-----------------|
@@ -364,6 +364,8 @@ Expected output: `ALL 18 TESTS PASSED` covering:
 | T16 orchestration guidance | Branch/testing guidance stays public-safe |
 | T17 README accuracy | README does not drift on command/test/editor support claims |
 | T18 safe update | Restore-point dry-run rehearses without changing the real project |
+| T19 spaced paths | Context generation works when the project path contains spaces |
+| T20 version fallback | Installed-version fallback reads the bootstrap Version footer, not prose |
 
 ### Pre-commit hook (contributor setup, one-time)
 

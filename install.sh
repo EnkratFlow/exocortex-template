@@ -61,7 +61,8 @@ if [ -d ".exocortex" ]; then
     if [ -f .exocortex/.version ]; then
         INSTALLED_VERSION="$(cat .exocortex/.version 2>/dev/null | tr -d '[:space:]')"
     else
-        INSTALLED_VERSION="$(grep -m1 'version' .exocortex/AI_BOOTSTRAP.md 2>/dev/null | awk '{print $NF}' || echo 'unknown')"
+        # Match the "**Version:** ..." footer line, not prose containing "version"
+        INSTALLED_VERSION="$(grep -m1 -i '^\*\*version:\*\*' .exocortex/AI_BOOTSTRAP.md 2>/dev/null | awk '{print $NF}' || echo 'unknown')"
     fi
     [ -z "$INSTALLED_VERSION" ] && INSTALLED_VERSION="unknown"
     echo "🔄 Mode: UPDATE"
