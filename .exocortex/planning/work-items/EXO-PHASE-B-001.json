@@ -1,0 +1,477 @@
+{
+  "schema_version": "1.0-planning",
+  "kind": "delivery_work_item",
+  "id": "EXO-PHASE-B-001",
+  "title": "Generalize the accepted multi-AI delivery protocol into the Exocortex template",
+  "type": "template_generalization",
+  "priority": "high",
+  "revision": 1,
+  "lifecycle": {
+    "state": "captured",
+    "attempt": 0,
+    "blocked": null,
+    "note": "Captured planning draft only. Triaged, Refined, Ready, reservation, implementation, release, and promotion require later approvals."
+  },
+  "distribution": {
+    "classification": "project-local-planning-data",
+    "propagate_to_installed_repositories": false,
+    "current_safeguard": "The approved base excludes .exocortex/planning/* from installer propagation and treats planning as a sacred updater directory.",
+    "future_regression": "QA-04 must prove planning records remain excluded from generated manifests, checksums, clean installs, and upgrades."
+  },
+  "authority": {
+    "approval_id": "EXO-PHASE-B-001-P0",
+    "status": "consumed",
+    "accepted_at": "2026-07-22T12:17:51Z",
+    "scope": "Create one clean isolated local worktree from the approved exact base, create the tracked work item, bind the accepted Mulligan references, and define privacy, model-neutral orchestration, Healthy clean-install, and existing-upgrade test scopes.",
+    "excludes": [
+      "protocol implementation",
+      "Healthy changes",
+      "upgrade execution",
+      "push or pull request",
+      "merge",
+      "release or deployment",
+      "service action",
+      "credential access",
+      "external synchronization",
+      "template promotion"
+    ]
+  },
+  "lane": {
+    "repository": "exocortex-template",
+    "base_sha": "0eb3c667a505b90c9221ed768d47039a1638df5e",
+    "observed_main_sha": "c6ccd8358c6896d8456cb4aa19b09744ea44b1e8",
+    "base_contained_in_main": false,
+    "branch": "codex/exo-phase-b-001-planning",
+    "worktree_hint": "exocortex-template-phase-b-planning",
+    "allowed_paths": [
+      ".exocortex/planning/ACTIVE_WORK.md",
+      ".exocortex/planning/work-items/EXO-PHASE-B-001.json",
+      ".exocortex/planning/work-items/EXO-PHASE-B-001.md"
+    ],
+    "reservation": {
+      "status": "none",
+      "writer": null,
+      "note": "The approved planning gate does not reserve an implementation writer."
+    }
+  },
+  "ownership": {
+    "human_approver": "project-owner",
+    "coordinator": "primary-agent",
+    "writer": null,
+    "support": "bounded-read-only-reviewers"
+  },
+  "reference_evidence": {
+    "template_base": {
+      "sha": "0eb3c667a505b90c9221ed768d47039a1638df5e",
+      "purpose": "Approved Phase B planning base containing the version-fallback correction.",
+      "promotion_note": "This commit is not contained in the observed main branch; integration requires a later decision."
+    },
+    "mulligan_accepted_record": {
+      "sha": "50cd1c3db6d69c6d16a68e8935576016b21276b2",
+      "purpose": "Accepted Human UAT history and final local record reference.",
+      "handling": "Private local evidence only; do not copy its work items, events, approvals, identities, paths, or application content."
+    },
+    "mulligan_implementation_candidate": {
+      "sha": "b63463f784d3e51f47b787e29222bba91dce60e0",
+      "purpose": "Behavioral source for selective protocol comparison and privacy-safe generalization.",
+      "handling": "Review behavior and tests selectively; never promote the private repository tree verbatim."
+    },
+    "mulligan_remaining_gates": [
+      "QA-08 release disposition and bounded hypercare are pending",
+      "R-04 application/protocol branch integration remains open",
+      "release, deployment, external synchronization, and template promotion are not authorized"
+    ]
+  },
+  "requirements": [
+    {
+      "id": "REQ-01",
+      "name": "Universal AI entry",
+      "text": "Every supported AI enters through one provider-neutral orientation contract, resolves live Git and project-local authority deterministically, and stops before mutation when exact approval or lane ownership is absent."
+    },
+    {
+      "id": "REQ-02",
+      "name": "Capability- and cost-aware routing",
+      "text": "Routing uses capability roles and risk, not mandatory vendor or model names: deterministic tools first, bounded low-cost evidence lanes, one accountable writer, and independent review only when required by risk or gate."
+    },
+    {
+      "id": "REQ-03",
+      "name": "Minute-scale Kanban delivery lifecycle",
+      "text": "Work flows through explicit requirement, refinement, implementation, verification, independent review, QA/SIT, Human UAT, release, deployment, hypercare, and Done gates; blocked and awaiting-release states remain visible."
+    },
+    {
+      "id": "REQ-04",
+      "name": "Deterministic local checkpoints",
+      "text": "A transition designated as checkpoint-eligible by the approved schema must create exactly one idempotent project-local checkpoint after the authorized transition is accepted and durably recorded; accepted transitions explicitly designated non-checkpointing create none. Rejection, read-only work, tests, support activity, stale or conflicting requests, and replay create no lifecycle checkpoint. A narrative save requires an explicit user command or confirmation, creates a project-local event only, and implies neither a lifecycle transition nor external synchronization."
+    },
+    {
+      "id": "REQ-05",
+      "name": "Fail-closed egress",
+      "text": "RAG, vault, hub, network, or other external delivery requires current exact destination-specific human authorization before credentials or event content are read and before any copy or network activity begins. Local event creation remains independently complete."
+    },
+    {
+      "id": "REQ-06",
+      "name": "Privacy-safe public generalization",
+      "text": "Only generic contracts, schemas, scripts, tests, and fictional fixtures may enter the public template; private source evidence remains project-local."
+    },
+    {
+      "id": "REQ-07",
+      "name": "Install and upgrade safety",
+      "text": "The generalized template must preserve sovereign project data, user-modified files, editor configuration, rollback evidence, and idempotence during clean installation and existing-repository upgrades."
+    },
+    {
+      "id": "REQ-08",
+      "name": "Recursive improvement without self-authorization",
+      "text": "Retrospectives may propose protocol improvements and new work items, but no model may approve its own mutation, release, external action, or template promotion."
+    }
+  ],
+  "routing": {
+    "policy": "Use deterministic tools before model tokens, then choose the least-cost capable role while preserving one accountable writer.",
+    "roles": [
+      {
+        "role": "deterministic-tooling",
+        "use_for": "Git truth, schema validation, searches, checksums, scope checks, tests, and idempotency verification"
+      },
+      {
+        "role": "bounded-evidence-lane",
+        "use_for": "Read-only inventory, comparison, test mapping, and documentation evidence"
+      },
+      {
+        "role": "accountable-writer",
+        "use_for": "One approved implementation lane for compatibility-sensitive changes"
+      },
+      {
+        "role": "independent-reviewer",
+        "use_for": "Security, privacy, data, migration, architecture, financial, destructive, or gate-required review"
+      },
+      {
+        "role": "record-formatter",
+        "use_for": "Bounded low-risk narrative formatting when the parent supplies a complete evidence packet"
+      }
+    ],
+    "provider_rule": "Provider adapters may map available models to roles, but no provider, product, or named model is required for protocol compliance.",
+    "controls": [
+      "one writer at a time",
+      "support lanes are read-only unless separately approved",
+      "no full-history fork when a compact evidence packet is sufficient",
+      "cap parallel lanes at the minimum useful number",
+      "stop duplicate audits after evidence converges",
+      "report routing and estimate before each substantial phase",
+      "escalate when scope, base, risk, privacy, data, security, or external authority changes"
+    ]
+  },
+  "privacy_contract": {
+    "transfer_allowed": [
+      "generic lifecycle rules",
+      "generic capability-role routing",
+      "generic schemas and validators",
+      "generic scripts",
+      "deterministic tests",
+      "fictional fixtures using reserved example domains"
+    ],
+    "transfer_prohibited": [
+      "personal names or account identities",
+      "application or product terminology",
+      "absolute local paths",
+      "private work-item identifiers",
+      "source repository branches, SHAs, session identifiers, reservation identifiers, or origin fingerprints",
+      "events, handoffs, approval history, or event content",
+      "real endpoints, destinations, vault paths, or organization-specific credential names",
+      "secrets or secret-derived data"
+    ],
+    "required_evidence": [
+      "automated prohibited-token and absolute-path scan",
+      "public-template data-plane exclusion test",
+      "fictional-fixture review",
+      "independent human-readable privacy review of the exact candidate diff"
+    ]
+  },
+  "prospective_implementation_scope": {
+    "status": "not_authorized",
+    "areas": [
+      "one root provider-neutral AI entry contract and thin provider/editor adapters",
+      "canonical work-item lifecycle schema, validation, reservations, transitions, checkpoints, and handoffs",
+      "capability-and-cost routing policy with optional provider mappings",
+      "manual narrative save versus lifecycle-checkpoint separation",
+      "deny-by-default destination-bound egress authorization checked before credential or event-content access",
+      "privacy-generic documentation and fictional fixtures",
+      "installer, updater, checksum, and manifest handling for new code-plane files and protected data-plane state",
+      "deterministic protocol, privacy, clean-install, update, rollback, and idempotency tests",
+      "release documentation, migration notes, and bounded hypercare plan"
+    ],
+    "candidate_surfaces": [
+      "root AI entry and provider pointer files",
+      ".exocortex/AI_BOOTSTRAP.md and generic command documentation",
+      ".exocortex work-item schema and orchestration scripts",
+      "event creation, save, checkpoint, and external-sync scripts/specifications",
+      "model-routing rules and adapter examples",
+      "install.sh, safe updater, upgrade manifest, checksums, README, and test runner",
+      "new and affected deterministic protocol, privacy, installer, and updater tests"
+    ],
+    "path_boundary": "An exact implementation allowlist must be proposed and separately approved before any implementation writer is reserved."
+  },
+  "acceptance_criteria": [
+    {
+      "id": "AC-01",
+      "text": "A zero-context AI can identify the repository, exact Git authority, active work item, lifecycle state, writer reservation, available evidence, and closed gates in under five minutes without prior chat context.",
+      "status": "pending"
+    },
+    {
+      "id": "AC-02",
+      "text": "Routing is provider-neutral, capability- and cost-based, deterministic-first, and enforces one accountable writer with bounded read-only support.",
+      "status": "pending"
+    },
+    {
+      "id": "AC-03",
+      "text": "Accepted lifecycle transitions, rejection, retry, replay, checkpoint, handoff, and manual narrative-save behavior are deterministic, idempotent, and unambiguous.",
+      "status": "pending"
+    },
+    {
+      "id": "AC-04",
+      "text": "External synchronization fails closed before credential lookup, event-content reads, copy, or network activity unless a current exact destination-specific authorization exists.",
+      "status": "pending"
+    },
+    {
+      "id": "AC-05",
+      "text": "The exact public candidate contains no private Mulligan or owner-specific data and installs no project-local planning, work-item history, events, approvals, or origin metadata.",
+      "status": "pending"
+    },
+    {
+      "id": "AC-06",
+      "text": "A disposable Healthy clean install preserves every pre-existing tracked file, editor configuration, application source, generated-source boundary, credential boundary, and external-service state.",
+      "status": "pending"
+    },
+    {
+      "id": "AC-07",
+      "text": "A disposable existing-repository upgrade preserves project-local memory, events, planning state, user-modified and untracked extensions, and supports verified idempotent re-run and rollback.",
+      "status": "pending"
+    },
+    {
+      "id": "AC-08",
+      "text": "Independent cross-provider Human UAT passes entry, rejection, retry, handoff, install, and upgrade cases before template promotion is considered.",
+      "status": "pending"
+    },
+    {
+      "id": "AC-09",
+      "text": "Implementation, rehearsals, Human UAT, release/hypercare conclusion, promotion, and each live-repository rollout remain separately approved gates.",
+      "status": "pending"
+    }
+  ],
+  "qa_matrix": [
+    {
+      "id": "QA-01",
+      "name": "Schema, lifecycle, scope, and exact-path validation",
+      "gate": "developer_verified",
+      "required": true,
+      "status": "planned"
+    },
+    {
+      "id": "QA-02",
+      "name": "Provider-neutral cold-start, routing, rejection, retry, checkpoint, replay, and handoff regression",
+      "gate": "developer_verified",
+      "required": true,
+      "status": "planned"
+    },
+    {
+      "id": "QA-03",
+      "name": "Fail-closed destination-bound egress regression before secret or content access",
+      "gate": "security_privacy_review",
+      "required": true,
+      "status": "planned"
+    },
+    {
+      "id": "QA-04",
+      "name": "Public privacy, generic-fixture, data-plane exclusion, checksum, and manifest regression",
+      "gate": "security_privacy_review",
+      "required": true,
+      "status": "planned"
+    },
+    {
+      "id": "QA-05",
+      "name": "Full template installer and updater test suite on the exact candidate",
+      "gate": "qa_sit",
+      "required": true,
+      "status": "planned"
+    },
+    {
+      "id": "QA-06",
+      "name": "Healthy disposable clean-install rehearsal",
+      "gate": "qa_sit",
+      "required": true,
+      "status": "planned"
+    },
+    {
+      "id": "QA-07",
+      "name": "Existing-repository disposable upgrade, second-run idempotency, and restore rehearsal",
+      "gate": "qa_sit",
+      "required": true,
+      "status": "planned"
+    },
+    {
+      "id": "QA-08",
+      "name": "Independent cross-provider review and Human UAT",
+      "gate": "human_uat",
+      "required": true,
+      "status": "planned"
+    },
+    {
+      "id": "QA-09",
+      "name": "Release disposition and bounded hypercare",
+      "gate": "done",
+      "required": true,
+      "status": "planned"
+    }
+  ],
+  "rehearsals": {
+    "healthy_clean_install": {
+      "status": "not_authorized",
+      "observed_source": {
+        "repository": "Healthy",
+        "branch": "main",
+        "sha": "87cd63cd9b87efb6d3b234dd2362c78242492a24",
+        "tree": "clean when observed; reverify before rehearsal"
+      },
+      "constraints": [
+        "use a disposable isolated copy only",
+        "pin the exact template candidate",
+        "run non-interactively with no global editor-home change",
+        "use no real secrets, browser profile, Firebase credentials, network, build, or deploy authority",
+        "preserve .claude/launch.json byte-for-byte",
+        "preserve app/healthy.html and every pre-existing tracked file byte-for-byte during installation",
+        "verify placeholder-only ignored local configuration",
+        "verify second-run idempotency and no duplicate ignore entries",
+        "run local regressions only under the later rehearsal approval"
+      ],
+      "human_uat": [
+        "fresh AI/editor cold start reads the provider-neutral entry contract",
+        "the AI identifies the disposable rehearsal boundary",
+        "no automatic lifecycle checkpoint, external sync, build, deploy, or production action occurs"
+      ]
+    },
+    "existing_repository_upgrade": {
+      "status": "not_authorized",
+      "observed_source": {
+        "repository": "enkratflow-ui",
+        "branch": "chore/lessons-layout-and-build-errors",
+        "sha": "a875dca137bd6959f1308f223f3003fdaf733f75",
+        "tree": "dirty with 14 paths when observed; never exercise the live checkout"
+      },
+      "constraints": [
+        "use a disposable isolated copy only",
+        "route dry-run archives to a disposable backup directory",
+        "baseline hashes for protected memory, control, events, custom commands/scripts, sidecars, and registry filenames without reading secrets",
+        "exercise unknown-version to pinned-template migration",
+        "preserve manifest-diverged and untracked extensions",
+        "add synthetic local, archive, hub, planning, subconscious, and hub-marker fixtures only in the disposable copy",
+        "verify first apply, second-run idempotency, protected-path equality, and restore into a second disposable copy",
+        "no external synchronization, credentials, service, or production access"
+      ],
+      "known_gap": "The current safe-update protected-path rehearsal does not individually cover every archive, hub, planning, subconscious, and hub-marker path; the implementation test scope must close or explicitly detect this gap before live rollout."
+    }
+  },
+  "dependencies": [
+    {
+      "id": "D-01",
+      "description": "Owner approval for this exact setup-and-planning gate.",
+      "status": "satisfied"
+    },
+    {
+      "id": "D-02",
+      "description": "Clean isolated local worktree at the exact approved fallback base.",
+      "status": "satisfied"
+    },
+    {
+      "id": "D-03",
+      "description": "Accepted Mulligan Human UAT record and exact implementation behavior reference are available locally.",
+      "status": "satisfied"
+    },
+    {
+      "id": "D-04",
+      "description": "Choose how the fallback base is reconciled with main before any promotion path.",
+      "status": "pending"
+    },
+    {
+      "id": "D-05",
+      "description": "Owner reviews and accepts the captured scope, then separately approves the exact future implementation path allowlist and implementation gate.",
+      "status": "blocked"
+    },
+    {
+      "id": "D-06",
+      "description": "Separate authorization for each disposable install or upgrade rehearsal.",
+      "status": "blocked"
+    },
+    {
+      "id": "D-07",
+      "description": "Separate Human UAT, release/hypercare, template promotion, and live-repository rollout decisions.",
+      "status": "blocked"
+    }
+  ],
+  "risks": [
+    {
+      "id": "R-01",
+      "description": "The approved fallback base is not contained in observed main and could be misrepresented as released template truth.",
+      "mitigation": "Bind the exact base, state containment truth, and require a later explicit integration decision.",
+      "status": "open"
+    },
+    {
+      "id": "R-02",
+      "description": "Private Mulligan records or application-specific assumptions could leak into the public template.",
+      "mitigation": "Use selective behavioral comparison, fictional fixtures, automated prohibited-data scans, and independent privacy review.",
+      "status": "open"
+    },
+    {
+      "id": "R-03",
+      "description": "Provider/model pins could make the entry and routing protocol unusable from another AI surface.",
+      "mitigation": "Make capability roles normative and provider mappings optional adapters.",
+      "status": "open"
+    },
+    {
+      "id": "R-04",
+      "description": "Automatic save/checkpoint behavior could create duplicate or unauthorized lifecycle records or imply egress authority.",
+      "mitigation": "Separate narrative events from lifecycle checkpoints, drive checkpoints from accepted durable transitions, and keep egress independently authorized.",
+      "status": "open"
+    },
+    {
+      "id": "R-05",
+      "description": "Installer or updater changes could overwrite sovereign project data, user modifications, or editor configuration.",
+      "mitigation": "Use pinned disposable rehearsals, complete protected-path fixtures, baseline hashes, idempotency checks, and verified restore.",
+      "status": "open"
+    },
+    {
+      "id": "R-06",
+      "description": "A planning approval could be mistaken for implementation, rehearsal, release, or promotion authority.",
+      "mitigation": "Keep the work item at captured, reserve no writer, and enumerate every excluded downstream action.",
+      "status": "mitigated"
+    }
+  ],
+  "approvals": [
+    {
+      "id": "EXO-PHASE-B-001-P0",
+      "status": "consumed",
+      "accepted_at": "2026-07-22T12:17:51Z",
+      "accepted_by": "project-owner",
+      "scope": "Setup and planning records only in one isolated local worktree from the exact approved base."
+    }
+  ],
+  "transitions": [
+    {
+      "id": "EXO-PHASE-B-001-PLAN-CAPTURED-V1",
+      "operation": "initialize_planning_record",
+      "from": null,
+      "to": "captured",
+      "accepted_by": "project-owner",
+      "accepted_at": "2026-07-22T12:17:51Z",
+      "note": "Initial planning draft captured under the explicit setup-and-planning approval; its contents have not yet received a refinement, readiness, or implementation acceptance."
+    }
+  ],
+  "checkpoints": [],
+  "handoffs": [],
+  "idempotency": [],
+  "release": {
+    "status": "not_authorized",
+    "sha": null,
+    "artifact": null,
+    "approval": null,
+    "rollback": null,
+    "hypercare": null
+  }
+}
