@@ -5,24 +5,26 @@
   "title": "Generalize the accepted multi-AI delivery protocol into the Exocortex template",
   "type": "template_generalization",
   "priority": "high",
-  "revision": 1,
+  "revision": 2,
   "lifecycle": {
-    "state": "captured",
+    "state": "refined",
     "attempt": 0,
     "blocked": null,
-    "note": "Captured planning draft only. Triaged, Refined, Ready, reservation, implementation, release, and promotion require later approvals."
+    "note": "The owner accepted the captured plan and approved G1 refinement. Ready, writer reservation, implementation, rehearsals, release, and promotion require later approvals."
   },
   "distribution": {
     "classification": "project-local-planning-data",
     "propagate_to_installed_repositories": false,
+    "remote_publish": false,
     "current_safeguard": "The approved base excludes .exocortex/planning/* from installer propagation and treats planning as a sacred updater directory.",
-    "future_regression": "QA-04 must prove planning records remain excluded from generated manifests, checksums, clean installs, and upgrades."
+    "future_regression": "QA-04 must prove planning records remain excluded from generated manifests, checksums, clean installs, upgrades, the exact public release tree, and every commit newly reachable from the public promotion target.",
+    "promotion_boundary": "This planning branch and any descendant carrying private planning history must never be pushed, merged, fast-forwarded, or used directly as a public pull request. A later promotion gate must replay only the accepted privacy-scrubbed code-plane diff onto an approved clean public base, produce new public commits with no planning ancestry, and scan both the exact promoted tree and all newly reachable commit trees/messages before publication."
   },
   "authority": {
-    "approval_id": "EXO-PHASE-B-001-P0",
+    "approval_id": "EXO-PHASE-B-001-G1",
     "status": "consumed",
-    "accepted_at": "2026-07-22T12:17:51Z",
-    "scope": "Create one clean isolated local worktree from the approved exact base, create the tracked work item, bind the accepted Mulligan references, and define privacy, model-neutral orchestration, Healthy clean-install, and existing-upgrade test scopes.",
+    "accepted_at": "2026-07-22T12:57:24Z",
+    "scope": "Refine only the same three project-local planning paths: add R-01 through R-12 closure criteria, return R-06 to open until machine-enforced, define the exact prospective implementation allowlist, migration sequence, fault-injection, rollback, and hypercare verification, and make dynamic capability-and-cost orchestration explicit.",
     "excludes": [
       "protocol implementation",
       "Healthy changes",
@@ -69,12 +71,14 @@
     "mulligan_accepted_record": {
       "sha": "50cd1c3db6d69c6d16a68e8935576016b21276b2",
       "purpose": "Accepted Human UAT history and final local record reference.",
-      "handling": "Private local evidence only; do not copy its work items, events, approvals, identities, paths, or application content."
+      "availability": "The identifier and prior privacy-safe audit summary are recorded, but the object is intentionally absent from the template repository object database and is not independently verifiable here.",
+      "handling": "Private local evidence only; do not import or copy its work items, events, approvals, identities, paths, application content, object, or history. A later need for exact evidence requires separately authorized source inspection or a privacy-safe evidence packet."
     },
     "mulligan_implementation_candidate": {
       "sha": "b63463f784d3e51f47b787e29222bba91dce60e0",
       "purpose": "Behavioral source for selective protocol comparison and privacy-safe generalization.",
-      "handling": "Review behavior and tests selectively; never promote the private repository tree verbatim."
+      "availability": "The identifier and prior privacy-safe behavioral summary are recorded, but the object is intentionally absent from the template repository object database and is not independently verifiable here.",
+      "handling": "Never import or promote the private repository object or tree. A later comparison must use separately authorized source inspection or a privacy-safe, fictionalized behavior/evidence packet."
     },
     "mulligan_remaining_gates": [
       "QA-08 release disposition and bounded hypercare are pending",
@@ -125,7 +129,28 @@
     }
   ],
   "routing": {
-    "policy": "Use deterministic tools before model tokens, then choose the least-cost capable role while preserving one accountable writer.",
+    "policy": "Choose the least-expensive orchestration-capable parent for the whole task, use deterministic tools before model tokens, delegate each bounded subtask to the least-cost capable role, escalate on evidence or risk, and return all results to the parent for validation and integration.",
+    "orchestrator_selection": {
+      "rule": "Select the least-expensive available model that can reliably own planning, authority interpretation, risk decisions, integration, and final accountability for the task as scoped; do not automatically select either the most expensive model or the cheapest model.",
+      "inputs": [
+        "task complexity and novelty",
+        "ambiguity and amount of cross-file or cross-repository integration",
+        "security, privacy, data, financial, migration, destructive, or external-action risk",
+        "required context length and tool competence",
+        "available provider/model capabilities, reliability, latency, and cost",
+        "required independent-review gate"
+      ],
+      "examples_are_non_normative": true,
+      "fallback": "If no available model meets the required parent capability, stop and request a different model or narrower scope rather than silently downgrading."
+    },
+    "delegation_loop": [
+      "The parent decomposes the approved scope into bounded deliverables with acceptance criteria and an authority boundary.",
+      "Deterministic tooling handles facts, validation, tests, checksums, and repeatable transformations before a model lane is used.",
+      "Each delegable task goes to the least-cost available role that can complete it reliably; support lanes remain read-only unless the exact approval says otherwise.",
+      "A delegate escalates ambiguity, repeated failure, scope drift, sensitive data, external action, or material design decisions to the parent or a stronger role.",
+      "All delegated evidence and proposed changes return to the accountable parent for integration, deterministic verification, and gate decisions.",
+      "No delegate or parent may self-approve a human gate, broaden scope, or infer downstream authority."
+    ],
     "roles": [
       {
         "role": "deterministic-tooling",
@@ -148,7 +173,15 @@
         "use_for": "Bounded low-risk narrative formatting when the parent supplies a complete evidence packet"
       }
     ],
-    "provider_rule": "Provider adapters may map available models to roles, but no provider, product, or named model is required for protocol compliance.",
+    "provider_rule": "Provider adapters may map currently available models to roles using capability, reliability, latency, and cost metadata, but no provider, product, named model, or permanent highest-model-first rule is required for protocol compliance.",
+    "cost_controls": [
+      "publish the chosen parent role, delegated roles, reason, and ETA before each substantial phase",
+      "send compact evidence packets instead of full conversation history when sufficient",
+      "use at most the minimum useful parallel lanes",
+      "stop duplicate reviews when evidence converges",
+      "use a low-cost record formatter only from a complete parent-supplied evidence packet",
+      "report material routing, estimate, or capability changes to the owner"
+    ],
     "controls": [
       "one writer at a time",
       "support lanes are read-only unless separately approved",
@@ -157,6 +190,50 @@
       "stop duplicate audits after evidence converges",
       "report routing and estimate before each substantial phase",
       "escalate when scope, base, risk, privacy, data, security, or external authority changes"
+    ]
+  },
+  "egress_payload_contract": {
+    "status": "prospective_not_authorized",
+    "stage_one_local_descriptor": [
+      "A separately authorized local-only operation creates or selects a finalized immutable payload object and records its local object ID, byte size, media/type class, and cryptographic digest without reading any destination credential or initiating transport.",
+      "For a newly created event, the deterministic local event writer computes and stores the descriptor as part of the accepted local event operation. For a provider prompt or other dynamic payload, the command first prepares a local immutable preview/descriptor and stops before egress.",
+      "The human sees the declared destination, method, payload class, size, digest, expiry, and outward effect and approves that exact descriptor. If no pre-existing immutable descriptor exists, no egress capability can be issued."
+    ],
+    "stage_two_guard_and_send": [
+      "The egress guard first reads only approval/policy metadata and the stored descriptor; absent, stale, wrong, expired, revoked, consumed, or mismatched metadata is denied before payload open/read, credential lookup, destination initialization, process spawn, copy, or network.",
+      "After metadata authorization passes, the guard opens the payload once, streams and hashes it, and compares it with the approved digest before credential lookup or transport.",
+      "A payload digest or size mismatch records denial, consumes or revokes the attempted capability according to policy, and performs no credential lookup, copy, process spawn, or network.",
+      "Only after the streamed payload matches may the guard obtain the exact destination credential and invoke the fake or later separately authorized real transport; commit-time expiry, revocation, destination, method, and digest are checked again.",
+      "Dynamic or changed content always requires a new local descriptor and new exact approval; content is never inferred to remain authorized."
+    ],
+    "audit_order": [
+      "descriptor_resolved",
+      "authorization_metadata_checked",
+      "payload_opened_after_authorization",
+      "payload_digest_verified",
+      "credential_lookup_after_digest",
+      "transport_initialized_after_credential",
+      "transport_attempted"
+    ]
+  },
+  "executor_admission_contract": {
+    "status": "prospective_not_authorized",
+    "default": "Every absent, unknown, unregistered, expired, revoked, non-attested, or digest-mismatched AI surface/executor is read-only and cannot acquire or consume writer or egress capability.",
+    "registration": [
+      "A separate local human approval registers an exact surface_id, guarded_executor_id, adapter version, guard executable digest, allowed role classes, expiry, and revocation state in the project-local executor registry.",
+      "Registration never grants a work-item operation; each writer or egress capability still requires its own exact approval and reservation where applicable.",
+      "The authority and egress guards bind every issued capability to the registered identity and recheck registry version, executable digest, expiry, and revocation immediately before reservation, mutation, payload access, credential lookup, or transport.",
+      "A provider surface that cannot present the registered guarded-executor attestation remains read-only/advisory even if its model is otherwise capable."
+    ],
+    "required_negative_evidence": [
+      "missing surface identity",
+      "unregistered identity",
+      "wrong executor identity",
+      "wrong adapter version",
+      "guard executable digest mismatch",
+      "expired registration",
+      "revoked registration",
+      "attempt to reuse a capability from another registered surface"
     ]
   },
   "privacy_contract": {
@@ -179,35 +256,255 @@
       "secrets or secret-derived data"
     ],
     "required_evidence": [
-      "automated prohibited-token and absolute-path scan",
+      "automated prohibited-token and absolute-path scan using a private local-only fingerprint input that is never committed",
+      "explicit allowlist for legitimate public documentation domains and reserved example.invalid fixture destinations",
       "public-template data-plane exclusion test",
+      "exact promoted-tree plus newly reachable commit-tree/message privacy scan proving private planning history is not published",
       "fictional-fixture review",
       "independent human-readable privacy review of the exact candidate diff"
     ]
   },
   "prospective_implementation_scope": {
     "status": "not_authorized",
-    "areas": [
-      "one root provider-neutral AI entry contract and thin provider/editor adapters",
-      "canonical work-item lifecycle schema, validation, reservations, transitions, checkpoints, and handoffs",
-      "capability-and-cost routing policy with optional provider mappings",
-      "manual narrative save versus lifecycle-checkpoint separation",
-      "deny-by-default destination-bound egress authorization checked before credential or event-content access",
-      "privacy-generic documentation and fictional fixtures",
-      "installer, updater, checksum, and manifest handling for new code-plane files and protected data-plane state",
-      "deterministic protocol, privacy, clean-install, update, rollback, and idempotency tests",
-      "release documentation, migration notes, and bounded hypercare plan"
+    "authorization_rule": "These paths are a prospective G2 boundary, not present authority. G2 requires a separate exact approval and one fresh local writer reservation; target-repository rehearsals and every downstream action remain separate gates.",
+    "create_paths": [
+      "AGENTS.md",
+      "AI_START_HERE.md",
+      ".exocortex/control/MODEL_ROUTING.md",
+      ".exocortex/control/DELIVERY_WORKFLOW.md",
+      ".exocortex/schemas/orchestration.schema.json",
+      ".exocortex/schemas/authorization.schema.json",
+      ".exocortex/schemas/executor-registry.schema.json",
+      ".exocortex/schemas/external-sync-policy.schema.json",
+      ".exocortex/examples/EXECUTOR_REGISTRY.read-only.json",
+      ".exocortex/examples/EXTERNAL_SYNC_POLICY.deny.json",
+      ".exocortex/scripts/orchestrate_work_item.py",
+      ".exocortex/scripts/authority_guard.py",
+      ".exocortex/scripts/egress_guard.py",
+      ".exocortex/scripts/resolve_designated_base.sh",
+      ".exocortex/scripts/git_event_crosscheck.sh",
+      ".exocortex/scripts/tests/test_orchestration_protocol.sh",
+      ".exocortex/scripts/tests/test_event_tooling.sh",
+      ".exocortex/commands/handoff.json",
+      ".cursor/commands/handoff.md",
+      "tests/phase-b/run.sh",
+      "tests/phase-b/test_phase_b.py",
+      "tests/phase-b/verify_evidence.py",
+      "tests/phase-b/test-plan.json",
+      "tests/phase-b/fault_shims.sh",
+      "tests/phase-b/hash_tree.py",
+      "tests/phase-b/assert_tree_delta.py",
+      "tests/phase-b/make_upgrade_fixture.py"
     ],
-    "candidate_surfaces": [
-      "root AI entry and provider pointer files",
-      ".exocortex/AI_BOOTSTRAP.md and generic command documentation",
-      ".exocortex work-item schema and orchestration scripts",
-      "event creation, save, checkpoint, and external-sync scripts/specifications",
-      "model-routing rules and adapter examples",
-      "install.sh, safe updater, upgrade manifest, checksums, README, and test runner",
-      "new and affected deterministic protocol, privacy, installer, and updater tests"
+    "modify_paths": [
+      "CLAUDE.md",
+      ".github/copilot-instructions.md",
+      ".github/skills/ai-architect/SKILL.md",
+      ".github/skills/architect/SKILL.md",
+      ".github/skills/behavioral/SKILL.md",
+      ".github/skills/chief-of-staff/SKILL.md",
+      ".github/skills/cx-strategist/SKILL.md",
+      ".github/skills/data-engineer/SKILL.md",
+      ".github/skills/deep-agent/SKILL.md",
+      ".github/skills/devops/SKILL.md",
+      ".github/skills/engineer/SKILL.md",
+      ".github/skills/onboard/SKILL.md",
+      ".github/skills/product-manager/SKILL.md",
+      ".github/skills/project-planner/SKILL.md",
+      ".github/skills/qa-strategist/SKILL.md",
+      ".github/skills/roster/SKILL.md",
+      ".github/skills/security/SKILL.md",
+      ".github/skills/sre/SKILL.md",
+      ".github/skills/technical-writer/SKILL.md",
+      ".github/skills/ux-designer/SKILL.md",
+      ".rules",
+      ".windsurfrules",
+      ".cursor/rules/plan-orchestrate.mdc",
+      ".cursor/hooks.json",
+      ".cursor/hooks/auto-save-phase.sh",
+      ".cursor/commands/ai-export.md",
+      ".cursor/commands/brief.md",
+      ".cursor/commands/save.md",
+      ".cursor/commands/daily-end.md",
+      ".cursor/commands/weekly-review.md",
+      ".cursor/commands/monthly-review.md",
+      ".cursor/commands/drill.md",
+      ".cursor/commands/groom.md",
+      ".cursor/commands/history.md",
+      ".cursor/commands/init-exocortex.md",
+      ".cursor/commands/interrupt.md",
+      ".cursor/commands/longterm.md",
+      ".cursor/commands/onboard.md",
+      ".cursor/commands/prioritize.md",
+      ".cursor/commands/refine-backlog.md",
+      ".cursor/commands/work.md",
+      ".cursor/commands/ecosystem.md",
+      ".cursor/commands/scrum.md",
+      ".cursor/commands/shortterm.md",
+      ".cursor/commands/subconscious.md",
+      ".cursor/commands/system-scan.md",
+      ".cursor/skills/ai-architect/SKILL.md",
+      ".cursor/skills/architect/SKILL.md",
+      ".cursor/skills/behavioral/SKILL.md",
+      ".cursor/skills/chief-of-staff/SKILL.md",
+      ".cursor/skills/cx-strategist/SKILL.md",
+      ".cursor/skills/data-engineer/SKILL.md",
+      ".cursor/skills/deep-agent/SKILL.md",
+      ".cursor/skills/devops/SKILL.md",
+      ".cursor/skills/engineer/SKILL.md",
+      ".cursor/skills/onboard/SKILL.md",
+      ".cursor/skills/product-manager/SKILL.md",
+      ".cursor/skills/project-planner/SKILL.md",
+      ".cursor/skills/qa-strategist/SKILL.md",
+      ".cursor/skills/roster/SKILL.md",
+      ".cursor/skills/security/SKILL.md",
+      ".cursor/skills/sre/SKILL.md",
+      ".cursor/skills/technical-writer/SKILL.md",
+      ".cursor/skills/ux-designer/SKILL.md",
+      ".claude/skills/ai-export/SKILL.md",
+      ".claude/skills/save/SKILL.md",
+      ".claude/skills/daily-end/SKILL.md",
+      ".claude/skills/groom/SKILL.md",
+      ".claude/skills/interrupt/SKILL.md",
+      ".claude/skills/refine-backlog/SKILL.md",
+      ".claude/skills/system-scan/SKILL.md",
+      ".claude/skills/work/SKILL.md",
+      ".exocortex/AI_BOOTSTRAP.md",
+      ".exocortex/COMMAND_SYSTEM.md",
+      ".exocortex/PERSONA_AND_COMMANDS.md",
+      ".exocortex/MEMORY_TIERS.md",
+      ".exocortex/control/README.md",
+      ".exocortex/control/QA_STRATEGY.md",
+      ".exocortex/control/SNIPPETS.md",
+      ".exocortex/reference/ESSENTIAL_FILES.md",
+      ".exocortex/docs/IDE_INTEGRATION_GUIDE.md",
+      ".exocortex/docs/EVENT_SYSTEM_USAGE.md",
+      ".exocortex/docs/RAG_INTEGRATION.md",
+      ".exocortex/docs/UPGRADE_MANIFEST.md",
+      ".exocortex/docs/getting-started.md",
+      ".exocortex/docs/memory-system.md",
+      ".exocortex/docs/SUBCONSCIOUS_ARCHITECTURE.md",
+      ".exocortex/docs/user-guide.md",
+      ".exocortex/commands/ai-export.json",
+      ".exocortex/commands/brief.json",
+      ".exocortex/commands/save.json",
+      ".exocortex/commands/daily-end.json",
+      ".exocortex/commands/weekly-review.json",
+      ".exocortex/commands/monthly-review.json",
+      ".exocortex/commands/history.json",
+      ".exocortex/commands/init-exocortex.json",
+      ".exocortex/commands/groom.json",
+      ".exocortex/commands/interrupt.json",
+      ".exocortex/commands/onboard.json",
+      ".exocortex/commands/pattern-review.json",
+      ".exocortex/commands/prioritize.json",
+      ".exocortex/commands/refine-backlog.json",
+      ".exocortex/commands/work.json",
+      ".exocortex/commands/ecosystem.json",
+      ".exocortex/commands/check-keys.json",
+      ".exocortex/commands/drill.json",
+      ".exocortex/commands/longterm.json",
+      ".exocortex/commands/shortterm.json",
+      ".exocortex/commands/subconscious.json",
+      ".exocortex/commands/scrum.json",
+      ".exocortex/commands/system-scan.json",
+      ".exocortex/scripts/_api_helpers.py",
+      ".exocortex/scripts/archive_events.sh",
+      ".exocortex/scripts/auto_snapshot.sh",
+      ".exocortex/scripts/capture_interrupt.sh",
+      ".exocortex/scripts/check_keys.py",
+      ".exocortex/scripts/check_keys.sh",
+      ".exocortex/scripts/create_event.sh",
+      ".exocortex/scripts/drill_memory.py",
+      ".exocortex/scripts/generate_context.sh",
+      ".exocortex/scripts/get_longterm_memory.py",
+      ".exocortex/scripts/get_longterm_memory.sh",
+      ".exocortex/scripts/get_rightnow_memory.py",
+      ".exocortex/scripts/get_rightnow_memory.sh",
+      ".exocortex/scripts/get_shortterm_memory.py",
+      ".exocortex/scripts/get_shortterm_memory.sh",
+      ".exocortex/scripts/get_subconscious_memory.py",
+      ".exocortex/scripts/get_subconscious_nudge.py",
+      ".exocortex/scripts/install_openclaw_reminder.sh",
+      ".exocortex/scripts/post_to_hub.sh",
+      ".exocortex/scripts/run_brief_status.sh",
+      ".exocortex/scripts/run_morning_workflow.sh",
+      ".exocortex/scripts/run_scrum.sh",
+      ".exocortex/scripts/save_work_state.sh",
+      ".exocortex/scripts/sync_event_to_vault.sh",
+      ".exocortex/scripts/upgrade-exocortex.sh",
+      ".exocortex/scripts/launchd/com.exocortex.autosave.plist.template",
+      ".exocortex/scripts/launchd/README.md",
+      ".exocortex/scripts/launchd/install_autosave.sh",
+      ".exocortex/scripts/launchd/uninstall_autosave.sh",
+      ".exocortex/skills/exocortex-reminder/SETUP.md",
+      ".exocortex/skills/exocortex-reminder/SKILL.md",
+      "README.md",
+      "CONTRIBUTING.md",
+      "install.sh",
+      "init-project.sh",
+      "scripts/safe-update.sh",
+      "scripts/install-cursor-skills.sh",
+      "scripts/update-all-repos.sh",
+      ".exocortex/.env.example",
+      ".exocortex/.gitignore",
+      ".gitignore",
+      "tests/helpers.sh",
+      "tests/run_tests.sh",
+      ".github/workflows/checksums.yml",
+      ".github/workflows/test.yml",
+      "SHA256SUMS"
     ],
-    "path_boundary": "An exact implementation allowlist must be proposed and separately approved before any implementation writer is reserved."
+    "protected_non_propagating_paths": [
+      ".exocortex/SESSION_CONTEXT.md",
+      ".exocortex/SESSION_CONTEXT.local.md",
+      ".exocortex/TODO.md",
+      ".exocortex/LESSONS.md",
+      ".exocortex/PROJECT_MEMORY.md",
+      ".exocortex/OPEN_DECISIONS.md",
+      ".exocortex/subconscious_patterns.md",
+      ".exocortex/.env",
+      ".exocortex/.project-name",
+      ".exocortex/.install-manifest",
+      ".exocortex/events/**",
+      ".exocortex/archive/**",
+      ".exocortex/hub/**",
+      ".exocortex/local/**",
+      ".exocortex/planning/**",
+      ".exocortex/work-items/**",
+      ".exocortex/control/ACTIVE_WORK.md",
+      ".exocortex/control/BRANCH_POLICY.md",
+      ".exocortex/control/REPO_STATE.md",
+      ".exocortex/control/EXECUTOR_REGISTRY.json",
+      ".exocortex/control/EXTERNAL_SYNC_POLICY.json",
+      ".exocortex/control/INTERRUPTS.md",
+      ".exocortex/control/BACKLOG.md",
+      ".exocortex/control/ROADMAP.md",
+      ".exocortex/control/ARCH_OVERVIEW.md",
+      ".exocortex/control/REPO_ORGANIZATION_REPORT.md",
+      ".exocortex/.hub_enabled",
+      ".exocortex/.hub_disabled"
+    ],
+    "generated_local_stubs": [
+      "new installs may create blank project-local work-item/control storage",
+      "new installs create a generic local executor registry with every unregistered surface read-only and no writer or egress capability",
+      "new installs may create a generic deny-by-default EXTERNAL_SYNC_POLICY.json validated by the public schema",
+      "generated stubs carry no template identities, destinations, approvals, expiry records, events, origin fingerprints, or source planning history",
+      "generated data-plane paths never enter the install manifest or template checksum payload"
+    ],
+    "excluded_even_from_g2": [
+      "any Mulligan work item, event, handoff, identity, source path, SHA, domain, approval, or application fixture",
+      "private fixture files or prohibited-token values committed to the template",
+      "tracked .agents skill-tree generation or broad provider-skill rewrites beyond the listed thin adapters",
+      "Healthy or enkratflow-ui copies, installs, upgrades, tests, builds, browser access, services, or repository writes",
+      "real credential reads, real provider calls, external synchronization, global editor-home changes, service installation, push, merge, release, deployment, version bump, or template promotion"
+    ],
+    "slice_order": [
+      "G2-A: root entry, provider-neutral routing, schemas, documentation, and non-executing validation",
+      "G2-B: machine-enforced authority, lifecycle, checkpoint, handoff, and egress guards with deterministic tests",
+      "G2-C: installer, updater, manifest, generated-local-stub, native-adapter, and protected-data behavior",
+      "G2-D: isolated Phase B harness, privacy scan, fault injection, documentation reconciliation, and integrity manifest"
+    ]
   },
   "acceptance_criteria": [
     {
@@ -253,6 +550,21 @@
     {
       "id": "AC-09",
       "text": "Implementation, rehearsals, Human UAT, release/hypercare conclusion, promotion, and each live-repository rollout remain separately approved gates.",
+      "status": "pending"
+    },
+    {
+      "id": "AC-10",
+      "text": "Every protocol-managed mutation or egress capability is bound to an attested registered guarded executor and machine-validated against one current, exact, scoped, expiring, revocable, one-time human approval plus the current target or immutable-payload digest immediately before the side effect; absent, unregistered, non-attested, stale, mismatched, revoked, or consumed identity/authority fails before reservation, write, child process, payload read, credential lookup, copy, or network attempt, and an unconstrained AI surface cannot hold a writer or egress role.",
+      "status": "pending"
+    },
+    {
+      "id": "AC-11",
+      "text": "Pinned-source integrity, migration compatibility, concurrency, time-of-check/time-of-use, fault-injection, evidence-completeness, recovery, and revocation cases pass on the exact candidate with no skipped required case.",
+      "status": "pending"
+    },
+    {
+      "id": "AC-12",
+      "text": "Recursive-improvement retrospectives can propose a bounded next work item from measured evidence, but cannot reserve a writer, mutate a repository, call a provider, synchronize data, release, deploy, or promote without the next exact human gate.",
       "status": "pending"
     }
   ],
@@ -319,6 +631,27 @@
       "gate": "done",
       "required": true,
       "status": "planned"
+    },
+    {
+      "id": "QA-10",
+      "name": "Executor admission, pinned-source supply-chain, approval capability, concurrency, TOCTOU, and schema-migration regression",
+      "gate": "security_privacy_review",
+      "required": true,
+      "status": "planned"
+    },
+    {
+      "id": "QA-11",
+      "name": "Required-case discovery, evidence completeness, mutation sensitivity, and sterile cross-provider review",
+      "gate": "qa_sit",
+      "required": true,
+      "status": "planned"
+    },
+    {
+      "id": "QA-12",
+      "name": "Fault-injected recovery, revocation, containment, rollback, and hypercare-trigger regression",
+      "gate": "release_ready",
+      "required": true,
+      "status": "planned"
     }
   ],
   "rehearsals": {
@@ -368,6 +701,100 @@
       "known_gap": "The current safe-update protected-path rehearsal does not individually cover every archive, hub, planning, subconscious, and hub-marker path; the implementation test scope must close or explicitly detect this gap before live rollout."
     }
   },
+  "migration_contract": {
+    "status": "prospective_not_authorized",
+    "order": [
+      "detect and classify without mutation: blank/new, generic legacy-v0, normalized generic-v1, current public-v2, unknown, malformed, duplicate, or future-version",
+      "new installations create empty current public-v2 project-local state and a deny-by-default local egress-policy stub; they never import template planning records",
+      "legacy records remain readable for orientation where safely possible, but mutation is blocked until a separate target-specific migration approval and writer reservation exist",
+      "under that later approval, create and verify an immutable local backup before staging generic legacy-v0 to normalized generic-v1",
+      "validate normalized generic-v1, then stage normalized generic-v1 to current public-v2 in a separate temporary tree",
+      "validate schema, authority boundaries, privacy exclusions, cross-record references, and exact target digest before one atomic replacement",
+      "rerun the migration and prove no additional change; restore the backup only into a second disposable target during rehearsal",
+      "unknown, malformed, duplicate, future-version, changed-target, or unverifiable records fail closed without modifying the source"
+    ],
+    "fixtures": "All migration fixtures are fictional generic records generated under the disposable test root. Private Mulligan records and live repository state are never copied into the public suite.",
+    "live_rule": "Neither install.sh nor the updater automatically migrates a live repository's project-local work items; every live target requires its own exact migration approval after rehearsal evidence is accepted."
+  },
+  "verification_contract": {
+    "status": "prospective_not_authorized",
+    "runner": "tests/phase-b/run.sh",
+    "preconditions": [
+      "EXOCORTEX_TEST_ROOT is an absolute newly created temporary directory",
+      "the runner rejects the template source, any live application repository, user home, workspace root, or unresolved path as a target",
+      "HOME and TMPDIR point inside the disposable root",
+      "the candidate is an exact local commit and every executable surface matches SHA256SUMS",
+      "network, copy, provider, credential, service, push, deploy, and external-sync transports are replaced by ordered auditable fakes"
+    ],
+    "required_case_groups": [
+      "QA-01 exact schema, lifecycle, base, revision, allowlist, and no-extra-path validation",
+      "QA-02 cold entry, least-cost capable parent selection, delegation, escalation, rejection, retry, replay, handoff, and cross-provider contract",
+      "QA-03 two-stage immutable-payload authorization: metadata denial before payload open/read, then streamed digest verification before credential lookup, destination initialization, process spawn, copy, or network for absent, wrong, expired, revoked, consumed, or digest-mismatched authority",
+      "QA-04 public privacy scan, fictional fixtures, protected data-plane exclusion, generated-stub validation, manifest exclusion, exact promoted-tree/newly-reachable-history scan, and independent diff review",
+      "QA-05 exact-candidate syntax, checksums, installer/updater regression, and no skipped required group",
+      "QA-06 disposable clean install, byte hashes, global-home isolation, second-run idempotency, and cold-start UAT preparation",
+      "QA-07 disposable legacy upgrade, manifest divergence, untracked extension, protected-state hashes, first/second run, unknown-version failure, and restore",
+      "QA-08 sterile Human UAT across at least two materially distinct AI/provider surfaces with no shared chat context",
+      "QA-09 exact release-candidate disposition and bounded hypercare evidence",
+      "QA-10 executor-registry admission and rejection, approval capability, pinned source, missing/extra/mismatched checksum, 32-writer reservation/transition/checkpoint race, revocation, TOCTOU, and migration compatibility",
+      "QA-11 evidence-plan completeness and mutation tests that prove removing authority, atomicity, protected-path, or checksum controls makes the suite fail",
+      "QA-12 failure after backup, during staging, before atomic replace, after egress authorization before transport, and during retry, followed by containment and verified second-target restoration"
+    ],
+    "evidence": [
+      "JUnit results",
+      "local evidence manifest containing exact candidate SHA and tree, generated fixture digest, case IDs, ordered audit-log hashes, and exit status",
+      "zero required skipped or undiscovered cases",
+      "exact tracked diff allowlist and git diff --check",
+      "independent security/privacy/correctness review of the exact candidate"
+    ],
+    "prohibited": [
+      "real network or provider calls",
+      "real credential lookup or secret-value output",
+      "live repository mutation",
+      "global editor or home-directory mutation",
+      "save, checkpoint, external sync, push, deploy, service, or release side effects"
+    ]
+  },
+  "rollback_and_containment": {
+    "status": "prospective_not_authorized",
+    "prepare": [
+      "record exact candidate, target, schema, approval, manifest, and protected-tree digests",
+      "verify a local immutable backup before staging",
+      "stage every mutation in a separate temporary tree and revalidate authority plus target digest immediately before atomic replacement"
+    ],
+    "immediate_triggers": [
+      "unauthorized or ambiguous egress attempt",
+      "protected-path hash drift",
+      "duplicate lifecycle checkpoint",
+      "stale or concurrent writer mutation",
+      "missing, extra, or mismatched integrity entry",
+      "schema or migration ambiguity",
+      "failed restore",
+      "provider-neutral contract failure",
+      "required test skipped, undiscovered, or insensitive to a removed safeguard"
+    ],
+    "response": [
+      "stop new mutations and transports",
+      "revoke outstanding approval capabilities and queued retries",
+      "mark the candidate contained or blocked without asserting release or Done",
+      "preserve append-only local evidence without external synchronization",
+      "verify the original source remains intact",
+      "restore only into a second disposable target and compare it byte-for-byte with the pre-apply baseline",
+      "require a new human decision before modifying an original target, retrying egress, or resuming promotion"
+    ]
+  },
+  "hypercare_contract": {
+    "status": "prospective_not_authorized",
+    "minimum_window": "seven calendar days and at least 25 checkpoint-eligible protocol operations, whichever finishes later",
+    "coverage": [
+      "at least two materially distinct AI/provider entry surfaces",
+      "cold entry, rejection, retry, handoff, save/checkpoint separation, and recursive-improvement proposal",
+      "both disposable clean-install and existing-upgrade classes",
+      "daily local evidence review for authorization denials, retries, duplicate IDs, routing escalations, protected hashes, and transport audit order"
+    ],
+    "exit": "The owner separately accepts the exact hypercare evidence and residual risks. Hypercare completion does not itself authorize template promotion or any live-repository rollout.",
+    "trigger_rule": "Any rollback_and_containment immediate trigger pauses the window, contains the candidate, and requires a new approved corrective work item plus a fresh complete hypercare window."
+  },
   "dependencies": [
     {
       "id": "D-01",
@@ -381,8 +808,8 @@
     },
     {
       "id": "D-03",
-      "description": "Accepted Mulligan Human UAT record and exact implementation behavior reference are available locally.",
-      "status": "satisfied"
+      "description": "The accepted Mulligan identifiers and prior privacy-safe audit summaries are recorded, but their Git objects are intentionally absent from this repository and are not independently verifiable here.",
+      "status": "pending"
     },
     {
       "id": "D-04",
@@ -391,8 +818,8 @@
     },
     {
       "id": "D-05",
-      "description": "Owner reviews and accepts the captured scope, then separately approves the exact future implementation path allowlist and implementation gate.",
-      "status": "blocked"
+      "description": "Owner accepted the captured scope and G1 now defines the exact prospective implementation allowlist, migration, rollback, fault-injection, and hypercare contracts.",
+      "status": "satisfied"
     },
     {
       "id": "D-06",
@@ -403,44 +830,285 @@
       "id": "D-07",
       "description": "Separate Human UAT, release/hypercare, template promotion, and live-repository rollout decisions.",
       "status": "blocked"
+    },
+    {
+      "id": "D-08",
+      "description": "Separate G2 approval for the exact prospective local implementation allowlist and one fresh writer reservation; G2 does not include target rehearsals or downstream actions.",
+      "status": "blocked"
+    },
+    {
+      "id": "D-09",
+      "description": "Before promotion, choose a release candidate that contains the approved fallback base or explicitly supersedes it with owner-accepted equivalent evidence.",
+      "status": "pending"
+    },
+    {
+      "id": "D-10",
+      "description": "Before implementation claims conformance with the private pilot, obtain separately authorized read-only source verification or a privacy-safe fictionalized evidence packet without importing private objects or history.",
+      "status": "blocked"
     }
   ],
   "risks": [
     {
       "id": "R-01",
       "description": "The approved fallback base is not contained in observed main and could be misrepresented as released template truth.",
-      "mitigation": "Bind the exact base, state containment truth, and require a later explicit integration decision.",
+      "mitigation": "Bind planning to the exact base, keep planning truth distinct from release truth, and require an explicit integration candidate and immutable release SHA.",
+      "closure_conditions": [
+        "the owner approves an explicit integration or supersession decision",
+        "git merge-base --is-ancestor succeeds from the approved base to the exact release candidate, or the owner accepts documented equivalent supersession evidence",
+        "the exact candidate SHA and tree used for all required tests are the SHA and tree proposed for release",
+        "a separate release record names the immutable candidate and does not describe a branch name as released truth"
+      ],
+      "required_evidence": [
+        "exact base, integration candidate, and release-candidate SHAs",
+        "branch-containment command result",
+        "candidate test evidence manifest",
+        "separate owner release decision"
+      ],
+      "residual_risk": "The branch may diverge again after the accepted candidate is frozen.",
+      "residual_acceptance": "Any later divergence requires a new exact release candidate and release gate; branch movement never updates accepted authority automatically.",
       "status": "open"
     },
     {
       "id": "R-02",
       "description": "Private Mulligan records or application-specific assumptions could leak into the public template.",
-      "mitigation": "Use selective behavioral comparison, fictional fixtures, automated prohibited-data scans, and independent privacy review.",
+      "mitigation": "Use an exact public-code allowlist, runtime-generated fictional fixtures, data-plane exclusions, automated scans, and independent exact-diff privacy review.",
+      "closure_conditions": [
+        "the candidate diff contains only approved code-plane paths",
+        "tracked candidate files plus generated install and update artifacts pass private local-only prohibited-token, personal-path, non-public destination, identity, source-fingerprint, and private-ID scans while an explicit allowlist permits legitimate public documentation domains",
+        "planning, work items, events, approvals, origin metadata, and source repository history are absent from installer manifests and checksums",
+        "the exact public promotion tree and every commit tree/message newly reachable from the public target contain no project-local planning file or private source fingerprint; private planning commits are not ancestors of the promoted commit",
+        "fixtures use fictional values and reserved example.invalid destinations",
+        "an independent reviewer records no actionable privacy finding without reproducing private literals"
+      ],
+      "required_evidence": [
+        "exact path-diff report",
+        "privacy and data-plane exclusion results",
+        "public promotion ancestry and newly reachable history scan",
+        "generated-artifact scan results",
+        "independent human-readable privacy review"
+      ],
+      "residual_risk": "Generic wording may still permit semantic inference or a newly introduced identifier may evade a static token list.",
+      "residual_acceptance": "The owner must accept the residual privacy review; any discovered leak triggers containment, removal, history-remediation assessment, and a new candidate.",
       "status": "open"
     },
     {
       "id": "R-03",
       "description": "Provider/model pins could make the entry and routing protocol unusable from another AI surface.",
-      "mitigation": "Make capability roles normative and provider mappings optional adapters.",
+      "mitigation": "Make one provider-free normative contract, capability/cost metadata, thin adapters, and a common cold-start/rejection contract authoritative.",
+      "closure_conditions": [
+        "no named provider or model is required by normative schemas or acceptance logic",
+        "at least two materially distinct AI/provider surfaces pass the same cold-start, authority, routing, rejection, retry, and handoff cases",
+        "the least-expensive orchestration-capable parent may delegate down, escalate up, and validate returned work without changing authority",
+        "a versioned compatibility record distinguishes optional mappings from protocol requirements"
+      ],
+      "required_evidence": [
+        "provider-neutral schema validation",
+        "two-surface sterile Human UAT evidence",
+        "adapter compatibility matrix",
+        "static scan for normative model pins"
+      ],
+      "residual_risk": "Provider behavior or tool semantics may change after validation.",
+      "residual_acceptance": "A provider or adapter change invalidates its compatibility evidence and requires revalidation before it is advertised as supported.",
       "status": "open"
     },
     {
       "id": "R-04",
       "description": "Automatic save/checkpoint behavior could create duplicate or unauthorized lifecycle records or imply egress authority.",
-      "mitigation": "Separate narrative events from lifecycle checkpoints, drive checkpoints from accepted durable transitions, and keep egress independently authorized.",
+      "mitigation": "Use one transition ledger, stable idempotency keys, atomic durable transition/checkpoint recording, explicit checkpoint eligibility, and a separate egress gate.",
+      "closure_conditions": [
+        "an accepted checkpoint-eligible transition and its checkpoint are one atomic durable operation",
+        "retry and replay converge on the same one checkpoint ID",
+        "rejected, invalid, unauthorized, stale, conflicting, blocked, read-only, support, test, ordinary-chat, narrative-save, and non-checkpointing transition cases create zero lifecycle checkpoints",
+        "concurrent transition attempts produce exactly one accepted transition/checkpoint pair",
+        "checkpoint and handoff creation are project-local and never imply external authorization",
+        "crash injection before and after the atomic boundary leaves either the old valid state or the single new valid state"
+      ],
+      "required_evidence": [
+        "transition-ledger and idempotency tests",
+        "32-writer race result",
+        "fault-injection audit order",
+        "manual narrative-save separation test",
+        "egress-denial evidence"
+      ],
+      "residual_risk": "Underlying filesystem, operating-system, or storage corruption can violate normal atomicity assumptions.",
+      "residual_acceptance": "Append-only evidence, corruption detection, verified backups, and fail-closed recovery remain required; corruption never permits inferred continuation.",
       "status": "open"
     },
     {
       "id": "R-05",
       "description": "Installer or updater changes could overwrite sovereign project data, user modifications, or editor configuration.",
-      "mitigation": "Use pinned disposable rehearsals, complete protected-path fixtures, baseline hashes, idempotency checks, and verified restore.",
+      "mitigation": "Use pinned disposable copies, exhaustive protected-path fixtures, pre/post byte hashes, manifest divergence tests, two-run idempotency, atomic staging, and second-target restore.",
+      "closure_conditions": [
+        "all protected non-propagating path classes are hash-equal before and after install or upgrade",
+        "new installation creates only approved code-plane files, blank local stubs, and one controlled ignore block",
+        "manifest-diverged files, untracked extensions, editor collisions, unknown versions, malformed records, and injected failures are preserved or fail before source mutation",
+        "first and second runs converge without duplicate entries or unexpected change",
+        "restore into a second disposable target reproduces the pre-apply Exocortex, editor, and ignore baseline byte-for-byte",
+        "no app, browser, credential, provider, network, service, build, deploy, global-home, or live-repository action occurs"
+      ],
+      "required_evidence": [
+        "protected-tree hash manifests",
+        "install and update delta reports",
+        "first-run and second-run results",
+        "injected-failure results",
+        "verified second-target restoration"
+      ],
+      "residual_risk": "An unknown platform behavior or unclassified future user-data path may not be represented by the generic fixtures.",
+      "residual_acceptance": "Unknown paths default to preserve-and-stop, each live target requires exact preflight and external backup, and no rehearsal authorizes a live rollout.",
       "status": "open"
     },
     {
       "id": "R-06",
       "description": "A planning approval could be mistaken for implementation, rehearsal, release, or promotion authority.",
-      "mitigation": "Keep the work item at captured, reserve no writer, and enumerate every excluded downstream action.",
-      "status": "mitigated"
+      "mitigation": "Keep G1 at refined with no writer, then implement machine-validated one-time approval capabilities bound to an attested registered guarded executor plus exact work item, operation, target path/SHA/destination/content digest, approver, expiry, and reservation.",
+      "closure_conditions": [
+        "missing, planning-only, wrong-item, wrong-operation, wrong-target, wrong-ref, expired, revoked, consumed, or digest-mismatched authority is rejected before reservation, write, child process, credential lookup, content read, copy, or network",
+        "a valid capability authorizes only its exact operation and is consumed once",
+        "the current writer reservation, target digest, approval digest, expiry, and revocation state are rechecked immediately before commit or transport",
+        "read-only and support roles cannot acquire mutation capability",
+        "every capability is bound to a registered surface_id, guarded_executor_id, adapter version, guard executable digest, registry version, expiry, and revocation state",
+        "missing, unregistered, non-attested, wrong-executor, wrong-adapter, digest-mismatched, expired, revoked, or cross-surface capability use is rejected before reservation, mutation, payload access, credential lookup, or transport",
+        "every shipped command, skill, hook, and provider adapter loads the canonical gate; an AI surface with unmediated filesystem or network tools that cannot be constrained to the registered guarded executor is classified read-only/advisory and cannot be an approved writer or egress actor",
+        "an independent reviewer verifies fail-closed ordering and no implicit downstream authority"
+      ],
+      "required_evidence": [
+        "authority schema and guard tests",
+        "negative matrix covering every mismatch and replay",
+        "executor-registry and guarded-executor attestation negative matrix",
+        "one valid one-time positive case using only a disposable target",
+        "independent authority-boundary review"
+      ],
+      "residual_risk": "A human can still approve the wrong bounded action, and an unmanaged AI/host tool outside the guarded execution boundary can ignore repository protocol.",
+      "residual_acceptance": "Every approval prompt displays the exact action, target, outward effect, expiry, rollback, and excluded next gates. Only surfaces technically constrained to the guarded path may receive writer/egress roles; other surfaces remain read-only/advisory, and the human remains the non-delegable acceptance boundary.",
+      "status": "open"
+    },
+    {
+      "id": "R-07",
+      "description": "A moving, incomplete, or tampered template source could pass informal review and alter an installed target.",
+      "mitigation": "Pin the exact local candidate commit and tree, verify every executable surface and expected file against SHA256SUMS, and reject missing, extra, or mismatched entries before target mutation.",
+      "closure_conditions": [
+        "installation and rehearsal accept an exact pinned candidate rather than implicit moving main",
+        "every user-executable code-plane surface is covered by the integrity manifest",
+        "missing, extra, modified, or unhashed executable fixtures fail before creating a target delta",
+        "provenance evidence records candidate commit, tree, integrity-manifest hash, and offline source"
+      ],
+      "required_evidence": [
+        "candidate provenance record",
+        "complete integrity inventory",
+        "missing, extra, and mismatch negative tests",
+        "zero-target-delta proof on integrity failure"
+      ],
+      "residual_risk": "A compromised trusted local root could falsify both files and their local manifest.",
+      "residual_acceptance": "Promotion requires an independently reviewed exact Git object and trusted publication channel; live consumers must pin the accepted artifact digest.",
+      "status": "open"
+    },
+    {
+      "id": "R-08",
+      "description": "Concurrency or time-of-check/time-of-use changes could let stale writers, approvals, or destinations act after validation.",
+      "mitigation": "Use atomic compare-and-swap reservations, versioned state, stable idempotency keys, revocation records, and commit-time target/authority digest checks.",
+      "closure_conditions": [
+        "32 concurrent attempts for reservation, transition, checkpoint, approval consumption, and revocation yield exactly one valid winner where one is permitted",
+        "losers create no partial state and stale lease holders cannot commit",
+        "changing approval, target, destination, content digest, expiry, or revocation between initial check and commit causes rejection",
+        "retry after conflict converges without duplicate checkpoint or handoff"
+      ],
+      "required_evidence": [
+        "repeatable race-test results",
+        "commit-time revalidation audit",
+        "stale-writer and revocation negative cases",
+        "idempotent retry result"
+      ],
+      "residual_risk": "Pathological storage or locking behavior may exceed the tested concurrency model.",
+      "residual_acceptance": "Unsupported atomic primitives fail closed; storage platforms must be qualified before use and ambiguous state requires human-led recovery.",
+      "status": "open"
+    },
+    {
+      "id": "R-09",
+      "description": "Legacy, malformed, duplicate, or future-version work-item state could be silently misread or destructively migrated.",
+      "mitigation": "Use explicit version detection, staged generic legacy-v0 to normalized-v1 to public-v2 migration, backup-first atomic replacement, validation, idempotency, and unknown-version refusal.",
+      "closure_conditions": [
+        "blank, valid legacy-v0, valid normalized-v1, current public-v2, unknown, malformed, duplicate-ID, and future-version fixtures have explicit deterministic outcomes",
+        "new installs create blank public-v2 local state and do not import history",
+        "orientation may read supported legacy state, but mutation requires a separate target-specific migration approval",
+        "migration is backup-first, staged, validated, atomic, reversible in a disposable target, and idempotent",
+        "private Mulligan records are not committed test fixtures or automatic migration input"
+      ],
+      "required_evidence": [
+        "schema compatibility matrix",
+        "generic generated fixture results",
+        "unknown/malformed/future fail-closed results",
+        "backup, atomicity, idempotency, and second-target restore evidence"
+      ],
+      "residual_risk": "A repository may contain a bespoke private legacy extension not represented by the public compatibility matrix.",
+      "residual_acceptance": "Unrecognized extensions are preserved and mutation stops; a separate project-local migration work item is required.",
+      "status": "open"
+    },
+    {
+      "id": "R-10",
+      "description": "An indirect command, hook, subprocess, memory helper, hub copy, key check, telemetry-like helper, or retry could bypass the visible external-sync gate.",
+      "mitigation": "Route every outward-capable path through one auditable egress guard and statically reject direct transport bypasses outside that seam.",
+      "closure_conditions": [
+        "direct sync, narrative save, daily/weekly/monthly review, interrupt capture, hub post, key validation, memory-model calls, automatic hooks, subprocess adapters, and retries all use the same guard",
+        "all installed command and skill entrypoints load the canonical entry/authority contract before any mutation or outward-capable instruction",
+        "absent, expired, wrong-destination, wrong-method, wrong-content-digest, revoked, or consumed authority produces only authorization_denied",
+        "denial occurs before credential lookup, event or prompt-content read, destination initialization, process spawn, copy, or network attempt",
+        "a fake positive transport receives only the exact authorized destination, operation, and content digest",
+        "static scanning fails on curl, urllib, ssh, scp, external copy, or equivalent transport outside the approved guard seam"
+      ],
+      "required_evidence": [
+        "complete outward-path inventory",
+        "ordered fake-transport audit logs",
+        "static bypass-scan results",
+        "negative authorization matrix",
+        "one disposable fake-transport positive case"
+      ],
+      "residual_risk": "A future executable or operating-system integration could introduce a new outward mechanism after the inventory is frozen.",
+      "residual_acceptance": "New executable surfaces require integrity-manifest and egress-inventory updates; unknown outward mechanisms fail CI and cannot be promoted.",
+      "status": "open"
+    },
+    {
+      "id": "R-11",
+      "description": "A green test run could provide false confidence through skipped cases, undiscovered tests, inert mocks, weak assertions, or correlated model review.",
+      "mitigation": "Use a machine-readable required-case plan, evidence verifier, ordered audit fakes, mutation sensitivity checks, and sterile independent cross-provider UAT.",
+      "closure_conditions": [
+        "every required case ID is discovered, executed, asserted, and represented in the evidence manifest with zero skip",
+        "removing the authority, atomicity, protected-path, and checksum safeguards makes the corresponding tests fail",
+        "fake transports and child-process shims record ordered calls so a never-called mock cannot silently pass",
+        "two distinct AI/provider surfaces orient from repository state without shared conversation context and independently perform the required read-only UAT",
+        "deterministic evidence and independent review agree on the exact candidate"
+      ],
+      "required_evidence": [
+        "test-plan completeness report",
+        "mutation-test results",
+        "ordered fake audit logs",
+        "sterile cross-provider UAT records",
+        "independent exact-candidate review"
+      ],
+      "residual_risk": "Tests and reviewers can still share an unmodeled assumption about real-world behavior.",
+      "residual_acceptance": "Rehearsals remain disposable, hypercare is mandatory, and any field divergence creates a new corrective work item rather than being waived.",
+      "status": "open"
+    },
+    {
+      "id": "R-12",
+      "description": "Failure after backup, during staging, around atomic replacement, after egress authorization, or during retry could leave partial state or allow delayed unauthorized action.",
+      "mitigation": "Inject failures at every side-effect boundary, revoke outstanding capabilities and retries, contain the candidate, preserve local evidence, and prove second-target recovery.",
+      "closure_conditions": [
+        "failure after backup, during staging, immediately before atomic replace, after authorization before fake transport, and during retry leaves the original valid or the single new valid state",
+        "revocation prevents every queued or replayed transport after the injected failure",
+        "local records remain intact and the candidate enters an explicit contained or blocked state",
+        "restore into a second disposable target matches the pre-apply baseline byte-for-byte",
+        "resumption requires a new approval and fresh evidence rather than reuse of the failed capability"
+      ],
+      "required_evidence": [
+        "fault-injection matrix",
+        "revocation and queued-retry audit",
+        "source-integrity proof",
+        "contained-state record",
+        "verified second-target restore"
+      ],
+      "residual_risk": "A backup or underlying device may itself be corrupt or unavailable.",
+      "residual_acceptance": "Backups are verified before mutation, live rollout requires an external recovery copy under its own authority, and unverifiable recovery blocks the rollout.",
+      "status": "open"
     }
   ],
   "approvals": [
@@ -450,6 +1118,13 @@
       "accepted_at": "2026-07-22T12:17:51Z",
       "accepted_by": "project-owner",
       "scope": "Setup and planning records only in one isolated local worktree from the exact approved base."
+    },
+    {
+      "id": "EXO-PHASE-B-001-G1",
+      "status": "consumed",
+      "accepted_at": "2026-07-22T12:57:24Z",
+      "accepted_by": "project-owner",
+      "scope": "Refine only the same three project-local planning paths with R-01 through R-12 closure criteria, R-06 open, an exact prospective implementation allowlist, explicit dynamic capability-and-cost orchestration, migration, fault-injection, rollback, hypercare, local validation, commit, and local handoff. No implementation or downstream action."
     }
   ],
   "transitions": [
@@ -460,7 +1135,28 @@
       "to": "captured",
       "accepted_by": "project-owner",
       "accepted_at": "2026-07-22T12:17:51Z",
-      "note": "Initial planning draft captured under the explicit setup-and-planning approval; its contents have not yet received a refinement, readiness, or implementation acceptance."
+      "checkpoint_eligible": false,
+      "note": "Initial project-local planning draft captured under the explicit setup-and-planning approval."
+    },
+    {
+      "id": "EXO-PHASE-B-001-G1-TRIAGED-V2",
+      "operation": "accept_planning_problem_and_boundaries",
+      "from": "captured",
+      "to": "triaged",
+      "accepted_by": "project-owner",
+      "accepted_at": "2026-07-22T12:57:24Z",
+      "checkpoint_eligible": false,
+      "note": "G1 accepted the planning problem, references, authority boundary, and refinement scope only."
+    },
+    {
+      "id": "EXO-PHASE-B-001-G1-REFINED-V2",
+      "operation": "refine_future_implementation_and_verification_contract",
+      "from": "triaged",
+      "to": "refined",
+      "accepted_by": "project-owner",
+      "accepted_at": "2026-07-22T12:57:24Z",
+      "checkpoint_eligible": false,
+      "note": "The exact prospective G2 path boundary, twelve risk-closure contracts, migration, fault-injection, rollback, hypercare, and dynamic orchestration policy are defined but not authorized for implementation."
     }
   ],
   "checkpoints": [],
