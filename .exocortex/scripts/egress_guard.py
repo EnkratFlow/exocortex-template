@@ -18,6 +18,7 @@ from pathlib import Path
 import sys
 from typing import Any, Dict, Optional, Sequence, Tuple
 import urllib.error
+import urllib.parse
 import urllib.request
 
 from authority_guard import (
@@ -202,6 +203,13 @@ def validate_policy(document: Dict[str, Any]) -> Dict[str, Any]:
             raise ProtocolError("invalid_methods", "destination policy contains an unsupported method")
         if not isinstance(item["endpoint"], str) or not item["endpoint"]:
             raise ProtocolError("invalid_endpoint", "destination endpoint must be non-empty")
+        if item["transport"] == "https_json":
+            endpoint = urllib.parse.urlsplit(item["endpoint"])
+            if endpoint.scheme != "https" or not endpoint.hostname or endpoint.username is not None or endpoint.password is not None:
+                raise ProtocolError(
+                    "invalid_endpoint_scheme",
+                    "https_json destination endpoint must be a credential-free https:// URL",
+                )
         if item["credential_env"] is not None and (
             not isinstance(item["credential_env"], str) or not item["credential_env"].replace("_", "A").isalnum()
         ):

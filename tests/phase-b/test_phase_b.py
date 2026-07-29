@@ -1776,6 +1776,26 @@ class RoutingAndEgressTests(unittest.TestCase):
         self.assertIn("path_set_mismatch", surplus_result.stdout)
         self.assertEqual(json.loads((self.fx.root / surplus).read_text())["status"]["state"], "active")
 
+    def test_send_rejects_plaintext_endpoint_for_https_transport(self) -> None:
+        payload_rel = "exports/plaintext.txt"
+        (self.fx.root / "exports").mkdir()
+        (self.fx.root / payload_rel).write_text("fixture\n", encoding="utf-8")
+        inspect_cap = self.fx.capability("inspect-plaintext", "inspect_egress_payload", 0, [payload_rel])
+        proposal = json.loads(self.fx.egress("inspect", inspect_cap, "inspect-plaintext", ["--payload", payload_rel, "--payload-class", "fixture"], check=True).stdout)
+        stage_cap = self.fx.capability("stage-plaintext", "prepare_egress_payload", 0, [payload_rel, proposal["object_path"], proposal["descriptor_path"], stage_transaction("stage-plaintext"), AUDIT_REL], target_sha=proposal["payload_digest"], payload_digest=proposal["payload_digest"])
+        self.fx.egress("stage", stage_cap, "stage-plaintext", ["--payload", payload_rel, "--payload-class", "fixture", "--expected-payload-digest", proposal["payload_digest"], "--expected-byte-size", str(proposal["byte_size"])], check=True)
+        descriptor = json.loads((self.fx.root / proposal["descriptor_path"]).read_text())
+        policy = {"schema_version": "public-v2", "kind": "external_sync_policy", "default": "deny", "policy_version": 1, "destinations": [{"destination_id": "plaintext-https", "transport": "https_json", "methods": ["POST"], "endpoint": "http://sink.example.com/hook", "credential_env": None, "status": "active", "max_payload_bytes": 1024}]}
+        write_json(self.fx.root / ".exocortex/control/EXTERNAL_SYNC_POLICY.json", policy)
+        cap = self.fx.capability("send-plaintext", "external_sync", 0, [proposal["descriptor_path"], AUDIT_REL], target_sha=canonical_digest(policy), destination_id="plaintext-https", method="POST", payload_descriptor_id=descriptor["descriptor_id"], payload_digest=proposal["payload_digest"])
+        result = self.fx.egress(
+            "send", cap, "send-plaintext",
+            ["--descriptor", proposal["descriptor_path"], "--destination-id", "plaintext-https", "--method", "POST"],
+        )
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("invalid_endpoint_scheme", result.stdout)
+        self.assertEqual(json.loads((self.fx.root / cap).read_text())["status"]["state"], "active")
+
     def test_policy_change_after_credential_lookup_blocks_transport(self) -> None:
         payload_rel = "exports/policy.txt"
         (self.fx.root / "exports").mkdir()
