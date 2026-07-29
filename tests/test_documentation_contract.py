@@ -470,9 +470,9 @@ else:
             FAILURES.append(f"FILEMODES: mode mismatch: {relative}")
 
 version = read("VERSION").strip()
-if version != "3.2.0":
-    FAILURES.append(f"VERSION: expected packaged candidate 3.2.0, found {version!r}")
-if f"## [{version}] - 2026-07-27" not in read("CHANGELOG.md"):
+if version != "3.2.1":
+    FAILURES.append(f"VERSION: expected packaged candidate 3.2.1, found {version!r}")
+if f"## [{version}] - 2026-07-29" not in read("CHANGELOG.md"):
     FAILURES.append("CHANGELOG.md: packaged VERSION entry is missing")
 if f"# What's New in {version} " not in whatsnew:
     FAILURES.append("WHATSNEW.md: packaged VERSION heading is missing")

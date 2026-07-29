@@ -215,13 +215,18 @@ file prerequisite must be a real regular file, never a symlink:
 - `.exocortex/local/protocol/{capabilities,transactions,descriptors,payloads,audit}`
   as real directories, never symlinks.
 
-An older installation may lack some of this scaffolding. Do not let
-`safe-update.sh` create it after apply authority is consumed. Stop and show the
-exact missing-path list and directory types. For generic files, show the exact
-default bytes emitted by the pinned candidate's reviewed `install.sh`
-`ensure_data_stubs` function, including an empty read-only registry and
-deny-by-default policy. `.exocortex/.project-name` is not generic: its exact
-project-specific value must be supplied and approved by the owner.
+An older installation may lack some of this scaffolding.
+`.exocortex/.project-name` is not generic: its exact
+project-specific value must be supplied and approved by the owner, and it is
+never created or inferred by the updater. Seed it first (for example via
+`init-project.sh` with the approved name), or the update fails closed and
+prints the missing path with that instruction. Empty scaffolding directories and the exact
+reviewed defaults emitted by the pinned candidate's `install.sh`
+`ensure_data_stubs` function (including an empty read-only registry and
+deny-by-default policy) are the only protected content the update may adopt:
+each is content-verified against the reviewed defaults during rehearsal and
+verified again after apply, and anything else fails closed. Stop and show the
+exact missing-path list and directory types before seeding.
 When that value is initialized, the helper uses a private same-directory
 temporary file, exact `0644` mode, file fsync, no-replace publication, and
 directory fsync. Caught failures remove only the inode created by that
@@ -262,7 +267,9 @@ root must be owner-controlled and not group/world writable; writable ancestors
 must be sticky. Before any capability can be consumed, the updater verifies
 the archive's reserved inode, single-link state, mode, digest, safe contents,
 fsync durability, and exact reconstruction of the prior code plane. Protected
-project data and local authority state are excluded from the archive. The
+project data, local authority state, and editor session worktrees
+(`.claude/worktrees` at any depth, which are runtime state outside the update
+surface) are excluded from the archive and from every update-evidence digest. The
 command does not run the target application's test suite, apply the update,
 rerun after apply, or perform a restore. An AI must not claim those results
 from the dry-run command alone.

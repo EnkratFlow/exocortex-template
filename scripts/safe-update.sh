@@ -198,12 +198,12 @@ preflight_surface_paths() {
             [ -e "$cursor" ] || break
         done
         if [ -d "$PROJECT_ROOT/$rel" ]; then
-            link="$(find "$PROJECT_ROOT/$rel" -type l -print -quit 2>/dev/null)" \
+            link="$(find "$PROJECT_ROOT/$rel" -path "*/.claude/worktrees" -prune -o -type l -print -quit 2>/dev/null)" \
                 || fail "target update surface could not be inspected safely: $rel"
             [ -z "$link" ] || fail "target update surface contains a symlink: ${link#"$PROJECT_ROOT/"}"
         fi
         if [ -e "$PROJECT_ROOT/$rel" ]; then
-            hardlink="$(find "$PROJECT_ROOT/$rel" -type f -links +1 -print -quit 2>/dev/null)" \
+            hardlink="$(find "$PROJECT_ROOT/$rel" -path "*/.claude/worktrees" -prune -o -type f -links +1 -print -quit 2>/dev/null)" \
                 || fail "target update surface hard-link state could not be inspected safely: $rel"
             [ -z "$hardlink" ] \
                 || fail "target update surface contains an external hard-linked file: ${hardlink#"$PROJECT_ROOT/"}"
@@ -308,8 +308,8 @@ if [ "$APPLY" = true ]; then
 fi
 
 inventory_digest() {
-    local root="$1" mode="$2"
-    python3 - "$root" "$mode" <<'PY'
+    local root="$1" mode="$2" skip="${3:-}"
+    python3 - "$root" "$mode" "$skip" <<'PY'
 import hashlib, os, stat, sys
 from pathlib import Path
 
@@ -334,7 +334,27 @@ protected = [
 selected = surface if mode in ('surface', 'code_plane') else protected if mode == 'protected' else None
 if selected is None:
     raise SystemExit('invalid inventory mode')
+skip_argument = sys.argv[3] if len(sys.argv) > 3 else ''
+skip = (
+    [entry for entry in skip_argument.splitlines() if entry]
+    if mode == 'protected'
+    else []
+)
+def runtime_state(relative):
+    # Editor session worktrees are runtime state, never update surface —
+    # matched at any depth so archive excludes and digests stay symmetric.
+    parts = relative.split('/')
+    return any(
+        parts[index] == '.claude' and parts[index + 1] == 'worktrees'
+        for index in range(len(parts) - 1)
+    )
+def scaffold_directory(relative):
+    # Installer-created protocol scaffolding directories carry no user data;
+    # protected comparisons track the runtime records (files) inside instead.
+    return mode == 'protected' and relative.startswith('.exocortex/local/')
 def excluded(relative):
+    if runtime_state(relative):
+        return True
     return mode == 'code_plane' and any(
         relative == item or relative.startswith(item + '/')
         for item in protected
@@ -376,7 +396,7 @@ for rel in selected:
                     continue
                 if path.is_symlink():
                     records[child] = symlink_record(path)
-                else:
+                elif not scaffold_directory(child):
                     records[child] = directory_record(path, child)
             dirnames[:] = [
                 name
@@ -394,6 +414,15 @@ for rel in selected:
                 elif path.is_file():
                     records[child] = file_record(path)
     else:
+        records[rel] = 'absent'
+for rel in skip:
+    if rel in selected:
+        # Approved installer-created bootstrap: compare as if still absent.
+        records = {
+            key: value
+            for key, value in records.items()
+            if not (key == rel or key.startswith(rel + '/'))
+        }
         records[rel] = 'absent'
 digest = hashlib.sha256()
 for rel, value in sorted(records.items()):
@@ -458,6 +487,9 @@ for rel in "${surface_paths[@]}"; do
         cp -pR "$PROJECT_ROOT/$rel" "$REHEARSAL/$(dirname "$rel")/"
     fi
 done
+# Editor session worktrees are runtime state, never update surface; drop them
+# from the rehearsal so they cannot skew evidence or block on their contents.
+rm -rf "$REHEARSAL/.claude/worktrees"
 
 # Close the preflight-to-archive window before any target byte is read into
 # rollback evidence.
@@ -513,6 +545,10 @@ for rel in "${surface_paths[@]}"; do [ -e "$PROJECT_ROOT/$rel" ] && backup_items
 [ "${#backup_items[@]}" -gt 0 ] || fail "nothing to back up"
 backup_excludes=()
 for rel in "${protected_paths[@]}"; do backup_excludes+=("--exclude=$rel"); done
+# Editor session worktrees are runtime state: excluded from the rollback
+# archive exactly as they are excluded from every inventory digest, so the
+# archive reconstruction comparison stays exact.
+backup_excludes+=("--exclude=.claude/worktrees")
 if (cd "$PROJECT_ROOT" && COPYFILE_DISABLE=1 tar "${backup_excludes[@]}" -czf - "${backup_items[@]}") \
     | PYTHONDONTWRITEBYTECODE=1 python3 -c '
 import os
@@ -664,6 +700,12 @@ protected = (
     ".exocortex/control/REPO_ORGANIZATION_REPORT.md",
     ".exocortex/.hub_enabled", ".exocortex/.hub_disabled",
 )
+def runtime_state(name):
+    parts = name.split("/")
+    return any(
+        parts[index] == ".claude" and parts[index + 1] == "worktrees"
+        for index in range(len(parts) - 1)
+    )
 with tarfile.open(path, "r:gz") as archive:
     members = archive.getmembers()
     if not members:
@@ -678,6 +720,7 @@ with tarfile.open(path, "r:gz") as archive:
             or member.issym()
             or member.islnk()
             or not (member.isfile() or member.isdir())
+            or runtime_state(name)
             or any(name == item or name.startswith(item + "/") for item in protected)
         ):
             raise SystemExit(f"unsafe or protected rollback archive member: {name}")
@@ -782,7 +825,20 @@ fi
 REHEARSAL_CODE_PLANE_DIGEST="$(inventory_digest "$REHEARSAL" code_plane)"
 
 allowed_generated() {
-    local rel="$1" path="$2"
+    local rel="$1" path="$2" probe
+    if [ -d "$path" ] && [ ! -L "$path" ]; then
+        if [ "$rel" = ".exocortex/local" ]; then
+            # Installer-created protocol scaffolding: allowed only while it
+            # holds no runtime records at all (directories only).
+            probe="$(find "$path" ! -type d -print -quit 2>/dev/null)" || return 1
+            [ -z "$probe" ]
+            return
+        fi
+        # Any other protected directory qualifies only while completely empty.
+        probe="$(find "$path" -mindepth 1 -print -quit 2>/dev/null)" || return 1
+        [ -z "$probe" ]
+        return
+    fi
     [ -f "$path" ] || return 1
     case "$rel" in
         .exocortex/SESSION_CONTEXT.md) grep -Fq '_No active session context yet._' "$path" ;;
@@ -812,22 +868,62 @@ PY
 }
 
 : > "$PROTECTED_DIFF"
+ALLOWED_NEW_PROTECTED=""
 for rel in "${protected_paths[@]}"; do
     left="$PROJECT_ROOT/$rel"
     right="$REHEARSAL/$rel"
     if [ -e "$left" ] && [ -e "$right" ]; then
-        diff -rq "$left" "$right" >> "$PROTECTED_DIFF" 2>&1 || true
+        if [ "$rel" = ".exocortex/local" ] && [ -d "$left" ] && [ ! -L "$left" ] && [ -d "$right" ]; then
+            # Runtime records are files and symlinks; installer scaffolding
+            # directories are not protected content. Compare records exactly
+            # so a legacy target adopting new scaffolding still updates while
+            # any real record difference fails closed.
+            PYTHONDONTWRITEBYTECODE=1 python3 - "$left" "$right" >> "$PROTECTED_DIFF" 2>&1 <<'PY' \
+                || fail "protected runtime records could not be compared"
+import hashlib, os, sys
+from pathlib import Path
+
+def records(root):
+    result = {}
+    for dirpath, dirnames, filenames in os.walk(root, followlinks=False):
+        dirnames[:] = sorted(d for d in dirnames if not (Path(dirpath) / d).is_symlink())
+        for name in sorted(filenames):
+            path = Path(dirpath) / name
+            rel = path.relative_to(root).as_posix()
+            if path.is_symlink():
+                result[rel] = 'symlink:' + os.readlink(path)
+            elif path.is_file():
+                result[rel] = hashlib.sha256(path.read_bytes()).hexdigest()
+            else:
+                result[rel] = 'special'
+    return result
+
+left, right = records(Path(sys.argv[1])), records(Path(sys.argv[2]))
+for rel in sorted(set(left) | set(right)):
+    if left.get(rel) != right.get(rel):
+        print(f'protected runtime record differs: .exocortex/local/{rel}')
+PY
+        else
+            diff -rq "$left" "$right" >> "$PROTECTED_DIFF" 2>&1 || true
+        fi
     elif [ -e "$left" ] || [ -e "$right" ]; then
         existing="$left"; [ -e "$existing" ] || existing="$right"
-        if [ -d "$existing" ] && [ -z "$(find "$existing" -mindepth 1 -print -quit 2>/dev/null)" ]; then
+        if allowed_generated "$rel" "$existing"; then
+            # An installer-created default that exists only on the rehearsal
+            # side is a bootstrap, not drift; digest comparisons treat it as
+            # absent so a legacy target can adopt the current layout.
+            [ -e "$left" ] || ALLOWED_NEW_PROTECTED="${ALLOWED_NEW_PROTECTED}${rel}
+"
             continue
         fi
-        allowed_generated "$rel" "$existing" && continue
         echo "protected path exists on one side only: $rel" >> "$PROTECTED_DIFF"
+        if [ "$rel" = ".exocortex/.project-name" ] && [ ! -e "$left" ]; then
+            echo "hint: project identity is owner-approved, never inferred; run init-project.sh with the exact project name, then update" >> "$PROTECTED_DIFF"
+        fi
     fi
 done
 [ ! -s "$PROTECTED_DIFF" ] || { sed -n '1,120p' "$PROTECTED_DIFF" >&2; fail "protected data changed in rehearsal"; }
-[ "$(inventory_digest "$REHEARSAL" protected)" = "$BASE_PROTECTED_DIGEST" ] \
+[ "$(inventory_digest "$REHEARSAL" protected "$ALLOWED_NEW_PROTECTED")" = "$BASE_PROTECTED_DIGEST" ] \
     || fail "protected data modes changed in rehearsal"
 
 python3 - "$PROJECT_ROOT" "$REHEARSAL" "$CHANGES" <<'PY'
@@ -836,6 +932,13 @@ from pathlib import Path
 
 left, right, output = map(Path, sys.argv[1:])
 surface = ['.exocortex','.agents','.cursor','.claude','.github','.windsurf','AI_START_HERE.md','AGENTS.md','CLAUDE.md','.windsurfrules','.rules','.gitignore']
+def runtime(rel):
+    # Editor session worktrees are runtime state at any depth.
+    parts = rel.split('/')
+    return any(
+        parts[index] == '.claude' and parts[index + 1] == 'worktrees'
+        for index in range(len(parts) - 1)
+    )
 def inventory(root):
     result={}
     for rel in surface:
@@ -845,14 +948,21 @@ def inventory(root):
             result[rel]=f'{mode_bits:04o}:'+hashlib.sha256(base.read_bytes()).hexdigest()
         elif base.is_dir():
             for dirpath, dirnames, filenames in os.walk(base, followlinks=False):
-                dirnames[:] = sorted(d for d in dirnames if not (Path(dirpath)/d).is_symlink())
+                dirnames[:] = sorted(
+                    d for d in dirnames
+                    if not (Path(dirpath)/d).is_symlink()
+                    and not runtime((Path(dirpath)/d).relative_to(root).as_posix())
+                )
                 for name in sorted(filenames):
                     path=Path(dirpath)/name
+                    child=path.relative_to(root).as_posix()
+                    if runtime(child):
+                        continue
                     if path.is_symlink():
-                        result[path.relative_to(root).as_posix()]='symlink:'+os.readlink(path)
+                        result[child]='symlink:'+os.readlink(path)
                     elif path.is_file():
                         mode_bits=stat.S_IMODE(path.stat().st_mode)
-                        result[path.relative_to(root).as_posix()]=f'{mode_bits:04o}:'+hashlib.sha256(path.read_bytes()).hexdigest()
+                        result[child]=f'{mode_bits:04o}:'+hashlib.sha256(path.read_bytes()).hexdigest()
     return result
 a,b=inventory(left),inventory(right)
 changed=sorted(key for key in set(a)|set(b) if a.get(key)!=b.get(key))
@@ -955,7 +1065,14 @@ if [ "${EXOCORTEX_TEST_MODE:-0}" = "1" ] && [ -n "${EXOCORTEX_TEST_POST_APPLY_BA
     [ -e "$post_barrier.continue" ] || fail "test post-apply barrier timed out"
 fi
 
-[ "$(inventory_digest "$PROJECT_ROOT" protected)" = "$POST_AUTH_PROTECTED_DIGEST" ] || fail "protected target data changed during apply"
+while IFS= read -r rel; do
+    [ -n "$rel" ] || continue
+    # The apply may only have created the exact installer defaults the
+    # rehearsal was allowed to create; anything else is protected-data drift.
+    allowed_generated "$rel" "$PROJECT_ROOT/$rel" \
+        || fail "installer-created protected default does not match its expected content: $rel"
+done <<< "$ALLOWED_NEW_PROTECTED"
+[ "$(inventory_digest "$PROJECT_ROOT" protected "$ALLOWED_NEW_PROTECTED")" = "$POST_AUTH_PROTECTED_DIGEST" ] || fail "protected target data changed during apply"
 [ "$(inventory_digest "$PROJECT_ROOT" code_plane)" = "$REHEARSAL_CODE_PLANE_DIGEST" ] \
     || fail "applied code plane does not exactly match the disposable rehearsal"
 
