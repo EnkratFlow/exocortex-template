@@ -14,28 +14,38 @@ Patch release fixing the existing-repository upgrade path, discovered during a
 twelve-repository fleet rehearsal of 3.2.0. Clean installs were unaffected.
 
 ### Fixed
-- **Legacy protected-path bootstrap** — a target predating
-  `.exocortex/.project-name` and `.exocortex/local` no longer fails
-  `safe-update.sh` with "protected data changed in rehearsal". Installer-created
-  defaults that appear only on the rehearsal side are recognized as bootstraps:
-  `.project-name` must exactly match the project directory name and
-  `.exocortex/local` must contain no runtime records (directories only). Digest
-  comparisons treat approved bootstraps as absent, and the apply path verifies
-  the created content matches the same rules before accepting it.
-- **Runtime editor worktrees excluded from the update surface** — embedded
-  `.claude/worktrees/` (Claude Code session state) previously tripped the
-  update-surface symlink guard, and on macOS bsdtar's unanchored `--exclude`
-  patterns stripped a nested worktree's protected-named paths from the rollback
-  archive while the root-anchored code-plane digest still counted them, failing
-  archive reconstruction. `.claude/worktrees` is now uniformly excluded from
-  preflight scans, inventory digests, the rehearsal copy, the rollback archive,
-  and changed-path evidence, and the archive member safety check rejects any
-  archive that contains it.
+- **Legacy protected-scaffolding adoption, dry-run and apply** — a target
+  predating `.exocortex/local` no longer fails `safe-update.sh` with
+  "protected data changed in rehearsal", including the apply case where
+  provisioning the apply capability itself creates a partial
+  `.exocortex/local/protocol` tree: protected comparison of `.exocortex/local`
+  now tracks runtime records (files) exactly while ignoring installer
+  scaffolding directories, and empty protected directories adopted from the
+  reviewed installer are content-verified bootstraps treated as absent in
+  digest evidence and re-verified after apply. `.exocortex/.project-name` is
+  deliberately NOT bootstrapped: project identity is owner-approved, never
+  inferred (per `UPGRADE_MANIFEST.md`), so a legacy target must be seeded once
+  with `init-project.sh` and the updater fails closed with that exact
+  instruction otherwise.
+- **Runtime editor worktrees excluded from the update surface at any depth** —
+  `.claude/worktrees` (editor session state, whether a directory, file, or
+  symlink, at any nesting depth) previously tripped the update-surface symlink
+  guard, and on macOS bsdtar's unanchored `--exclude` patterns stripped a
+  nested worktree's protected-named paths from the rollback archive while the
+  root-anchored code-plane digest still counted them, failing archive
+  reconstruction. The exclusion is now segment-matched identically across
+  preflight scans, inventory digests, the rehearsal copy, the rollback archive
+  and its member safety check, changed-path evidence, and the reconciliation
+  planner's target-surface digest, so no form or depth of session worktree can
+  block, skew, or leak into update evidence.
 
 ### Added
-- Installer-suite regression tests: a legacy-layout target bootstraps cleanly
-  in dry-run, and a target with a symlinked, `.exocortex`-bearing embedded
-  worktree passes with the worktree absent from all rollback evidence.
+- Installer-suite regression tests: legacy scaffolding bootstraps in dry-run;
+  a guarded apply succeeds on a legacy target whose capability created a
+  partial protocol tree; a missing `.project-name` fails closed with the
+  seeding instruction; symlinked and nested worktrees are absent from all
+  rollback evidence; a non-directory `.claude/worktrees` never reaches the
+  changed-path evidence.
 
 ## [3.2.0] - 2026-07-27
 

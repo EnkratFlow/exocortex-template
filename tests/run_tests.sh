@@ -49,6 +49,12 @@ protected = (
     '.exocortex/.hub_enabled', '.exocortex/.hub_disabled',
 )
 def excluded(relative):
+    parts = relative.split('/')
+    if any(
+        parts[index] == '.claude' and parts[index + 1] == 'worktrees'
+        for index in range(len(parts) - 1)
+    ):
+        return True
     return any(relative == item or relative.startswith(item + '/') for item in protected)
 def directory_record(path, relative):
     value = os.lstat(path)
@@ -994,7 +1000,6 @@ rm -rf "$target" "$fake_home" "$backup"
 target="$(new_target)"
 fake_home="$(mktemp -d "${TMPDIR:-/tmp}/exo-test-home.XXXXXX")"
 run_install "$target" "$TEMPLATE_DIR" "$fake_home" >/dev/null
-rm -f "$target/.exocortex/.project-name"
 rm -rf "$target/.exocortex/local"
 target_before="$(tree_digest "$target")"
 backup="$(mktemp -d "${TMPDIR:-/tmp}/exo-test-backup.XXXXXX")"
@@ -1002,11 +1007,28 @@ if (cd "$target" && bash "$TEMPLATE_DIR/scripts/safe-update.sh" \
     --template "$TEMPLATE_DIR" --candidate-digest "$(hash_file "$TEMPLATE_DIR/SHA256SUMS")" \
     --backup-dir "$backup" --dry-run) >/tmp/exo-legacy-bootstrap-test.log 2>&1 \
     && [ "$(tree_digest "$target")" = "$target_before" ] \
-    && grep -Fq 'Protected data check: PASS' /tmp/exo-legacy-bootstrap-test.log \
-    && grep -Fq '.exocortex/.project-name' /tmp/exo-legacy-bootstrap-test.log; then
-    ok "safe-update dry-run bootstraps a legacy target missing installer-created protected defaults"
+    && grep -Fq 'Protected data check: PASS' /tmp/exo-legacy-bootstrap-test.log; then
+    ok "safe-update dry-run bootstraps a legacy target missing installer-created protected scaffolding"
 else
-    bad "safe-update dry-run bootstraps a legacy target missing installer-created protected defaults"
+    bad "safe-update dry-run bootstraps a legacy target missing installer-created protected scaffolding"
+fi
+rm -rf "$target" "$fake_home" "$backup"
+
+target="$(new_target)"
+fake_home="$(mktemp -d "${TMPDIR:-/tmp}/exo-test-home.XXXXXX")"
+run_install "$target" "$TEMPLATE_DIR" "$fake_home" >/dev/null
+rm -f "$target/.exocortex/.project-name"
+target_before="$(tree_digest "$target")"
+backup="$(mktemp -d "${TMPDIR:-/tmp}/exo-test-backup.XXXXXX")"
+if (cd "$target" && bash "$TEMPLATE_DIR/scripts/safe-update.sh" \
+    --template "$TEMPLATE_DIR" --candidate-digest "$(hash_file "$TEMPLATE_DIR/SHA256SUMS")" \
+    --backup-dir "$backup" --dry-run) >/tmp/exo-project-name-test.log 2>&1; then
+    bad "safe-update never infers project identity for a target missing .project-name"
+elif [ "$(tree_digest "$target")" = "$target_before" ] \
+    && grep -Fq 'run init-project.sh' /tmp/exo-project-name-test.log; then
+    ok "safe-update never infers project identity for a target missing .project-name"
+else
+    bad "safe-update never infers project identity for a target missing .project-name"
 fi
 rm -rf "$target" "$fake_home" "$backup"
 
@@ -1016,23 +1038,106 @@ run_install "$target" "$TEMPLATE_DIR" "$fake_home" >/dev/null
 mkdir -p "$target/.claude/worktrees/stale-wt/node_modules/.bin" "$target/.claude/worktrees/stale-wt/.exocortex"
 ln -s /usr/bin/true "$target/.claude/worktrees/stale-wt/node_modules/.bin/linked-tool"
 printf 'runtime session data\n' > "$target/.claude/worktrees/stale-wt/.exocortex/SESSION_CONTEXT.md"
+mkdir -p "$target/.cursor/tmp/.claude/worktrees"
+printf 'nested runtime\n' > "$target/.cursor/tmp/.claude/worktrees/n.txt"
 target_before="$(tree_digest "$target")"
 backup="$(mktemp -d "${TMPDIR:-/tmp}/exo-test-backup.XXXXXX")"
 if (cd "$target" && bash "$TEMPLATE_DIR/scripts/safe-update.sh" \
     --template "$TEMPLATE_DIR" --candidate-digest "$(hash_file "$TEMPLATE_DIR/SHA256SUMS")" \
     --backup-dir "$backup" --dry-run) >/tmp/exo-runtime-worktree-test.log 2>&1 \
     && [ "$(tree_digest "$target")" = "$target_before" ] \
-    && grep -Fq 'Protected data check: PASS' /tmp/exo-runtime-worktree-test.log; then
+    && grep -Fq 'Protected data check: PASS' /tmp/exo-runtime-worktree-test.log \
+    && ! grep -Fq 'worktrees' <(awk '/^Rehearsal changed paths:/ {capture=1; next} /^Dry run complete/ {capture=0} capture' /tmp/exo-runtime-worktree-test.log); then
     worktree_archive="$(find "$backup" -type f -name '*.tar.gz.*' -print -quit)"
     if [ -n "$worktree_archive" ] && ! tar -tzf "$worktree_archive" | grep -q 'worktrees'; then
-        ok "safe-update excludes runtime editor worktrees from surface and rollback evidence"
+        ok "safe-update excludes runtime editor worktrees at any depth from surface and rollback evidence"
     else
-        bad "safe-update excludes runtime editor worktrees from surface and rollback evidence"
+        bad "safe-update excludes runtime editor worktrees at any depth from surface and rollback evidence"
     fi
 else
-    bad "safe-update excludes runtime editor worktrees from surface and rollback evidence"
+    bad "safe-update excludes runtime editor worktrees at any depth from surface and rollback evidence"
 fi
 rm -rf "$target" "$fake_home" "$backup"
+
+target="$(new_target)"
+fake_home="$(mktemp -d "${TMPDIR:-/tmp}/exo-test-home.XXXXXX")"
+run_install "$target" "$TEMPLATE_DIR" "$fake_home" >/dev/null
+printf 'not a directory\n' > "$target/.claude/worktrees"
+target_before="$(tree_digest "$target")"
+backup="$(mktemp -d "${TMPDIR:-/tmp}/exo-test-backup.XXXXXX")"
+if (cd "$target" && bash "$TEMPLATE_DIR/scripts/safe-update.sh" \
+    --template "$TEMPLATE_DIR" --candidate-digest "$(hash_file "$TEMPLATE_DIR/SHA256SUMS")" \
+    --backup-dir "$backup" --dry-run) >/tmp/exo-worktree-file-test.log 2>&1 \
+    && [ "$(tree_digest "$target")" = "$target_before" ] \
+    && ! grep -Fq '.claude/worktrees' <(awk '/^Rehearsal changed paths:/ {capture=1; next} /^Dry run complete/ {capture=0} capture' /tmp/exo-worktree-file-test.log); then
+    ok "safe-update treats a non-directory .claude/worktrees as runtime state, not a changed path"
+else
+    bad "safe-update treats a non-directory .claude/worktrees as runtime state, not a changed path"
+fi
+rm -rf "$target" "$fake_home" "$backup"
+
+target="$(new_target)"
+fake_home="$(mktemp -d "${TMPDIR:-/tmp}/exo-test-home.XXXXXX")"
+run_install "$target" "$TEMPLATE_DIR" "$fake_home" >/dev/null
+rm -rf "$target/.exocortex/local"
+rm -f "$target/.exocortex/COMMAND_SYSTEM.md"
+printf 'KEEP_LEGACY_PROTECTED\n' > "$target/.exocortex/TODO.md"
+backup="$(mktemp -d "${TMPDIR:-/tmp}/exo-test-backup.XXXXXX")"
+legacy_probe_log="$(mktemp "${TMPDIR:-/tmp}/exo-test-legacy-probe.XXXXXX")"
+(cd "$target" && bash "$TEMPLATE_DIR/scripts/safe-update.sh" \
+    --template "$TEMPLATE_DIR" --candidate-digest "$(hash_file "$TEMPLATE_DIR/SHA256SUMS")" \
+    --backup-dir "$backup" --dry-run) > "$legacy_probe_log" 2>&1
+legacy_changed_paths="$(mktemp "${TMPDIR:-/tmp}/exo-test-legacy-paths.XXXXXX")"
+awk '/^Rehearsal changed paths:/ {capture=1; next} /^Dry run complete/ {capture=0} capture && NF {print}' "$legacy_probe_log" > "$legacy_changed_paths"
+guard_digest="$(python3 "$TEMPLATE_DIR/.exocortex/scripts/authority_guard.py" guard-digest)"
+python3 - "$target" "$guard_digest" "$(hash_file "$TEMPLATE_DIR/SHA256SUMS")" "$legacy_changed_paths" <<'PY'
+import json, sys
+from pathlib import Path
+root=Path(sys.argv[1])
+guard=sys.argv[2]
+candidate=sys.argv[3]
+paths=Path(sys.argv[4]).read_text(encoding='utf-8').splitlines()
+registry={
+  'schema_version':'public-v2','kind':'executor_registry','registry_version':1,
+  'default_role':'read_only','executors':[{
+    'surface_id':'test-surface','executor_id':'test-executor','adapter_version':'test-v1',
+    'guard_digest':guard,'roles':['read_only','writer'],'status':'active',
+    'registered_at':'2026-01-01T00:00:00Z','expires_at':'2099-01-01T00:00:00Z','revoked_at':None,
+  }],
+}
+capability={
+  'schema_version':'public-v2','kind':'approval_capability','capability_id':'cap-legacy-apply',
+  'work_item_id':'TEST-LEGACY-001','work_item_revision':0,'operation':'apply_template_update',
+  'scope':{'allowed_paths':paths,'target_sha':candidate},
+  'executor':{'surface_id':'test-surface','executor_id':'test-executor','adapter_version':'test-v1','guard_digest':guard,'registry_version':1},
+  'approval':{'approved_by':'fixture-human','accepted_at':'2026-01-01T00:00:00Z','expires_at':'2099-01-01T00:00:00Z','one_time':True,'summary':'fictional legacy apply fixture'},
+  'status':{'state':'active','revoked_at':None,'consumed_at':None,'consumed_by_request_id':None},
+}
+for rel,value in (
+  ('.exocortex/control/EXECUTOR_REGISTRY.json',registry),
+  ('.exocortex/local/protocol/capabilities/legacy-apply.json',capability),
+):
+  path=root/rel
+  path.parent.mkdir(parents=True,exist_ok=True)
+  path.write_text(json.dumps(value,indent=2,sort_keys=True)+'\n',encoding='utf-8')
+PY
+legacy_apply_log="$(mktemp "${TMPDIR:-/tmp}/exo-test-legacy-apply.XXXXXX")"
+if (cd "$target" && bash "$TEMPLATE_DIR/scripts/safe-update.sh" \
+    --template "$TEMPLATE_DIR" --candidate-digest "$(hash_file "$TEMPLATE_DIR/SHA256SUMS")" --backup-dir "$backup" --apply \
+    --capability .exocortex/local/protocol/capabilities/legacy-apply.json \
+    --work-item-id TEST-LEGACY-001 --work-item-revision 0 --request-id legacy-apply \
+    --surface-id test-surface --executor-id test-executor --adapter-version test-v1) > "$legacy_apply_log" 2>&1 \
+    && [ "$(hash_file "$target/.exocortex/COMMAND_SYSTEM.md")" = "$(hash_file "$TEMPLATE_DIR/.exocortex/COMMAND_SYSTEM.md")" ] \
+    && grep -Fq 'KEEP_LEGACY_PROTECTED' "$target/.exocortex/TODO.md" \
+    && grep -Fq '"state": "consumed"' "$target/.exocortex/local/protocol/capabilities/legacy-apply.json" \
+    && [ -d "$target/.exocortex/local/protocol/transactions" ] \
+    && [ -d "$target/.exocortex/local/protocol/descriptors" ]; then
+    ok "guarded safe-update apply bootstraps a legacy target whose capability created a partial protocol tree"
+else
+    bad "guarded safe-update apply bootstraps a legacy target whose capability created a partial protocol tree"
+fi
+rm -rf "$target" "$fake_home" "$backup"
+rm -f "$legacy_probe_log" "$legacy_changed_paths" "$legacy_apply_log"
 
 target="$(new_target)"
 fake_home="$(mktemp -d "${TMPDIR:-/tmp}/exo-test-home.XXXXXX")"

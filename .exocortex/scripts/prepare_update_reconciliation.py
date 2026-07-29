@@ -158,6 +158,16 @@ def is_under(path: str, parent: str) -> bool:
     return path == parent or path.startswith(parent + "/")
 
 
+def is_runtime_state(path: str) -> bool:
+    # Editor session worktrees are runtime state at any depth, never part of
+    # the template surface; safe-update.sh applies the identical exclusion.
+    parts = path.split("/")
+    return any(
+        parts[index] == ".claude" and parts[index + 1] == "worktrees"
+        for index in range(len(parts) - 1)
+    )
+
+
 def is_surface_path(path: str) -> bool:
     return any(is_under(path, surface) for surface in SURFACE_PATHS)
 
@@ -315,13 +325,17 @@ def inventory_digest(root: Path) -> str:
                 filenames.sort()
                 here = Path(dirpath)
                 here_relative = here.relative_to(root).as_posix()
-                if any(is_under(here_relative, excluded) for excluded in PLAN_DIGEST_EXCLUSIONS):
+                if is_runtime_state(here_relative) or any(
+                    is_under(here_relative, excluded) for excluded in PLAN_DIGEST_EXCLUSIONS
+                ):
                     dirnames[:] = []
                     continue
                 for name in list(dirnames):
                     path = here / name
                     child = path.relative_to(root).as_posix()
-                    if any(is_under(child, excluded) for excluded in PLAN_DIGEST_EXCLUSIONS):
+                    if is_runtime_state(child) or any(
+                        is_under(child, excluded) for excluded in PLAN_DIGEST_EXCLUSIONS
+                    ):
                         continue
                     if path.is_symlink():
                         records[child] = symlink_record(path)
@@ -331,6 +345,7 @@ def inventory_digest(root: Path) -> str:
                     name
                     for name in dirnames
                     if not (here / name).is_symlink()
+                    and not is_runtime_state((here / name).relative_to(root).as_posix())
                     and not any(
                         is_under((here / name).relative_to(root).as_posix(), excluded)
                         for excluded in PLAN_DIGEST_EXCLUSIONS
@@ -339,7 +354,9 @@ def inventory_digest(root: Path) -> str:
                 for name in filenames:
                     path = here / name
                     child = path.relative_to(root).as_posix()
-                    if any(is_under(child, excluded) for excluded in PLAN_DIGEST_EXCLUSIONS):
+                    if is_runtime_state(child) or any(
+                        is_under(child, excluded) for excluded in PLAN_DIGEST_EXCLUSIONS
+                    ):
                         continue
                     if path.is_symlink():
                         records[child] = symlink_record(path)
