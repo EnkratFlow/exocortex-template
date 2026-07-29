@@ -1,0 +1,28 @@
+{
+  "schema_version": "public-v2",
+  "kind": "phase_b_test_plan",
+  "fixtures": "fictional-only",
+  "network": "denied_except_in_process_fake_transport",
+  "credentials": "none",
+  "targets": "new_absolute_disposable_paths_only",
+  "groups": [
+    "canonical multi-AI entry parity",
+    "exact 24-command provider matrix and deterministic 72-adapter generation",
+    "provider-specific invocation truth and manual-only command behavior",
+    "capability and executor admission negative matrix",
+    "32-writer reservation race",
+    "transition checkpoint idempotency and crash recovery",
+    "release and writer reacquisition",
+    "fresh source-backed version-scoped availability, exact expiry, and measured cost-per-success routing",
+    "configured official-source purpose, retrieval digest, refresh planning, scoped discovery quarantine, conflict denial, and no automatic activation",
+    "authorized inspection, immutable staging recovery, egress ordering, policy revocation, and audit-chain integrity",
+    "fresh install, independently approved candidate digest, ancestor-symlink denial, and idempotency",
+    "existing repository protected-path upgrade rehearsal",
+    "plan-digest-bound target reconciliation, reviewed-object adoption, drift denial, and convergence",
+    "manifest-owned legacy retirement and customized-adapter collision preservation",
+    "complete sorted changed-path evidence and digest above 120 paths",
+    "checksum completeness, generated-artifact exclusion, and pre-write failure",
+    "candidate-inventory and installed-output privacy fingerprint scan",
+    "local-only event tooling"
+  ]
+}

@@ -1,6 +1,16 @@
-# Roadmap
+# Historical Exocortex roadmap
 
-## Current Status (v0.1)
+> **Superseded v0.1 planning snapshot.** This file preserves the original
+> 2024–2025 roadmap as historical context; it is not current capability,
+> provider-support, schedule, cost, synchronization, or release truth. Current
+> behavior is defined by `README.md`, `AI_START_HERE.md`,
+> `.exocortex/provider-adapters.json`,
+> `.exocortex/control/DELIVERY_WORKFLOW.md`, and
+> `.exocortex/control/MODEL_ROUTING.md`. Every prospective item below requires
+> a separately refined and approved work item, and no external integration or
+> synchronization is automatic.
+
+## Historical status snapshot (v0.1)
 
 **Core System Complete**
 - ✅ Four-tier memory system (RIGHT NOW, SHORT-TERM, LONG-TERM, SUBCONSCIOUS)

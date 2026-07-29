@@ -1,619 +1,591 @@
 #!/bin/bash
+# Exocortex public-v2 installer. It installs one pinned local source into the
+# current project, preserves project data, and never changes global state.
 
-# Exocortex v3 — One-Command Installer
-#
-# USAGE:
-#   curl -sL https://raw.githubusercontent.com/EnkratFlow/exocortex-template/main/install.sh | bash
-#   curl -sL https://raw.githubusercontent.com/EnkratFlow/exocortex-template/main/install.sh | bash -s "my-project"
-#
-# Or clone and run locally:
-#   bash install.sh
-#   bash install.sh my-project
-#
-# Offline / vendored install (use a local copy of the template instead of cloning):
-#   EXOCORTEX_LOCAL_SOURCE=/path/to/exocortex-template bash /path/to/exocortex-template/install.sh
-#
-# What this does:
-#   1. Clones exocortex-template to a temp directory (or uses $EXOCORTEX_LOCAL_SOURCE if set)
-#   2. Copies .exocortex/ and editor pointer files to the current directory
-#   3. Copies .cursor/ (commands, skills, rules, agents, hooks) + hooks.json — safe merge, never overwrites modified files
-#   4. Copies .github/skills/ — role skills for VS Code Copilot
-#   5. Copies .claude/skills/ — workflow commands for VS Code Copilot and Claude CLI
-#   6. Runs init-project.sh to replace placeholders and set up API keys
-#   7. Cleans up the temp clone
-#
-# Requirements:
-#   - git
-#   - bash 4+ (macOS ships with 3.2 but this script is compatible)
-#   - Current directory is your project root
+set -euo pipefail
 
-set -e
+PROJECT_NAME="${1:-$(basename "$PWD")}"
+SOURCE_INPUT="${EXOCORTEX_LOCAL_SOURCE:-}"
+CANDIDATE_DIGEST="${EXOCORTEX_CANDIDATE_DIGEST:-}"
+TARGET_ROOT="$(pwd -P)"
 
-REPO_URL="https://github.com/EnkratFlow/exocortex-template.git"
-BRANCH="main"
-PROJECT_NAME="${1:-}"
-
-echo ""
-echo "🧠 Exocortex v3 — One-Command Installer"
-echo "========================================"
-echo ""
-
-# ── Preflight checks ──────────────────────────────────────────────────
-
-# Check git is available
-if ! command -v git &> /dev/null; then
-    echo "❌ Error: git is not installed"
-    echo "  Install git first: https://git-scm.com/downloads"
+fail() {
+    echo "ERROR: $*" >&2
     exit 1
-fi
-
-# Check we're in a reasonable directory
-if [ "$(pwd)" = "$HOME" ]; then
-    echo "❌ Error: Don't run this from your home directory"
-    echo "  cd into your project directory first:"
-    echo "    cd /path/to/your-project"
-    exit 1
-fi
-
-# ── Detect: update vs fresh install ─────────────────────────────────
-if [ -d ".exocortex" ]; then
-    IS_UPDATE=true
-    if [ -f .exocortex/.version ]; then
-        INSTALLED_VERSION="$(cat .exocortex/.version 2>/dev/null | tr -d '[:space:]')"
-    else
-        INSTALLED_VERSION="$(grep -m1 'version' .exocortex/AI_BOOTSTRAP.md 2>/dev/null | awk '{print $NF}' || echo 'unknown')"
-    fi
-    [ -z "$INSTALLED_VERSION" ] && INSTALLED_VERSION="unknown"
-    echo "🔄 Mode: UPDATE"
-    echo "   Existing installation found."
-    echo "   System files will update. Your data is never touched."
-else
-    IS_UPDATE=false
-    echo "✨ Mode: FRESH INSTALL"
-    echo "   No existing installation found."
-fi
-
-# ── Clone template ────────────────────────────────────────────────────
-
-_EXOCORTEX_TMP=$(mktemp -d)
-trap 'rm -rf "$_EXOCORTEX_TMP"' EXIT
-
-MANIFEST=".exocortex/.install-manifest"
-MANIFEST_TMP="$_EXOCORTEX_TMP/manifest-new"
-touch "$MANIFEST_TMP"
-
-# ── Helper: sha256 hash of a file ────────────────────────────────────
-file_hash() {
-    shasum -a 256 "$1" 2>/dev/null | awk '{print $1}'
 }
 
-is_exocortex_data_path() {
-    local target="$1"
-    local rel="$2"
+sha256_file() {
+    if command -v shasum >/dev/null 2>&1; then
+        shasum -a 256 "$1" 2>/dev/null | awk '{print $1}'
+    elif command -v sha256sum >/dev/null 2>&1; then
+        sha256sum "$1" 2>/dev/null | awk '{print $1}'
+    else
+        fail "shasum or sha256sum is required"
+    fi
+}
 
-    # Only apply data-plane exclusions when merging the .exocortex tree.
-    case "$target" in
-        .exocortex|*/.exocortex) ;;
+if [ -z "$SOURCE_INPUT" ]; then
+    fail "EXOCORTEX_LOCAL_SOURCE must name an exact pinned local template; unpinned remote install is disabled"
+fi
+[ -d "$SOURCE_INPUT" ] || fail "local template source is not a directory"
+[ -f "$SOURCE_INPUT/install.sh" ] || fail "local template source is missing install.sh"
+[ "$TARGET_ROOT" != "/" ] || fail "refusing to install into filesystem root"
+[ "$TARGET_ROOT" != "${HOME:-/__no_home__}" ] || fail "refusing to install into the user home directory"
+
+SOURCE_ROOT="$(cd "$SOURCE_INPUT" && pwd -P)"
+[ "$SOURCE_ROOT" != "$TARGET_ROOT" ] || fail "template source and install target must be different directories"
+case "$SOURCE_ROOT/" in "$TARGET_ROOT/"*) fail "template source must not be inside the install target" ;; esac
+case "$TARGET_ROOT/" in "$SOURCE_ROOT/"*) fail "install target must not be inside the template source" ;; esac
+[[ "$CANDIDATE_DIGEST" =~ ^[0-9a-f]{64}$ ]] || fail "EXOCORTEX_CANDIDATE_DIGEST must be the separately approved SHA-256 of SHA256SUMS"
+[ -f "$SOURCE_ROOT/SHA256SUMS" ] || fail "local template source is missing SHA256SUMS"
+SOURCE_SUMS_DIGEST="$(sha256_file "$SOURCE_ROOT/SHA256SUMS")"
+[ "$SOURCE_SUMS_DIGEST" = "$CANDIDATE_DIGEST" ] || fail "local template candidate digest does not match the separately approved digest"
+
+TMP_ROOT="$(mktemp -d "${TMPDIR:-/tmp}/exocortex-install.XXXXXX")"
+SOURCE_COPY="$TMP_ROOT/source"
+MANIFEST_NEW="$TMP_ROOT/manifest-new"
+LISTED_SUMS="$TMP_ROOT/listed-sums"
+trap 'rm -rf "$TMP_ROOT"' EXIT
+mkdir -p "$SOURCE_COPY"
+: > "$MANIFEST_NEW"
+: > "$LISTED_SUMS"
+
+# Copy without repository metadata or credential files. This is staging only;
+# target mutation starts after the complete integrity check.
+if command -v rsync >/dev/null 2>&1 && [ "${EXOCORTEX_FORCE_TAR_STAGE:-0}" != "1" ]; then
+    rsync -a --exclude='.git' --exclude='.env' --exclude='*/.env' \
+        --exclude='__pycache__' --exclude='*.pyc' --exclude='*.pyo' \
+        "$SOURCE_ROOT/" "$SOURCE_COPY/"
+else
+    (cd "$SOURCE_ROOT" && tar cf - --exclude='.git' --exclude='.env' --exclude='*/.env' \
+        --exclude='__pycache__' --exclude='*.pyc' --exclude='*.pyo' .) \
+        | (cd "$SOURCE_COPY" && tar xpf -)
+fi
+STAGED_LINK="$(find "$SOURCE_COPY" -type l -print -quit 2>/dev/null)" \
+    || fail "staged template topology could not be inspected safely"
+[ -z "$STAGED_LINK" ] || fail "staged template contains a symlink: ${STAGED_LINK#"$SOURCE_COPY/"}"
+[ -f "$SOURCE_COPY/SHA256SUMS" ] && [ ! -L "$SOURCE_COPY/SHA256SUMS" ] \
+    || fail "staged SHA256SUMS must be a regular non-symlink file"
+STAGED_SUMS_DIGEST="$(sha256_file "$SOURCE_COPY/SHA256SUMS")"
+[ "$STAGED_SUMS_DIGEST" = "$CANDIDATE_DIGEST" ] || fail "staged template changed after candidate approval"
+
+file_hash() {
+    sha256_file "$1"
+}
+
+file_mode() {
+    python3 -c 'import os,stat,sys; print(format(stat.S_IMODE(os.stat(sys.argv[1]).st_mode), "04o"))' "$1"
+}
+
+file_link_count() {
+    python3 -c 'import os,sys; print(os.lstat(sys.argv[1]).st_nlink)' "$1"
+}
+
+COPY_COUNT=0
+INSTALL_FAULT_AFTER="${EXOCORTEX_TEST_INSTALL_FAULT_AFTER_COPIES:-0}"
+if ! [[ "$INSTALL_FAULT_AFTER" =~ ^[0-9]+$ ]]; then
+    fail "test install fault count must be a non-negative integer"
+fi
+if [ "$INSTALL_FAULT_AFTER" -gt 0 ] && [ "${EXOCORTEX_TEST_MODE:-0}" != "1" ]; then
+    fail "test install fault injection requires EXOCORTEX_TEST_MODE=1"
+fi
+
+record_copy_and_maybe_fault() {
+    COPY_COUNT=$((COPY_COUNT + 1))
+    if [ "$INSTALL_FAULT_AFTER" -gt 0 ] && [ "$COPY_COUNT" -ge "$INSTALL_FAULT_AFTER" ]; then
+        fail "injected test-only install fault after $COPY_COUNT copies"
+    fi
+}
+
+is_data_relpath() {
+    case "$1" in
+        SESSION_CONTEXT.md|SESSION_CONTEXT.local.md|TODO.md|LESSONS.md|PROJECT_MEMORY.md|OPEN_DECISIONS.md|subconscious_patterns.md|.env|.project-name|.install-manifest|.hub_enabled|.hub_disabled)
+            return 0 ;;
+        events/*|archive/*|hub/*|local/*|planning/*|work-items/*)
+            return 0 ;;
+        control/ACTIVE_WORK.md|control/BRANCH_POLICY.md|control/REPO_STATE.md|control/EXECUTOR_REGISTRY.json|control/EXTERNAL_SYNC_POLICY.json|control/INTERRUPTS.md|control/BACKLOG.md|control/ROADMAP.md|control/ARCH_OVERVIEW.md|control/REPO_ORGANIZATION_REPORT.md)
+            return 0 ;;
         *) return 1 ;;
     esac
+}
 
+is_integrity_scope() {
+    local rel="$1"
     case "$rel" in
-        SESSION_CONTEXT.md|TODO.md|LESSONS.md|PROJECT_MEMORY.md|OPEN_DECISIONS.md|subconscious_patterns.md|.env|.hub_enabled|.hub_disabled|.install-manifest)
-            return 0
-            ;;
-        events/*|archive/*|hub/*|planning/*|local/*)
-            return 0
-            ;;
-        control/INTERRUPTS.md|control/BACKLOG.md|control/ROADMAP.md|control/ARCH_OVERVIEW.md|control/REPO_ORGANIZATION_REPORT.md)
-            return 0
-            ;;
-        *)
-            return 1
-            ;;
+        SHA256SUMS|.git|.git/*|.env|*/.env|__pycache__/*|*/__pycache__/*|*.pyc|*.pyo) return 1 ;;
+        .exocortex/*)
+            local exo_rel="${rel#.exocortex/}"
+            is_data_relpath "$exo_rel" && return 1
+            return 0 ;;
+        *) return 0 ;;
     esac
 }
 
-# ── Helper: look up installed hash from manifest ─────────────────────
-# Uses awk for literal string matching (no regex issues with file paths)
+verify_integrity() {
+    local sums="$SOURCE_COPY/SHA256SUMS"
+    [ -f "$sums" ] || fail "SHA256SUMS is required"
+    [ -s "$sums" ] || fail "SHA256SUMS is empty"
+
+    local line hash rel actual
+    while IFS= read -r line || [ -n "$line" ]; do
+        [ -z "$line" ] && continue
+        case "$line" in \#*) continue ;; esac
+        [[ "$line" =~ ^[0-9a-f]{64}\ \ [^/].*$ ]] || fail "malformed SHA256SUMS entry"
+        hash="${line:0:64}"
+        rel="${line:66}"
+        case "/$rel/" in */../*|*/./*) fail "unsafe SHA256SUMS path" ;; esac
+        [ "$rel" != "SHA256SUMS" ] || fail "SHA256SUMS cannot checksum itself"
+        is_integrity_scope "$rel" || fail "checksum entry is outside the public code-plane scope: $rel"
+        if grep -Fqx "$rel" "$LISTED_SUMS"; then
+            fail "duplicate SHA256SUMS path: $rel"
+        fi
+        echo "$rel" >> "$LISTED_SUMS"
+        [ -f "$SOURCE_COPY/$rel" ] || fail "checksum-listed file is missing: $rel"
+        actual="$(file_hash "$SOURCE_COPY/$rel")"
+        [ "$actual" = "$hash" ] || fail "checksum mismatch: $rel"
+    done < "$sums"
+
+    while IFS= read -r file; do
+        rel="${file#$SOURCE_COPY/}"
+        is_integrity_scope "$rel" || continue
+        grep -Fqx "$rel" "$LISTED_SUMS" || fail "code-plane file missing from SHA256SUMS: $rel"
+    done < <(find "$SOURCE_COPY" -type f | sort)
+}
+
+verify_integrity
+command -v python3 >/dev/null 2>&1 || fail "python3 is required to validate the candidate"
+
+verify_file_modes() {
+    PYTHONDONTWRITEBYTECODE=1 python3 - "$SOURCE_COPY" <<'PY'
+import re
+import stat
+import sys
+from pathlib import Path, PurePosixPath
+
+root = Path(sys.argv[1]).resolve(strict=True)
+sums = root / "SHA256SUMS"
+modes = root / "FILEMODES"
+if modes.is_symlink() or not modes.is_file():
+    raise SystemExit("FILEMODES must be a regular non-symlink file")
+
+checksum_paths = []
+for line in sums.read_text(encoding="utf-8").splitlines():
+    match = re.fullmatch(r"[0-9a-f]{64}  ([^/].*)", line)
+    if match is None:
+        raise SystemExit("invalid SHA256SUMS while validating file modes")
+    checksum_paths.append(match.group(1))
+
+mode_records = {}
+mode_paths = []
+for line in modes.read_text(encoding="utf-8").splitlines():
+    match = re.fullmatch(r"(0644|0755)  ([^/].*)", line)
+    if match is None:
+        raise SystemExit("malformed FILEMODES entry")
+    mode_text, relative = match.groups()
+    path = PurePosixPath(relative)
+    if relative in mode_records or ".." in path.parts or "." in path.parts:
+        raise SystemExit("unsafe or duplicate FILEMODES path")
+    mode_records[relative] = int(mode_text, 8)
+    mode_paths.append(relative)
+
+expected_mode_paths = set(checksum_paths) | {"SHA256SUMS"}
+if (
+    checksum_paths != sorted(checksum_paths)
+    or mode_paths != sorted(mode_paths)
+    or set(mode_records) != expected_mode_paths
+):
+    raise SystemExit("FILEMODES must bind the sorted SHA256SUMS paths plus SHA256SUMS itself")
+
+for relative in sorted(expected_mode_paths):
+    path = root / relative
+    if path.is_symlink() or not path.is_file():
+        raise SystemExit(f"FILEMODES path is not a regular file: {relative}")
+    actual = stat.S_IMODE(path.stat().st_mode)
+    if actual != mode_records[relative]:
+        raise SystemExit(f"FILEMODES mismatch: {relative}")
+PY
+}
+
+verify_file_modes || fail "candidate file-mode inventory failed validation"
+
+ADAPTER_GENERATOR="$SOURCE_COPY/.exocortex/scripts/generate_command_adapters.py"
+ADAPTER_MATRIX="$SOURCE_COPY/.exocortex/provider-adapters.json"
+RETIREMENTS="$TMP_ROOT/legacy-retirements.tsv"
+[ -f "$ADAPTER_GENERATOR" ] || fail "template source is missing the provider-adapter generator"
+[ -f "$ADAPTER_MATRIX" ] || fail "template source is missing the provider-adapter matrix"
+python3 "$ADAPTER_GENERATOR" --check >/dev/null \
+    || fail "generated provider adapters do not match the canonical 24-command registry"
+MODEL_REGISTRY_TOOL="$SOURCE_COPY/.exocortex/scripts/model_registry.py"
+[ -f "$MODEL_REGISTRY_TOOL" ] || fail "template source is missing the offline model-registry validator"
+PYTHONDONTWRITEBYTECODE=1 python3 "$MODEL_REGISTRY_TOOL" validate-sources \
+    --project-root "$SOURCE_COPY" \
+    --sources .exocortex/model-source-registry.json >/dev/null \
+    || fail "model source registry failed structural validation"
+PYTHONDONTWRITEBYTECODE=1 python3 "$MODEL_REGISTRY_TOOL" validate-catalog \
+    --project-root "$SOURCE_COPY" \
+    --sources .exocortex/model-source-registry.json \
+    --catalog .exocortex/model-routing-catalog.json >/dev/null \
+    || fail "model routing catalog failed structural validation"
+python3 - "$ADAPTER_MATRIX" > "$RETIREMENTS" <<'PY'
+import json, re, sys
+from pathlib import PurePosixPath
+
+matrix = json.load(open(sys.argv[1], encoding='utf-8'))
+legacy_items = matrix.get('legacy_retirements')
+windsurf_items = matrix.get('windsurf_retirements')
+if not isinstance(legacy_items, list) or len(legacy_items) != 26:
+    raise SystemExit('invalid legacy retirement matrix')
+if not isinstance(windsurf_items, list) or len(windsurf_items) != 25:
+    raise SystemExit('invalid Windsurf retirement matrix')
+seen = set()
+for item in legacy_items:
+    if not isinstance(item, dict):
+        raise SystemExit('invalid legacy retirement entry')
+    legacy = item.get('path')
+    replacement = item.get('replacement')
+    if not isinstance(legacy, str) or not isinstance(replacement, str):
+        raise SystemExit('invalid legacy retirement path')
+    for value in (legacy, replacement):
+        path = PurePosixPath(value)
+        if value.startswith('/') or '..' in path.parts or '\t' in value or '\n' in value:
+            raise SystemExit('unsafe legacy retirement path')
+    if legacy in seen or not re.fullmatch(r'\.agents/skills/[a-z0-9-]+/SKILL\.md', replacement):
+        raise SystemExit('invalid legacy retirement mapping')
+    seen.add(legacy)
+    print(f'{legacy}\t{replacement}')
+for legacy in windsurf_items:
+    if not isinstance(legacy, str):
+        raise SystemExit('invalid Windsurf retirement path')
+    path = PurePosixPath(legacy)
+    if legacy.startswith('/') or '..' in path.parts or '\t' in legacy or '\n' in legacy:
+        raise SystemExit('unsafe Windsurf retirement path')
+    if legacy in seen or not (
+        re.fullmatch(r'\.windsurf/workflows/[a-z0-9-]+\.md', legacy)
+        or legacy == '.windsurfrules'
+    ):
+        raise SystemExit('invalid Windsurf retirement mapping')
+    seen.add(legacy)
+    print(f'{legacy}\t')
+PY
+[ "$(wc -l < "$RETIREMENTS" | tr -d ' ')" = "51" ] \
+    || fail "provider-adapter retirement matrix is incomplete"
+
+MANIFEST=".exocortex/.install-manifest"
+
 manifest_get() {
     local key="$1 "
-    [ -f "$MANIFEST" ] && awk -v k="$key" 'index($0,k)==1{print $2;exit}' "$MANIFEST" || echo ""
+    [ -f "$MANIFEST" ] && awk -v k="$key" 'index($0,k)==1{print $2;exit}' "$MANIFEST" || true
 }
 
-# ── Helper: safe merge a directory of files ──────────────────────────
-# On first install: copies everything, records hash in manifest
-# On re-run (update):
-#   - file matches template hash                          → already current, skip
-#   - file matches manifest hash (user hasn't touched it) → update to latest template
-#   - file differs from manifest hash (user modified it)  → skip, preserve their version
-#   - file has no manifest entry (unknown history)        → skip, warn
-#   - file doesn't exist yet                              → install it
-# Usage: safe_copy_dir <src_dir> <target_dir> <label>
-safe_copy_dir() {
-    local src="$1"
-    local target="$2"
-    local label="$3"
+record_manifest() {
+    local path="$1" digest="$2" next="$TMP_ROOT/manifest-next"
+    awk -v k="$path " 'index($0,k)!=1' "$MANIFEST_NEW" > "$next"
+    printf '%s %s\n' "$path" "$digest" >> "$next"
+    mv "$next" "$MANIFEST_NEW"
+}
 
-    [ -d "$src" ] || return 0
-    mkdir -p "$target"
-
-    local n_new=0 n_update=0 n_skip=0 n_same=0
-
-    while IFS= read -r src_file; do
-        [ -f "$src_file" ] || continue
-        local rel="${src_file#$src/}"
-        local target_file="$target/$rel"
-        mkdir -p "$(dirname "$target_file")"
-
-        if is_exocortex_data_path "$target" "$rel"; then
-            # Data-plane files are user/project state. They are created as blank
-            # stubs when missing, but never copied from the public template and
-            # never manifest-tracked.
-            n_skip=$((n_skip + 1))
-            continue
-        fi
-
-        local src_hash
-        src_hash=$(file_hash "$src_file")
-
-        if [ -f "$target_file" ]; then
-            local current_hash
-            current_hash=$(file_hash "$target_file")
-            local installed_hash
-            installed_hash=$(manifest_get "$target_file")
-
-            if [ "$src_hash" = "$current_hash" ]; then
-                # Already up to date — record and move on
-                echo "${target_file} ${src_hash}" >> "$MANIFEST_TMP"
-                n_same=$((n_same + 1))
-            elif [ -n "$installed_hash" ] && [ "$current_hash" = "$installed_hash" ]; then
-                # File matches what we installed last time — user hasn't touched it, safe to update
-                cp "$src_file" "$target_file"
-                echo "${target_file} ${src_hash}" >> "$MANIFEST_TMP"
-                echo "  update  $rel"
-                n_update=$((n_update + 1))
-            else
-                # No manifest entry or user has modified this file — preserve their version
-                # Keep old manifest hash so next run can still detect their modification
-                if [ -n "$installed_hash" ]; then
-                    echo "${target_file} ${installed_hash}" >> "$MANIFEST_TMP"
-                fi
-                echo "  skip    $rel (user-modified)"
-                n_skip=$((n_skip + 1))
+retire_legacy_adapters() {
+    local legacy replacement replacement_source_hash replacement_target_hash
+    local current_hash current_mode installed_hash
+    while IFS=$'\t' read -r legacy replacement; do
+        [ -n "$legacy" ] || fail "invalid legacy retirement row"
+        [ -e "$legacy" ] || continue
+        assert_safe_target_file_path "$legacy"
+        installed_hash="$(manifest_get "$legacy")"
+        if [ -n "$replacement" ]; then
+            assert_safe_target_file_path "$replacement"
+            if [ ! -f "$SOURCE_COPY/$replacement" ] || [ ! -f "$replacement" ]; then
+                [ -n "$installed_hash" ] && record_manifest "$legacy" "$installed_hash"
+                echo "EXOCORTEX_ADAPTER_COLLISION_PRESERVED: $legacy (canonical replacement unavailable: $replacement)"
+                continue
             fi
-        else
-            # New file — install it
-            cp "$src_file" "$target_file"
-            echo "${target_file} ${src_hash}" >> "$MANIFEST_TMP"
-            n_new=$((n_new + 1))
-        fi
-    done < <(find "$src" -type f | sort)
-
-    local parts=""
-    [ $n_new    -gt 0 ] && parts="${parts}${n_new} new, "
-    [ $n_update -gt 0 ] && parts="${parts}${n_update} updated, "
-    [ $n_same   -gt 0 ] && parts="${parts}${n_same} current, "
-    [ $n_skip   -gt 0 ] && parts="${parts}${n_skip} skipped (user-modified)"
-    parts="${parts%, }"
-    echo "  ✓ $label: ${parts:-nothing to do}"
-}
-
-# ── Helper: safe merge a single file ───────────────────────────────────
-# Applies the same manifest-aware update semantics as safe_copy_dir.
-# Usage: safe_copy_file <src_file> <target_file> <label>
-safe_copy_file() {
-    local src_file="$1"
-    local target_file="$2"
-    local label="$3"
-
-    [ -f "$src_file" ] || return 0
-    mkdir -p "$(dirname "$target_file")"
-
-    local src_hash
-    src_hash=$(file_hash "$src_file")
-
-    if [ -f "$target_file" ]; then
-        local current_hash
-        current_hash=$(file_hash "$target_file")
-        local installed_hash
-        installed_hash=$(manifest_get "$target_file")
-
-        if [ "$src_hash" = "$current_hash" ]; then
-            echo "${target_file} ${src_hash}" >> "$MANIFEST_TMP"
-            echo "  ✓ $label: current"
-        elif [ -n "$installed_hash" ] && [ "$current_hash" = "$installed_hash" ]; then
-            cp "$src_file" "$target_file"
-            echo "${target_file} ${src_hash}" >> "$MANIFEST_TMP"
-            echo "  ✓ $label: updated"
-        else
-            if [ -n "$installed_hash" ]; then
-                echo "${target_file} ${installed_hash}" >> "$MANIFEST_TMP"
+            replacement_source_hash="$(file_hash "$SOURCE_COPY/$replacement")"
+            replacement_target_hash="$(file_hash "$replacement")"
+            if [ "$replacement_source_hash" != "$replacement_target_hash" ]; then
+                [ -n "$installed_hash" ] && record_manifest "$legacy" "$installed_hash"
+                echo "EXOCORTEX_ADAPTER_COLLISION_PRESERVED: $legacy (customized replacement preserved: $replacement)"
+                continue
             fi
-            echo "  ✓ $label: skipped (user-modified)"
         fi
-    else
-        cp "$src_file" "$target_file"
-        echo "${target_file} ${src_hash}" >> "$MANIFEST_TMP"
-        echo "  ✓ $label: new"
-    fi
-}
-
-ensure_exocortex_data_stubs() {
-    mkdir -p ".exocortex/events" ".exocortex/control"
-
-    if [ ! -f ".exocortex/SESSION_CONTEXT.md" ]; then
-        cat > ".exocortex/SESSION_CONTEXT.md" << 'EOF_SESSION'
-# Session Context
-
-## RIGHT NOW
-
-_No active session context yet. Run /work or /save to populate this file._
-EOF_SESSION
-    fi
-
-    if [ ! -f ".exocortex/TODO.md" ]; then
-        cat > ".exocortex/TODO.md" << 'EOF_TODO'
-# TODO
-
-## Ready
-
-_No tasks captured yet._
-EOF_TODO
-    fi
-
-    if [ ! -f ".exocortex/LESSONS.md" ]; then
-        cat > ".exocortex/LESSONS.md" << 'EOF_LESSONS'
-# Lessons
-
-_No lessons captured yet._
-EOF_LESSONS
-    fi
-
-    if [ ! -f ".exocortex/PROJECT_MEMORY.md" ]; then
-        cat > ".exocortex/PROJECT_MEMORY.md" << 'EOF_MEMORY'
-# Project Memory
-
-_No project-specific memory captured yet._
-EOF_MEMORY
-    fi
-
-    if [ ! -f ".exocortex/control/INTERRUPTS.md" ]; then
-        cat > ".exocortex/control/INTERRUPTS.md" << 'EOF_INTERRUPTS'
-# Interrupts
-
-> Capture lane - things that come up while working on something else.
-> Run /groom periodically to move items to BACKLOG or TODO.
-
-_No interrupts captured yet._
-EOF_INTERRUPTS
-    fi
-
-    if [ ! -f ".exocortex/control/BACKLOG.md" ]; then
-        cat > ".exocortex/control/BACKLOG.md" << 'EOF_BACKLOG'
-# Backlog
-
-> Items under investigation. Moved here from INTERRUPTS after grooming.
-> Run /refine-backlog to promote items to TODO.
-
-_No backlog items yet._
-EOF_BACKLOG
-    fi
-
-    if [ ! -f ".exocortex/control/ROADMAP.md" ]; then
-        cat > ".exocortex/control/ROADMAP.md" << 'EOF_ROADMAP'
-# Roadmap
-
-> Strategic planning for this project.
-> Updated periodically during reviews.
-
-_No roadmap defined yet._
-EOF_ROADMAP
-    fi
-}
-
-echo "📦 Downloading exocortex template..."
-if [ -n "${EXOCORTEX_LOCAL_SOURCE:-}" ]; then
-    if [ ! -d "$EXOCORTEX_LOCAL_SOURCE" ]; then
-        echo "❌ EXOCORTEX_LOCAL_SOURCE is set but not a directory: $EXOCORTEX_LOCAL_SOURCE"
-        exit 1
-    fi
-    echo "  📂 Using local source: $EXOCORTEX_LOCAL_SOURCE"
-    # Copy the directory contents (including .git? no — we only need the working tree)
-    mkdir -p "$_EXOCORTEX_TMP/exocortex-template"
-    # Use rsync if available (handles dotfiles cleanly), fall back to cp
-    if command -v rsync >/dev/null 2>&1; then
-        rsync -a --exclude='.git' "$EXOCORTEX_LOCAL_SOURCE/" "$_EXOCORTEX_TMP/exocortex-template/"
-    else
-        # cp -R with a trailing dot to copy dotfiles
-        (cd "$EXOCORTEX_LOCAL_SOURCE" && tar cf - --exclude='.git' . ) | (cd "$_EXOCORTEX_TMP/exocortex-template" && tar xf -)
-    fi
-    echo "  ✓ Copied"
-else
-    git clone --quiet --depth 1 --branch "$BRANCH" "$REPO_URL" "$_EXOCORTEX_TMP/exocortex-template" 2>&1 | grep -v "^$" || true
-    echo "  ✓ Downloaded"
-fi
-
-# ── Integrity check ───────────────────────────────────────────────────
-# Verify the cloned content against the published SHA256SUMS file.
-# This catches tampering in transit (MITM, CDN compromise, etc.).
-# Skipped automatically if SHA256SUMS is missing (e.g. local installs).
-SUMS_FILE="$_EXOCORTEX_TMP/exocortex-template/SHA256SUMS"
-if [ -f "$SUMS_FILE" ]; then
-    echo ""
-    echo "🔒 Verifying integrity..."
-    _verify_failed=0
-    while IFS= read -r line; do
-        [[ "$line" =~ ^#.*$ || -z "$line" ]] && continue
-        expected_hash="${line%% *}"
-        rel_path="${line##* }"
-        actual_file="$_EXOCORTEX_TMP/exocortex-template/$rel_path"
-        if [ ! -f "$actual_file" ]; then
-            echo "  ⚠️  Missing: $rel_path (skipping)"
-            continue
-        fi
-        actual_hash=$(shasum -a 256 "$actual_file" 2>/dev/null | awk '{print $1}')
-        if [ "$actual_hash" != "$expected_hash" ]; then
-            echo "  ❌ INTEGRITY FAIL: $rel_path"
-            echo "     Expected: $expected_hash"
-            echo "     Got:      $actual_hash"
-            _verify_failed=1
-        fi
-    done < "$SUMS_FILE"
-    if [ "$_verify_failed" -eq 1 ]; then
-        echo ""
-        echo "❌ Integrity check failed — installation aborted."
-        echo "   The downloaded files do not match the published checksums."
-        echo "   This could indicate a network issue or tampered content."
-        echo "   Try again, or install from a direct git clone:"
-        echo "     git clone https://github.com/EnkratFlow/exocortex-template.git"
-        echo "     bash exocortex-template/install.sh"
-        exit 1
-    fi
-    echo "  ✓ All files verified"
-fi
-
-# ── Read template version ─────────────────────────────────────────────
-TEMPLATE_VERSION="unknown"
-if [ -f "$_EXOCORTEX_TMP/exocortex-template/VERSION" ]; then
-    TEMPLATE_VERSION="$(tr -d '[:space:]' < "$_EXOCORTEX_TMP/exocortex-template/VERSION")"
-fi
-if [ "$IS_UPDATE" = "true" ]; then
-    echo ""
-    echo "📌 Version: ${INSTALLED_VERSION:-unknown} → ${TEMPLATE_VERSION}"
-fi
-
-# ── Copy files ────────────────────────────────────────────────────────
-
-echo ""
-echo "📁 Installing to $(pwd)/"
-
-# Merge .exocortex/ — system files (commands, scripts, docs, bootstrap) update;
-# user data (memory, todos, sessions, lessons) is never overwritten
-safe_copy_dir "$_EXOCORTEX_TMP/exocortex-template/.exocortex" ".exocortex" ".exocortex/"
-ensure_exocortex_data_stubs
-
-# Track installed version
-if [ -f "$_EXOCORTEX_TMP/exocortex-template/VERSION" ]; then
-    cp "$_EXOCORTEX_TMP/exocortex-template/VERSION" ".exocortex/.version"
-fi
-
-# Copy editor pointer files (thin pointers to AI_BOOTSTRAP.md)
-for pfile in CLAUDE.md .windsurfrules .rules; do
-    if [ -f "$_EXOCORTEX_TMP/exocortex-template/$pfile" ]; then
-        if [ -f "$pfile" ]; then
-            echo "  ⚠️  $pfile already exists — keeping yours"
+        current_hash="$(file_hash "$legacy")"
+        current_mode="$(file_mode "$legacy")"
+        if [ -n "$installed_hash" ] \
+            && [ "$current_hash" = "$installed_hash" ] \
+            && [ "$current_mode" = "0644" ]; then
+            rm -- "$legacy"
+            echo "retired template-managed legacy adapter: $legacy"
         else
-            cp "$_EXOCORTEX_TMP/exocortex-template/$pfile" .
-            echo "  ✓ Copied $pfile"
+            [ -n "$installed_hash" ] && record_manifest "$legacy" "$installed_hash"
+            echo "EXOCORTEX_ADAPTER_COLLISION_PRESERVED: $legacy (customized bytes/mode or unknown legacy adapter)"
         fi
-    fi
-done
+    done < "$RETIREMENTS"
+}
 
-# Copilot instructions go in .github/
-if [ -f "$_EXOCORTEX_TMP/exocortex-template/.github/copilot-instructions.md" ]; then
-    mkdir -p .github
-    if [ -f ".github/copilot-instructions.md" ]; then
-        echo "  ⚠️  .github/copilot-instructions.md already exists — keeping yours"
-    else
-        cp "$_EXOCORTEX_TMP/exocortex-template/.github/copilot-instructions.md" .github/
-        echo "  ✓ Copied .github/copilot-instructions.md"
-    fi
-fi
-
-# ── Cursor (.cursor/) ─────────────────────────────────────────────────
-
-echo ""
-echo "⌨️  Installing Cursor files..."
-safe_copy_dir "$_EXOCORTEX_TMP/exocortex-template/.cursor/commands" ".cursor/commands" "commands"
-safe_copy_dir "$_EXOCORTEX_TMP/exocortex-template/.cursor/skills"   ".cursor/skills"   "skills"
-safe_copy_dir "$_EXOCORTEX_TMP/exocortex-template/.cursor/rules"    ".cursor/rules"    "rules"
-safe_copy_dir "$_EXOCORTEX_TMP/exocortex-template/.cursor/agents"   ".cursor/agents"   "agents"
-safe_copy_dir "$_EXOCORTEX_TMP/exocortex-template/.cursor/hooks"    ".cursor/hooks"    "hooks"
-safe_copy_file "$_EXOCORTEX_TMP/exocortex-template/.cursor/hooks.json" ".cursor/hooks.json" "hooks.json"
-
-# Ensure hook scripts stay executable after merge.
-if [ -d ".cursor/hooks" ]; then
-    while IFS= read -r hook_script; do
-        chmod +x "$hook_script"
-    done < <(find ".cursor/hooks" -type f -name "*.sh" | sort)
-fi
-
-# ── VS Code Copilot role skills (.github/skills/) ─────────────────────
-
-echo ""
-echo "🤖 Installing VS Code Copilot skills..."
-safe_copy_dir "$_EXOCORTEX_TMP/exocortex-template/.github/skills" ".github/skills" ".github/skills"
-
-# ── Claude / VS Code workflow commands (.claude/skills/) ─────────────
-
-echo ""
-echo "🧠 Installing workflow command skills..."
-safe_copy_dir "$_EXOCORTEX_TMP/exocortex-template/.claude/skills" ".claude/skills" ".claude/skills"
-
-# Merge .gitignore entries
-echo ""
-echo "📝 Updating .gitignore..."
-GITIGNORE_ENTRIES=(
-    "# Exocortex"
-    ".exocortex/.env"
-    ".exocortex/events/*.md"
-    "!.exocortex/events/.gitkeep"
-)
-
-if [ -f ".gitignore" ]; then
-    if ! grep -q "exocortex" .gitignore 2>/dev/null; then
-        echo "" >> .gitignore
-        for entry in "${GITIGNORE_ENTRIES[@]}"; do
-            echo "$entry" >> .gitignore
-        done
-        echo "  ✓ Added exocortex entries to existing .gitignore"
-    else
-        echo "  ✓ .gitignore already has exocortex entries"
-    fi
-else
-    for entry in "${GITIGNORE_ENTRIES[@]}"; do
-        echo "$entry" >> .gitignore
+assert_safe_target_path() {
+    local rel="$1" current="$TARGET_ROOT" part index=0
+    local -a parts
+    case "$rel" in
+        ""|/*|.|..|../*|*/../*|*/..) fail "unsafe install target path: $rel" ;;
+    esac
+    IFS='/' read -r -a parts <<< "$rel"
+    for part in "${parts[@]}"; do
+        [ -n "$part" ] && [ "$part" != "." ] && [ "$part" != ".." ] || fail "unsafe install target path: $rel"
+        current="$current/$part"
+        [ ! -L "$current" ] || fail "refusing target path with symlink component: $rel"
+        if [ -e "$current" ] && [ "$index" -lt "$(( ${#parts[@]} - 1 ))" ]; then
+            [ -d "$current" ] || fail "target ancestor is not a directory: $rel"
+        fi
+        index=$((index + 1))
     done
-    echo "  ✓ Created .gitignore with exocortex entries"
-fi
+}
 
-# ── Write install manifest ───────────────────────────────────────────
-{
-    echo "# Exocortex install manifest — do not edit manually"
-    echo "# Tracks which template files were installed so re-runs can update"
-    echo "# unmodified files and skip user-modified ones."
-    echo "# Format: <filepath> <sha256>"
-    sort "$MANIFEST_TMP"
-} > "$MANIFEST"
-echo "  ✓ Install manifest updated"
-
-# ── Run initialization (fresh install only) ──────────────────────────
-# Skip on update — project name and API keys are already configured
-
-if [ "$IS_UPDATE" = "false" ]; then
-    echo ""
-    echo "🔧 Running initialization..."
-    echo ""
-
-    if [ -n "$PROJECT_NAME" ]; then
-        bash .exocortex/../init-project.sh 2>/dev/null || bash init-project.sh "$PROJECT_NAME" 2>/dev/null || {
-            # init-project.sh might not be at root — copy it temporarily
-            cp "$_EXOCORTEX_TMP/exocortex-template/init-project.sh" ./_exo_init_tmp.sh
-            bash ./_exo_init_tmp.sh "$PROJECT_NAME"
-            rm -f ./_exo_init_tmp.sh
-        }
-    else
-        # Copy init script to project root for interactive use
-        cp "$_EXOCORTEX_TMP/exocortex-template/init-project.sh" ./init-project.sh
-        bash ./init-project.sh
-        rm -f ./init-project.sh
+assert_safe_target_file_path() {
+    local rel="$1"
+    assert_safe_target_path "$rel"
+    if [ -e "$rel" ] && [ ! -f "$rel" ]; then
+        fail "target file path is not a regular file: $rel"
     fi
-else
-    echo ""
-    echo "  ⏭️  Skipping initialization (update mode — your config is preserved)"
-fi
-
-# ── Optional: install global plan-orchestrate rule + auto-save hook ───
-GLOBAL_PLAN_HOOK_STATUS="skipped (non-interactive)"
-if [ -f "$HOME/.cursor/rules/plan-orchestrate.mdc" ]; then
-    echo "  ✓ Global plan-orchestrate rule already installed (skipping)"
-    GLOBAL_PLAN_HOOK_STATUS="already installed"
-elif [ -t 0 ]; then
-    read -r -p "Install the plan-orchestrate rule + auto-save hook globally so they apply to non-exocortex projects too? [Y/n] " GLOBAL_INSTALL_REPLY
-    if [[ -z "$GLOBAL_INSTALL_REPLY" || "$GLOBAL_INSTALL_REPLY" =~ ^[Yy]$ ]]; then
-        mkdir -p "$HOME/.cursor/rules" "$HOME/.cursor/hooks"
-        cp ".cursor/rules/plan-orchestrate.mdc" "$HOME/.cursor/rules/plan-orchestrate.mdc"
-        cp ".cursor/hooks.json" "$HOME/.cursor/hooks.json"
-        cp ".cursor/hooks/auto-save-phase.sh" "$HOME/.cursor/hooks/auto-save-phase.sh"
-        chmod +x "$HOME/.cursor/hooks/auto-save-phase.sh"
-        echo "  ✓ Global plan-orchestrate rule + auto-save hook installed"
-        GLOBAL_PLAN_HOOK_STATUS="installed"
-    else
-        echo "  ⊘ Skipped global install. Project-level files installed normally."
-        GLOBAL_PLAN_HOOK_STATUS="skipped by user"
+    if [ -e "$rel" ] && [ "$(file_link_count "$rel")" != "1" ]; then
+        fail "target file path has external hard links: $rel"
     fi
-fi
+}
 
-# ── Cleanup ───────────────────────────────────────────────────────────
-# Temp dir cleaned up by trap
+assert_safe_target_dir_path() {
+    local rel="$1"
+    assert_safe_target_path "$rel"
+    if [ -e "$rel" ] && [ ! -d "$rel" ]; then
+        fail "target directory path is not a directory: $rel"
+    fi
+}
 
-# ── Optional: Install enkratflow-mcp for RAG memory search ──────────────────
-if [[ "$IS_UPDATE" != "true" ]] && [[ -z "$1" ]]; then
-    if command -v pipx &>/dev/null || command -v pip3 &>/dev/null; then
-        echo ""
-        echo "  📡 Optional: RAG memory search via enkratflow-mcp"
-        echo "  Enables /work, /shortterm, /longterm, /subconscious memory commands."
-        echo ""
-        read -p "  Install enkratflow-mcp now? [y/N] " -n 1 -r
-        echo ""
-        if [[ $REPLY =~ ^[Yy]$ ]]; then
-            if command -v pipx &>/dev/null; then
-                pipx install 'enkratflow-mcp[vault]' && echo "  ✓ enkratflow-mcp installed via pipx"
-            else
-                pip3 install --user 'enkratflow-mcp[vault]' && echo "  ✓ enkratflow-mcp installed via pip"
-            fi
-            echo ""
-            echo "  Next: add your RAG_API_KEY to .exocortex/.env"
-            echo "  Get access at: https://enkratflow.ai"
+ensure_target_parent() {
+    local rel="$1" parent parent_real
+    assert_safe_target_path "$rel"
+    parent="$(dirname "$rel")"
+    if [ "$parent" != "." ]; then
+        mkdir -p -- "$parent"
+        assert_safe_target_path "$rel"
+        parent_real="$(cd "$parent" && pwd -P)"
+        case "$parent_real/" in "$TARGET_ROOT/"*) ;; *) fail "target parent escapes the install target: $rel" ;; esac
+    fi
+}
+
+ensure_target_dir() {
+    local rel="$1" resolved
+    assert_safe_target_dir_path "$rel"
+    mkdir -p -- "$rel"
+    assert_safe_target_dir_path "$rel"
+    resolved="$(cd "$rel" && pwd -P)"
+    case "$resolved/" in "$TARGET_ROOT/"*) ;; *) fail "target directory escapes the install target: $rel" ;; esac
+}
+
+copy_with_bound_mode() {
+    local source_file="$1"
+    local target_file="$2"
+    local source_rel expected_mode
+    source_rel="${source_file#"$SOURCE_COPY/"}"
+    expected_mode="$(awk -v p="$source_rel" 'substr($0,7)==p{print substr($0,1,4); exit}' "$SOURCE_COPY/FILEMODES")"
+    [[ "$expected_mode" =~ ^0(644|755)$ ]] || fail "source file lacks a bound mode: $source_rel"
+    cp -p "$source_file" "$target_file"
+    chmod "$expected_mode" "$target_file"
+    [ -f "$target_file" ] && [ ! -L "$target_file" ] \
+        || fail "copied target is not a regular non-symlink file: $target_file"
+    [ "$(file_hash "$target_file")" = "$(file_hash "$source_file")" ] \
+        || fail "copied target bytes do not match the reviewed source: $target_file"
+    [ "$(file_mode "$target_file")" = "$expected_mode" ] \
+        || fail "copied target mode does not match the reviewed source: $target_file"
+    record_copy_and_maybe_fault
+}
+
+safe_copy_file() {
+    local source_file="$1"
+    local target_file="$2"
+    [ -f "$source_file" ] || return 0
+    ensure_target_parent "$target_file"
+    assert_safe_target_file_path "$target_file"
+    local source_hash current_hash installed_hash
+    source_hash="$(file_hash "$source_file")"
+    if [ ! -e "$target_file" ]; then
+        copy_with_bound_mode "$source_file" "$target_file"
+        record_manifest "$target_file" "$source_hash"
+        return 0
+    fi
+    [ -f "$target_file" ] || fail "target path is not a regular file: $target_file"
+    [ ! -L "$target_file" ] || fail "refusing to replace symlink target: $target_file"
+    current_hash="$(file_hash "$target_file")"
+    installed_hash="$(manifest_get "$target_file")"
+    if [ "$current_hash" = "$source_hash" ]; then
+        record_manifest "$target_file" "$source_hash"
+    elif [ -n "$installed_hash" ] && [ "$current_hash" = "$installed_hash" ]; then
+        copy_with_bound_mode "$source_file" "$target_file"
+        record_manifest "$target_file" "$source_hash"
+    else
+        [ -n "$installed_hash" ] && record_manifest "$target_file" "$installed_hash"
+        echo "preserve user-modified or unknown file: $target_file"
+    fi
+}
+
+safe_copy_dir() {
+    local source_dir="$1"
+    local target_dir="$2"
+    [ -d "$source_dir" ] || return 0
+    local source_file rel
+    while IFS= read -r source_file; do
+        rel="${source_file#$source_dir/}"
+        if [ "$target_dir" = ".exocortex" ] && is_data_relpath "$rel"; then
+            continue
         fi
+        safe_copy_file "$source_file" "$target_dir/$rel"
+    done < <(find "$source_dir" -type f | sort)
+}
+
+write_if_missing() {
+    local target="$1"
+    local content="$2"
+    ensure_target_parent "$target"
+    assert_safe_target_file_path "$target"
+    if [ ! -e "$target" ]; then
+        printf '%s\n' "$content" > "$target"
     fi
+}
+
+ensure_data_stubs() {
+    local dir
+    for dir in \
+        .exocortex/events \
+        .exocortex/control \
+        .exocortex/local/protocol/capabilities \
+        .exocortex/local/protocol/transactions \
+        .exocortex/local/protocol/descriptors \
+        .exocortex/local/protocol/payloads \
+        .exocortex/local/protocol/audit; do
+        ensure_target_dir "$dir"
+    done
+
+    write_if_missing .exocortex/SESSION_CONTEXT.md $'# Session Context\n\n## RIGHT NOW\n\n_No active session context yet._'
+    write_if_missing .exocortex/TODO.md $'# TODO\n\n## Ready\n\n_No tasks captured yet._'
+    write_if_missing .exocortex/LESSONS.md $'# Lessons\n\n_No lessons captured yet._'
+    write_if_missing .exocortex/PROJECT_MEMORY.md $'# Project Memory\n\n_No project-specific memory captured yet._'
+    write_if_missing .exocortex/OPEN_DECISIONS.md $'# Open Decisions\n\n_No open decisions captured yet._'
+    write_if_missing .exocortex/control/INTERRUPTS.md $'# Interrupts\n\n_No interrupts captured yet._'
+    write_if_missing .exocortex/control/BACKLOG.md $'# Backlog\n\n_No backlog items yet._'
+    write_if_missing .exocortex/control/ROADMAP.md $'# Roadmap\n\n_No roadmap defined yet._'
+    write_if_missing .exocortex/control/EXECUTOR_REGISTRY.json $'{\n  "schema_version": "public-v2",\n  "kind": "executor_registry",\n  "registry_version": 1,\n  "default_role": "read_only",\n  "executors": []\n}'
+    write_if_missing .exocortex/control/EXTERNAL_SYNC_POLICY.json $'{\n  "schema_version": "public-v2",\n  "kind": "external_sync_policy",\n  "default": "deny",\n  "policy_version": 1,\n  "destinations": []\n}'
+    write_if_missing .exocortex/.project-name "$PROJECT_NAME"
+}
+
+preflight_source_dir_targets() {
+    local source_dir="$1" target_dir="$2" source_file rel
+    [ -d "$source_dir" ] || return 0
+    while IFS= read -r source_file; do
+        rel="${source_file#$source_dir/}"
+        if [ "$target_dir" = ".exocortex" ] && is_data_relpath "$rel"; then
+            continue
+        fi
+        assert_safe_target_file_path "$target_dir/$rel"
+    done < <(find "$source_dir" -type f | sort)
+}
+
+preflight_install_targets() {
+    local rel dir legacy replacement
+    preflight_source_dir_targets "$SOURCE_COPY/.exocortex" .exocortex
+    for rel in AI_START_HERE.md AGENTS.md CLAUDE.md .rules; do
+        [ -f "$SOURCE_COPY/$rel" ] && assert_safe_target_file_path "$rel"
+    done
+    preflight_source_dir_targets "$SOURCE_COPY/.cursor" .cursor
+    preflight_source_dir_targets "$SOURCE_COPY/.github/skills" .github/skills
+    [ -f "$SOURCE_COPY/.github/copilot-instructions.md" ] && assert_safe_target_file_path .github/copilot-instructions.md
+    preflight_source_dir_targets "$SOURCE_COPY/.claude/skills" .claude/skills
+    preflight_source_dir_targets "$SOURCE_COPY/.agents" .agents
+    while IFS=$'\t' read -r legacy replacement; do
+        assert_safe_target_file_path "$legacy"
+        [ -z "$replacement" ] || assert_safe_target_file_path "$replacement"
+    done < "$RETIREMENTS"
+    [ -f "$SOURCE_COPY/VERSION" ] && assert_safe_target_file_path .exocortex/.version
+    for dir in \
+        .exocortex/events \
+        .exocortex/control \
+        .exocortex/local/protocol/capabilities \
+        .exocortex/local/protocol/transactions \
+        .exocortex/local/protocol/descriptors \
+        .exocortex/local/protocol/payloads \
+        .exocortex/local/protocol/audit; do
+        assert_safe_target_dir_path "$dir"
+    done
+    for rel in \
+        .exocortex/SESSION_CONTEXT.md \
+        .exocortex/TODO.md \
+        .exocortex/LESSONS.md \
+        .exocortex/PROJECT_MEMORY.md \
+        .exocortex/OPEN_DECISIONS.md \
+        .exocortex/control/INTERRUPTS.md \
+        .exocortex/control/BACKLOG.md \
+        .exocortex/control/ROADMAP.md \
+        .exocortex/control/EXECUTOR_REGISTRY.json \
+        .exocortex/control/EXTERNAL_SYNC_POLICY.json \
+        .exocortex/.project-name \
+        .gitignore \
+        .exocortex/.install-manifest \
+        .exocortex/.install-manifest.tmp; do
+        assert_safe_target_file_path "$rel"
+    done
+}
+
+preflight_install_targets
+echo "Installing Exocortex from pinned local source into: $TARGET_ROOT"
+safe_copy_dir "$SOURCE_COPY/.exocortex" .exocortex
+ensure_data_stubs
+
+for rel in AI_START_HERE.md AGENTS.md CLAUDE.md .rules; do
+    safe_copy_file "$SOURCE_COPY/$rel" "$rel"
+done
+safe_copy_dir "$SOURCE_COPY/.agents" .agents
+retire_legacy_adapters
+safe_copy_dir "$SOURCE_COPY/.cursor" .cursor
+safe_copy_dir "$SOURCE_COPY/.github/skills" .github/skills
+safe_copy_file "$SOURCE_COPY/.github/copilot-instructions.md" .github/copilot-instructions.md
+safe_copy_dir "$SOURCE_COPY/.claude/skills" .claude/skills
+
+if [ -f "$SOURCE_COPY/VERSION" ]; then
+    safe_copy_file "$SOURCE_COPY/VERSION" .exocortex/.version
 fi
 
-echo ""
-if [ "$IS_UPDATE" = "true" ]; then
-    echo "════════════════════════════════════════════════════"
-    echo "  ✅ Exocortex updated successfully!"
-    echo "════════════════════════════════════════════════════"
-    echo ""
-    echo "  System files updated. Your memory, todos, sessions,"
-    echo "  and any customised files are exactly as you left them."
-else
-    echo "════════════════════════════════════════════════════"
-    echo "  🎉 Exocortex v3 installed successfully!"
-    echo "════════════════════════════════════════════════════"
-    echo ""
-    echo "  Your project now has AI-powered memory."
+# safe_copy_file preserves each reviewed source file's executable bits. Do not
+# blanket-chmod helpers: that creates unreported mode-only target mutations and
+# turns intentionally non-executable compatibility helpers into executables.
+
+GITIGNORE=.gitignore
+ensure_target_parent "$GITIGNORE"
+assert_safe_target_file_path "$GITIGNORE"
+gitignore_existed=false
+[ -e "$GITIGNORE" ] && gitignore_existed=true
+if ! grep -Fq '# BEGIN EXOCORTEX' "$GITIGNORE" 2>/dev/null; then
+    {
+        [ ! -s "$GITIGNORE" ] || echo
+        echo '# BEGIN EXOCORTEX'
+        echo '.exocortex/.env'
+        echo '.exocortex/events/*.md'
+        echo '!.exocortex/events/.gitkeep'
+        echo '.exocortex/local/'
+        echo '# END EXOCORTEX'
+    } >> "$GITIGNORE"
 fi
-echo ""
-# Show release notes if the template ships a WHATSNEW.md
-if [ -f "$_EXOCORTEX_TMP/exocortex-template/WHATSNEW.md" ]; then
-    echo ""
-    echo "📰 What's new in this release:"
-    echo "────────────────────────────────"
-    cat "$_EXOCORTEX_TMP/exocortex-template/WHATSNEW.md"
-    echo "────────────────────────────────"
-    echo ""
+if [ "$gitignore_existed" = false ]; then
+    chmod 0644 "$GITIGNORE"
 fi
 
-cat <<'EOF'
-🧩 Other IDE / LLM setup
-────────────────────────
-If your editor is not listed, add this instruction to whatever system prompt,
-rules file, project instruction file, command snippet, custom mode, or agent
-memory your IDE supports:
+ensure_target_dir .exocortex
+ensure_target_parent "$MANIFEST"
+ensure_target_parent "$MANIFEST.tmp"
+if awk 'NF >= 2 && seen[$1]++ { found=1 } END { exit !found }' "$MANIFEST_NEW"; then
+    fail "duplicate install-manifest path"
+fi
+{
+    echo '# Exocortex install manifest - template code plane only'
+    sort -u "$MANIFEST_NEW"
+} > "$MANIFEST.tmp"
+mv "$MANIFEST.tmp" "$MANIFEST"
 
-When the user types an Exocortex command like /work, /save, /ai-export, work,
-save, or ai-export:
-
-1. Read .exocortex/AI_BOOTSTRAP.md first.
-2. Find .exocortex/commands/{command}.json.
-3. Execute the JSON steps in order.
-4. The JSON command is the source of truth if any instruction conflicts.
-5. Do not invent extra prompts or duplicate command behavior in the adapter.
-6. Never read, print, log, echo, or expose secret values.
-7. In a multi-root workspace, identify the target repo before running shell steps.
-
-If slash commands are not supported, use this in the AI chat:
-
-Read .exocortex/AI_BOOTSTRAP.md, then run the Exocortex command /work.
-
-Full adapter examples:
-.exocortex/docs/IDE_INTEGRATION_GUIDE.md
-EOF
-
-echo "  Commands in Cursor or VS Code:"
-echo "    /work      — Load context, see what to work on"
-echo "    /save      — Save your progress"
-echo "    /interrupt — Capture ideas without breaking flow"
-echo "  ✓ Plan orchestration + auto-save hook: project-level installed (global: $GLOBAL_PLAN_HOOK_STATUS)"
-echo ""
+echo "Exocortex install complete."
+echo "Global editor, launchd, provider, credential, deployment, and external-sync actions: not attempted."

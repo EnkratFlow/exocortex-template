@@ -1,307 +1,211 @@
 # AI Bootstrap — Exocortex Command Protocol
 
----
-## ⛔ SECURITY RULE — NEVER VIOLATE
-
-**NEVER read, print, log, echo, grep, cat, or include the VALUE of any API key, secret, or token in any chat message, code snippet, tool output, or terminal command output.**
-
-This includes:
-- Running `cat`, `grep`, `echo`, or any command that outputs key values to stdout
-- Hardcoding key values into any Python, shell, or JS snippet you write
-- Reading `.env` files with tools that return their contents
-
-To test a key: write a shell script to `/tmp/`, run it, return only `valid`/`invalid`. The key value must never appear in your context or output.
-
-If you are about to read or display a key value — **stop and refuse**.
-
----
-
-> **Read this first.** This is the single source of truth for the exocortex command system.
-> Any AI agent (Cursor, VS Code Copilot, Claude, Windsurf, etc.) should follow these rules when the user types a `/command`.
-
-**After reading this file, also read:**
-→ `.exocortex/reference/MEMORY.md` (project memory entry point and reading order)
-
----
-
-## 1. Command Discovery
-
-When the user types a command (`/work`, `work`, `/save`, `save`, `/scrum`, etc.):
-
-1. **Strip the `/` prefix** if present → `work`
-2. **Look for:** `.exocortex/commands/{command}.json`
-3. **If found:** Execute via the step protocol below
-4. **If not found:** Tell the user — all valid commands have JSON specs
-
-Commands work **with or without** the `/` prefix:
-- `/work` = `work` = execute `work.json`
-- `/save` = `save` = execute `save.json`
-- `/drill supabase` = `drill supabase` = execute `drill.json` with arg "supabase"
-
----
-
-## 2. All 20 Commands
-
-### Daily Workflow
-| Command | Purpose |
-|---------|---------|
-| `/work` | Load context, see what to work on |
-| `/scrum` | Daily standup (yesterday/today/blockers) |
-| `/save` | Save work state before breaks |
-| `/daily-end` | End of day review |
-| `/interrupt` | Capture ideas without breaking flow |
-| `/brief` | Quick status check |
-
-### Memory (AI-powered)
-| Command | Purpose |
-|---------|---------|
-| `/shortterm` | 7-31 day semantic memory |
-| `/longterm` | 31+ day compressed memory |
-| `/subconscious` | Cross-cutting pattern detection |
-| `/drill <topic>` | Deep-dive on a specific topic |
-| `/history` | Search older events (7+ days) |
-
-### Planning
-| Command | Purpose |
-|---------|---------|
-| `/groom` | Process interrupts to backlog/TODO |
-| `/refine-backlog` | Promote backlog items to TODO |
-| `/prioritize` | Reorder TODO items |
-| `/weekly-review` | Weekly planning & review |
-| `/monthly-review` | Monthly strategic review |
-| `/pattern-review` | Analyze recurring topics & friction → generate skills/memory |
-
-### System
-| Command | Purpose |
-|---------|---------|
-| `/onboard` | Read and understand the codebase before working |
-| `/system-scan` | Repository health check |
-| `/ai-export` | Generate system understanding document |
-| `/ecosystem` | Cross-project activity view |
-| `/init-exocortex` | Initialize exocortex for a new project |
-| `/check-keys` | Validate all API keys — status, purpose, location (no values exposed) |
-
-**Command schemas:** `.exocortex/commands/*.json` (one file per command)
-**Command index:** `.exocortex/COMMAND_SYSTEM.md`
-
----
-
-## 3. Step Execution Protocol
-
-Each command JSON has a `steps` array. Execute steps **in order**.
-
-### Step type: `shell`
-```json
-{
-  "type": "shell",
-  "command": "python3 .exocortex/scripts/get_rightnow_memory.py",
-  "description": "Curate RIGHT NOW memory",
-  "outputs": { "right_now_section": "AI-curated episodic memory" }
-}
-```
-- **Run the command** in the terminal
-- **Capture output** — assign to the named output variable
-- **If it fails:** Show the error and ask user yes/no to continue
-
-### Step type: `ai`
-```json
-{
-  "type": "ai",
-  "action": "Format and display the work brief",
-  "inputs": ["right_now_section", "shortterm_memory"],
-  "context": "Display sections verbatim, add git state..."
-}
-```
-- **You (the AI) do this step** — read the `action` and `context` fields
-- **Use outputs from previous steps** as inputs
-- **Follow the context instructions** exactly
-
-### Step type: `user_choice`
-```json
-{
-  "type": "user_choice",
-  "options": ["A) Start next task", "B) Commit first", "C) Something else"]
-}
-```
-- **Present the options** to the user
-- **Wait for their choice** before proceeding
-
-### Step type: `read`
-```json
-{
-  "type": "read",
-  "files": [".exocortex/control/INTERRUPTS.md"],
-  "description": "Load current interrupts list"
-}
-```
-- **Read the file(s)** and hold the content for later steps
-
----
-
-## 3.1 Multi-Root Workspace Rule
-
-In a multi-root workspace (multiple repos open), the IDE prefix (e.g. `my-api/save`) only determines which command spec is loaded. It does **not** determine which repo the command runs in.
-
-Before running any command's shell steps, determine the target repo:
-
-1. **User specifies in message** (e.g. "/save my-project" or "/save all") — use that.
-2. **File is focused** — use the workspace root that contains it.
-3. **Session context** — if the AI modified files in specific repos during this session, list them by name and number, then offer "all" or pick by number/name (e.g. "This session touched 3 repos: 1. frontend, 2. api, 3. infra. Save to all 3, or pick by number/name?"). The user should never need to remember repo names.
-4. **Neither** — ask: "Which repo should this run in?" and list the workspace roots.
-
-Run **every** shell step with the target repo's absolute path as the working directory.
-
-For `/save` and `/daily-end`: accept "all" or comma-separated repo names to run in multiple repos sequentially.
-
-For all other commands: always target a single repo.
-
-This ensures events, SESSION_CONTEXT, TODO updates, and all other exocortex writes go to the correct repo's `.exocortex/`.
-
----
-
-## 3.2 Plan orchestration
-
-For multi-phase work, follow `~/.cursor/rules/plan-orchestrate.mdc`
-(or the project-level copy at `.cursor/rules/plan-orchestrate.mdc`).
-Decompose the work into named phases, declare a model per phase,
-delegate execution to Task subagents, and `/save` after every phase
-completes (the `subagentStop` hook at `.cursor/hooks/auto-save-phase.sh`
-enforces this when subagent descriptions follow the `"Phase N: ..."`
-or `"phase-N-..."` convention).
-
-For phase saves the auto-save hook fires, use the Step 5b hybrid
-pattern in the rule (parent summarizes inline, haiku-tier subagent
-drafts the event body, parent runs the shell steps).
-
----
-
-## 4. Response Format
-
-After executing all steps, show a compact summary:
-
-```
-✓ Step 1 name (key data)
-✓ Step 2 name (key data)
-✓ Step 3 name (key data)
-
-[1-2 line state summary]
-
-[Decision question with options]
-```
-
-If a step fails:
-```
-✓ Steps completed so far
-✗ Step N FAILED (reason)
-
-[Fix description]? (y/n)
-```
-
----
-
-## 5. Self-Correction Rules
-
-- **Never auto-fix** without asking
-- **Always show** what failed
-- **Always ask yes/no** before proceeding
-- If user says `y`: do ONLY that fix, then continue
-- If user says `n`: stop and wait
-
----
-
-## 6. Memory System (4-Tier)
-
-The exocortex uses a **4-tier memory** system based on Conway's autobiographical memory model:
-
-| Tier | Time Range | Script | Style |
-|------|-----------|--------|-------|
-| RIGHT NOW | 0-7 days | `get_rightnow_memory.py` | Vivid episodic — like just sitting back down |
-| SHORT-TERM | 7-31 days | `get_shortterm_memory.py` | Semantic themes — "the last few weeks..." |
-| LONG-TERM | 31+ days | `get_longterm_memory.py` | Compressed by era — older = broader strokes |
-| SUBCONSCIOUS | ALL events | `get_subconscious_memory.py` | Cross-cutting patterns — what you haven't noticed |
-
-**Additional scripts:**
-- `get_subconscious_nudge.py` — Single-sentence pattern probe (runs automatically in `/work`)
-- `drill_memory.py` — Deep-dive into a specific topic across all events
-
-All Python scripts use a **2-pass Ralph-style self-critique** pipeline:
-1. Pass 1: Generate the reconstruction
-2. Pass 2: Quality check against format/tone rules, fix issues, output final version
-
-API calls go through `_api_helpers.py` — validates keys, detects auth errors, shows human-readable messages.
-
----
-
-## 7. Event System
-
-Events are the raw data for memory. Stored in `.exocortex/events/` as markdown files:
-- **Filename format:** `YYYY-MM-DD_HH-MM-SS_machine-editor.md`
-- **Append-only:** Events are never edited or deleted
-- **Created by:** `/save` command (via `create_event.sh`)
-
----
-
-## 8. File Structure
-
-```
-.exocortex/
-├── AI_BOOTSTRAP.md              ← YOU ARE HERE — single source of truth
-├── .env                         ← API keys (gitignored)
-├── .env.example                 ← API key template
-├── COMMAND_SYSTEM.md            ← Full command schema reference
-├── PERSONA_AND_COMMANDS.md      ← AI persona & mode documentation
-├── MEMORY_TIERS.md              ← Memory architecture details
-├── PROJECT_MEMORY.md            ← System purpose, philosophy, constraints
-├── SESSION_CONTEXT.md           ← Current work state
-├── TODO.md                      ← Task board
-├── LESSONS.md                   ← Project-specific lessons
-├── OPEN_DECISIONS.md            ← Unresolved decisions
-├── commands/                    ← 20 JSON command specs
-├── control/                     ← Human-controlled planning
-│   ├── INTERRUPTS.md            ← Parking lot for ideas
-│   ├── BACKLOG.md               ← Investigation items
-│   ├── ROADMAP.md               ← Strategic direction
-│   └── ...
-├── docs/                        ← System documentation
-├── events/                      ← Append-only work events
-├── reference/                   ← Quick reference files
-│   ├── MEMORY.md                ← Memory entry point (read-order guide)
-│   ├── ESSENTIAL_FILES.md       ← File location map
-│   ├── QUICK_REFERENCE.md       ← Fast lookup
-│   └── CHEAT_SHEET.md           ← One-page cheat sheet
-└── scripts/                     ← Shell + Python automation
-    ├── _api_helpers.py           ← Shared API module
-    ├── get_rightnow_memory.py    ← RIGHT NOW (0-7 days)
-    ├── get_shortterm_memory.py   ← SHORT-TERM (7-31 days)
-    ├── get_longterm_memory.py    ← LONG-TERM (31+ days)
-    ├── get_subconscious_memory.py ← SUBCONSCIOUS (all events)
-    ├── get_subconscious_nudge.py ← DMN activation nudge
-    ├── drill_memory.py           ← Topic deep-dive
-    └── *.sh                      ← Shell automation scripts
-```
-
----
-
-## 9. Getting Started
-
-The first command to run is always:
-
-```
-/work
-```
-
-This loads RIGHT NOW + SHORT-TERM memory, fires a subconscious nudge, reads git state and TODO.md, then presents you with options to start your next task.
-
----
-
-## 10. Emergency Recovery
-
-If the AI seems to not know workflow commands:
-1. Type: "Read `.exocortex/AI_BOOTSTRAP.md`"
-2. Confirm it loaded
-3. Then proceed with your command
-
----
-
-**Version:** Exocortex v3
-**Last updated:** February 2026
+This file is command-discovery authority. `AI_START_HERE.md` is the canonical
+provider-neutral entry and authority contract. Read it first, then use this
+file and the matching command JSON.
+
+## Security boundary
+
+Never read, print, log, echo, search, or include the value of an API key,
+secret, token, or credential. Never read `.env` content into model or terminal
+output. Credential validation and provider/network access require a separately
+approved immutable payload and the two-stage egress guard.
+
+## Command discovery
+
+A manual command is invoked only when the user uses the host-native command
+trigger or selector, or supplies the exact bare command token by itself or
+explicitly frames following text as command arguments. Examples include
+`$name`, `/name`, `/skill:name`, a provider selector, and the exact token
+`name`.
+
+An ordinary sentence that merely contains or begins with a command-like verb
+is ordinary chat. It does not load an adapter or execute command JSON merely
+because its first word matches a command name.
+
+After an explicit invocation:
+
+1. Resolve the current project root without changing it.
+2. Read `.exocortex/commands/name.json`.
+3. Validate its `protocol` block points to `AI_START_HERE.md`, defaults to
+   read-only, and separates mutation from egress authority.
+4. Execute read-only steps in order.
+5. Treat every requested mutation as a proposal until one applicable
+   human-facing business envelope is accepted and the registered guarded
+   executor accepts the derived current one-time technical capability.
+6. Materialize, consume, renew, and audit internal reservations and technical
+   capabilities without turning each one into another human prompt, but only
+   while the accepted envelope's target, base, digest, path/plan scope,
+   operation class, risk, outcome, verification, and expiry still match.
+7. Treat every outward action as a destination-specific
+   `production_egress` gate. Never infer it from a local write, save, handoff,
+   lifecycle transition, publication, rollout, or prior approval.
+
+Arguments and modifiers following an explicit command invocation are command
+inputs only; they never expand path, mutation, checkpoint, commit, credential,
+network, egress, or batch authority.
+
+If one invocation crosses business-gate classes, execute only what the current
+envelope authorizes and stop at its boundary. A `publication` envelope may
+cover exact-path staging, local commit, named-branch push, and a draft pull
+request for one reviewed candidate; it cannot authorize merge or any later
+class. Never combine a local record and external synchronization in one
+envelope.
+
+Command JSON is behavior authority beneath `AI_START_HERE.md`. Provider and
+editor bridges are thin adapters and cannot expand it.
+
+## Available commands (24)
+
+| Group | Commands |
+|---|---|
+| Daily | `/work`, `/scrum`, `/save`, `/daily-end`, `/interrupt`, `/brief` |
+| Memory | `/shortterm`, `/longterm`, `/subconscious`, `/drill`, `/history` |
+| Planning | `/groom`, `/refine-backlog`, `/prioritize`, `/weekly-review`, `/monthly-review`, `/pattern-review` |
+| System | `/onboard`, `/system-scan`, `/ai-export`, `/ecosystem`, `/init-exocortex`, `/check-keys`, `/handoff` |
+
+`check-keys` never reads or tests a key in the default process. `handoff` is
+project-local, non-authorizing evidence. `save` is a narrative memory action,
+not a lifecycle checkpoint.
+
+## Provider-native discovery
+
+The 24 JSON specifications remain behavior authority. A deterministic generator
+creates 72 manual-only thin adapters without copying command behavior:
+
+- `.agents/skills/{command}/SKILL.md` — portable Agent Skills for Codex
+  (`$command` or selector), GitHub Copilot, Kimi Code, and Zed;
+- `.claude/skills/{command}/SKILL.md` — Claude `/command`;
+- `.cursor/skills/{command}/SKILL.md` — Cursor `/command`, with
+  `disable-model-invocation: true`.
+
+Run `python3 .exocortex/scripts/generate_command_adapters.py --check` to verify
+the repository mapping. Generic or unidentified hosts use `AI_START_HERE.md`
+and the matching JSON directly. Repository validation does not replace bounded
+Human UAT of a provider's current menu. Provider evidence is version-scoped and
+uses only `verified`, `compatible`, `failed`, `blocked`, or `unavailable`.
+Windsurf is currently `unavailable` and has no active/default adapter; it may
+return only after later version-specific evidence.
+
+## Step execution
+
+Command specs may contain:
+
+- `read`: inspect only project-local, non-secret evidence.
+- `shell`: run only when the program is read-only or the exact guarded
+  capability for its effect has already been accepted.
+- `ai`: analyze or prepare a proposal. Text saying “create,” “update,” “move,”
+  or “send” never grants authority by itself.
+- `user_choice`: wait for the user. A choice may request the next gate, but it
+  does not bypass envelope or capability validation.
+
+On failure, report the safe error code and stop. Do not auto-fix, broaden
+scope, retry an indeterminate external send, or fall back to an unguarded path.
+
+## Project targeting
+
+Operate on one explicitly resolved project root. A multi-root editor prefix
+selects a command adapter, not mutation authority. Cross-project reads or
+writes require their own bounded work item and approval. “All” never implies a
+batch mutation.
+
+## Orchestration
+
+For multi-phase work, follow `.exocortex/control/MODEL_ROUTING.md`,
+`.exocortex/control/DELIVERY_WORKFLOW.md`, and the provider adapter when one is
+present.
+
+- Use deterministic tools first.
+- Select the least-expensive available parent capable of owning the complete
+  risk and integration judgment.
+- Delegate bounded evidence tasks to cheaper capable workers.
+- Keep one accountable guarded writer; other lanes are read-only by default.
+- Ask the human for one plain-language business decision, not separate
+  approvals for internal work-item, registry, reservation, capability,
+  checkpoint, evidence, handoff, or writer-release mechanics.
+- Escalate only when evidence shows the current tier is insufficient.
+- Never require a named provider or permanently start at the highest tier.
+
+Source-backed model discovery is read-only and advisory. It covers configured
+official public sources only, never uses credentials, and quarantines newly
+observed models. Route only from fresh, digest-bound official-source,
+current-surface availability, and measured evaluation evidence. See
+`.exocortex/control/MODEL_ROUTING.md`.
+
+The Cursor phase hook is reminder-only. It does not save, checkpoint, select a
+model, transition lifecycle state, or synchronize anything.
+
+## Lifecycle and agile delivery
+
+Use the closed lifecycle and acceptance gates in
+`.exocortex/control/DELIVERY_WORKFLOW.md`. Minutes-long Kanban slices still
+require applicable requirements, acceptance criteria, implementation,
+developer verification, independent review when risk requires it, QA/SIT,
+Human UAT, release approval, deployment, and hypercare.
+
+Only an accepted, authorized, durable transition explicitly marked
+checkpoint-eligible creates one idempotent checkpoint. Ordinary chat,
+read-only orientation, tests, support lanes, rejected attempts, narrative
+saves, handoffs, and retries create none.
+
+## Guarded executors
+
+Generated project-local runtime state is protected data, never template
+payload:
+
+- `.exocortex/control/EXECUTOR_REGISTRY.json`
+- `.exocortex/control/EXTERNAL_SYNC_POLICY.json`
+- `.exocortex/local/protocol/capabilities/`
+- `.exocortex/local/protocol/transactions/`
+- `.exocortex/local/protocol/descriptors/`
+- `.exocortex/local/protocol/payloads/`
+- `.exocortex/local/protocol/audit/`
+
+Unregistered, unavailable, expired, revoked, mismatched, or unknown executors
+remain read-only. Registration does not grant a work-item operation.
+
+Use `.exocortex/scripts/orchestrate_work_item.py` for read-only orientation,
+capability/cost routing, and guarded runtime-work-item mutations. Planning-v1
+records may be oriented through a read-only compatibility view but cannot be
+mutated by that runtime protocol.
+
+## Egress
+
+Use `.exocortex/scripts/egress_guard.py` only:
+
+1. `inspect` requires and consumes a one-time local writer capability for the
+   exact source path before opening it, then proposes its digest, size, class,
+   object path, and descriptor path without creating those artifacts.
+2. `stage` requires a second writer capability bound to those exact values,
+   then creates immutable local content-addressed state.
+   These inspect/stage capabilities are internal mechanics of an accepted
+   local-delivery preparation envelope, not separate human prompts.
+3. A human reviews the immutable descriptor and makes one
+   `production_egress` decision for the exact destination, method, outward
+   effect, expiry, and executor.
+4. `send` validates policy and authority before payload access, verifies the
+   bytes, resolves any credential only after those checks, revalidates and
+   consumes authority plus the destination policy immediately before transport,
+   and never auto-retries.
+
+Legacy vault, hub, provider, and key-check adapters fail closed or delegate to
+this guard. They never read global credential files.
+
+## Memory and events
+
+Project-local events remain the durable narrative data plane. They are not
+authority, checkpoints, commits, or deployment evidence. No event is
+automatically synchronized. Provider-assisted memory curation is unavailable
+until separately authorized through the egress protocol; local evidence may
+still be summarized by the active conversation model.
+
+## Recovery
+
+If orientation is unclear:
+
+1. Re-read `AI_START_HERE.md`.
+2. Resolve live Git and the exact project-local work item.
+3. Run the read-only orientation command.
+4. Reconcile generated context against live Git and local event evidence.
+5. Stop if authority, base, revision, registry, capability, or writer ownership
+   is missing or contradictory.

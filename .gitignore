@@ -6,6 +6,11 @@ dist/
 build/
 .vscode/
 *.log
+__pycache__/
+*.py[cod]
+
+# Exocortex project-local runtime/evidence data (never template code plane)
+.exocortex/local/
 
 # Exocortex - Event System
 # Phase 1 (1-2 months): Track active events via git for cross-machine sync

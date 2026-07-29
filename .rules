@@ -1,23 +1,5 @@
-**Read `.exocortex/AI_BOOTSTRAP.md` immediately.** It contains the complete command protocol, all 20 commands, memory system, and file structure for this project.
+# Generic AI editor adapter
 
-Then read `.exocortex/reference/MEMORY.md` for the project memory entry point.
+Read `AI_START_HERE.md` before substantive action. It is the sole provider-neutral entry and authority contract.
 
-These two files give you everything you need to operate this project's exocortex.
-
----
-
-## Zed-specific notes
-
-**Slash command workaround:** Zed intercepts `/` as native commands. Do NOT type `/work`, `/save`, etc. — type the command name without the slash:
-- `work` or `run the work command`
-- `save` or `run the save command`
-- `daily-end` or `run the daily-end command`
-
-**Shell step execution:** When executing a command spec from `.exocortex/commands/*.json`, always run the `shell` type steps for real using the terminal tool — do NOT guess or hallucinate script output. The memory scripts (`get_rightnow_memory.py`, `get_shortterm_memory.py`, `get_subconscious_nudge.py`) must be executed and their actual stdout captured as inputs to the AI step. If you cannot run a shell step, say so explicitly — do not silently substitute fabricated output.
-
-**Session start checklist (run before anything else):**
-1. Read `.exocortex/AI_BOOTSTRAP.md`
-2. Read `.exocortex/reference/MEMORY.md`
-3. Read `.exocortex/PROJECT_MEMORY.md`
-4. Read `.exocortex/SESSION_CONTEXT.md`
-Then you are ready. Do not make any changes before completing these four reads.
+Then follow `.exocortex/AI_BOOTSTRAP.md` for command discovery and `.exocortex/reference/MEMORY.md` for project orientation. Without exact current authority and a registered guarded executor, remain read-only and perform no egress. Never read or expose secret values or `.env` contents.

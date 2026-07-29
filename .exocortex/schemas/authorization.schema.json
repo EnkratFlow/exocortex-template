@@ -1,0 +1,89 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/exocortex/schemas/authorization.schema.json",
+  "title": "Exocortex one-time approval capability",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "kind",
+    "capability_id",
+    "work_item_id",
+    "work_item_revision",
+    "operation",
+    "scope",
+    "executor",
+    "approval",
+    "status"
+  ],
+  "properties": {
+    "schema_version": { "const": "public-v2" },
+    "kind": { "const": "approval_capability" },
+    "capability_id": { "$ref": "#/$defs/id" },
+    "work_item_id": { "$ref": "#/$defs/id" },
+    "work_item_revision": { "type": "integer", "minimum": 0 },
+    "operation": { "type": "string", "pattern": "^[a-z][a-z0-9_]{1,99}$" },
+    "scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["allowed_paths"],
+      "properties": {
+        "allowed_paths": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/relative_path" }
+        },
+        "target_sha": { "type": ["string", "null"], "pattern": "^[a-f0-9]{40}$|^[a-f0-9]{64}$" },
+        "destination_id": { "type": ["string", "null"], "maxLength": 200 },
+        "method": { "type": ["string", "null"], "maxLength": 80 },
+        "payload_descriptor_id": { "type": ["string", "null"], "maxLength": 200 },
+        "payload_digest": { "type": ["string", "null"], "pattern": "^[a-f0-9]{64}$" }
+      }
+    },
+    "executor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["surface_id", "executor_id", "adapter_version", "guard_digest", "registry_version"],
+      "properties": {
+        "surface_id": { "$ref": "#/$defs/id" },
+        "executor_id": { "$ref": "#/$defs/id" },
+        "adapter_version": { "type": "string", "minLength": 1, "maxLength": 100 },
+        "guard_digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "registry_version": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "approval": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["approved_by", "accepted_at", "expires_at", "one_time"],
+      "properties": {
+        "approved_by": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "accepted_at": { "$ref": "#/$defs/timestamp" },
+        "expires_at": { "$ref": "#/$defs/timestamp" },
+        "one_time": { "const": true },
+        "summary": { "type": "string", "maxLength": 1000 }
+      }
+    },
+    "status": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["state", "revoked_at", "consumed_at", "consumed_by_request_id"],
+      "properties": {
+        "state": { "type": "string", "enum": ["active", "consumed", "revoked"] },
+        "revoked_at": { "oneOf": [{ "type": "null" }, { "$ref": "#/$defs/timestamp" }] },
+        "consumed_at": { "oneOf": [{ "type": "null" }, { "$ref": "#/$defs/timestamp" }] },
+        "consumed_by_request_id": { "type": ["string", "null"], "maxLength": 200 }
+      }
+    }
+  },
+  "$defs": {
+    "id": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,199}$" },
+    "timestamp": { "type": "string", "format": "date-time" },
+    "relative_path": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 500,
+      "not": { "pattern": "(^/|(^|/)\\.\\.(/|$))" }
+    }
+  }
+}

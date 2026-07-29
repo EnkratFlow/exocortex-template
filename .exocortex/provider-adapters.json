@@ -1,0 +1,335 @@
+{
+  "schema_version": "public-v2",
+  "kind": "provider_adapter_matrix",
+  "canonical_registry": ".exocortex/commands",
+  "expected_command_count": 24,
+  "generator": ".exocortex/scripts/generate_command_adapters.py",
+  "adapter_families": [
+    {
+      "id": "portable-agent-skills",
+      "path_template": ".agents/skills/{command}/SKILL.md",
+      "format": "agent_skill",
+      "manual_only": true,
+      "providers": [
+        "codex",
+        "github-copilot",
+        "kimi-code",
+        "zed"
+      ]
+    },
+    {
+      "id": "claude-code-skills",
+      "path_template": ".claude/skills/{command}/SKILL.md",
+      "format": "claude_skill",
+      "manual_only": true,
+      "providers": [
+        "claude"
+      ]
+    },
+    {
+      "id": "cursor-native-skills",
+      "path_template": ".cursor/skills/{command}/SKILL.md",
+      "format": "cursor_skill",
+      "manual_only": true,
+      "providers": [
+        "cursor"
+      ]
+    }
+  ],
+  "status_definitions": {
+    "verified": "The recorded installed version passed complete provider-native discovery Human UAT.",
+    "compatible": "The documented contract and static structure match, but complete Human UAT is pending or partial.",
+    "failed": "The recorded installed version produced a concrete reproducible failure.",
+    "blocked": "A prerequisite such as authentication prevented Human UAT.",
+    "unavailable": "No installed local surface exists for Human UAT."
+  },
+  "providers": [
+    {
+      "id": "codex",
+      "display_name": "Codex",
+      "adapter_family": "portable-agent-skills",
+      "native_invocation": "$command or the skills selector",
+      "literal_slash_claim": false,
+      "visibility_evidence": "provider_uat_required",
+      "version": "current Codex desktop task",
+      "status": "compatible",
+      "evidence_adapter_family": "portable-agent-skills",
+      "default_install": true,
+      "revalidation_required": true,
+      "evidence": "The repository skill catalog resolves all 24 canonical commands.",
+      "limitation": "Literal desktop skill-selector visibility remains Human-UAT-pending."
+    },
+    {
+      "id": "claude",
+      "display_name": "Claude Desktop",
+      "adapter_family": "claude-code-skills",
+      "native_invocation": "/command",
+      "literal_slash_claim": true,
+      "visibility_evidence": "provider_uat_required",
+      "version": "1.24012.1 (0adcae)",
+      "status": "verified",
+      "evidence_adapter_family": "claude-code-skills",
+      "default_install": true,
+      "revalidation_required": true,
+      "evidence": "Claude Desktop displayed all 24 Exocortex native slash commands exactly once; no command or message was executed and the observation caused zero changes.",
+      "limitation": "Evidence is limited to Claude Desktop 1.24012.1 (0adcae) and does not transfer to Claude Code or another client version."
+    },
+    {
+      "id": "cursor",
+      "display_name": "Cursor",
+      "adapter_family": "cursor-native-skills",
+      "native_invocation": "/command",
+      "literal_slash_claim": true,
+      "visibility_evidence": "provider_uat_required",
+      "version": "Stable 3.12.30",
+      "status": "verified",
+      "evidence_adapter_family": "cursor-native-skills",
+      "default_install": true,
+      "revalidation_required": true,
+      "evidence": "The native skills menu displayed 72 unique names containing all 24 Exocortex commands exactly once; no skill, command, or message was executed and Cursor showed zero changes.",
+      "limitation": "Evidence is limited to Cursor Stable 3.12.30 with the dedicated Cursor adapter family; the earlier 3.6.21 portable-family failure remains historical."
+    },
+    {
+      "id": "github-copilot",
+      "display_name": "GitHub Copilot",
+      "adapter_family": "portable-agent-skills",
+      "native_invocation": "/command where repository skills are supported",
+      "literal_slash_claim": true,
+      "visibility_evidence": "provider_uat_required",
+      "version": "exact client version not captured",
+      "status": "compatible",
+      "evidence_adapter_family": "portable-agent-skills",
+      "default_install": true,
+      "revalidation_required": true,
+      "evidence": "The current available surface displayed all 24 Exocortex commands.",
+      "limitation": "Verified status requires the exact client version to be captured during a later regression run."
+    },
+    {
+      "id": "kimi-code",
+      "display_name": "Kimi Code CLI",
+      "adapter_family": "portable-agent-skills",
+      "native_invocation": "/skill:{name}",
+      "literal_slash_claim": true,
+      "visibility_evidence": "provider_uat_required",
+      "version": "1.14.0",
+      "status": "verified",
+      "evidence_adapter_family": "portable-agent-skills",
+      "default_install": true,
+      "revalidation_required": true,
+      "evidence": "The isolated native /help surface displayed 26 unique skills, including all 24 Exocortex /skill:{name} entries exactly once; no skill, prompt, authentication, or model request was used and disposable state was removed.",
+      "limitation": "Evidence is limited to Kimi Code CLI 1.14.0 and does not transfer to Kimi Desktop Work or another Kimi surface."
+    },
+    {
+      "id": "kimi-desktop",
+      "display_name": "Kimi Desktop Work",
+      "adapter_family": null,
+      "native_invocation": "not advertised",
+      "literal_slash_claim": false,
+      "visibility_evidence": "provider_uat_required",
+      "version": "3.1.3",
+      "status": "failed",
+      "evidence_adapter_family": null,
+      "default_install": false,
+      "revalidation_required": true,
+      "evidence": "Kimi Desktop Work displayed 0 of the 24 Exocortex project skills, and exact /skill:ai-export produced no match; no skill or message was executed.",
+      "limitation": "This failure is specific to Kimi Desktop Work 3.1.3; no Desktop adapter is generated or installed, and the result does not invalidate Kimi Code CLI."
+    },
+    {
+      "id": "zed",
+      "display_name": "Zed",
+      "adapter_family": "portable-agent-skills",
+      "native_invocation": "built-in Agent skills selector",
+      "literal_slash_claim": false,
+      "visibility_evidence": "provider_uat_required",
+      "version": "1.12.0 stable.328",
+      "status": "verified",
+      "evidence_adapter_family": "portable-agent-skills",
+      "default_install": true,
+      "revalidation_required": true,
+      "evidence": "The built-in Agent displayed 25 unique skills, including all 24 Exocortex skills exactly once plus create-skill; no skill or message was executed.",
+      "limitation": "Evidence is limited to Zed 1.12.0 stable.328 built-in Agent; ACP-hosted agents and other versions are separate surfaces."
+    },
+    {
+      "id": "windsurf",
+      "display_name": "Windsurf",
+      "adapter_family": null,
+      "native_invocation": "not advertised",
+      "literal_slash_claim": false,
+      "visibility_evidence": "unavailable_no_active_adapter",
+      "version": "not installed",
+      "status": "unavailable",
+      "evidence_adapter_family": null,
+      "default_install": false,
+      "revalidation_required": true,
+      "evidence": "No local installed surface exists for provider-native Human UAT.",
+      "limitation": "Windsurf is absent from active advertised support and default installation; return requires later version-specific evidence."
+    },
+    {
+      "id": "generic",
+      "display_name": "Generic or unidentified host",
+      "adapter_family": null,
+      "native_invocation": "host-dependent",
+      "literal_slash_claim": false,
+      "visibility_evidence": "provider_neutral_entry_only",
+      "version": "not applicable",
+      "status": null,
+      "evidence_adapter_family": null,
+      "default_install": false,
+      "revalidation_required": false,
+      "evidence": "AI_START_HERE.md plus the canonical command JSON registry remains the provider-neutral fallback.",
+      "limitation": "The generic fallback makes no native-menu or identical slash-spelling claim."
+    }
+  ],
+  "generic_fallback": {
+    "entry_contract": "AI_START_HERE.md",
+    "command_template": ".exocortex/commands/{command}.json",
+    "native_menu_claim": false
+  },
+  "legacy_retirements": [
+    {
+      "path": ".cursor/commands/ai-export.md",
+      "replacement": ".agents/skills/ai-export/SKILL.md"
+    },
+    {
+      "path": ".cursor/commands/brief.md",
+      "replacement": ".agents/skills/brief/SKILL.md"
+    },
+    {
+      "path": ".cursor/commands/check-keys.md",
+      "replacement": ".agents/skills/check-keys/SKILL.md"
+    },
+    {
+      "path": ".cursor/commands/daily-end.md",
+      "replacement": ".agents/skills/daily-end/SKILL.md"
+    },
+    {
+      "path": ".cursor/commands/drill.md",
+      "replacement": ".agents/skills/drill/SKILL.md"
+    },
+    {
+      "path": ".cursor/commands/ecosystem.md",
+      "replacement": ".agents/skills/ecosystem/SKILL.md"
+    },
+    {
+      "path": ".cursor/commands/groom.md",
+      "replacement": ".agents/skills/groom/SKILL.md"
+    },
+    {
+      "path": ".cursor/commands/handoff.md",
+      "replacement": ".agents/skills/handoff/SKILL.md"
+    },
+    {
+      "path": ".cursor/commands/history.md",
+      "replacement": ".agents/skills/history/SKILL.md"
+    },
+    {
+      "path": ".cursor/commands/init-exocortex.md",
+      "replacement": ".agents/skills/init-exocortex/SKILL.md"
+    },
+    {
+      "path": ".cursor/commands/interrupt.md",
+      "replacement": ".agents/skills/interrupt/SKILL.md"
+    },
+    {
+      "path": ".cursor/commands/longterm.md",
+      "replacement": ".agents/skills/longterm/SKILL.md"
+    },
+    {
+      "path": ".cursor/commands/monthly-review.md",
+      "replacement": ".agents/skills/monthly-review/SKILL.md"
+    },
+    {
+      "path": ".cursor/commands/onboard.md",
+      "replacement": ".agents/skills/onboard/SKILL.md"
+    },
+    {
+      "path": ".cursor/commands/pattern-review.md",
+      "replacement": ".agents/skills/pattern-review/SKILL.md"
+    },
+    {
+      "path": ".cursor/commands/prioritize.md",
+      "replacement": ".agents/skills/prioritize/SKILL.md"
+    },
+    {
+      "path": ".cursor/commands/refine-backlog.md",
+      "replacement": ".agents/skills/refine-backlog/SKILL.md"
+    },
+    {
+      "path": ".cursor/commands/save.md",
+      "replacement": ".agents/skills/save/SKILL.md"
+    },
+    {
+      "path": ".cursor/commands/scrum.md",
+      "replacement": ".agents/skills/scrum/SKILL.md"
+    },
+    {
+      "path": ".cursor/commands/shortterm.md",
+      "replacement": ".agents/skills/shortterm/SKILL.md"
+    },
+    {
+      "path": ".cursor/commands/subconscious.md",
+      "replacement": ".agents/skills/subconscious/SKILL.md"
+    },
+    {
+      "path": ".cursor/commands/system-scan.md",
+      "replacement": ".agents/skills/system-scan/SKILL.md"
+    },
+    {
+      "path": ".cursor/commands/weekly-review.md",
+      "replacement": ".agents/skills/weekly-review/SKILL.md"
+    },
+    {
+      "path": ".cursor/commands/work.md",
+      "replacement": ".agents/skills/work/SKILL.md"
+    },
+    {
+      "path": ".cursor/skills/onboard/SKILL.md",
+      "replacement": ".agents/skills/onboard/SKILL.md"
+    },
+    {
+      "path": ".github/skills/onboard/SKILL.md",
+      "replacement": ".agents/skills/onboard/SKILL.md"
+    }
+  ],
+  "windsurf_retirements": [
+    ".windsurf/workflows/ai-export.md",
+    ".windsurf/workflows/brief.md",
+    ".windsurf/workflows/check-keys.md",
+    ".windsurf/workflows/daily-end.md",
+    ".windsurf/workflows/drill.md",
+    ".windsurf/workflows/ecosystem.md",
+    ".windsurf/workflows/groom.md",
+    ".windsurf/workflows/handoff.md",
+    ".windsurf/workflows/history.md",
+    ".windsurf/workflows/init-exocortex.md",
+    ".windsurf/workflows/interrupt.md",
+    ".windsurf/workflows/longterm.md",
+    ".windsurf/workflows/monthly-review.md",
+    ".windsurf/workflows/onboard.md",
+    ".windsurf/workflows/pattern-review.md",
+    ".windsurf/workflows/prioritize.md",
+    ".windsurf/workflows/refine-backlog.md",
+    ".windsurf/workflows/save.md",
+    ".windsurf/workflows/scrum.md",
+    ".windsurf/workflows/shortterm.md",
+    ".windsurf/workflows/subconscious.md",
+    ".windsurf/workflows/system-scan.md",
+    ".windsurf/workflows/weekly-review.md",
+    ".windsurf/workflows/work.md",
+    ".windsurfrules"
+  ],
+  "migration": {
+    "cumulative_retirement_count": 51,
+    "retire_only_when_manifest_owned_and_byte_matching": true,
+    "preserve_customized_or_unknown": true,
+    "collision_code": "EXOCORTEX_ADAPTER_COLLISION_PRESERVED",
+    "reactivated_paths": [
+      ".cursor/skills/onboard/SKILL.md"
+    ]
+  },
+  "guarantees": {
+    "repository_parity": "deterministic",
+    "provider_menu_visibility": "human_uat_required",
+    "authority_expansion": false
+  }
+}

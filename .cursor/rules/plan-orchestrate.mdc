@@ -1,323 +1,38 @@
 ---
-description: Plan-class work uses Opus as orchestrator, delegates phases to cheaper models, and saves between phases
+description: Provider-neutral, capability-and-cost-aware orchestration for bounded delivery work
 alwaysApply: true
 ---
 
+<!-- EXOCORTEX_ENTRY: public-v2 -->
+Read `AI_START_HERE.md` before substantive action. It is the canonical,
+provider-neutral entry contract. Then apply this adapter only within the
+authority and scope resolved there.
+<!-- /EXOCORTEX_ENTRY -->
+
 # Plan-orchestrate protocol
 
-Applies to any task that decomposes into 2+ phases (planning, multi-file
-refactors, feature builds, design + implementation work). Skip for
-single-step questions, trivial fixes, or pure information requests.
-
-## Why this exists
-
-Opus-tier models are best for planning and judgment but overkill (and
-expensive) for executing well-specified file edits, smoke tests,
-deploys, and other deterministic work. Doing the entire plan in Opus
-costs ~3-5x more than necessary. The fix is a deliberate two-tier
-pattern: Opus orchestrates, cheaper models execute.
-
-## Model pins (single source of truth — bump here, not inline)
-
-The rule references named pins below instead of literal model slugs.
-When a model gets bumped (new haiku, new sonnet, etc.), update the
-pin here and every reference downstream picks it up automatically.
-
-| Pin name             | Current value                  | Used for                                              |
-|----------------------|--------------------------------|-------------------------------------------------------|
-| `<ORCHESTRATOR>`     | claude-4.7-opus (or 4.6)       | Parent turn for plan-class work (Step 1)              |
-| `<SCAFFOLDER>`       | composer-2-fast                | Mechanical scaffolding, well-specified file edits     |
-| `<EXECUTOR>`         | gpt-5.3-codex                  | Standard implementation phases (Phase 2 of port etc.) |
-| `<UI_IMPLEMENTER>`   | claude-4.6-sonnet-medium-thinking | UI work needing judgment + standard implementation |
-| `<TEST_WRITER>`      | gpt-5.3-codex                  | Test writing, smoke verification                      |
-| `<SAVE_FORMATTER>`   | claude-4.5-haiku-thinking      | /save event drafting (Step 5b hybrid pattern)         |
-| `<DOC_DRAFTER>`      | claude-4.5-haiku-thinking      | Drafting documentation from notes                     |
-| `<DEEP_REVIEWER>`    | claude-4.6-opus-high-thinking  | Architecture / security review (Step 3 routing table) |
-
-The routing table in Step 3 below is a duplicate view of the same
-information for quick lookup during planning. If the two ever drift,
-this pin table wins.
-
-## Step 1: Confirm orchestration tier
-
-When the user starts a plan-class request, the parent turn (the
-conversation they're in) MUST be Opus 4.6 or 4.7. If it isn't, stop
-and tell the user:
-
-> "This is plan-class work. Switch to claude-4.7-opus before I draft
-> the plan so the orchestration brain has enough headroom. Sonnet or
-> Composer can take it from here once the plan is broken into phases."
-
-Do not silently downgrade. Do not draft the plan in a weaker model and
-hope it works. Wait for the switch.
-
-## Step 2: Decompose into named phases
-
-Every plan must produce a numbered phase list before any execution
-starts. Each phase declares:
-
-- A specific deliverable (not "investigate" — "produce X file with Y").
-- An execution model from the routing table below.
-- A boolean: needs_opus_review (defaults false; true only when
-  ambiguous trade-offs need to be resolved mid-phase).
-
-Show the phase list to the user before starting Phase 1.
-
-## Step 3: Model routing table
-
-Use these defaults. Pick the cheapest tier the work actually needs.
-
-| Phase type                                                | Model                              |
-|-----------------------------------------------------------|------------------------------------|
-| File scaffolding from a clear spec                        | composer-2-fast                    |
-| Mechanical refactors / renames across files               | composer-2-fast                    |
-| Running smoke tests, lint, build, deploy                  | composer-2-fast or shell subagent  |
-| Standard feature implementation (clear spec, low novelty) | gpt-5.3-codex or claude-4.6-sonnet |
-| Test writing (unit, integration)                          | gpt-5.3-codex                      |
-| Codebase exploration / search-heavy phases                | explore subagent (haiku-tier)      |
-| Documentation drafting from notes                         | claude-4.5-haiku-thinking          |
-| Tricky debugging across many files                        | claude-4.6-sonnet-medium-thinking  |
-| Architecture decisions, trade-off analysis                | parent turn (Opus, no delegation)  |
-| Security review, threat modeling                          | parent turn (Opus, no delegation)  |
-
-The parent (Opus) keeps these for itself: planning, reviewing each
-phase's output, deciding when to escalate, and final integration.
-
-## Step 4: Spawn each phase as a Task subagent
-
-For phases that delegate, use the `Task` tool with explicit `model:`.
-Provide the subagent everything it needs: file paths, expected output,
-acceptance criteria, edge cases. Subagents have no memory of the
-parent conversation, so context discipline matters.
-
-After each subagent returns, the parent (Opus) reviews the result
-before starting the next phase. If something is off, decide: retry the
-subagent with more context, escalate to a stronger model, or take it
-back to the parent turn.
-
-## Step 5a: /save between phases (auto-enforced)
-
-After every completed phase, run the exocortex `/save` command before
-starting the next phase. No exceptions.
-
-This is enforced by a `subagentStop` hook at
-`~/.cursor/hooks/auto-save-phase.sh`. When a phase subagent stops, the
-hook injects a follow-up message instructing the parent agent to run
-`/save`. For the hook to fire, the subagent's `description` argument
-to the `Task` tool MUST follow one of these conventions:
-
-- `"Phase N: <short name>"` (canonical, e.g. `"Phase 2: scaffold alerts library"`)
-- `"phase-N-<short-name>"` (kebab-case, e.g. `"phase-2-scaffold-alerts"`)
-
-If the subagent description doesn't include a phase marker, the hook
-silently does nothing — useful for non-phase subagents (quick lookups,
-explore agents, browser automation) that don't warrant a checkpoint.
-
-The save event should name the phase explicitly in its header, e.g.
-`"Phase checkpoint — Phase 2: alerts library shipped"`. The hook's
-follow-up message will already include this format.
-
-If the save itself fails (vault sync down, etc.), continue with the
-next phase but flag it in the running summary; the local event file
-will still be created and nightly cron will retry the vault push.
-
-For phases the parent agent (Opus) executes directly without a
-subagent, the hook can't fire, so the parent must `/save` manually
-before moving on. The rule still applies; the hook is just a safety
-net for the delegation path.
-
-## Step 5b: /save model routing (hybrid)
-
-`/save` is expensive on Opus because Step 1 (drafting the event body)
-does conversation-pattern reflection. For auto-fired phase saves, use
-the hybrid pattern below. For manual saves, daily-end, weekly-review,
-and monthly-review, keep them on the parent (those are high-value
-reflection events; pay full price for full quality).
-
-### Hybrid /save pattern (auto-fired phase saves only)
-
-1. Parent writes a brief 1-2 line "checkpointing X" line so the user
-   sees what is being saved (`show_collapsed` mode). Example:
-   `"Checkpointing Phase 2: alerts library (4 files added, 1 commit, smoke tests green). Drafting event via subagent."`
-
-2. Parent spawns a Task subagent for the LLM-heavy event drafting.
-   Resolve `<SAVE_FORMATTER>` from the Model pins section at the top
-   of this rule (currently `claude-4.5-haiku-thinking`):
-   ```
-   Task(
-     model=<SAVE_FORMATTER>,
-     description="phase-save-format",
-     prompt="""
-       Phase summary: <the 5-bullet inline summary the parent already
-       holds in working memory>
-
-       Read these for style and context:
-       - git status --porcelain
-       - git log --since='6 hours ago' --format='%h %s'
-       - the 3 most recent files in .exocortex/events/
-
-       Write the full save event to /tmp/save_event.md using the format
-       in .exocortex/commands/save.json step 1.
-
-       CRITICAL FORMATTING RULES:
-       - Do NOT include any metadata block at the top of the file.
-         No `<!-- Event Metadata -->` header. No `timestamp:`, `machine:`,
-         `editor:`, `project:`, or `branch:` lines. The `create_event.sh`
-         script adds those automatically — including them in the body
-         produces a duplicate metadata block in the saved event.
-       - Start the file directly with the `# Phase checkpoint —` header
-         on line 1. Nothing before it.
-
-       Required sections after the header:
-         - ## What was accomplished
-         - ## Decisions made
-         - ## Code state
-         - ## What's next
-         - ## Conversation patterns
-
-       Be specific. Quote real file paths and symbol names from the
-       summary.
-     """,
-   )
-   ```
-
-3. Parent runs the shell steps of save.json (`create_event.sh`,
-   `sync_event_to_vault.sh`) directly — those are not LLM work, no
-   delegation needed.
-
-4. Parent confirms briefly to the user.
-
-Notably this subagent description does NOT match the phase regex
-(it is `phase-save-format`, not `phase-N-something`), so the
-auto-save hook will not re-fire when this subagent stops. No loop.
-
-### When to bypass the hybrid (use parent for the full /save)
-
-- Manual `/save` requested by the user (they're paying attention).
-- `/daily-end`, `/weekly-review`, `/monthly-review` (reflection-heavy).
-- The phase being saved involved cross-file architectural decisions
-  the haiku-tier model would not capture well.
-- The user has explicitly said "use Opus for the save".
-
-## Step 5c: Branching and rollback guidance
-
-**Applies when:** the phase modifies code that ships to production or a
-shared environment (any code in `src/`, `workspace/scripts/`,
-`packages/*`, deploy configs, migrations, cron jobs, release scripts,
-public template files, etc.).
-
-**Skip when:** trivial edits — single-line fixes, comment-only edits,
-doc-only edits in `docs/` or `README*`, local notes in `.exocortex/`,
-fixture / test data tweaks, or any user-approved fast local change.
-These can stay on the current branch when that matches the user's
-workflow.
-
-### Recommended branch hierarchy
-
-```
-main                              ← stable; only sprint gates merge here
-  └── integration/<sprint-name>   ← phase merges land here for sprint integration testing
-        └── feature/<area>-<phase>   ← active phase work
-        └── fix/<area>-<short-desc>  ← active bug fix
-```
-
-For production or team work, prefer creating `integration/<sprint>`
-off `main` before the first code-shipping phase. For solo/local repos
-without remotes, protected branches, or release gates, the parent may
-use the current branch after stating that choice in the plan.
-
-### Branch rules
-
-| Guideline | Who decides |
-|---|---|
-| For production/team work, start each phase on `feature/<area>-<phase>` or `fix/<area>-<short-desc>` from `integration/<sprint>` | Parent includes this in subagent prompts |
-| If no integration branch exists and the repo is solo/local, state whether the phase uses `main`, current branch, or a new branch | Parent |
-| Commit and push from subagents only when the user/workflow has approved that behavior and a remote exists | Parent + subagent |
-| Subagents do not merge to integration or main | Parent + user handle merges |
-| Force-push is never routine; if considered, ask the user first | Parent |
-| Tag `main` after meaningful public sprint/release merges | Parent at release gate |
-
-### Rollback ladder (cheapest first)
-
-1. **Discard or abandon the phase branch before merge** — used when a
-   phase fails before integration.
-2. **`git revert` the merge commit on integration** — preserves history, undoes the change, keeps the phase branch alive for fixing.
-3. **`git revert` on `main`** — only when an integration-or-main bug ships. Tag the broken state first (`bad-<sprint>.<n>`) so post-mortem can find it.
-4. **Hard reset `main` to a tag** — `git reset --hard v<sprint>.<n>` then force-push. **Forbidden without explicit user approval.** Last resort.
-
-### Phase prompt addition (parent appends to subagent prompt)
-
-```
-**Branch discipline:**
-- For production/team code, start on `feature/<area>-<phase>` or `fix/<area>-<short-desc>`
-- If this is solo/local work, state whether you are using the current branch or a new branch
-- Commit/push only if the parent prompt explicitly asks you to and a remote exists
-- DO NOT merge to integration or main — parent + user handle that
-- DO NOT force-push unless explicitly told
-
-**Rollback awareness:**
-- If your phase fails or breaks something: STOP, report what failed, do NOT try to fix forward
-- Parent will decide: revert, fix in a follow-up phase, or abandon the branch
-```
-
-## Step 5d: Testing quality bar
-
-**Applies when:** the phase adds or changes code that ships to production. Same scope as Step 5c.
-
-**Skip when:** same trivial-edit list as Step 5c.
-
-### What "good tests" means here
-
-| Bar | What it looks like | Anti-pattern to reject |
-|---|---|---|
-| Unit tests cover the logic, not the framework | Branch coverage on the new helper function | `test_function_exists()` |
-| Integration tests hit real boundaries with stubs | Real code path with a fake external client | All-mocks tests that never run the actual code path |
-| One smoke test per phase that runs the real path with `DRY_RUN=1` | Real extractor + real poster, dry-run flag prevents external posts | "It compiled" passing for a smoke test |
-| External service tests gated behind env flag | `RUN_LIVE_TESTS=1` for Discord / OpenAI / Deepgram tests; default skip in CI | Hard-failing in CI when API key absent |
-| Coverage delta is positive | New code: ≥ 80% line coverage in tests added in the same phase | "We'll add tests next phase" |
-| Tests written DURING implementation, not after | Scaffolds exist before logic is finalized | Tests bolted on at the end to pass review |
-
-### Recommended acceptance criteria for every code-shipping phase
-
-For production/team work, the phase should not be considered complete
-until all relevant items below are true. For small solo/local work, use
-the highest-value subset and state what was skipped.
-
-1. ☐ Existing test suite still passes (no regressions)
-2. ☐ New tests cover meaningful new code paths (aim for >= 80% line coverage on new files when coverage tooling exists)
-3. ☐ At least one smoke check exercises the real code path (with stubs / dry-run for external services)
-4. ☐ For pipeline / cron work: a dry-run on the actual deploy environment, results captured in the `/save` event
-5. ☐ For domain logic (engines, calculators, scoring): pure-compute unit tests AND a hand-checked example documented as a fixture
-6. ☐ For UI work: use an E2E/screenshot/manual smoke check appropriate to the project's tooling
-
-### Phase prompt addition (parent appends to subagent prompt)
-
-```
-**Testing requirements:**
-- Existing relevant tests should still pass before reporting back
-- New production code should usually ship with tests in the same phase
-- Coverage on new files: aim for >= 80% line coverage when coverage tooling exists
-- Include one smoke check of the real path when practical
-- For external services (Discord/OpenAI/Deepgram/etc): gate live tests behind RUN_LIVE_TESTS=1 and skip by default
-- Report back the test command + output summary in your final response
-```
-
-## Step 6: End-of-plan summary
-
-After the final phase, the parent (Opus) writes one summary covering:
-
-- Each phase, the model it ran on, and the result.
-- Any escalations from cheap to expensive models, with the reason.
-- Total subagent count and a rough cost-tier estimate (3 cheap + 1
-  Opus review beats "all Opus").
-
-This trains the next planning round: if a phase consistently needed
-escalation, raise its default model in the routing table.
-
-## When to ignore this rule
-
-- Single-file tweaks or one-line fixes.
-- Pure Q&A about existing code.
-- The user explicitly says "just do it" or "no plan needed".
-- A genuine emergency (production down, security incident) where
-  speed beats efficiency.
+Use this rule when work benefits from multiple bounded phases. A named provider
+or model is never mandatory. Route by capability, risk, availability, and cost
+using `.exocortex/control/MODEL_ROUTING.md`.
+
+1. Keep one accountable parent for planning, integration, and gate decisions.
+2. Choose the least-expensive available parent that can safely own the full
+   task. Escalate when evidence shows the selected tier is insufficient.
+3. Delegate narrow, read-only or deterministic evidence gathering to cheaper
+   capable workers. Use one guarded writer for mutations.
+4. Give every worker a compact context packet: work item, exact revision and
+   base, role, allowed paths, acceptance criteria, authority, and stop rules.
+5. Verify each result deterministically where possible. Independent review is
+   required only when the work item's gate or risk classification requires it.
+6. Treat a phase stop as a reminder to consider a local narrative save. It is
+   not an automatic save, lifecycle transition, checkpoint, approval, commit,
+   deployment, or external synchronization.
+
+Model discovery is proposal-only. Route from fresh, digest-bound
+official-source, current-surface availability, and measured evaluation
+evidence; quarantine newly observed models and fail closed on stale,
+unavailable, or mismatched evidence.
+
+Narrative saves are local project memory. Lifecycle checkpoints are created
+only by an accepted, authorized, durable transition marked checkpoint-eligible.
+External sync always uses a separate exact destination-specific authorization.

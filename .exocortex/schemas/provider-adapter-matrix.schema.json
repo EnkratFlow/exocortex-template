@@ -1,0 +1,319 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/exocortex/provider-adapter-matrix.schema.json",
+  "title": "Exocortex provider adapter matrix",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "kind",
+    "canonical_registry",
+    "expected_command_count",
+    "generator",
+    "adapter_families",
+    "status_definitions",
+    "providers",
+    "generic_fallback",
+    "legacy_retirements",
+    "windsurf_retirements",
+    "migration",
+    "guarantees"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "public-v2"
+    },
+    "kind": {
+      "const": "provider_adapter_matrix"
+    },
+    "canonical_registry": {
+      "const": ".exocortex/commands"
+    },
+    "expected_command_count": {
+      "const": 24
+    },
+    "generator": {
+      "const": ".exocortex/scripts/generate_command_adapters.py"
+    },
+    "adapter_families": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "path_template",
+          "format",
+          "manual_only",
+          "providers"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "path_template": {
+            "type": "string",
+            "pattern": "^[.][^/]+/.+\\{command\\}.+$"
+          },
+          "format": {
+            "enum": [
+              "agent_skill",
+              "claude_skill",
+              "cursor_skill"
+            ]
+          },
+          "manual_only": {
+            "const": true
+          },
+          "providers": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      }
+    },
+    "status_definitions": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "verified",
+        "compatible",
+        "failed",
+        "blocked",
+        "unavailable"
+      ],
+      "properties": {
+        "verified": {
+          "type": "string",
+          "minLength": 1
+        },
+        "compatible": {
+          "type": "string",
+          "minLength": 1
+        },
+        "failed": {
+          "type": "string",
+          "minLength": 1
+        },
+        "blocked": {
+          "type": "string",
+          "minLength": 1
+        },
+        "unavailable": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "providers": {
+      "type": "array",
+      "minItems": 9,
+      "maxItems": 9,
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "display_name",
+          "adapter_family",
+          "native_invocation",
+          "literal_slash_claim",
+          "visibility_evidence",
+          "version",
+          "status",
+          "evidence_adapter_family",
+          "default_install",
+          "revalidation_required",
+          "evidence",
+          "limitation"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "display_name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "adapter_family": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "native_invocation": {
+            "type": "string",
+            "minLength": 1
+          },
+          "literal_slash_claim": {
+            "type": "boolean"
+          },
+          "visibility_evidence": {
+            "enum": [
+              "provider_uat_required",
+              "provider_neutral_entry_only",
+              "unavailable_no_active_adapter"
+            ]
+          },
+          "version": {
+            "type": "string",
+            "minLength": 1
+          },
+          "status": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "verified",
+              "compatible",
+              "failed",
+              "blocked",
+              "unavailable",
+              null
+            ]
+          },
+          "evidence_adapter_family": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "default_install": {
+            "type": "boolean"
+          },
+          "revalidation_required": {
+            "type": "boolean"
+          },
+          "evidence": {
+            "type": "string",
+            "minLength": 1
+          },
+          "limitation": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "generic_fallback": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "entry_contract",
+        "command_template",
+        "native_menu_claim"
+      ],
+      "properties": {
+        "entry_contract": {
+          "const": "AI_START_HERE.md"
+        },
+        "command_template": {
+          "const": ".exocortex/commands/{command}.json"
+        },
+        "native_menu_claim": {
+          "const": false
+        }
+      }
+    },
+    "legacy_retirements": {
+      "type": "array",
+      "minItems": 26,
+      "maxItems": 26,
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "path",
+          "replacement"
+        ],
+        "properties": {
+          "path": {
+            "type": "string",
+            "minLength": 1
+          },
+          "replacement": {
+            "type": "string",
+            "pattern": "^[.]agents/skills/.+/SKILL[.]md$"
+          }
+        }
+      }
+    },
+    "windsurf_retirements": {
+      "type": "array",
+      "minItems": 25,
+      "maxItems": 25,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^([.]windsurf/workflows/[a-z0-9-]+[.]md|[.]windsurfrules)$"
+      }
+    },
+    "migration": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "cumulative_retirement_count",
+        "retire_only_when_manifest_owned_and_byte_matching",
+        "preserve_customized_or_unknown",
+        "collision_code",
+        "reactivated_paths"
+      ],
+      "properties": {
+        "cumulative_retirement_count": {
+          "const": 51
+        },
+        "retire_only_when_manifest_owned_and_byte_matching": {
+          "const": true
+        },
+        "preserve_customized_or_unknown": {
+          "const": true
+        },
+        "collision_code": {
+          "const": "EXOCORTEX_ADAPTER_COLLISION_PRESERVED"
+        },
+        "reactivated_paths": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "const": ".cursor/skills/onboard/SKILL.md"
+          }
+        }
+      }
+    },
+    "guarantees": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "repository_parity",
+        "provider_menu_visibility",
+        "authority_expansion"
+      ],
+      "properties": {
+        "repository_parity": {
+          "const": "deterministic"
+        },
+        "provider_menu_visibility": {
+          "const": "human_uat_required"
+        },
+        "authority_expansion": {
+          "const": false
+        }
+      }
+    }
+  }
+}

@@ -1,59 +1,29 @@
-name: Test install.sh
+name: Exocortex deterministic verification
 
 on:
   push:
-    paths:
-      - 'install.sh'
-      - 'init-project.sh'
-      - 'tests/**'
-      - '.exocortex/**'
-      - '.cursor/**'
-      - '.github/skills/**'
-      - '.claude/**'
   pull_request:
-    # Run on all PRs so the required status check always reports.
-    # The job itself skips the test suite for docs-only changes.
+
+permissions:
+  contents: read
 
 jobs:
-  test:
-    name: Run install.sh test suite
+  phase-b:
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
-      - name: Detect changed files
-        id: changes
-        run: |
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
-            base="${{ github.event.pull_request.base.sha }}"
-            head="${{ github.event.pull_request.head.sha }}"
-            changed=$(git diff --name-only "$base" "$head")
-          else
-            changed=$(git diff --name-only HEAD~1 HEAD 2>/dev/null || echo "install.sh")
-          fi
-          echo "Changed files: $changed"
-          if echo "$changed" | grep -qE '^install\.sh$|^init-project\.sh$|^tests/|^\.exocortex/|^\.cursor/|^\.claude/|^\.github/skills/'; then
-            echo "run_tests=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "run_tests=false" >> "$GITHUB_OUTPUT"
-            echo "Docs-only change — skipping install tests."
-          fi
-
-      - name: Install dependencies
-        if: steps.changes.outputs.run_tests == 'true'
-        run: sudo apt-get update -qq && sudo apt-get install -y git rsync
-
-      - name: Run test suite
-        if: steps.changes.outputs.run_tests == 'true'
-        run: bash tests/run_tests.sh
-
-      - name: Upload test output on failure
-        if: failure()
+      - name: Install deterministic test dependencies
+        run: sudo apt-get update -qq && sudo apt-get install -y git rsync ripgrep
+      - name: Verify generated provider adapters
+        run: python3 .exocortex/scripts/generate_command_adapters.py --check
+      - name: Run Phase B evidence harness
+        run: bash tests/phase-b/run.sh /tmp/exo-phase-b-evidence.github
+      - name: Upload evidence
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: test-output
-          path: /tmp/exo-test-*.txt
-          retention-days: 7
+          name: phase-b-evidence
+          path: /tmp/exo-phase-b-evidence.github
+          retention-days: 14

@@ -1,6 +1,12 @@
 {
   "name": "/onboard",
   "description": "Read and understand the codebase before starting work. Builds a working mental model of the project structure, entry points, architecture, and current context.",
+  "protocol": {
+    "entry_contract": "AI_START_HERE.md",
+    "authority": "exact_capability_required_for_mutation",
+    "egress": "separate_destination_specific_authorization",
+    "default_role": "read_only"
+  },
   "steps": [
     {
       "type": "ai",

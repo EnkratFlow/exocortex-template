@@ -1,30 +1,29 @@
 {
   "name": "/save",
-  "description": "Save current work state as a rich phase checkpoint event — call after each phase, milestone, or before a break",
+  "description": "Draft a local narrative save and optionally save that exact summary locally; not a checkpoint",
+  "protocol": {
+    "entry_contract": "AI_START_HERE.md",
+    "authority": "exact_capability_required_for_mutation",
+    "egress": "separate_destination_specific_authorization",
+    "default_role": "read_only"
+  },
   "steps": [
     {
       "type": "ai",
-      "action": "Write a rich phase checkpoint event to /tmp/save_event.md — no user input needed",
-      "context": "You have full conversation context. Do NOT ask the user any questions — read git state yourself and write a comprehensive checkpoint event autonomously.\n\nBefore writing, run these terminal commands to gather facts:\n  git branch --show-current\n  git status --porcelain | wc -l\n  git log --since='24 hours ago' --format='%h %s' | head -10\n\nThen write the event body to /tmp/save_event.md using your FILE EDITOR TOOL (create_file) — NOT a terminal heredoc (heredocs corrupt content in VS Code Copilot).\n\n=== EVENT FORMAT ===\n\n# Phase checkpoint — {YYYY-MM-DD HH:MM}\n\n## What was accomplished\n(5-10 concrete bullet points — files created/changed, tests written/passing, features implemented, bugs fixed; reference actual file paths, function names, class names, env var names where known)\n\n## Decisions made\n(2-6 bullet points — architectural choices, patterns chosen, trade-offs, alternatives rejected; this is the most valuable long-term memory content; be specific)\n\n## Code state\n- Branch: {branch}\n- Uncommitted files: {count}\n- Key files touched: {comma-separated list}\n- Tests: {pass count if known, or 'not run'}\n\n## What's next\n(2-4 bullet points of immediate next actions or next phase work)\n\n## Conversation patterns\n(2-5 honest observations about THIS session — topics re-explained from prior sessions, questions asked multiple times, things that needed re-reading, recurring friction. Be specific. This section feeds the pattern-learning loop that improves future sessions and reduces repeated context overhead.)\n- Recurring topic: [topic that came up before — note if it should become a skill or PROJECT_MEMORY entry]\n- Friction: [what took longer than it should, or needed multiple attempts]\n- Candidate skill: [if a repeating how-to pattern emerged this session]\n- Candidate PROJECT_MEMORY: [if a gotcha appeared again that should be permanently documented]\n- Context gap: [anything a future AI would need to know that isn't written down anywhere yet]\n(Omit lines that don't apply. Minimum 2 observations per save.)\n\n=== QUALITY BAR ===\n- SPECIFIC beats vague: 'Added SentinelNanobot with 8 health checks to NanobotFramework' beats 'did some health check work'\n- Quote real code symbols, file paths, phase names\n- If a phase was just merged, name it explicitly (e.g. 'Phase 14: Observability foundation merged')\n- Decisions section is highest value — future AI needs to know WHY, not just what\n- Conversation patterns is the meta-improvement section — 2-3 honest observations per session compounds into actionable signal within weeks; do not skip it\n\nAfter writing, show the full event content to the user for a quick review. They can say 'ok' to proceed or request edits."
+      "action": "Draft a rich local narrative save in chat memory only",
+      "context": "Use the current conversation facts and read-only Git evidence to prepare a comprehensive narrative in chat. Do not create a draft file in /tmp or anywhere else.\n\nRead-only fact gathering may include:\n  git branch --show-current\n  git status --porcelain | wc -l\n  git log --since='24 hours ago' --format='%h %s' | head -10\n\n=== EVENT FORMAT ===\n\n# Narrative save — {YYYY-MM-DD HH:MM}\n\n## What was accomplished\n(5-10 concrete, evidence-backed bullet points)\n\n## Decisions made\n(2-6 specific architectural choices, trade-offs, and reasons)\n\n## Code state\n- Branch: {branch}\n- Uncommitted files: {count}\n- Key files touched: {comma-separated list}\n- Tests: {pass count if known, or 'not run'}\n\n## What's next\n(2-4 immediate next actions)\n\n## Conversation patterns\n(2-5 honest observations that could improve future work)\n\nPresent the complete draft in chat. Saving the exact reviewed summary locally still requires deterministic content/path binding and guarded internal authority, but internal reservation and capability mechanics are not separate human approvals inside an active local-delivery envelope."
     },
     {
-      "type": "shell",
-      "command": "bash .exocortex/scripts/create_event.sh --body-file /tmp/save_event.md",
-      "description": "Create event file and regenerate SESSION_CONTEXT",
-      "outputs": { "event_path": "Path to created event file" }
-    },
-    {
-      "type": "shell",
-      "command": "bash .exocortex/scripts/sync_event_to_vault.sh $(ls -t .exocortex/events/*.md 2>/dev/null | head -1)",
-      "description": "Sync event to RAG API and optional local vault",
-      "outputs": { "vault_sync": "sync result" },
-      "on_error": "continue"
+      "type": "user_choice",
+      "options": [
+        "A) Keep the narrative in chat only",
+        "B) Save this exact summary as a project-local event"
+      ]
     },
     {
       "type": "ai",
-      "action": "Confirm save, show event path, and reinforce the /save habit",
-      "inputs": ["event_path", "vault_sync"],
-      "context": "Confirm the event was created — show the full path from event_path. Note that SESSION_CONTEXT was regenerated. If vault_sync failed, note briefly that nightly cron will retry.\n\nThen remind the user of the /save habit:\n'Tip: call /save at the end of each phase, after every major milestone, or before taking a break. The richer the events, the better the memory context will be when you return.'"
+      "action": "Respect the local-delivery boundary",
+      "context": "If A, stop with no repository write. If B and an active local-delivery envelope includes local records, derive and consume the exact internal recording authority, record only the reviewed summary, and report the resulting local path. If that envelope is absent or mismatched, ask once in plain language for permission to save this named summary locally; do not ask the human to approve capability JSON. Never create a lifecycle checkpoint. Never synchronize automatically."
     }
   ]
 }

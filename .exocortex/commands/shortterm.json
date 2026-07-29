@@ -1,20 +1,28 @@
 {
   "name": "/shortterm",
   "description": "Display short-term memory (7-31 days) with AI analysis",
+  "protocol": {
+    "entry_contract": "AI_START_HERE.md",
+    "authority": "exact_capability_required_for_mutation",
+    "egress": "separate_destination_specific_authorization",
+    "default_role": "read_only"
+  },
   "steps": [
     {
       "type": "shell",
       "command": "python3 .exocortex/scripts/get_shortterm_memory.py",
-      "description": "Extract and analyze 7-31 day memory with AI",
+      "description": "Extract project-local 7-31 day memory deterministically",
       "outputs": {
-        "event_count": "Number of events in period",
-        "ai_provider": "Which AI analyzed the memory"
+        "event_count": "Number of project-local events in period",
+        "analysis_mode": "Local extraction for conversation-model formatting"
       }
     },
     {
       "type": "ai",
       "action": "Display the short-term memory analysis to user with formatting",
-      "inputs": ["Output from get_shortterm_memory.py"],
+      "inputs": [
+        "Output from get_shortterm_memory.py"
+      ],
       "context": "Show progression, themes, completed work, and patterns from the last 7-31 days"
     }
   ]

@@ -1,21 +1,29 @@
 {
   "name": "/longterm",
   "description": "Display long-term memory (31-365 days) with AI analysis",
+  "protocol": {
+    "entry_contract": "AI_START_HERE.md",
+    "authority": "exact_capability_required_for_mutation",
+    "egress": "separate_destination_specific_authorization",
+    "default_role": "read_only"
+  },
   "steps": [
     {
       "type": "shell",
       "command": "python3 .exocortex/scripts/get_longterm_memory.py",
-      "description": "Extract and analyze 31-365 day memory with AI",
+      "description": "Extract project-local 31-365 day memory deterministically",
       "outputs": {
         "event_count": "Number of events in period",
         "months": "Number of unique months covered",
-        "ai_provider": "Which AI analyzed the memory"
+        "analysis_mode": "Local extraction for conversation-model formatting"
       }
     },
     {
       "type": "ai",
       "action": "Display the long-term memory analysis to user with formatting",
-      "inputs": ["Output from get_longterm_memory.py"],
+      "inputs": [
+        "Output from get_longterm_memory.py"
+      ],
       "context": "Show major milestones, recurring themes, evolution, and key lessons from 31-365 days ago"
     }
   ]

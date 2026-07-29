@@ -1,50 +1,55 @@
-name: Publish checksums
+name: Verify checksums
 
 on:
   push:
-    branches: [main]
-    paths:
-      - 'install.sh'
-      - 'init-project.sh'
-      - '.exocortex/scripts/**'
-      - '.cursor/hooks/**'
-      - '.cursor/hooks.json'
-      - 'VERSION'
+  pull_request:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   checksums:
-    name: Generate and commit SHA256SUMS
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Generate SHA256SUMS
+      - uses: actions/checkout@v4
+      - name: Verify complete committed code-plane checksums
         run: |
-          # Hash all user-facing scripts that run on the user's machine
-          sha256sum \
-            install.sh \
-            init-project.sh \
-            VERSION \
-            $(find .cursor/hooks -type f 2>/dev/null | sort) \
-            .cursor/hooks.json \
-            $(find .exocortex/scripts -name "*.sh" -o -name "*.py" | sort) \
-            > SHA256SUMS
+          python3 - <<'PY'
+          import hashlib
+          from pathlib import Path
 
-      - name: Commit SHA256SUMS if changed
-        run: |
-          git config user.name  "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add SHA256SUMS
-          if git diff --cached --quiet; then
-            echo "SHA256SUMS unchanged — nothing to commit"
-          else
-            git commit -m "chore: update SHA256SUMS [skip ci]"
-            git push
-          fi
+          protected_files = {
+              'SESSION_CONTEXT.md','SESSION_CONTEXT.local.md','TODO.md','LESSONS.md',
+              'PROJECT_MEMORY.md','OPEN_DECISIONS.md','subconscious_patterns.md','.env',
+              '.project-name','.install-manifest','.hub_enabled','.hub_disabled',
+          }
+          protected_prefixes = ('events/','archive/','hub/','local/','planning/','work-items/')
+          protected_control = {
+              'control/ACTIVE_WORK.md','control/BRANCH_POLICY.md','control/REPO_STATE.md',
+              'control/EXECUTOR_REGISTRY.json','control/EXTERNAL_SYNC_POLICY.json',
+              'control/INTERRUPTS.md','control/BACKLOG.md','control/ROADMAP.md',
+              'control/ARCH_OVERVIEW.md','control/REPO_ORGANIZATION_REPORT.md',
+          }
+          def include(rel):
+              if rel == 'SHA256SUMS': return False
+              parts = Path(rel).parts
+              if '.git' in parts or '.env' in parts: return False
+              if '__pycache__' in parts or rel.endswith(('.pyc', '.pyo')): return False
+              if rel.startswith('.exocortex/'):
+                  value=rel[len('.exocortex/'):]
+                  if value in protected_files or value in protected_control: return False
+                  if value.startswith(protected_prefixes): return False
+              return True
+          lines=[]
+          root=Path('.')
+          files=[]
+          for path in root.rglob('*'):
+              rel=path.relative_to(root).as_posix()
+              if not include(rel): continue
+              if path.is_symlink(): raise SystemExit(f'code-plane symlink is not allowed: {rel}')
+              if path.is_file(): files.append((rel,path))
+          for rel,path in sorted(files):
+              lines.append(f'{hashlib.sha256(path.read_bytes()).hexdigest()}  {rel}\n')
+          Path('/tmp/SHA256SUMS.expected').write_text(''.join(lines), encoding='utf-8')
+          PY
+          diff -u SHA256SUMS /tmp/SHA256SUMS.expected

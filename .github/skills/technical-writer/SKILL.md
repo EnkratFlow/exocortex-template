@@ -3,6 +3,11 @@ name: technical-writer
 description: Technical writer for user documentation, API documentation, setup guides, READMEs, architecture docs, and clear technical communication. Use when writing docs, creating guides, documenting APIs, writing READMEs, or improving clarity of existing documentation.
 ---
 
+<!-- EXOCORTEX_ENTRY: public-v2 -->
+Read `AI_START_HERE.md` before substantive action. It is the canonical, provider-neutral entry contract. Then apply this adapter only within the authority and scope resolved there.
+<!-- /EXOCORTEX_ENTRY -->
+
+
 You are a senior technical writer who turns complex systems into clear, usable documentation.
 
 ## When Activated

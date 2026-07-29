@@ -1,39 +1,35 @@
 {
   "name": "/daily-end",
   "description": "End of day: reflect, capture what happened, close the day with a rich event",
+  "protocol": {
+    "entry_contract": "AI_START_HERE.md",
+    "authority": "exact_capability_required_for_mutation",
+    "egress": "separate_destination_specific_authorization",
+    "default_role": "read_only"
+  },
   "steps": [
     {
-      "type": "shell",
-      "command": "bash .exocortex/scripts/run_end_day.sh",
-      "description": "Gather today's raw data (events, git, TODO, interrupts, timing)",
-      "outputs": { "day_data": "Structured facts about today's activity" }
+      "type": "ai",
+      "action": "Prepare a project-local end-of-day report read-only",
+      "context": "Use the current repository only: local Git metadata, existing local events, TODO, and interrupts. Do not scan or update another repository and do not read credential files."
     },
     {
       "type": "ai",
-      "action": "Check for other active projects and plan cross-project memory updates",
-      "inputs": ["day_data"],
-      "context": "Look at the 'OTHER ACTIVE PROJECTS' section in day_data.\n\nIf it says 'None', skip this step silently.\n\nIf other projects are listed, for EACH active project:\n1. Note what was worked on (from their commits + SESSION_CONTEXT snippet)\n2. Propose a brief SESSION_CONTEXT update for that project (RIGHT NOW section only — 2-3 sentences max)\n3. Show the user what you plan to write to each project's .exocortex/SESSION_CONTEXT.md\n\nAsk: 'I found activity in [N] other project(s). Should I update their session context too? (yes / skip)'",
-      "outputs": { "cross_project_updates": "Dict of project path → proposed SESSION_CONTEXT RIGHT NOW text, or empty" }
-    },
-    {
-      "type": "ai",
-      "action": "Write a rich end-of-day event body for create_event.sh",
-      "inputs": ["day_data"],
-      "context": "You are closing the day. Write a detailed end-of-day event that captures EVERYTHING meaningful.\n\n## IMPORTANT: Source priority\n\nVS Code Copilot summarizes long conversations — the early parts of the session may be compressed and detail is lost. Do NOT rely on conversation memory alone.\n\nUse THREE sources in this priority order:\n\n1. **Git commit bodies** (in day_data under 'Full commit messages') — this is the most reliable record. Commit messages written at merge time capture exactly what was built and why. Read EVERY commit body in full. This is the authoritative record of what was accomplished — treat it as such.\n\n2. **day_data 'GIT LOG LAST 7 DAYS' section** — for sessions where /save was not run (phases built without a checkpoint event). The 7-day log fills those gaps. Use commit messages + dates to reconstruct what happened on days with no events.\n\n3. **Your conversation context** — use for: debugging decisions, design rationale, problems solved, the user's intent and priorities, any color that git commits don't capture. This is supplementary — do not rely on it if conversation was long and early parts may be compressed.\n\nWrite the event body in this format:\n\n```\n# End of Day — {date}\n\n## What Got Done\n(Concrete accomplishments from git commit bodies — be specific: phase names, file counts, what each merge added. Do not summarize vaguely. Use the commit message bullet points directly.)\n\n## Key Decisions & Insights\n(Architecture choices, design decisions, things learned — from commit bodies and conversation context)\n\n## Problems Solved\n(What broke, what was tricky, how it was fixed — conversation has the details, commits confirm the fix)\n\n## Conversation Highlights\n(2-5 bullets of most important things discussed — design intent, debug journey, priorities. This is the COLOR that commits miss.)\n\n## State at Close\n- Branch: {branch}\n- Working tree: clean/dirty\n- Commits today: {count}\n- In Progress: {current task or none}\n- Uncommitted: {count} files\n\n## Tomorrow\n(What should be picked up next, based on git state, TODO.md, and conversation)\n\n## Git State\n(Last 5 commits, one line each)\n```\n\nWrite this content to /tmp/daily_end_event.md using your FILE EDITOR TOOL (create_file or edit tool) — NOT a terminal command. Writing via terminal heredocs causes content corruption in VS Code Copilot. Use the file tool directly.\n\nBe specific and detailed — this event will be read by memory scripts days/weeks later. Generic summaries are useless. The git commit bodies contain the ground truth — use them."
+    "action": "Draft the event body in chat memory only",
+    "context": "Draft a factual local narrative with accomplishments, decisions, problems, current state, and next work. Show it in chat. Do not create a file in /tmp or anywhere else. A chat draft is not a save or checkpoint."
     },
     {
       "type": "user_choice",
       "options": [
-        "A) Save this event and close the day",
-        "B) Edit — I want to add/change something",
-        "C) Skip the event — just close"
+        "A) Keep the draft only",
+        "B) Request a separately scoped guarded local-event recording operation",
+        "C) Discard the draft"
       ]
     },
     {
       "type": "ai",
-      "action": "Handle the user's choice",
-      "inputs": ["user_choice"],
-      "context": "If A: Run `bash .exocortex/scripts/create_event.sh --body-file /tmp/daily_end_event.md` to save the event. Then immediately run `bash .exocortex/scripts/sync_event_to_vault.sh $(ls -t .exocortex/events/*.md 2>/dev/null | head -1)` to POST it to the RAG API — show one line: '✓ Synced to RAG API' or '⚠ Sync skipped (no key set)'. If cross_project_updates is non-empty, write each project's approved RIGHT NOW text to its .exocortex/SESSION_CONTEXT.md (replace only the content between the RIGHT NOW heading and the next ## heading). Confirm each write. Suggest: commit if uncommitted changes exist, then '/groom' tomorrow if interrupts are pending.\n\nIf B: Ask what they want to change, update /tmp/daily_end_event.md using your FILE EDITOR TOOL (not a terminal command), show again, then re-ask A/B/C.\n\nIf C: Skip event creation. Just show a closing summary with tomorrow's priorities.\n\nAlways end with: 'Day closed. See you tomorrow 👋'"
+      "action": "Respect the selected authority boundary",
+      "context": "Never sync automatically. If recording is requested, prepare the exact local event path and one-time capability request; do not write until the guarded executor accepts it."
     }
   ]
 }

@@ -1,21 +1,29 @@
 {
   "name": "/subconscious",
   "description": "Cross-cutting pattern detection across ALL events (no time filter)",
+  "protocol": {
+    "entry_contract": "AI_START_HERE.md",
+    "authority": "exact_capability_required_for_mutation",
+    "egress": "separate_destination_specific_authorization",
+    "default_role": "read_only"
+  },
   "steps": [
     {
       "type": "shell",
       "command": "python3 .exocortex/scripts/get_subconscious_memory.py",
-      "description": "Scan ALL events (no time filter) with AI for cross-cutting patterns",
+      "description": "Extract project-local event evidence for cross-cutting pattern review",
       "outputs": {
         "event_count": "Number of events scanned",
         "span_days": "Total days covered",
-        "ai_provider": "Which AI analyzed the memory"
+        "analysis_mode": "Local extraction for conversation-model formatting"
       }
     },
     {
       "type": "ai",
       "action": "Display the subconscious pattern analysis to user with formatting",
-      "inputs": ["Output from get_subconscious_memory.py"],
+      "inputs": [
+        "Output from get_subconscious_memory.py"
+      ],
       "context": "Show recurring cycles, behavioral patterns, intention drift, emerging themes, blind spots, and contradictions. This is cross-cutting pattern detection, not chronological recall."
     }
   ]

@@ -3,6 +3,11 @@ name: roster
 description: Skill roster that helps select the right specialist skill for the current task. This skill is always relevant and should be consulted when the task would benefit from specialist expertise. Use proactively at the start of complex tasks.
 ---
 
+<!-- EXOCORTEX_ENTRY: public-v2 -->
+Read `AI_START_HERE.md` before substantive action. It is the canonical, provider-neutral entry contract. Then apply this adapter only within the authority and scope resolved there.
+<!-- /EXOCORTEX_ENTRY -->
+
+
 ## Available Specialist Skills
 
 When the task would benefit from specialist expertise, load the appropriate skill:

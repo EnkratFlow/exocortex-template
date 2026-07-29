@@ -1,0 +1,441 @@
+{
+  "schema_version": "public-v2",
+  "kind": "model_routing_catalog",
+  "catalog_version": 1,
+  "source_registry_digest": "0a8302dabdb0fd3cd4b4e402d747a979d0f125f8e7e63c17480b38b564f25c61",
+  "observed_at": "2026-07-27T16:30:00Z",
+  "expires_at": "2026-08-03T16:30:00Z",
+  "models": [
+    {
+      "id": "claude-fable-5",
+      "provider_id": "anthropic",
+      "display_name": "Claude Fable 5",
+      "lifecycle": "active",
+      "routing_status": "candidate",
+      "source_ids": [
+        "anthropic-models",
+        "anthropic-pricing"
+      ],
+      "input_microusd_per_mtok": 10000000,
+      "output_microusd_per_mtok": 50000000,
+      "capabilities": [
+        "coding",
+        "complex_reasoning",
+        "long_horizon_agents",
+        "tool_use",
+        "vision"
+      ],
+      "max_risk": "high",
+      "parent_capable": true,
+      "evaluation_profiles": []
+    },
+    {
+      "id": "claude-haiku-4-5",
+      "provider_id": "anthropic",
+      "display_name": "Claude Haiku 4.5",
+      "lifecycle": "active",
+      "routing_status": "candidate",
+      "source_ids": [
+        "anthropic-models",
+        "anthropic-pricing"
+      ],
+      "input_microusd_per_mtok": 1000000,
+      "output_microusd_per_mtok": 5000000,
+      "capabilities": [
+        "bounded_reasoning",
+        "coding",
+        "tool_use",
+        "vision"
+      ],
+      "max_risk": "low",
+      "parent_capable": false,
+      "evaluation_profiles": []
+    },
+    {
+      "id": "claude-opus-5",
+      "provider_id": "anthropic",
+      "display_name": "Claude Opus 5",
+      "lifecycle": "active",
+      "routing_status": "candidate",
+      "source_ids": [
+        "anthropic-models",
+        "anthropic-pricing"
+      ],
+      "input_microusd_per_mtok": 5000000,
+      "output_microusd_per_mtok": 25000000,
+      "capabilities": [
+        "coding",
+        "complex_reasoning",
+        "tool_use",
+        "vision"
+      ],
+      "max_risk": "high",
+      "parent_capable": true,
+      "evaluation_profiles": []
+    },
+    {
+      "id": "claude-sonnet-5",
+      "provider_id": "anthropic",
+      "display_name": "Claude Sonnet 5",
+      "lifecycle": "active",
+      "routing_status": "candidate",
+      "source_ids": [
+        "anthropic-models",
+        "anthropic-pricing"
+      ],
+      "input_microusd_per_mtok": 2000000,
+      "output_microusd_per_mtok": 10000000,
+      "capabilities": [
+        "coding",
+        "reasoning",
+        "tool_use",
+        "vision"
+      ],
+      "max_risk": "medium",
+      "parent_capable": true,
+      "evaluation_profiles": []
+    },
+    {
+      "id": "deepseek-v4-flash",
+      "provider_id": "deepseek",
+      "display_name": "DeepSeek V4 Flash",
+      "lifecycle": "active",
+      "routing_status": "candidate",
+      "source_ids": [
+        "deepseek-models-pricing"
+      ],
+      "input_microusd_per_mtok": 140000,
+      "output_microusd_per_mtok": 280000,
+      "capabilities": [
+        "bounded_reasoning",
+        "coding",
+        "tool_use"
+      ],
+      "max_risk": "low",
+      "parent_capable": false,
+      "evaluation_profiles": []
+    },
+    {
+      "id": "deepseek-v4-pro",
+      "provider_id": "deepseek",
+      "display_name": "DeepSeek V4 Pro",
+      "lifecycle": "active",
+      "routing_status": "candidate",
+      "source_ids": [
+        "deepseek-models-pricing"
+      ],
+      "input_microusd_per_mtok": 435000,
+      "output_microusd_per_mtok": 870000,
+      "capabilities": [
+        "coding",
+        "reasoning",
+        "tool_use"
+      ],
+      "max_risk": "medium",
+      "parent_capable": true,
+      "evaluation_profiles": []
+    },
+    {
+      "id": "gemini-3-1-pro-preview",
+      "provider_id": "google",
+      "display_name": "Gemini 3.1 Pro Preview",
+      "lifecycle": "preview",
+      "routing_status": "candidate",
+      "source_ids": [
+        "google-models",
+        "google-pricing"
+      ],
+      "input_microusd_per_mtok": 2000000,
+      "output_microusd_per_mtok": 12000000,
+      "capabilities": [
+        "coding",
+        "complex_reasoning",
+        "multimodal",
+        "tool_use"
+      ],
+      "max_risk": "medium",
+      "parent_capable": true,
+      "evaluation_profiles": []
+    },
+    {
+      "id": "gemini-3-5-flash",
+      "provider_id": "google",
+      "display_name": "Gemini 3.5 Flash",
+      "lifecycle": "active",
+      "routing_status": "candidate",
+      "source_ids": [
+        "google-models",
+        "google-pricing"
+      ],
+      "input_microusd_per_mtok": 1500000,
+      "output_microusd_per_mtok": 9000000,
+      "capabilities": [
+        "coding",
+        "multimodal",
+        "reasoning",
+        "tool_use"
+      ],
+      "max_risk": "medium",
+      "parent_capable": true,
+      "evaluation_profiles": []
+    },
+    {
+      "id": "gemini-3-5-flash-lite",
+      "provider_id": "google",
+      "display_name": "Gemini 3.5 Flash-Lite",
+      "lifecycle": "active",
+      "routing_status": "candidate",
+      "source_ids": [
+        "google-models",
+        "google-pricing"
+      ],
+      "input_microusd_per_mtok": 300000,
+      "output_microusd_per_mtok": 2500000,
+      "capabilities": [
+        "bounded_reasoning",
+        "coding",
+        "multimodal",
+        "tool_use"
+      ],
+      "max_risk": "low",
+      "parent_capable": false,
+      "evaluation_profiles": []
+    },
+    {
+      "id": "gemini-3-6-flash",
+      "provider_id": "google",
+      "display_name": "Gemini 3.6 Flash",
+      "lifecycle": "active",
+      "routing_status": "candidate",
+      "source_ids": [
+        "google-models",
+        "google-pricing"
+      ],
+      "input_microusd_per_mtok": 1500000,
+      "output_microusd_per_mtok": 7500000,
+      "capabilities": [
+        "coding",
+        "multimodal",
+        "reasoning",
+        "tool_use"
+      ],
+      "max_risk": "medium",
+      "parent_capable": true,
+      "evaluation_profiles": []
+    },
+    {
+      "id": "gpt-5-6-luna",
+      "provider_id": "openai",
+      "display_name": "GPT-5.6 Luna",
+      "lifecycle": "active",
+      "routing_status": "candidate",
+      "source_ids": [
+        "openai-models",
+        "openai-pricing"
+      ],
+      "input_microusd_per_mtok": 1000000,
+      "output_microusd_per_mtok": 6000000,
+      "capabilities": [
+        "bounded_reasoning",
+        "coding",
+        "tool_use",
+        "vision"
+      ],
+      "max_risk": "low",
+      "parent_capable": false,
+      "evaluation_profiles": []
+    },
+    {
+      "id": "gpt-5-6-sol",
+      "provider_id": "openai",
+      "display_name": "GPT-5.6 Sol",
+      "lifecycle": "active",
+      "routing_status": "candidate",
+      "source_ids": [
+        "openai-models",
+        "openai-pricing"
+      ],
+      "input_microusd_per_mtok": 5000000,
+      "output_microusd_per_mtok": 30000000,
+      "capabilities": [
+        "coding",
+        "complex_reasoning",
+        "tool_use",
+        "vision"
+      ],
+      "max_risk": "high",
+      "parent_capable": true,
+      "evaluation_profiles": []
+    },
+    {
+      "id": "gpt-5-6-terra",
+      "provider_id": "openai",
+      "display_name": "GPT-5.6 Terra",
+      "lifecycle": "active",
+      "routing_status": "candidate",
+      "source_ids": [
+        "openai-models",
+        "openai-pricing"
+      ],
+      "input_microusd_per_mtok": 2500000,
+      "output_microusd_per_mtok": 15000000,
+      "capabilities": [
+        "coding",
+        "reasoning",
+        "tool_use",
+        "vision"
+      ],
+      "max_risk": "medium",
+      "parent_capable": true,
+      "evaluation_profiles": []
+    },
+    {
+      "id": "grok-4-3",
+      "provider_id": "xai",
+      "display_name": "Grok 4.3",
+      "lifecycle": "active",
+      "routing_status": "candidate",
+      "source_ids": [
+        "xai-models",
+        "xai-pricing"
+      ],
+      "input_microusd_per_mtok": 1250000,
+      "output_microusd_per_mtok": 2500000,
+      "capabilities": [
+        "coding",
+        "reasoning",
+        "tool_use",
+        "vision"
+      ],
+      "max_risk": "medium",
+      "parent_capable": true,
+      "evaluation_profiles": []
+    },
+    {
+      "id": "grok-4-5",
+      "provider_id": "xai",
+      "display_name": "Grok 4.5",
+      "lifecycle": "active",
+      "routing_status": "candidate",
+      "source_ids": [
+        "xai-models",
+        "xai-pricing"
+      ],
+      "input_microusd_per_mtok": 2000000,
+      "output_microusd_per_mtok": 6000000,
+      "capabilities": [
+        "coding",
+        "complex_reasoning",
+        "tool_use",
+        "vision"
+      ],
+      "max_risk": "high",
+      "parent_capable": true,
+      "evaluation_profiles": []
+    },
+    {
+      "id": "grok-build-0-1",
+      "provider_id": "xai",
+      "display_name": "Grok Build 0.1",
+      "lifecycle": "active",
+      "routing_status": "candidate",
+      "source_ids": [
+        "xai-models",
+        "xai-pricing"
+      ],
+      "input_microusd_per_mtok": 1000000,
+      "output_microusd_per_mtok": 2000000,
+      "capabilities": [
+        "coding",
+        "tool_use"
+      ],
+      "max_risk": "medium",
+      "parent_capable": true,
+      "evaluation_profiles": []
+    },
+    {
+      "id": "kimi-k2-6",
+      "provider_id": "kimi",
+      "display_name": "Kimi K2.6",
+      "lifecycle": "active",
+      "routing_status": "candidate",
+      "source_ids": [
+        "kimi-models-pricing"
+      ],
+      "input_microusd_per_mtok": 950000,
+      "output_microusd_per_mtok": 4000000,
+      "capabilities": [
+        "coding",
+        "reasoning",
+        "tool_use",
+        "vision"
+      ],
+      "max_risk": "medium",
+      "parent_capable": true,
+      "evaluation_profiles": []
+    },
+    {
+      "id": "kimi-k2-7-code",
+      "provider_id": "kimi",
+      "display_name": "Kimi K2.7 Code",
+      "lifecycle": "active",
+      "routing_status": "candidate",
+      "source_ids": [
+        "kimi-models-pricing"
+      ],
+      "input_microusd_per_mtok": 950000,
+      "output_microusd_per_mtok": 4000000,
+      "capabilities": [
+        "coding",
+        "tool_use",
+        "vision"
+      ],
+      "max_risk": "medium",
+      "parent_capable": true,
+      "evaluation_profiles": []
+    },
+    {
+      "id": "kimi-k3",
+      "provider_id": "kimi",
+      "display_name": "Kimi K3",
+      "lifecycle": "active",
+      "routing_status": "candidate",
+      "source_ids": [
+        "kimi-models-pricing"
+      ],
+      "input_microusd_per_mtok": 3000000,
+      "output_microusd_per_mtok": 15000000,
+      "capabilities": [
+        "coding",
+        "complex_reasoning",
+        "long_horizon_agents",
+        "tool_use"
+      ],
+      "max_risk": "high",
+      "parent_capable": true,
+      "evaluation_profiles": []
+    },
+    {
+      "id": "mistral-large-3",
+      "provider_id": "mistral",
+      "display_name": "Mistral Large 3",
+      "lifecycle": "active",
+      "routing_status": "candidate",
+      "source_ids": [
+        "mistral-models",
+        "mistral-pricing"
+      ],
+      "input_microusd_per_mtok": 500000,
+      "output_microusd_per_mtok": 1500000,
+      "capabilities": [
+        "coding",
+        "multimodal",
+        "reasoning",
+        "tool_use"
+      ],
+      "max_risk": "medium",
+      "parent_capable": true,
+      "evaluation_profiles": []
+    }
+  ]
+}

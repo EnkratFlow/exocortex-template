@@ -1,61 +1,107 @@
-# IDE Integration Guide
+# AI and IDE Integration Guide
 
-Exocortex is editor-neutral. The core command system lives in:
+Every AI surface begins at `AI_START_HERE.md`. The 24 JSON files beneath
+`.exocortex/commands/` remain the single command-behavior source. Provider files
+are generated thin adapters; they do not copy behavior or expand authority.
 
-- `.exocortex/AI_BOOTSTRAP.md`
-- `.exocortex/commands/*.json`
+## Installation capability is separate
 
-Cursor, Claude, VS Code, Codex, Zed, Windsurf, and future AI editors should all use the same adapter rule: keep the IDE bridge thin and let the JSON command decide behavior.
+Native command or skill visibility does not mean a provider can install
+Exocortex. Installation and updates require a coding agent with local
+filesystem and terminal access to the exact target. Chat-only provider
+surfaces remain advisory. Use the provider-neutral prompts and platform
+boundaries in `.exocortex/docs/AI_INSTALLATION.md`; do not create a
+provider-specific installer.
 
-## Universal Adapter Prompt
+## Provider-native contract
 
-Add this to whatever project instructions, agent rules, system prompt, command snippet, custom mode, or memory file your IDE supports:
+| Surface | Repository adapter | Native invocation | Recorded evidence |
+|---|---|---|---|
+| Codex | `.agents/skills/{command}/SKILL.md` | `$command` or the skills selector | `compatible`; selector observation pending |
+| Claude Desktop 1.24012.1 (0adcae) | `.claude/skills/{command}/SKILL.md` | `/command` | `verified`; all 24 Exocortex commands appeared exactly once |
+| Cursor Stable 3.12.30 | `.cursor/skills/{command}/SKILL.md` | `/command` | `verified`; all 24 Exocortex commands appeared exactly once among 72 unique skills |
+| GitHub Copilot | `.agents/skills/{command}/SKILL.md` | `/command` where repository skills are supported | `compatible`; exact client version was not captured |
+| Kimi Code CLI 1.14.0 | `.agents/skills/{command}/SKILL.md` | `/skill:{name}` | `verified`; all 24 Exocortex entries appeared exactly once among 26 unique skills |
+| Kimi Desktop Work 3.1.3 | No Desktop-specific adapter claim | Not advertised | `failed`; 0/24 appeared and exact `/skill:ai-export` produced no match |
+| Zed 1.12.0 stable.328 built-in Agent | `.agents/skills/{command}/SKILL.md` | built-in Agent skills selector | `verified`; all 24 Exocortex skills appeared exactly once among 25 unique skills; ACP agents excluded |
+| Windsurf | None in the active/default install | Not advertised | `unavailable`; no installed version was tested |
+| Generic or unidentified host | `AI_START_HERE.md` and `.exocortex/commands/{command}.json` | Host-dependent; no native-menu claim | Not applicable |
 
-```text
-When the user types an Exocortex command like /work, /save, /ai-export, work, save, or ai-export:
+The generated repository set is exactly 72 files: 24 portable Agent Skills, 24
+Claude skills, and 24 Cursor skills. Every generated adapter is
+manual-only, points to exactly one matching command JSON, and tells the model to
+fail closed before unapproved mutation or egress.
 
-1. Read .exocortex/AI_BOOTSTRAP.md first.
-2. Find .exocortex/commands/{command}.json.
-3. Execute the JSON steps in order.
-4. The JSON command is the source of truth if any instruction conflicts.
-5. Do not invent extra prompts or duplicate command behavior in the adapter.
-6. Never read, print, log, echo, or expose secret values.
-7. In a multi-root workspace, identify the target repo before running shell steps.
+## Evidence statuses
+
+- `verified`: the recorded installed version passed complete provider-native
+  discovery Human UAT.
+- `compatible`: the documented contract and static structure match, but Human
+  UAT is partial or pending.
+- `failed`: the recorded installed version produced a concrete reproducible
+  failure.
+- `blocked`: a prerequisite such as authentication prevented Human UAT.
+- `unavailable`: no installed local surface exists for Human UAT.
+
+Statuses never transfer across provider, client, adapter, discovery, or
+configuration changes. Static generation cannot promote a provider to
+`verified`.
+
+## Verification boundary
+
+Run:
+
+```bash
+python3 .exocortex/scripts/generate_command_adapters.py --check
 ```
 
-## If Slash Commands Are Not Supported
+That deterministically proves names, bytes, and repository paths. It does not
+prove a particular installed provider version displayed every entry. Native
+menu visibility and collision behavior require bounded Human UAT before that
+provider/version is advertised as verified.
 
-Use this prompt in the AI chat:
+## Current limitations and revalidation
 
-```text
-Read .exocortex/AI_BOOTSTRAP.md, then run the Exocortex command /work.
-```
+The completed Cursor, Claude Desktop, Kimi Code CLI, and Zed checks establish
+native visibility only for the exact recorded versions and surfaces. No command
+was selected or executed, and no UAT action granted repository authority.
 
-Replace `/work` with any command, for example `/save`, `/brief`, `/ai-export`, or `/system-scan`.
+Kimi Desktop Work 3.1.3 is a separate surface from Kimi Code CLI 1.14.0.
+Desktop displayed 0/24 project skills, while the isolated CLI displayed every
+expected `/skill:{name}` entry exactly once. Neither result transfers to the
+other surface.
 
-## Adapter Checklist
+Codex remains `compatible` until its native desktop selector is observed.
+GitHub Copilot remains `compatible` until the exact passing client version is
+captured. Cursor 3.6.21's portable-family failure remains historical evidence;
+Cursor Stable 3.12.30 is verified only for the dedicated native family. Zed
+evidence covers only its built-in Agent; ACP agents remain separate. Windsurf
+remains `unavailable`.
 
-- The adapter points to `.exocortex/AI_BOOTSTRAP.md`
-- The adapter does not re-implement `/save`, `/work`, or other command behavior
-- The adapter says `.exocortex/commands/*.json` is the source of truth
-- The adapter preserves the security rule about secrets
-- The adapter works from the project root that owns the `.exocortex` folder
+## Legacy migration
 
-## Known Adapter Locations
+The old `.cursor/commands/*.md` wrappers and the duplicate Cursor/GitHub
+`onboard` persona entries are superseded; the canonical commands themselves are
+not removed. An installer may retire one of those paths only when:
 
-Different tools use different names for project instructions. Use whichever exists in your editor:
+1. its generated replacement installed and byte-matches the candidate;
+2. the old path is owned by the prior install manifest; and
+3. its current bytes still match the prior manifest hash.
 
-| Tool | Common adapter location |
-|------|--------------------------|
-| Cursor | `.cursor/commands/*.md`, `.cursor/rules/*.mdc` |
-| Claude | `.claude/skills/*/SKILL.md`, `.claude/commands/*.md` |
-| VS Code Copilot | `.github/copilot-instructions.md`, `.github/skills/*/SKILL.md` |
-| Codex | `.agents/skills/*/SKILL.md`, `AGENTS.md` |
-| Windsurf | `.windsurfrules` |
-| Zed or another AI editor | Project instructions, agent rules, custom prompt, or command snippets |
+Customized or unknown paths are preserved and reported with
+`EXOCORTEX_ADAPTER_COLLISION_PRESERVED`. Resolve that warning in a separate,
+reviewed target-specific change before claiming collision-free native parity.
 
-If your editor supports only one instruction file, put the Universal Adapter Prompt there. If it supports per-command snippets, each snippet can be a one-line bridge:
+The cumulative migration inventory is 51 paths: 26 prior Cursor/GitHub
+retirements—24 old Cursor command wrappers plus the duplicate Cursor and GitHub
+`onboard` entries—plus 24 Windsurf workflows and `.windsurfrules`. Windsurf paths are
+no longer installed. They are removed only when the prior manifest proves
+ownership and their bytes still match; customized and unknown paths remain.
+The former Cursor `onboard` path is the sole reactivated path: a managed legacy
+copy is retired before the current generated Cursor adapter is installed,
+while customized or unknown content is preserved.
 
-```text
-Read .exocortex/AI_BOOTSTRAP.md, then execute .exocortex/commands/save.json exactly as written.
-```
+The Cursor phase hook remains reminder-only. It never creates a save or
+checkpoint, selects a model, writes a repository, or contacts an external
+system. Global editor-home installation is outside repository installation and
+requires a separate system-operation work item.

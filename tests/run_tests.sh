@@ -1,704 +1,1826 @@
 #!/bin/bash
-# Exocortex install.sh test suite
+set -u
+unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE
 
-TESTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+TEST_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 # shellcheck source=helpers.sh
-source "$TESTS_DIR/helpers.sh"
+source "$TEST_DIR/helpers.sh"
 
-echo ""
-echo "🧪 Exocortex install.sh test suite"
-echo "   Template: $TEMPLATE_DIR"
-echo "══════════════════════════════════════════════════════"
-
-# ──────────────────────────────────────────────────────────────────────────────
-# Test 1 — Fresh install
-# Scenario: no .exocortex exists. install.sh runs in fresh-install mode.
-# Expects: all skeleton dirs/files installed, manifest created.
-# ──────────────────────────────────────────────────────────────────────────────
-test_01_fresh_install() {
-    begin_test "T01: fresh install creates complete skeleton"
-
-    local dir
-    dir=$(make_fresh_project)
-    run_install "$dir"
-
-    assert_file_exists  ".exocortex/ dir"            "$dir/.exocortex"
-    assert_file_exists  "AI_BOOTSTRAP.md"            "$dir/.exocortex/AI_BOOTSTRAP.md"
-    assert_file_exists  "SESSION_CONTEXT.md"         "$dir/.exocortex/SESSION_CONTEXT.md"
-    assert_file_exists  "TODO.md"                    "$dir/.exocortex/TODO.md"
-    assert_file_exists  "LESSONS.md"                 "$dir/.exocortex/LESSONS.md"
-    assert_file_exists  "events/ dir"                "$dir/.exocortex/events"
-    assert_file_exists  ".cursor/commands/"          "$dir/.cursor/commands"
-    assert_file_exists  ".github/skills/"            "$dir/.github/skills"
-    assert_file_exists  ".claude/skills/"            "$dir/.claude/skills"
-    assert_manifest_exists "manifest seeded"         "$dir"
-
-    rm -rf "$dir"
-    end_test
+tree_digest() {
+    python3 - "$1" <<'PY'
+import hashlib, os, stat, sys
+from pathlib import Path
+root=Path(sys.argv[1])
+h=hashlib.sha256()
+for base, dirs, files in os.walk(root):
+    dirs[:]=sorted(d for d in dirs if d != '.git')
+    for name in sorted(files):
+        p=Path(base)/name
+        rel=p.relative_to(root).as_posix()
+        mode=stat.S_IMODE(p.stat().st_mode)
+        h.update(rel.encode()+b'\0'+str(mode).encode()+b'\0'+hashlib.sha256(p.read_bytes()).digest())
+print(h.hexdigest())
+PY
 }
 
-# ──────────────────────────────────────────────────────────────────────────────
-# Test 2 — Update, no manifest: user files skipped, new template files installed
-# Scenario: .exocortex exists with user data but NO manifest (first-time re-run
-#           on a project created before the manifest feature was introduced).
-# Expects: user data untouched, new template files (cursor/github/claude) installed,
-#          manifest created.
-# ──────────────────────────────────────────────────────────────────────────────
-test_02_update_no_manifest() {
-    begin_test "T02: update, no manifest — user files skipped, new files installed"
-
-    local dir
-    dir=$(make_fresh_project)
-
-    # Simulate an existing project: .exocortex/ with user data, no manifest
-    mkdir -p "$dir/.exocortex"
-    printf '# SESSION CONTEXT\nT02_CANARY_SESSION — must survive\n' > "$dir/.exocortex/SESSION_CONTEXT.md"
-    printf '# TODO\nT02_CANARY_TODO — must survive\n'              > "$dir/.exocortex/TODO.md"
-    printf '# LESSONS\nT02_CANARY_LESSONS — must survive\n'        > "$dir/.exocortex/LESSONS.md"
-    printf '# PROJECT MEMORY\nT02_CANARY_MEMORY — must survive\n'  > "$dir/.exocortex/PROJECT_MEMORY.md"
-
-    local h_session h_todo h_lessons h_memory
-    h_session=$(file_hash "$dir/.exocortex/SESSION_CONTEXT.md")
-    h_todo=$(file_hash "$dir/.exocortex/TODO.md")
-    h_lessons=$(file_hash "$dir/.exocortex/LESSONS.md")
-    h_memory=$(file_hash "$dir/.exocortex/PROJECT_MEMORY.md")
-
-    run_install "$dir"
-
-    # User data files: byte-for-byte identical
-    assert_hash_unchanged "SESSION_CONTEXT.md unchanged" "$dir/.exocortex/SESSION_CONTEXT.md" "$h_session"
-    assert_hash_unchanged "TODO.md unchanged"            "$dir/.exocortex/TODO.md"            "$h_todo"
-    assert_hash_unchanged "LESSONS.md unchanged"         "$dir/.exocortex/LESSONS.md"         "$h_lessons"
-    assert_hash_unchanged "PROJECT_MEMORY.md unchanged"  "$dir/.exocortex/PROJECT_MEMORY.md"  "$h_memory"
-
-    # Canary content still present (belt + suspenders)
-    assert_file_contains  "SESSION_CONTEXT content intact"  "$dir/.exocortex/SESSION_CONTEXT.md" "T02_CANARY_SESSION"
-    assert_file_contains  "TODO content intact"              "$dir/.exocortex/TODO.md"            "T02_CANARY_TODO"
-    assert_file_contains  "LESSONS content intact"           "$dir/.exocortex/LESSONS.md"         "T02_CANARY_LESSONS"
-    assert_file_contains  "PROJECT_MEMORY content intact"    "$dir/.exocortex/PROJECT_MEMORY.md"  "T02_CANARY_MEMORY"
-
-    # New files should have been installed (didn't exist before)
-    assert_file_exists    "AI_BOOTSTRAP.md installed"    "$dir/.exocortex/AI_BOOTSTRAP.md"
-    assert_file_exists    ".cursor/commands installed"   "$dir/.cursor/commands"
-    assert_file_exists    ".github/skills installed"     "$dir/.github/skills"
-    assert_file_exists    ".claude/skills installed"     "$dir/.claude/skills"
-    assert_manifest_exists "manifest seeded"             "$dir"
-
-    rm -rf "$dir"
-    end_test
-}
-
-# ──────────────────────────────────────────────────────────────────────────────
-# Test 3 — Update WITH manifest: system file updated when template has changed
-# Scenario: a system file has "old" content; manifest records the old hash;
-#           template now has new content. install.sh should update the file.
-# The install.sh branch: current_hash == manifest_hash → safe to overwrite with template.
-# ──────────────────────────────────────────────────────────────────────────────
-test_03_system_file_updates() {
-    begin_test "T03: update + manifest — outdated system file is updated to template"
-
-    local dir
-    dir=$(make_fresh_project)
-    mkdir -p "$dir/.exocortex"
-
-    # Write "old" content for a known system file
-    local system_file="$dir/.exocortex/COMMAND_SYSTEM.md"
-    printf '# OLD VERSION\nThis is the old content before the template update.\n' > "$system_file"
-    local old_hash
-    old_hash=$(file_hash "$system_file")
-
-    # Create a manifest that records the old hash as what was installed.
-    # install.sh stores paths relative to the project root (e.g. ".exocortex/COMMAND_SYSTEM.md"),
-    # so the manifest entry must use the same relative form.
-    local manifest="$dir/.exocortex/.install-manifest"
-    printf '# Exocortex install manifest — do not edit manually\n' > "$manifest"
-    write_manifest_entry "$manifest" ".exocortex/COMMAND_SYSTEM.md" "$old_hash"
-
-    run_install "$dir"
-
-    # File should now match the template version
-    assert_matches_template "COMMAND_SYSTEM.md updated to template" \
-        "$system_file" \
-        "$TEMPLATE_DIR/.exocortex/COMMAND_SYSTEM.md"
-
-    # Old hash should be gone
-    assert_hash_changed "COMMAND_SYSTEM.md hash changed from old" "$system_file" "$old_hash"
-
-    rm -rf "$dir"
-    end_test
-}
-
-# ──────────────────────────────────────────────────────────────────────────────
-# Test 4 — Update WITH manifest: user-modified system file is preserved
-# Scenario: user has added custom content to a normally-system-managed file.
-#           install.sh should detect the drift from the manifest hash and skip.
-# The install.sh branch: current_hash != manifest_hash → user-modified → skip.
-# ──────────────────────────────────────────────────────────────────────────────
-test_04_user_modified_preserved() {
-    begin_test "T04: update + manifest — user-modified file is never overwritten"
-
-    local dir
-    dir=$(make_installed_project)   # Fresh install → seeds manifest
-
-    # User modifies a system file after installation
-    local system_file="$dir/.exocortex/COMMAND_SYSTEM.md"
-    printf '\n\n## My Custom Section\nT04_CUSTOM_CONTENT — must survive\n' >> "$system_file"
-    local modified_hash
-    modified_hash=$(file_hash "$system_file")
-
-    # Second install run — sees: current_hash != manifest_hash → skip
-    run_install "$dir"
-
-    assert_hash_unchanged "user-modified file preserved"         "$system_file" "$modified_hash"
-    assert_file_contains  "custom content still present"         "$system_file" "T04_CUSTOM_CONTENT"
-
-    rm -rf "$dir"
-    end_test
-}
-
-# ──────────────────────────────────────────────────────────────────────────────
-# Test 5 — Idempotent: two consecutive runs produce identical state
-# Scenario: run install.sh twice on the same project.
-# Expects: all file hashes identical between run 1 and run 2.
-# ──────────────────────────────────────────────────────────────────────────────
-test_05_idempotent() {
-    begin_test "T05: idempotent — two runs produce identical state"
-
-    local dir
-    dir=$(make_fresh_project)
-    run_install "$dir"   # Run 1
-
-    # Capture hashes after run 1
-    local h_bootstrap h_manifest h_session
-    h_bootstrap=$(file_hash "$dir/.exocortex/AI_BOOTSTRAP.md")
-    h_manifest=$(file_hash "$dir/.exocortex/.install-manifest")
-    h_session=$(file_hash "$dir/.exocortex/SESSION_CONTEXT.md")
-
-    run_install "$dir"   # Run 2
-
-    assert_hash_unchanged "AI_BOOTSTRAP.md unchanged run1→run2"   "$dir/.exocortex/AI_BOOTSTRAP.md"       "$h_bootstrap"
-    assert_hash_unchanged "manifest unchanged run1→run2"           "$dir/.exocortex/.install-manifest"     "$h_manifest"
-    assert_hash_unchanged "SESSION_CONTEXT.md unchanged run1→run2" "$dir/.exocortex/SESSION_CONTEXT.md"    "$h_session"
-
-    rm -rf "$dir"
-    end_test
-}
-
-# ──────────────────────────────────────────────────────────────────────────────
-# Test 6 — Critical data files: all 4 memory files preserved across update
-# Scenario: the 4 files that hold irreplaceable user context must NEVER be touched.
-# Tests both hash integrity and byte-level content preservation.
-# ──────────────────────────────────────────────────────────────────────────────
-test_06_critical_data_files() {
-    begin_test "T06: critical data files (SESSION_CONTEXT, TODO, LESSONS, PROJECT_MEMORY) preserved"
-
-    local dir
-    dir=$(make_fresh_project)
-    mkdir -p "$dir/.exocortex"
-
-    # Write distinctive canary content to each critical file
-    printf '# SESSION CONTEXT\n## 🟢 RIGHT NOW\nT06: CANARY_SESSION=abc123\n'   > "$dir/.exocortex/SESSION_CONTEXT.md"
-    printf '# TODO\n## 🟧 In Progress\n- [ ] T06: CANARY_TODO=xyz789\n'          > "$dir/.exocortex/TODO.md"
-    printf '# LESSONS\n- T06: CANARY_LESSONS=def456\n'                            > "$dir/.exocortex/LESSONS.md"
-    printf '# PROJECT MEMORY\nT06: CANARY_MEMORY=ghi012\n'                        > "$dir/.exocortex/PROJECT_MEMORY.md"
-
-    local h_s h_t h_l h_m
-    h_s=$(file_hash "$dir/.exocortex/SESSION_CONTEXT.md")
-    h_t=$(file_hash "$dir/.exocortex/TODO.md")
-    h_l=$(file_hash "$dir/.exocortex/LESSONS.md")
-    h_m=$(file_hash "$dir/.exocortex/PROJECT_MEMORY.md")
-
-    run_install "$dir"
-
-    # Hash checks
-    assert_hash_unchanged "SESSION_CONTEXT.md hash"  "$dir/.exocortex/SESSION_CONTEXT.md"  "$h_s"
-    assert_hash_unchanged "TODO.md hash"              "$dir/.exocortex/TODO.md"             "$h_t"
-    assert_hash_unchanged "LESSONS.md hash"           "$dir/.exocortex/LESSONS.md"          "$h_l"
-    assert_hash_unchanged "PROJECT_MEMORY.md hash"    "$dir/.exocortex/PROJECT_MEMORY.md"   "$h_m"
-
-    # Content checks
-    assert_file_contains  "SESSION_CONTEXT canary"   "$dir/.exocortex/SESSION_CONTEXT.md"  "CANARY_SESSION=abc123"
-    assert_file_contains  "TODO canary"               "$dir/.exocortex/TODO.md"             "CANARY_TODO=xyz789"
-    assert_file_contains  "LESSONS canary"            "$dir/.exocortex/LESSONS.md"          "CANARY_LESSONS=def456"
-    assert_file_contains  "PROJECT_MEMORY canary"     "$dir/.exocortex/PROJECT_MEMORY.md"   "CANARY_MEMORY=ghi012"
-
-    rm -rf "$dir"
-    end_test
-}
-
-# ──────────────────────────────────────────────────────────────────────────────
-# Test 7 — Events preserved: real event files are byte-for-byte untouched
-# Scenario: user has existing event files (session diary entries) in events/.
-#           These are the most irreplaceable data — once gone, they are gone forever.
-# Expects: every event file identical before and after install.
-# ──────────────────────────────────────────────────────────────────────────────
-test_07_events_preserved() {
-    begin_test "T07: event files preserved — byte-for-byte untouched"
-
-    local dir
-    dir=$(make_fresh_project)
-    mkdir -p "$dir/.exocortex/events"
-
-    # Write realistic event files with canary content
-    printf '# Session 2026-02-28\n## What happened\nT07_EVENT_1: Completed feature X.\n' \
-        > "$dir/.exocortex/events/2026-02-28-session.md"
-    printf '# Session 2026-03-01\n## What happened\nT07_EVENT_2: Fixed critical bug Y.\n' \
-        > "$dir/.exocortex/events/2026-03-01-session.md"
-
-    local h_e1 h_e2
-    h_e1=$(file_hash "$dir/.exocortex/events/2026-02-28-session.md")
-    h_e2=$(file_hash "$dir/.exocortex/events/2026-03-01-session.md")
-
-    run_install "$dir"
-
-    assert_file_exists    "event 1 still exists"              "$dir/.exocortex/events/2026-02-28-session.md"
-    assert_file_exists    "event 2 still exists"              "$dir/.exocortex/events/2026-03-01-session.md"
-    assert_hash_unchanged "event 1 byte-for-byte"             "$dir/.exocortex/events/2026-02-28-session.md" "$h_e1"
-    assert_hash_unchanged "event 2 byte-for-byte"             "$dir/.exocortex/events/2026-03-01-session.md" "$h_e2"
-    assert_file_contains  "event 1 content intact"            "$dir/.exocortex/events/2026-02-28-session.md" "T07_EVENT_1"
-    assert_file_contains  "event 2 content intact"            "$dir/.exocortex/events/2026-03-01-session.md" "T07_EVENT_2"
-
-    rm -rf "$dir"
-    end_test
-}
-
-# ──────────────────────────────────────────────────────────────────────────────
-# Test 8 — Events not in manifest: event files are never manifest-tracked
-# Scenario: if event files were added to the manifest, future install runs could
-#           misclassify them as "unmodified system files" and overwrite them.
-#           This test locks that door permanently.
-# Expects: no "events/" entry in .install-manifest (except .gitkeep is allowed).
-# ──────────────────────────────────────────────────────────────────────────────
-test_08_events_not_in_manifest() {
-    begin_test "T08: event files never appear in install manifest"
-
-    local dir
-    dir=$(make_fresh_project)
-    mkdir -p "$dir/.exocortex/events"
-
-    # Create event files BEFORE install (simulating existing project)
-    printf '# Session 2026-03-02\nT08_EVENT: pre-existing event.\n' \
-        > "$dir/.exocortex/events/2026-03-02-session.md"
-
-    run_install "$dir"
-
-    # The specific event file must not appear in manifest
-    local manifest="$dir/.exocortex/.install-manifest"
-    assert_manifest_missing_pattern \
-        "user event file not in manifest" \
-        "$dir" \
-        "2026-03-02-session.md"
-
-    # Run install a SECOND time — event still preserved (not overwritten even
-    # with a manifest now present for other files)
-    local h_event
-    h_event=$(file_hash "$dir/.exocortex/events/2026-03-02-session.md")
-    run_install "$dir"
-
-    assert_hash_unchanged "event preserved across second install" \
-        "$dir/.exocortex/events/2026-03-02-session.md" "$h_event"
-    assert_file_contains  "event content intact after second install" \
-        "$dir/.exocortex/events/2026-03-02-session.md" "T08_EVENT"
-
-    rm -rf "$dir"
-    end_test
-}
-
-test_09_hooks_installed_and_executable() {
-    begin_test "T09: fresh install copies .cursor/hooks/ + hooks.json with exec bit"
-
-    local dir
-    dir=$(make_fresh_project)
-    run_install "$dir"
-
-    assert_file_exists "hooks.json installed" "$dir/.cursor/hooks.json"
-    assert_file_exists "auto-save-phase.sh installed" "$dir/.cursor/hooks/auto-save-phase.sh"
-    assert_file_contains "hooks.json registers subagentStop" "$dir/.cursor/hooks.json" "subagentStop"
-
-    if [ -x "$dir/.cursor/hooks/auto-save-phase.sh" ]; then
-        echo "    ✅ auto-save-phase.sh is executable"
-        TEST_PASS=$((TEST_PASS+1))
-    else
-        echo "    ❌ auto-save-phase.sh is NOT executable"
-        TEST_FAIL=$((TEST_FAIL+1))
-    fi
-
-    rm -rf "$dir"
-    end_test
-}
-
-test_10_hook_user_modified_preserved() {
-    begin_test "T10: user-modified hook script is never overwritten"
-
-    local dir
-    dir=$(make_installed_project)
-
-    local hook="$dir/.cursor/hooks/auto-save-phase.sh"
-    printf '\n# T10_USER_CUSTOMIZATION\n' >> "$hook"
-    local modified_hash
-    modified_hash=$(file_hash "$hook")
-
-    run_install "$dir"
-
-    assert_hash_unchanged "user-modified hook preserved" "$hook" "$modified_hash"
-    assert_file_contains  "user marker still present"   "$hook" "T10_USER_CUSTOMIZATION"
-
-    rm -rf "$dir"
-    end_test
-}
-
-test_11_ai_export_is_project_generic() {
-    begin_test "T11: ai-export command is project-generic"
-
-    local cmd="$TEMPLATE_DIR/.exocortex/commands/ai-export.json"
-
-    assert_file_exists       "ai-export command exists" "$cmd"
-    assert_file_contains     "ai-export discovers current project" "$cmd" "current project"
-    assert_file_not_contains "no scenarioRegistry trading leak" "$cmd" "scenarioRegistry"
-    assert_file_not_contains "no messageResolver trading leak" "$cmd" "messageResolver"
-    assert_file_not_contains "no technicalCoaching trading leak" "$cmd" "technicalCoaching"
-    assert_file_not_contains "no tradeLogic trading leak" "$cmd" "tradeLogic"
-    assert_file_not_contains "no ConsoleCard trading leak" "$cmd" "ConsoleCard"
-    assert_file_not_contains "no TechnicalGate trading leak" "$cmd" "TechnicalGate"
-
-    end_test
-}
-
-test_12_data_plane_not_manifest_tracked() {
-    begin_test "T12: data-plane files are never install-manifest tracked"
-
-    local dir
-    dir=$(make_fresh_project)
-    run_install "$dir"
-
-    assert_file_exists "SESSION_CONTEXT.md stub created" "$dir/.exocortex/SESSION_CONTEXT.md"
-    assert_file_exists "TODO.md stub created" "$dir/.exocortex/TODO.md"
-    assert_file_exists "LESSONS.md stub created" "$dir/.exocortex/LESSONS.md"
-    assert_file_exists "PROJECT_MEMORY.md stub created" "$dir/.exocortex/PROJECT_MEMORY.md"
-    assert_file_exists "events dir created" "$dir/.exocortex/events"
-
-    assert_manifest_missing_pattern "SESSION_CONTEXT.md not manifest-tracked" "$dir" ".exocortex/SESSION_CONTEXT.md"
-    assert_manifest_missing_pattern "TODO.md not manifest-tracked" "$dir" ".exocortex/TODO.md"
-    assert_manifest_missing_pattern "LESSONS.md not manifest-tracked" "$dir" ".exocortex/LESSONS.md"
-    assert_manifest_missing_pattern "PROJECT_MEMORY.md not manifest-tracked" "$dir" ".exocortex/PROJECT_MEMORY.md"
-    assert_manifest_missing_pattern "events directory not manifest-tracked" "$dir" ".exocortex/events/"
-    assert_manifest_missing_pattern "control backlog not manifest-tracked" "$dir" ".exocortex/control/BACKLOG.md"
-
-    rm -rf "$dir"
-    end_test
-}
-
-test_13_template_does_not_ship_live_session_data() {
-    begin_test "T13: public template does not ship live session memory"
-
-    assert_file_missing "template source has no live SESSION_CONTEXT.md" "$TEMPLATE_DIR/.exocortex/SESSION_CONTEXT.md"
-
-    local live_events
-    live_events=$(find "$TEMPLATE_DIR/.exocortex/events" -type f -name "*.md" ! -name "2000-01-01_00-00-00_example-event.md" 2>/dev/null | sort)
-    if [ -z "$live_events" ]; then
-        echo "    ✅ no live event markdown files in template"
-        TEST_PASS=$((TEST_PASS+1))
-    else
-        echo "    ❌ live event markdown files found in template:"
-        printf '       %s\n' $live_events
-        TEST_FAIL=$((TEST_FAIL+1))
-    fi
-
-    end_test
-}
-
-test_14_save_surfaces_do_not_use_legacy_prompt() {
-    begin_test "T14: save docs and bridges do not use legacy prompt flow"
-
-    local files=(
-        "$TEMPLATE_DIR/.exocortex/control/SNIPPETS.md"
-        "$TEMPLATE_DIR/.exocortex/docs/EVENT_SYSTEM_USAGE.md"
-        "$TEMPLATE_DIR/.claude/skills/save/SKILL.md"
-        "$TEMPLATE_DIR/.cursor/commands/save.md"
-        "$TEMPLATE_DIR/.exocortex/commands/save.json"
+code_plane_digest() {
+    python3 - "$1" <<'PY'
+import hashlib, os, stat, sys
+from pathlib import Path
+
+root = Path(sys.argv[1]).resolve(strict=True)
+surface = (
+    '.exocortex', '.agents', '.cursor', '.claude', '.github', '.windsurf',
+    'AI_START_HERE.md', 'AGENTS.md', 'CLAUDE.md', '.windsurfrules', '.rules', '.gitignore',
+)
+protected = (
+    '.exocortex/SESSION_CONTEXT.md', '.exocortex/SESSION_CONTEXT.local.md',
+    '.exocortex/TODO.md', '.exocortex/LESSONS.md', '.exocortex/PROJECT_MEMORY.md',
+    '.exocortex/OPEN_DECISIONS.md', '.exocortex/subconscious_patterns.md',
+    '.exocortex/.env', '.exocortex/.project-name', '.exocortex/events',
+    '.exocortex/archive', '.exocortex/hub', '.exocortex/local', '.exocortex/planning',
+    '.exocortex/work-items', '.exocortex/control/ACTIVE_WORK.md',
+    '.exocortex/control/BRANCH_POLICY.md', '.exocortex/control/REPO_STATE.md',
+    '.exocortex/control/EXECUTOR_REGISTRY.json',
+    '.exocortex/control/EXTERNAL_SYNC_POLICY.json',
+    '.exocortex/control/INTERRUPTS.md', '.exocortex/control/BACKLOG.md',
+    '.exocortex/control/ROADMAP.md', '.exocortex/control/ARCH_OVERVIEW.md',
+    '.exocortex/control/REPO_ORGANIZATION_REPORT.md',
+    '.exocortex/.hub_enabled', '.exocortex/.hub_disabled',
+)
+def excluded(relative):
+    return any(relative == item or relative.startswith(item + '/') for item in protected)
+def directory_record(path, relative):
+    value = os.lstat(path)
+    return f'dir:{stat.S_IMODE(value.st_mode):04o}'
+def file_record(path):
+    value = os.lstat(path)
+    return (
+        f'file:{stat.S_IMODE(value.st_mode):04o}:{value.st_nlink}:'
+        + hashlib.sha256(path.read_bytes()).hexdigest()
     )
-
-    local file
-    for file in "${files[@]}"; do
-        assert_file_exists "save surface exists: ${file#$TEMPLATE_DIR/}" "$file"
-        assert_file_not_contains "no 'Ask ONE question' in ${file#$TEMPLATE_DIR/}" "$file" "Ask ONE question"
-        assert_file_not_contains "no legacy focus prompt in ${file#$TEMPLATE_DIR/}" "$file" "focus right now"
-        assert_file_not_contains "no quick lesson prompt in ${file#$TEMPLATE_DIR/}" "$file" "Any quick lesson"
-    done
-
-    assert_file_contains "save command remains autonomous" \
-        "$TEMPLATE_DIR/.exocortex/commands/save.json" \
-        "Do NOT ask the user any questions"
-
-    end_test
+def symlink_record(path):
+    value = os.lstat(path)
+    return (
+        f'symlink:{stat.S_IMODE(value.st_mode):04o}:{value.st_nlink}:'
+        + os.readlink(path)
+    )
+records = {}
+for relative in surface:
+    if excluded(relative):
+        continue
+    base = root / relative
+    if base.is_symlink():
+        records[relative] = symlink_record(base)
+    elif base.is_file():
+        records[relative] = file_record(base)
+    elif base.is_dir():
+        records[relative] = directory_record(base, relative)
+        for dirpath, dirnames, filenames in os.walk(base, followlinks=False):
+            here = Path(dirpath)
+            dirnames[:] = sorted(
+                name for name in dirnames
+                if not excluded((here / name).relative_to(root).as_posix())
+            )
+            for name in list(dirnames):
+                path = here / name
+                child = path.relative_to(root).as_posix()
+                if path.is_symlink():
+                    records[child] = symlink_record(path)
+                else:
+                    records[child] = directory_record(path, child)
+            dirnames[:] = [name for name in dirnames if not (here / name).is_symlink()]
+            for name in sorted(filenames):
+                path = here / name
+                child = path.relative_to(root).as_posix()
+                if excluded(child):
+                    continue
+                if path.is_symlink():
+                    records[child] = symlink_record(path)
+                elif path.is_file():
+                    records[child] = file_record(path)
+    else:
+        records[relative] = 'absent'
+digest = hashlib.sha256()
+for relative, value in sorted(records.items()):
+    digest.update(relative.encode() + b'\0' + value.encode() + b'\0')
+print(digest.hexdigest())
+PY
 }
 
-test_15_other_ide_adapter_guidance_installed_and_printed() {
-    begin_test "T15: other IDE adapter guidance is installed and printed"
+protected_plane_digest() {
+    python3 - "$1" <<'PY'
+import hashlib, os, stat, sys
+from pathlib import Path
 
-    local guide="$TEMPLATE_DIR/.exocortex/docs/IDE_INTEGRATION_GUIDE.md"
-
-    assert_file_exists "IDE integration guide exists" "$guide"
-    assert_file_contains "guide names Universal Adapter Prompt" "$guide" "Universal Adapter Prompt"
-    assert_file_contains "guide points to AI_BOOTSTRAP" "$guide" ".exocortex/AI_BOOTSTRAP.md"
-    assert_file_contains "guide points to command JSON" "$guide" ".exocortex/commands/{command}.json"
-    assert_file_contains "guide says JSON is source of truth" "$guide" "source of truth"
-    assert_file_contains "guide includes Codex adapter location" "$guide" ".agents/skills"
-    assert_file_contains "guide includes Zed or another AI editor" "$guide" "Zed or another AI editor"
-
-    assert_file_contains "installer prints other IDE setup heading" "$TEMPLATE_DIR/install.sh" "Other IDE / LLM setup"
-    assert_file_contains "installer prints copy-paste adapter prompt" "$TEMPLATE_DIR/install.sh" "add this instruction to whatever system prompt"
-    assert_file_contains "installer prints fallback chat prompt" "$TEMPLATE_DIR/install.sh" "Read .exocortex/AI_BOOTSTRAP.md, then run the Exocortex command /work."
-    assert_file_contains "installer references guide path" "$TEMPLATE_DIR/install.sh" ".exocortex/docs/IDE_INTEGRATION_GUIDE.md"
-
-    local dir
-    dir=$(make_fresh_project)
-    run_install "$dir"
-
-    assert_file_exists "IDE guide installed" "$dir/.exocortex/docs/IDE_INTEGRATION_GUIDE.md"
-    assert_file_contains "installed guide keeps adapter prompt" "$dir/.exocortex/docs/IDE_INTEGRATION_GUIDE.md" "Universal Adapter Prompt"
-
-    rm -rf "$dir"
-    end_test
+root = Path(sys.argv[1]).resolve(strict=True)
+protected = (
+    '.exocortex/SESSION_CONTEXT.md', '.exocortex/SESSION_CONTEXT.local.md',
+    '.exocortex/TODO.md', '.exocortex/LESSONS.md', '.exocortex/PROJECT_MEMORY.md',
+    '.exocortex/OPEN_DECISIONS.md', '.exocortex/subconscious_patterns.md',
+    '.exocortex/.env', '.exocortex/.project-name', '.exocortex/events',
+    '.exocortex/archive', '.exocortex/hub', '.exocortex/local', '.exocortex/planning',
+    '.exocortex/work-items', '.exocortex/control/ACTIVE_WORK.md',
+    '.exocortex/control/BRANCH_POLICY.md', '.exocortex/control/REPO_STATE.md',
+    '.exocortex/control/EXECUTOR_REGISTRY.json',
+    '.exocortex/control/EXTERNAL_SYNC_POLICY.json',
+    '.exocortex/control/INTERRUPTS.md', '.exocortex/control/BACKLOG.md',
+    '.exocortex/control/ROADMAP.md', '.exocortex/control/ARCH_OVERVIEW.md',
+    '.exocortex/control/REPO_ORGANIZATION_REPORT.md',
+    '.exocortex/.hub_enabled', '.exocortex/.hub_disabled',
+)
+def record(path):
+    value = os.lstat(path)
+    if stat.S_ISLNK(value.st_mode):
+        return f'symlink:{stat.S_IMODE(value.st_mode):04o}:{value.st_nlink}:' + os.readlink(path)
+    if stat.S_ISREG(value.st_mode):
+        return (
+            f'file:{stat.S_IMODE(value.st_mode):04o}:{value.st_nlink}:'
+            + hashlib.sha256(path.read_bytes()).hexdigest()
+        )
+    if stat.S_ISDIR(value.st_mode):
+        return f'dir:{stat.S_IMODE(value.st_mode):04o}'
+    return f'other:{stat.S_IFMT(value.st_mode):o}:{stat.S_IMODE(value.st_mode):04o}:{value.st_nlink}'
+records = {}
+for relative in protected:
+    base = root / relative
+    try:
+        os.lstat(base)
+    except FileNotFoundError:
+        records[relative] = 'absent'
+        continue
+    records[relative] = record(base)
+    if not base.is_dir() or base.is_symlink():
+        continue
+    for dirpath, dirnames, filenames in os.walk(base, followlinks=False):
+        here = Path(dirpath)
+        dirnames.sort()
+        filenames.sort()
+        for name in list(dirnames):
+            path = here / name
+            child = path.relative_to(root).as_posix()
+            records[child] = record(path)
+        dirnames[:] = [
+            name for name in dirnames
+            if not (here / name).is_symlink()
+        ]
+        for name in filenames:
+            path = here / name
+            child = path.relative_to(root).as_posix()
+            records[child] = record(path)
+digest = hashlib.sha256()
+for relative, value in sorted(records.items()):
+    digest.update(relative.encode() + b'\0' + value.encode() + b'\0')
+print(digest.hexdigest())
+PY
 }
 
-test_16_plan_orchestrate_public_safe_branch_and_test_guidance() {
-    begin_test "T16: plan-orchestrate branching and testing guidance is public-safe"
+privacy_scan() {
+    local root="$1" mode="$2" fingerprint_file="$3"
+    PYTHONDONTWRITEBYTECODE=1 python3 - "$root" "$mode" "$fingerprint_file" <<'PY'
+import re, sys
+from pathlib import Path
 
-    local rule="$TEMPLATE_DIR/.cursor/rules/plan-orchestrate.mdc"
+root = Path(sys.argv[1]).resolve(strict=True)
+mode = sys.argv[2]
+fingerprint_path = Path(sys.argv[3]).resolve(strict=True)
+try:
+    fingerprint_path.relative_to(root)
+except ValueError:
+    pass
+else:
+    raise SystemExit(2)
+fingerprint = fingerprint_path.read_bytes().strip()
+if not fingerprint:
+    raise SystemExit(2)
+private_tokens = [
+    b'/' + b'Us' + b'ers/',
+    b'guy' + b'robo',
+    b'M' + b'UL-',
+    b'EXO-' + b'PHASE-B',
+]
 
-    assert_file_exists "plan-orchestrate rule exists" "$rule"
-    assert_file_contains "branching guidance is present" "$rule" "Branching and rollback guidance"
-    assert_file_contains "production/team scope is explicit" "$rule" "production or team work"
-    assert_file_contains "solo/local workflows are allowed" "$rule" "solo/local"
-    assert_file_contains "subagent push requires approval/remote" "$rule" "a remote exists"
-    assert_file_contains "parent/user handles merges" "$rule" "parent + user handle"
-    assert_file_contains "testing guidance is recommended" "$rule" "Recommended acceptance criteria"
-    assert_file_contains "coverage tooling caveat exists" "$rule" "when coverage tooling exists"
-    assert_file_contains "UI smoke can be tool-appropriate" "$rule" "appropriate to the project's tooling"
+def unsafe(data: bytes) -> bool:
+    return fingerprint in data or any(token in data for token in private_tokens)
 
-    assert_file_not_contains "no hard direct-to-main ban" "$rule" "Direct-to-main commits during plan-class work are forbidden"
-    assert_file_not_contains "no mandatory subagent push" "$rule" 'Last action before reporting back: commit + `git push -u origin HEAD`'
-    assert_file_not_contains "no hard phase completion gate" "$rule" "The phase is NOT complete until ALL of"
-    assert_file_not_contains "no hard UI E2E requirement" "$rule" "For UI work: at least one happy-path E2E test"
+paths = []
+if mode == 'checksums':
+    sums = root / 'SHA256SUMS'
+    if not sums.is_file():
+        raise SystemExit(2)
+    seen = set()
+    for line in sums.read_text(encoding='utf-8').splitlines():
+        if not re.fullmatch(r'[0-9a-f]{64}  [^/].*', line):
+            raise SystemExit(2)
+        rel = line[66:]
+        if rel in seen:
+            raise SystemExit(2)
+        seen.add(rel)
+        path = root / rel
+        if path.is_symlink() or not path.is_file():
+            raise SystemExit(2)
+        try:
+            path.resolve(strict=True).relative_to(root)
+        except ValueError:
+            raise SystemExit(2)
+        paths.append(path)
+elif mode == 'tree':
+    for path in root.rglob('*'):
+        if not path.is_file() or path.is_symlink() or '.git' in path.parts:
+            continue
+        if any(part == '.env' for part in path.relative_to(root).parts):
+            continue
+        paths.append(path)
+else:
+    raise SystemExit(2)
 
-    end_test
+for path in paths:
+    data = path.read_bytes()
+    if unsafe(data):
+        raise SystemExit(1)
+raise SystemExit(0)
+PY
 }
 
-test_17_readme_current_command_test_and_editor_claims() {
-    begin_test "T17: README command, test, backlog, and editor claims are current"
-
-    local readme="$TEMPLATE_DIR/README.md"
-    local command_system="$TEMPLATE_DIR/.exocortex/COMMAND_SYSTEM.md"
-
-    assert_file_contains "README version is current" "$readme" "Current template version"
-    assert_file_contains "README shows current version number" "$readme" "3.1.7"
-    assert_file_contains "README has Quick Start" "$readme" "Quick Start"
-    assert_file_contains "README has safe update near top" "$readme" "Update Exocortex Safely"
-    assert_file_contains "README has command chooser" "$readme" "Which Command Should I Use?"
-    assert_file_contains "README has advanced maintenance" "$readme" "Advanced Maintenance"
-    assert_file_contains "README names 23 workflow commands" "$readme" "23 Workflow Commands"
-    assert_file_contains "README includes pattern-review" "$readme" "/pattern-review"
-    assert_file_contains "README includes check-keys" "$readme" "/check-keys"
-    assert_file_contains "README explains backlog flow" "$readme" "INTERRUPTS.md"
-    assert_file_contains "README explains backlog promotion" "$readme" "control/BACKLOG.md"
-    assert_file_contains "README mentions Codex adapter reality" "$readme" "Codex through the universal adapter prompt"
-    assert_file_contains "README mentions unknown IDE setup" "$readme" "any other AI-capable editor/IDE"
-    assert_file_contains "README specialist skill count is current" "$readme" "17 specialist skills"
-    assert_file_contains "README test count is current" "$readme" "ALL 18 TESTS PASSED"
-
-    assert_file_not_contains "README has no old command count heading" "$readme" "20 Workflow Commands"
-    assert_file_not_contains "README has no old test output" "$readme" "8 passed, 0 failed"
-    assert_file_not_contains "README has no old skill count" "$readme" "16 specialist skills"
-    assert_file_not_contains "README has no duplicate upgrading section" "$readme" "## Upgrading"
-    assert_file_not_contains "README has no duplicate updating section" "$readme" "## Updating an Existing Install"
-
-    assert_file_contains "COMMAND_SYSTEM has current date" "$command_system" "May 2, 2026"
-    assert_file_contains "COMMAND_SYSTEM mentions editor-neutral source of truth" "$command_system" "editor-neutral"
-    assert_file_contains "COMMAND_SYSTEM mentions Codex limitation" "$command_system" "bridges are planned"
-    assert_file_contains "COMMAND_SYSTEM includes pattern-review" "$command_system" "/pattern-review"
-    assert_file_contains "COMMAND_SYSTEM includes check-keys" "$command_system" "/check-keys"
-
-    end_test
-}
-
-test_18_safe_update_dry_run_rehearses_and_preserves_real_project() {
-    begin_test "T18: safe-update dry-run backs up, rehearses, and preserves real project"
-
-    local dir
-    dir=$(make_fresh_project)
-    mkdir -p "$dir/.exocortex/events" "$dir/.exocortex/control"
-    printf '3.1.3\n' > "$dir/.exocortex/.version"
-    printf '# Session\nT18_SESSION_CANARY\n' > "$dir/.exocortex/SESSION_CONTEXT.md"
-    printf '# TODO\nT18_TODO_CANARY\n' > "$dir/.exocortex/TODO.md"
-    printf '# Lessons\nT18_LESSONS_CANARY\n' > "$dir/.exocortex/LESSONS.md"
-    printf '# Project Memory\nT18_MEMORY_CANARY\n' > "$dir/.exocortex/PROJECT_MEMORY.md"
-    printf '# Decisions\nT18_DECISIONS_CANARY\n' > "$dir/.exocortex/OPEN_DECISIONS.md"
-    printf '# Interrupts\nT18_INTERRUPTS_CANARY\n' > "$dir/.exocortex/control/INTERRUPTS.md"
-    printf '# Backlog\nT18_BACKLOG_CANARY\n' > "$dir/.exocortex/control/BACKLOG.md"
-    printf '# Roadmap\nT18_ROADMAP_CANARY\n' > "$dir/.exocortex/control/ROADMAP.md"
-    printf '# Event\nT18_EVENT_CANARY\n' > "$dir/.exocortex/events/2026-05-02-test.md"
-
-    local h_session h_todo h_lessons h_memory h_decisions h_event
-    h_session=$(file_hash "$dir/.exocortex/SESSION_CONTEXT.md")
-    h_todo=$(file_hash "$dir/.exocortex/TODO.md")
-    h_lessons=$(file_hash "$dir/.exocortex/LESSONS.md")
-    h_memory=$(file_hash "$dir/.exocortex/PROJECT_MEMORY.md")
-    h_decisions=$(file_hash "$dir/.exocortex/OPEN_DECISIONS.md")
-    h_event=$(file_hash "$dir/.exocortex/events/2026-05-02-test.md")
-
-    local backup_dir output rc
-    backup_dir="$dir/backups"
-    output="$dir/safe-update-output.txt"
-
-    (
-        cd "$dir" && EXOCORTEX_BACKUP_DIR="$backup_dir" \
-            bash "$TEMPLATE_DIR/scripts/safe-update.sh" --dry-run --template "$TEMPLATE_DIR"
-    ) > "$output" 2>&1
-    rc=$?
-
-    if [ "$rc" -eq 0 ]; then
-        echo "    ✅ safe-update dry-run exits successfully"
-        TEST_PASS=$((TEST_PASS+1))
+expect_install_denial() {
+    local label="$1" source="$2"
+    local target fake
+    local -a run_install_args
+    target="$(new_target)"
+    fake="$(mktemp -d "${TMPDIR:-/tmp}/exo-test-home.XXXXXX")"
+    if [ "$#" -ge 3 ]; then
+        run_install_args=("$target" "$source" "$fake" "$3")
     else
-        echo "    ❌ safe-update dry-run failed"
-        sed -n '1,160p' "$output"
-        TEST_FAIL=$((TEST_FAIL+1))
+        run_install_args=("$target" "$source" "$fake")
     fi
-
-    assert_file_contains "safe-update reports protected pass" "$output" "Protected data check: PASS"
-    assert_file_contains "safe-update stops before apply" "$output" "Dry run complete. No real project files were changed."
-    assert_file_exists "safe-update backup directory created" "$backup_dir"
-
-    local backup_count
-    backup_count=$(find "$backup_dir" -type f -name "*-exocortex-before-update-*.tar.gz" 2>/dev/null | wc -l | tr -d ' ')
-    if [ "$backup_count" -gt 0 ]; then
-        echo "    ✅ restore archive created"
-        TEST_PASS=$((TEST_PASS+1))
+    if run_install "${run_install_args[@]}" >/dev/null 2>&1; then
+        bad "$label"
+    elif [ -e "$target/.exocortex" ]; then
+        bad "$label wrote target before denial"
     else
-        echo "    ❌ restore archive was not created"
-        TEST_FAIL=$((TEST_FAIL+1))
+        ok "$label"
     fi
-
-    assert_hash_unchanged "SESSION_CONTEXT unchanged in real project" "$dir/.exocortex/SESSION_CONTEXT.md" "$h_session"
-    assert_hash_unchanged "TODO unchanged in real project" "$dir/.exocortex/TODO.md" "$h_todo"
-    assert_hash_unchanged "LESSONS unchanged in real project" "$dir/.exocortex/LESSONS.md" "$h_lessons"
-    assert_hash_unchanged "PROJECT_MEMORY unchanged in real project" "$dir/.exocortex/PROJECT_MEMORY.md" "$h_memory"
-    assert_hash_unchanged "OPEN_DECISIONS unchanged in real project" "$dir/.exocortex/OPEN_DECISIONS.md" "$h_decisions"
-    assert_hash_unchanged "event unchanged in real project" "$dir/.exocortex/events/2026-05-02-test.md" "$h_event"
-    assert_file_contains "real project version not updated by dry-run" "$dir/.exocortex/.version" "3.1.3"
-    assert_file_missing "real project did not receive IDE guide in dry-run" "$dir/.exocortex/docs/IDE_INTEGRATION_GUIDE.md"
-
-    rm -rf "$dir"
-    end_test
+    rm -rf "$target" "$fake"
 }
 
-# ──────────────────────────────────────────────────────────────────────────────
-# Test 19 — generate_context.sh handles paths with spaces
-# Scenario: project installed at a parent directory whose name contains a
-# space (e.g. "My Project" or "tradingview indicators"). A `for X in $EVENTS`
-# word-split loop would treat each whitespace-separated token as a separate
-# path, producing a SESSION_CONTEXT with no event bodies. The script must
-# iterate by line so spaced paths survive intact.
-# ──────────────────────────────────────────────────────────────────────────────
-test_19_generate_context_handles_paths_with_spaces() {
-    begin_test "T19: generate_context.sh handles project paths with spaces"
+echo "Exocortex deterministic installer/update suite"
 
-    # Build a parent dir whose name has a space, then create the install inside it.
-    local parent dir
-    parent=$(mktemp -d)
-    dir="$parent/My Project With Spaces"
-    mkdir -p "$dir"
-    git -C "$dir" init -q
-    git -C "$dir" commit --allow-empty -m "init" -q
-
-    # Fresh install (which seeds .exocortex/scripts/generate_context.sh)
-    run_install "$dir"
-
-    # Write a recent event with a distinctive canary string in the body
-    mkdir -p "$dir/.exocortex/events"
-    local event_path today canary
-    today=$(date '+%Y-%m-%d')
-    canary="T19_EVENT_BODY_CANARY_VISIBLE_IN_CONTEXT"
-    event_path="$dir/.exocortex/events/${today}_macbook-cursor.md"
-    cat > "$event_path" <<EVENT
-<!-- Event Metadata -->
-timestamp: ${today}T12:00:00Z
-machine: macbook
-editor: cursor
-project: test
-branch: main
-
----
-
-# Phase checkpoint — T19 canary event
-
-## What was accomplished
-
-- ${canary}
-EVENT
-
-    # Run generate_context.sh from the spaced path and capture the result
-    local rc
-    (cd "$dir" && bash .exocortex/scripts/generate_context.sh) > /dev/null 2>&1
-    rc=$?
-
-    if [ "$rc" -eq 0 ]; then
-        echo "    ✅ generate_context.sh exits 0 from spaced path"
-        TEST_PASS=$((TEST_PASS+1))
-    else
-        echo "    ❌ generate_context.sh exited $rc"
-        TEST_FAIL=$((TEST_FAIL+1))
-    fi
-
-    # SESSION_CONTEXT must exist
-    assert_file_exists "SESSION_CONTEXT.md written" "$dir/.exocortex/SESSION_CONTEXT.md"
-
-    # Event count line must report 1 (not 0)
-    assert_file_contains "1 event counted" \
-        "$dir/.exocortex/SESSION_CONTEXT.md" "1 events"
-
-    # Most important: the event's body must appear inside SESSION_CONTEXT.
-    # If the for-loop word-split bug regresses, this canary disappears.
-    assert_file_contains "event body inlined in SESSION_CONTEXT" \
-        "$dir/.exocortex/SESSION_CONTEXT.md" "$canary"
-
-    rm -rf "$parent"
-    end_test
-}
-
-# ──────────────────────────────────────────────────────────────────────────────
-# Runner
-# ──────────────────────────────────────────────────────────────────────────────
-
-test_01_fresh_install
-test_02_update_no_manifest
-test_03_system_file_updates
-test_04_user_modified_preserved
-test_05_idempotent
-test_06_critical_data_files
-test_07_events_preserved
-test_08_events_not_in_manifest
-test_09_hooks_installed_and_executable
-test_10_hook_user_modified_preserved
-test_11_ai_export_is_project_generic
-test_12_data_plane_not_manifest_tracked
-test_13_template_does_not_ship_live_session_data
-test_14_save_surfaces_do_not_use_legacy_prompt
-test_15_other_ide_adapter_guidance_installed_and_printed
-test_16_plan_orchestrate_public_safe_branch_and_test_guidance
-test_17_readme_current_command_test_and_editor_claims
-test_18_safe_update_dry_run_rehearses_and_preserves_real_project
-test_19_generate_context_handles_paths_with_spaces
-
-echo ""
-echo "══════════════════════════════════════════════════════"
-if [ "$SUITE_FAIL" -eq 0 ]; then
-    echo "  ✅ ALL $SUITE_PASS TESTS PASSED"
-else
-    echo "  ❌ $SUITE_FAIL FAILED, $SUITE_PASS PASSED"
+privacy_fingerprint="${EXOCORTEX_PRIVATE_FINGERPRINT_FILE:-}"
+privacy_fingerprint_owned=false
+if [ -z "$privacy_fingerprint" ]; then
+    privacy_fingerprint="$(mktemp "${TMPDIR:-/tmp}/exo-private-fingerprint.XXXXXX")"
+    privacy_fingerprint_owned=true
+    prior_umask="$(umask)"
+    umask 077
+    printf 'private-fixture-%s-%s\n' "$$" "$(date -u +%s)" > "$privacy_fingerprint"
+    umask "$prior_umask"
 fi
-echo "══════════════════════════════════════════════════════"
-echo ""
+[ -s "$privacy_fingerprint" ] || { echo "private fingerprint input is required" >&2; exit 2; }
 
-exit "$SUITE_FAIL"
+if privacy_scan "$TEMPLATE_DIR" checksums "$privacy_fingerprint"; then
+    ok "candidate checksum inventory contains no private fingerprint"
+else
+    bad "candidate checksum inventory contains no private fingerprint"
+fi
+
+if PYTHONDONTWRITEBYTECODE=1 python3 "$TEMPLATE_DIR/.exocortex/scripts/generate_command_adapters.py" --check >/dev/null; then
+    ok "canonical 24-command registry generates exactly 72 current adapters"
+else
+    bad "canonical 24-command registry generates exactly 72 current adapters"
+fi
+
+expect_install_denial "missing candidate digest fails before target mutation" "$TEMPLATE_DIR" ""
+expect_install_denial "malformed candidate digest fails before target mutation" "$TEMPLATE_DIR" "not-a-digest"
+
+source_copy="$(mktemp -d "${TMPDIR:-/tmp}/exo-test-source.XXXXXX")"
+cp -Rp "$TEMPLATE_DIR/." "$source_copy/"
+approved_before="$(hash_file "$TEMPLATE_DIR/SHA256SUMS")"
+printf '\nchanged candidate\n' >> "$source_copy/AI_START_HERE.md"
+changed_hash="$(hash_file "$source_copy/AI_START_HERE.md")"
+awk -v h="$changed_hash" 'BEGIN{OFS="  "} $2=="AI_START_HERE.md"{$1=h} {print $1,$2}' "$source_copy/SHA256SUMS" > "$source_copy/SHA256SUMS.tmp"
+mv "$source_copy/SHA256SUMS.tmp" "$source_copy/SHA256SUMS"
+expect_install_denial "altered source with self-consistent sums fails approved candidate digest" "$source_copy" "$approved_before"
+rm -rf "$source_copy"
+
+source_copy="$(mktemp -d "${TMPDIR:-/tmp}/exo-test-source.XXXXXX")"
+cp -Rp "$TEMPLATE_DIR/." "$source_copy/"
+python3 - "$source_copy/.exocortex/model-routing-catalog.json" <<'PY'
+import json, sys
+from pathlib import Path
+path=Path(sys.argv[1])
+value=json.loads(path.read_text(encoding='utf-8'))
+value['source_registry_digest']='0'*64
+path.write_text(json.dumps(value,indent=2,sort_keys=True)+'\n',encoding='utf-8')
+PY
+changed_hash="$(hash_file "$source_copy/.exocortex/model-routing-catalog.json")"
+awk -v h="$changed_hash" 'BEGIN{OFS="  "} $2==".exocortex/model-routing-catalog.json"{$1=h} {print $1,$2}' "$source_copy/SHA256SUMS" > "$source_copy/SHA256SUMS.tmp"
+mv "$source_copy/SHA256SUMS.tmp" "$source_copy/SHA256SUMS"
+expect_install_denial \
+    "digest-mismatched model catalog fails before target mutation" \
+    "$source_copy" \
+    "$(hash_file "$source_copy/SHA256SUMS")"
+rm -rf "$source_copy"
+
+for symlink_case in exocortex cursor-hooks final-file; do
+    target="$(new_target)"
+    fake_home="$(mktemp -d "${TMPDIR:-/tmp}/exo-test-home.XXXXXX")"
+    outside="$(mktemp -d "${TMPDIR:-/tmp}/exo-test-outside.XXXXXX")"
+    printf 'outside canary\n' > "$outside/canary.txt"
+    outside_before="$(tree_digest "$outside")"
+    case "$symlink_case" in
+        exocortex) ln -s "$outside" "$target/.exocortex" ;;
+        cursor-hooks) mkdir -p "$target/.cursor"; ln -s "$outside" "$target/.cursor/hooks" ;;
+        final-file) ln -s "$outside/canary.txt" "$target/AI_START_HERE.md" ;;
+    esac
+    if run_install "$target" "$TEMPLATE_DIR" "$fake_home" >/dev/null 2>&1; then
+        bad "installer denies $symlink_case symlink escape"
+    elif [ "$(tree_digest "$outside")" != "$outside_before" ]; then
+        bad "installer preserves outside tree for $symlink_case symlink escape"
+    elif [ "$symlink_case" != "exocortex" ] && [ -e "$target/.exocortex" ]; then
+        bad "installer preflights $symlink_case before target mutation"
+    else
+        ok "installer denies $symlink_case symlink escape before mutation"
+    fi
+    rm -rf "$target" "$fake_home" "$outside"
+done
+
+fault_target="$(new_target)"
+fault_home="$(mktemp -d "${TMPDIR:-/tmp}/exo-test-home.XXXXXX")"
+fault_outside="$(mktemp -d "${TMPDIR:-/tmp}/exo-test-outside.XXXXXX")"
+printf 'INSTALL_FAULT_OUTSIDE_CANARY\n' > "$fault_outside/canary.txt"
+fault_outside_before="$(tree_digest "$fault_outside")"
+if (cd "$fault_target" && \
+    HOME="$fault_home" \
+    EXOCORTEX_TEST_MODE=1 \
+    EXOCORTEX_TEST_INSTALL_FAULT_AFTER_COPIES=3 \
+    EXOCORTEX_LOCAL_SOURCE="$TEMPLATE_DIR" \
+    EXOCORTEX_CANDIDATE_DIGEST="$(hash_file "$TEMPLATE_DIR/SHA256SUMS")" \
+    bash "$TEMPLATE_DIR/install.sh" test-project) >/dev/null 2>&1; then
+    bad "fresh-install test fault fails after a bounded partial copy"
+elif [ -z "$(find "$fault_target/.exocortex" -type f -print -quit 2>/dev/null)" ] \
+    || [ -e "$fault_target/AI_START_HERE.md" ] \
+    || [ -n "$(find "$fault_home" -mindepth 1 -print -quit)" ] \
+    || [ "$(tree_digest "$fault_outside")" != "$fault_outside_before" ]; then
+    bad "fresh-install test fault contains partial changes inside the disposable fixture"
+else
+    quarantined_target="${fault_target}.quarantined"
+    mv "$fault_target" "$quarantined_target"
+    clean_recreated_target="$(new_target)"
+    if run_install "$clean_recreated_target" "$TEMPLATE_DIR" "$fault_home" >/dev/null \
+        && [ -f "$clean_recreated_target/AI_START_HERE.md" ] \
+        && [ -f "$clean_recreated_target/.exocortex/.install-manifest" ]; then
+        ok "fresh-install test fault is quarantined and a clean baseline installs successfully"
+    else
+        bad "fresh-install test fault is quarantined and a clean baseline installs successfully"
+    fi
+    rm -rf "$quarantined_target" "$clean_recreated_target"
+fi
+rm -rf "$fault_target" "$fault_home" "$fault_outside"
+
+target="$(new_target)"
+fake_home="$(mktemp -d "${TMPDIR:-/tmp}/exo-test-home.XXXXXX")"
+install_umask_before="$(umask)"
+umask 077
+run_install "$target" "$TEMPLATE_DIR" "$fake_home" >/dev/null
+umask "$install_umask_before"
+assert_file "canonical entry installed" "$target/AI_START_HERE.md"
+assert_file "Codex adapter installed" "$target/AGENTS.md"
+assert_file "executor registry generated" "$target/.exocortex/control/EXECUTOR_REGISTRY.json"
+assert_file "deny policy generated" "$target/.exocortex/control/EXTERNAL_SYNC_POLICY.json"
+assert_dir "protocol state generated" "$target/.exocortex/local/protocol"
+assert_contains "registry defaults read-only" "$target/.exocortex/control/EXECUTOR_REGISTRY.json" '"default_role": "read_only"'
+assert_contains "policy defaults deny" "$target/.exocortex/control/EXTERNAL_SYNC_POLICY.json" '"default": "deny"'
+assert_not_contains "registry absent from manifest" "$target/.exocortex/.install-manifest" 'EXECUTOR_REGISTRY.json'
+assert_not_contains "policy absent from manifest" "$target/.exocortex/.install-manifest" 'EXTERNAL_SYNC_POLICY.json'
+assert_file "official model source registry installed" "$target/.exocortex/model-source-registry.json"
+assert_file "advisory model routing catalog installed" "$target/.exocortex/model-routing-catalog.json"
+if [ "$(find "$target/.agents/skills" -type f -name SKILL.md | wc -l | tr -d ' ')" = "24" ] \
+    && [ "$(find "$target/.claude/skills" -type f -name SKILL.md | wc -l | tr -d ' ')" = "24" ] \
+    && [ "$(find "$target/.cursor/skills" -type f -name SKILL.md -exec grep -lF 'GENERATED BY .exocortex/scripts/generate_command_adapters.py' {} + | wc -l | tr -d ' ')" = "24" ] \
+    && PYTHONDONTWRITEBYTECODE=1 python3 "$target/.exocortex/scripts/generate_command_adapters.py" --check >/dev/null; then
+    ok "fresh install contains exact validated provider-adapter parity"
+else
+    bad "fresh install contains exact validated provider-adapter parity"
+fi
+if [ ! -e "$target/.cursor/commands/save.md" ] \
+    && [ -f "$target/.cursor/skills/onboard/SKILL.md" ] \
+    && [ ! -e "$target/.github/skills/onboard/SKILL.md" ] \
+    && [ ! -e "$target/.windsurfrules" ] \
+    && [ ! -e "$target/.windsurf" ]; then
+    ok "fresh install has dedicated Cursor commands and no retired Windsurf surface"
+else
+    bad "fresh install has dedicated Cursor commands and no retired Windsurf surface"
+fi
+[ -z "$(find "$fake_home" -mindepth 1 -print -quit)" ] && ok "fake HOME untouched" || bad "fake HOME untouched"
+
+mkdir -p "$target/.exocortex/local/model-routing"
+printf 'FICTIONAL_LOCAL_AVAILABILITY\n' > "$target/.exocortex/local/model-routing/canary.txt"
+local_model_routing_before="$(hash_file "$target/.exocortex/local/model-routing/canary.txt")"
+run_install "$target" "$TEMPLATE_DIR" "$fake_home" >/dev/null
+if [ "$(hash_file "$target/.exocortex/local/model-routing/canary.txt")" = "$local_model_routing_before" ] \
+    && ! grep -Fq '.exocortex/local/model-routing' "$target/.exocortex/.install-manifest"; then
+    ok "installer preserves and never manifests local model-routing evidence"
+else
+    bad "installer preserves and never manifests local model-routing evidence"
+fi
+if python3 - "$TEMPLATE_DIR" "$target" <<'PY'
+import stat
+import sys
+from pathlib import Path
+
+source = Path(sys.argv[1])
+target = Path(sys.argv[2])
+for relative_root, suffixes in (
+    (Path(".exocortex/scripts"), {".sh", ".py"}),
+    (Path(".cursor/hooks"), {".sh"}),
+):
+    for source_path in (source / relative_root).rglob("*"):
+        if not source_path.is_file() or source_path.suffix not in suffixes:
+            continue
+        relative = source_path.relative_to(source)
+        target_path = target / relative
+        if not target_path.is_file():
+            raise SystemExit(f"missing installed mode fixture: {relative}")
+        source_mode = stat.S_IMODE(source_path.stat().st_mode)
+        target_mode = stat.S_IMODE(target_path.stat().st_mode)
+        if source_mode != target_mode:
+            raise SystemExit(f"installed mode drift: {relative}")
+PY
+then
+    ok "installer preserves reviewed helper executable modes"
+else
+    bad "installer preserves reviewed helper executable modes"
+fi
+
+tar_target="$(new_target)"
+tar_home="$(mktemp -d "${TMPDIR:-/tmp}/exo-test-home.XXXXXX")"
+tar_umask_before="$(umask)"
+umask 077
+(cd "$tar_target" && \
+    HOME="$tar_home" \
+    EXOCORTEX_FORCE_TAR_STAGE=1 \
+    EXOCORTEX_LOCAL_SOURCE="$TEMPLATE_DIR" \
+    EXOCORTEX_CANDIDATE_DIGEST="$(hash_file "$TEMPLATE_DIR/SHA256SUMS")" \
+    bash "$TEMPLATE_DIR/install.sh" test-project >/dev/null)
+umask "$tar_umask_before"
+if python3 - "$TEMPLATE_DIR" "$tar_target" <<'PY'
+import stat
+import sys
+from pathlib import Path
+
+source = Path(sys.argv[1])
+target = Path(sys.argv[2])
+for relative_root, suffixes in (
+    (Path(".exocortex/scripts"), {".sh", ".py"}),
+    (Path(".cursor/hooks"), {".sh"}),
+):
+    for source_path in (source / relative_root).rglob("*"):
+        if not source_path.is_file() or source_path.suffix not in suffixes:
+            continue
+        target_path = target / source_path.relative_to(source)
+        if not target_path.is_file():
+            raise SystemExit(1)
+        if stat.S_IMODE(source_path.stat().st_mode) != stat.S_IMODE(target_path.stat().st_mode):
+            raise SystemExit(1)
+PY
+then
+    ok "tar staging preserves checksum-bound modes under restrictive umask"
+else
+    bad "tar staging preserves checksum-bound modes under restrictive umask"
+fi
+rm -rf "$tar_target" "$tar_home"
+
+chmod 700 "$target/.exocortex/scripts/archive_events.sh"
+first="$(tree_digest "$target")"
+run_install "$target" "$TEMPLATE_DIR" "$fake_home" >/dev/null
+second="$(tree_digest "$target")"
+[ "$first" = "$second" ] \
+    && ok "install is idempotent, including a byte-identical local mode override" \
+    || bad "install is idempotent, including a byte-identical local mode override"
+initializer_before="$(tree_digest "$target")"
+(cd "$target" && bash "$TEMPLATE_DIR/init-project.sh" test-project >/dev/null)
+initializer_after="$(tree_digest "$target")"
+[ "$initializer_before" = "$initializer_after" ] \
+    && ok "standalone initializer preserves every existing byte and file mode" \
+    || bad "standalone initializer preserves every existing byte and file mode"
+rm -rf "$target" "$fake_home"
+
+initializer_target="$(new_target)"
+initializer_outside="$(mktemp -d "${TMPDIR:-/tmp}/exo-test-init-outside.XXXXXX")"
+rm -rf "$initializer_target/.exocortex"
+ln -s "$initializer_outside" "$initializer_target/.exocortex"
+if (cd "$initializer_target" && bash "$TEMPLATE_DIR/init-project.sh" test-project) >/dev/null 2>&1 \
+    || [ -e "$initializer_outside/.project-name" ]; then
+    bad "standalone initializer rejects a symlinked .exocortex directory"
+else
+    ok "standalone initializer rejects a symlinked .exocortex directory"
+fi
+rm -f "$initializer_target/.exocortex"
+mkdir -p "$initializer_target/.exocortex"
+ln -s "$initializer_outside/dangling-project-name" "$initializer_target/.exocortex/.project-name"
+if (cd "$initializer_target" && bash "$TEMPLATE_DIR/init-project.sh" test-project) >/dev/null 2>&1 \
+    || [ -e "$initializer_outside/dangling-project-name" ]; then
+    bad "standalone initializer rejects a dangling .project-name symlink"
+else
+    ok "standalone initializer rejects a dangling .project-name symlink"
+fi
+rm -rf "$initializer_target" "$initializer_outside"
+
+initializer_target="$(new_target)"
+mkdir -p "$initializer_target/.exocortex"
+initializer_prior_umask="$(umask)"
+umask 077
+(cd "$initializer_target" && bash "$TEMPLATE_DIR/init-project.sh" test-project >/dev/null)
+umask "$initializer_prior_umask"
+initializer_first="$(tree_digest "$initializer_target")"
+if [ "$(python3 -c 'import os,stat,sys; print(format(stat.S_IMODE(os.lstat(sys.argv[1]).st_mode), "04o"))' "$initializer_target/.exocortex/.project-name")" = "0644" ] \
+    && grep -Fxq 'test-project' "$initializer_target/.exocortex/.project-name" \
+    && (cd "$initializer_target" && bash "$TEMPLATE_DIR/init-project.sh" test-project >/dev/null) \
+    && [ "$(tree_digest "$initializer_target")" = "$initializer_first" ]; then
+    ok "standalone initializer creates a durable 0644 project name under restrictive umask"
+else
+    bad "standalone initializer creates a durable 0644 project name under restrictive umask"
+fi
+rm -rf "$initializer_target"
+
+initializer_target="$(new_target)"
+mkdir -p "$initializer_target/.exocortex"
+if (cd "$initializer_target" && EXOCORTEX_TEST_INIT_FAULT=write \
+    bash "$TEMPLATE_DIR/init-project.sh" test-project) >/dev/null 2>&1 \
+    || [ -e "$initializer_target/.exocortex/.project-name" ] \
+    || [ -n "$(find "$initializer_target/.exocortex" -name '.project-name.tmp.*' -print -quit)" ]; then
+    bad "standalone initializer rejects fault injection outside explicit test mode"
+else
+    ok "standalone initializer rejects fault injection outside explicit test mode"
+fi
+for initializer_fault in write file-fsync directory-fsync; do
+    initializer_fault_log="$initializer_target/$initializer_fault.log"
+    if (cd "$initializer_target" && EXOCORTEX_TEST_MODE=1 EXOCORTEX_TEST_INIT_FAULT="$initializer_fault" \
+        bash "$TEMPLATE_DIR/init-project.sh" test-project) > "$initializer_fault_log" 2>&1 \
+        || ! grep -Fq "injected test-only project-name $initializer_fault failure" "$initializer_fault_log" \
+        || [ -e "$initializer_target/.exocortex/.project-name" ] \
+        || [ -n "$(find "$initializer_target/.exocortex" -name '.project-name.tmp.*' -print -quit)" ]; then
+        bad "standalone initializer cleans up a $initializer_fault publication fault"
+    else
+        ok "standalone initializer cleans up a $initializer_fault publication fault"
+    fi
+done
+rm -rf "$initializer_target"
+
+target="$(new_target)"
+fake_home="$(mktemp -d "${TMPDIR:-/tmp}/exo-test-home.XXXXXX")"
+outside_hardlink="$(mktemp "${TMPDIR:-/tmp}/exo-test-hardlink.XXXXXX")"
+mkdir -p "$target/.exocortex"
+printf 'EXTERNAL_HARDLINK_CANARY\n' > "$outside_hardlink"
+chmod 0600 "$outside_hardlink"
+ln "$outside_hardlink" "$target/.exocortex/COMMAND_SYSTEM.md"
+hardlink_hash_before="$(hash_file "$outside_hardlink")"
+if run_install "$target" "$TEMPLATE_DIR" "$fake_home" >/dev/null 2>&1 \
+    || [ "$(hash_file "$outside_hardlink")" != "$hardlink_hash_before" ] \
+    || [ "$(python3 -c 'import os,stat,sys; print(format(stat.S_IMODE(os.stat(sys.argv[1]).st_mode), "04o"))' "$outside_hardlink")" != "0600" ]; then
+    bad "installer rejects an external hard-linked target before mutation"
+else
+    ok "installer rejects an external hard-linked target before mutation"
+fi
+rm -rf "$target" "$fake_home"
+rm -f "$outside_hardlink"
+
+target="$(new_target)"
+fake_home="$(mktemp -d "${TMPDIR:-/tmp}/exo-test-home.XXXXXX")"
+mkdir -p "$target/.exocortex"
+pre_c1_meta="$(mktemp "${TMPDIR:-/tmp}/exo-test-pre-c1-meta.XXXXXX")"
+python3 - "$target" "$TEMPLATE_DIR/.exocortex/provider-adapters.json" "$pre_c1_meta" <<'PY'
+import hashlib, json, sys
+from pathlib import Path
+
+root = Path(sys.argv[1])
+matrix = json.loads(Path(sys.argv[2]).read_text(encoding='utf-8'))
+meta = Path(sys.argv[3])
+custom = '.cursor/commands/work.md'
+mode_custom = '.cursor/commands/check-keys.md'
+unknown = '.cursor/skills/onboard/SKILL.md'
+records = {}
+managed = []
+for index, item in enumerate(matrix['legacy_retirements']):
+    rel = item['path']
+    path = root / rel
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(f'pre-c1 adapter {index:02d}\n', encoding='utf-8')
+    path.chmod(0o644)
+    if rel == unknown:
+        path.write_text('unknown pre-c1 onboard adapter\n', encoding='utf-8')
+        continue
+    digest = hashlib.sha256(path.read_bytes()).hexdigest()
+    records[rel] = digest
+    if rel == custom:
+        path.write_text(path.read_text(encoding='utf-8') + 'user customization\n', encoding='utf-8')
+    elif rel == mode_custom:
+        path.chmod(0o755)
+    else:
+        managed.append(rel)
+manifest = root / '.exocortex/.install-manifest'
+manifest.write_text(
+    '# Exocortex install manifest - template code plane only\n'
+    + ''.join(f'{rel} {digest}\n' for rel, digest in sorted(records.items())),
+    encoding='utf-8',
+)
+meta.write_text(json.dumps({
+    'managed': managed,
+    'custom': custom,
+    'custom_baseline': records[custom],
+    'mode_custom': mode_custom,
+    'mode_custom_baseline': records[mode_custom],
+    'unknown': unknown,
+}) + '\n', encoding='utf-8')
+PY
+pre_c1_log="$(mktemp "${TMPDIR:-/tmp}/exo-test-pre-c1-migration.XXXXXX")"
+if run_install "$target" "$TEMPLATE_DIR" "$fake_home" > "$pre_c1_log" 2>&1 \
+    && grep -Fq 'EXOCORTEX_ADAPTER_COLLISION_PRESERVED: .cursor/commands/work.md' "$pre_c1_log" \
+    && grep -Fq 'EXOCORTEX_ADAPTER_COLLISION_PRESERVED: .cursor/commands/check-keys.md' "$pre_c1_log" \
+    && grep -Fq 'EXOCORTEX_ADAPTER_COLLISION_PRESERVED: .cursor/skills/onboard/SKILL.md' "$pre_c1_log" \
+    && python3 - "$target" "$pre_c1_meta" <<'PY'
+import json, stat, sys
+from pathlib import Path
+root = Path(sys.argv[1])
+meta = json.loads(Path(sys.argv[2]).read_text(encoding='utf-8'))
+if any((root / rel).exists() for rel in meta['managed']):
+    raise SystemExit(1)
+if 'user customization' not in (root / meta['custom']).read_text(encoding='utf-8'):
+    raise SystemExit(1)
+if (
+    not (root / meta['mode_custom']).is_file()
+    or stat.S_IMODE((root / meta['mode_custom']).stat().st_mode) != 0o755
+):
+    raise SystemExit(1)
+if 'unknown pre-c1 onboard adapter' not in (root / meta['unknown']).read_text(encoding='utf-8'):
+    raise SystemExit(1)
+lines = [
+    line for line in (root / '.exocortex/.install-manifest').read_text(encoding='utf-8').splitlines()
+    if line and not line.startswith('#')
+]
+keys = [line.rsplit(' ', 1)[0] for line in lines]
+if len(keys) != len(set(keys)):
+    raise SystemExit(1)
+if f"{meta['custom']} {meta['custom_baseline']}" not in lines:
+    raise SystemExit(1)
+if f"{meta['mode_custom']} {meta['mode_custom_baseline']}" not in lines:
+    raise SystemExit(1)
+PY
+then
+    pre_c1_first="$(tree_digest "$target")"
+    run_install "$target" "$TEMPLATE_DIR" "$fake_home" >/dev/null
+    pre_c1_second="$(tree_digest "$target")"
+    if [ "$pre_c1_first" = "$pre_c1_second" ]; then
+        ok "direct pre-C1 update retires managed paths and preserves byte, mode, and unknown collisions idempotently"
+    else
+        bad "direct pre-C1 update retires managed paths and preserves byte, mode, and unknown collisions idempotently"
+    fi
+else
+    bad "direct pre-C1 update retires managed paths and preserves byte, mode, and unknown collisions idempotently"
+fi
+rm -rf "$target" "$fake_home"
+rm -f "$pre_c1_meta" "$pre_c1_log"
+
+target="$(new_target)"
+fake_home="$(mktemp -d "${TMPDIR:-/tmp}/exo-test-home.XXXXXX")"
+run_install "$target" "$TEMPLATE_DIR" "$fake_home" >/dev/null
+c1_meta="$(mktemp "${TMPDIR:-/tmp}/exo-test-c1-meta.XXXXXX")"
+python3 - "$target" "$TEMPLATE_DIR/.exocortex/provider-adapters.json" "$c1_meta" <<'PY'
+import hashlib, json, sys
+from pathlib import Path
+
+root = Path(sys.argv[1])
+matrix = json.loads(Path(sys.argv[2]).read_text(encoding='utf-8'))
+meta = Path(sys.argv[3])
+custom = '.windsurf/workflows/work.md'
+unknown = '.windsurfrules'
+manifest = root / '.exocortex/.install-manifest'
+records = {}
+for line in manifest.read_text(encoding='utf-8').splitlines():
+    if line and not line.startswith('#'):
+        rel, digest = line.rsplit(' ', 1)
+        records[rel] = digest
+managed = []
+for index, rel in enumerate(matrix['windsurf_retirements']):
+    path = root / rel
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(f'c1 windsurf adapter {index:02d}\n', encoding='utf-8')
+    path.chmod(0o644)
+    if rel == unknown:
+        path.write_text('unknown c1 windsurf rules\n', encoding='utf-8')
+        continue
+    digest = hashlib.sha256(path.read_bytes()).hexdigest()
+    records[rel] = digest
+    if rel == custom:
+        path.write_text(path.read_text(encoding='utf-8') + 'user customization\n', encoding='utf-8')
+    else:
+        managed.append(rel)
+manifest.write_text(
+    '# Exocortex install manifest - template code plane only\n'
+    + ''.join(f'{rel} {digest}\n' for rel, digest in sorted(records.items())),
+    encoding='utf-8',
+)
+meta.write_text(json.dumps({
+    'managed': managed,
+    'custom': custom,
+    'custom_baseline': records[custom],
+    'unknown': unknown,
+}) + '\n', encoding='utf-8')
+PY
+c1_log="$(mktemp "${TMPDIR:-/tmp}/exo-test-c1-migration.XXXXXX")"
+if run_install "$target" "$TEMPLATE_DIR" "$fake_home" > "$c1_log" 2>&1 \
+    && grep -Fq 'EXOCORTEX_ADAPTER_COLLISION_PRESERVED: .windsurf/workflows/work.md' "$c1_log" \
+    && grep -Fq 'EXOCORTEX_ADAPTER_COLLISION_PRESERVED: .windsurfrules' "$c1_log" \
+    && python3 - "$target" "$c1_meta" <<'PY'
+import json, sys
+from pathlib import Path
+root = Path(sys.argv[1])
+meta = json.loads(Path(sys.argv[2]).read_text(encoding='utf-8'))
+if any((root / rel).exists() for rel in meta['managed']):
+    raise SystemExit(1)
+if 'user customization' not in (root / meta['custom']).read_text(encoding='utf-8'):
+    raise SystemExit(1)
+if 'unknown c1 windsurf rules' not in (root / meta['unknown']).read_text(encoding='utf-8'):
+    raise SystemExit(1)
+lines = [
+    line for line in (root / '.exocortex/.install-manifest').read_text(encoding='utf-8').splitlines()
+    if line and not line.startswith('#')
+]
+keys = [line.rsplit(' ', 1)[0] for line in lines]
+if len(keys) != len(set(keys)):
+    raise SystemExit(1)
+if f"{meta['custom']} {meta['custom_baseline']}" not in lines:
+    raise SystemExit(1)
+PY
+then
+    c1_first="$(tree_digest "$target")"
+    run_install "$target" "$TEMPLATE_DIR" "$fake_home" >/dev/null
+    c1_second="$(tree_digest "$target")"
+    if [ "$c1_first" = "$c1_second" ]; then
+        ok "direct C1 update retires managed Windsurf paths and preserves customized and unknown collisions idempotently"
+    else
+        bad "direct C1 update retires managed Windsurf paths and preserves customized and unknown collisions idempotently"
+    fi
+else
+    bad "direct C1 update retires managed Windsurf paths and preserves customized and unknown collisions idempotently"
+fi
+rm -rf "$target" "$fake_home"
+rm -f "$c1_meta" "$c1_log"
+
+target="$(new_target)"
+fake_home="$(mktemp -d "${TMPDIR:-/tmp}/exo-test-home.XXXXXX")"
+mkdir -p "$target/.exocortex"/{events,archive,hub,local,planning,work-items,control}
+protected=(
+  SESSION_CONTEXT.md SESSION_CONTEXT.local.md TODO.md LESSONS.md PROJECT_MEMORY.md
+  OPEN_DECISIONS.md subconscious_patterns.md .env .project-name .hub_enabled .hub_disabled
+  events/canary.md archive/canary.md hub/canary.md local/canary.md planning/canary.md work-items/canary.md
+  control/ACTIVE_WORK.md control/BRANCH_POLICY.md control/REPO_STATE.md
+  control/EXECUTOR_REGISTRY.json control/EXTERNAL_SYNC_POLICY.json control/INTERRUPTS.md
+  control/BACKLOG.md control/ROADMAP.md control/ARCH_OVERVIEW.md control/REPO_ORGANIZATION_REPORT.md
+)
+for rel in "${protected[@]}"; do
+    mkdir -p "$(dirname "$target/.exocortex/$rel")"
+    printf 'PRIVATE_CANARY_%s\n' "$rel" > "$target/.exocortex/$rel"
+done
+before="$(tree_digest "$target/.exocortex")"
+run_install "$target" "$TEMPLATE_DIR" "$fake_home" >/dev/null
+for rel in "${protected[@]}"; do
+    grep -Fq "PRIVATE_CANARY_$rel" "$target/.exocortex/$rel" || bad "protected path preserved: $rel"
+done
+ok "full protected-path canary matrix preserved"
+rm -rf "$target" "$fake_home"
+
+target="$(new_target)"
+fake_home="$(mktemp -d "${TMPDIR:-/tmp}/exo-test-home.XXXXXX")"
+run_install "$target" "$TEMPLATE_DIR" "$fake_home" >/dev/null
+printf '\nUSER_CUSTOMIZATION\n' >> "$target/.exocortex/COMMAND_SYSTEM.md"
+custom_hash="$(hash_file "$target/.exocortex/COMMAND_SYSTEM.md")"
+run_install "$target" "$TEMPLATE_DIR" "$fake_home" >/dev/null
+[ "$(hash_file "$target/.exocortex/COMMAND_SYSTEM.md")" = "$custom_hash" ] && ok "user-modified code-plane file preserved" || bad "user-modified code-plane file preserved"
+rm -rf "$target" "$fake_home"
+
+for case_name in missing malformed mismatch duplicate traversal extra; do
+    source_copy="$(mktemp -d "${TMPDIR:-/tmp}/exo-test-source.XXXXXX")"
+    cp -Rp "$TEMPLATE_DIR/." "$source_copy/"
+    case "$case_name" in
+        missing) rm -f "$source_copy/SHA256SUMS" ;;
+        malformed) printf 'not-a-checksum\n' >> "$source_copy/SHA256SUMS" ;;
+        mismatch) printf '\nchanged\n' >> "$source_copy/AI_START_HERE.md" ;;
+        duplicate) sed -n '1p' "$source_copy/SHA256SUMS" >> "$source_copy/SHA256SUMS" ;;
+        traversal) printf '%064d  ../escape\n' 0 >> "$source_copy/SHA256SUMS" ;;
+        extra) printf 'unlisted\n' > "$source_copy/UNLISTED_CODE_PLANE.txt" ;;
+    esac
+    expect_install_denial "checksum $case_name fails before target mutation" "$source_copy"
+    rm -rf "$source_copy"
+done
+
+for tampered_path in \
+    .exocortex/scripts/check_keys.sh \
+    install.sh \
+    scripts/safe-update.sh; do
+    source_copy="$(mktemp -d "${TMPDIR:-/tmp}/exo-test-source.XXXXXX")"
+    cp -Rp "$TEMPLATE_DIR/." "$source_copy/"
+    actual_mode="$(python3 -c 'import os,stat,sys; print(format(stat.S_IMODE(os.stat(sys.argv[1]).st_mode), "04o"))' "$source_copy/$tampered_path")"
+    if [ "$actual_mode" = "0644" ]; then
+        chmod 755 "$source_copy/$tampered_path"
+    else
+        chmod 644 "$source_copy/$tampered_path"
+    fi
+    expect_install_denial \
+        "checksum-approved candidate rejects tampered mode for $tampered_path" \
+        "$source_copy"
+    rm -rf "$source_copy"
+done
+
+for mode_case in missing malformed duplicate traversal extra unsorted unsupported; do
+    source_copy="$(mktemp -d "${TMPDIR:-/tmp}/exo-test-source.XXXXXX")"
+    cp -Rp "$TEMPLATE_DIR/." "$source_copy/"
+    case "$mode_case" in
+        missing) rm -f "$source_copy/FILEMODES" ;;
+        malformed) printf 'not-a-mode-entry\n' >> "$source_copy/FILEMODES" ;;
+        duplicate) sed -n '1p' "$source_copy/FILEMODES" >> "$source_copy/FILEMODES" ;;
+        traversal) printf '0644  ../escape\n' >> "$source_copy/FILEMODES" ;;
+        extra) printf '0644  UNLISTED_MODE_PATH\n' >> "$source_copy/FILEMODES" ;;
+        unsorted)
+            awk 'NR==1{first=$0;next} NR==2{print;print first;next} {print}' \
+                "$source_copy/FILEMODES" > "$source_copy/FILEMODES.tmp"
+            mv "$source_copy/FILEMODES.tmp" "$source_copy/FILEMODES"
+            ;;
+        unsupported) sed '1s/^0[67][45][45]/0777/' "$source_copy/FILEMODES" > "$source_copy/FILEMODES.tmp"; mv "$source_copy/FILEMODES.tmp" "$source_copy/FILEMODES" ;;
+    esac
+    if [ "$mode_case" != "missing" ]; then
+        changed_hash="$(hash_file "$source_copy/FILEMODES")"
+        awk -v h="$changed_hash" 'BEGIN{OFS="  "} $2=="FILEMODES"{$1=h} {print $1,$2}' \
+            "$source_copy/SHA256SUMS" > "$source_copy/SHA256SUMS.tmp"
+        mv "$source_copy/SHA256SUMS.tmp" "$source_copy/SHA256SUMS"
+    fi
+    expect_install_denial "FILEMODES $mode_case fails before target mutation" "$source_copy"
+    rm -rf "$source_copy"
+done
+
+source_copy="$(mktemp -d "${TMPDIR:-/tmp}/exo-test-source.XXXXXX")"
+outside_source="$(mktemp -d "${TMPDIR:-/tmp}/exo-test-source-outside.XXXXXX")"
+cp -Rp "$TEMPLATE_DIR/." "$source_copy/"
+mv "$source_copy/.agents" "$outside_source/agents"
+ln -s "$outside_source/agents" "$source_copy/.agents"
+expect_install_denial \
+    "installer rejects a checksum-valid source with a symlinked path ancestor" \
+    "$source_copy"
+rm -rf "$source_copy" "$outside_source"
+
+if grep -E '(^|/)(__pycache__/|[^/]+\.py[co]$)' "$TEMPLATE_DIR/SHA256SUMS" >/dev/null; then
+    bad "checksum inventory excludes generated bytecode"
+else
+    ok "checksum inventory excludes generated bytecode"
+fi
+
+source_copy="$(mktemp -d "${TMPDIR:-/tmp}/exo-test-source.XXXXXX")"
+cp -Rp "$TEMPLATE_DIR/." "$source_copy/"
+mkdir -p "$source_copy/.exocortex/scripts/__pycache__"
+printf 'ignored generated bytecode\n' > "$source_copy/.exocortex/scripts/__pycache__/ignored.pyc"
+target="$(new_target)"
+fake_home="$(mktemp -d "${TMPDIR:-/tmp}/exo-test-home.XXXXXX")"
+if run_install "$target" "$source_copy" "$fake_home" >/dev/null \
+    && [ -z "$(find "$target" -type f \( -name '*.pyc' -o -name '*.pyo' \) -print -quit)" ]; then
+    ok "installer ignores generated bytecode consistently with checksum CI"
+else
+    bad "installer ignores generated bytecode consistently with checksum CI"
+fi
+rm -rf "$source_copy" "$target" "$fake_home"
+
+target="$(new_target)"
+outside="$(mktemp -d "${TMPDIR:-/tmp}/exo-test-outside.XXXXXX")"
+backup="$(mktemp -d "${TMPDIR:-/tmp}/exo-test-backup.XXXXXX")"
+work_temp="$(mktemp -d "${TMPDIR:-/tmp}/exo-test-safe-temp.XXXXXX")"
+printf 'outside update canary\n' > "$outside/canary.txt"
+outside_before="$(tree_digest "$outside")"
+ln -s "$outside" "$target/.exocortex"
+if (cd "$target" && TMPDIR="$work_temp" bash "$TEMPLATE_DIR/scripts/safe-update.sh" \
+    --template "$TEMPLATE_DIR" --candidate-digest "$(hash_file "$TEMPLATE_DIR/SHA256SUMS")" \
+    --backup-dir "$backup" --dry-run) >/dev/null 2>&1; then
+    bad "safe-update rejects target surface symlinks before reading or copying"
+elif [ "$(tree_digest "$outside")" != "$outside_before" ] \
+    || [ -n "$(find "$backup" -mindepth 1 -print -quit)" ] \
+    || [ -n "$(find "$work_temp" -mindepth 1 -print -quit)" ]; then
+    bad "safe-update rejects target surface symlinks before reading or copying"
+else
+    ok "safe-update rejects target surface symlinks before reading or copying"
+fi
+rm -rf "$target" "$outside" "$backup" "$work_temp"
+
+target="$(new_target)"
+fake_home="$(mktemp -d "${TMPDIR:-/tmp}/exo-test-home.XXXXXX")"
+run_install "$target" "$TEMPLATE_DIR" "$fake_home" >/dev/null
+outside_hardlink="$(mktemp "${TMPDIR:-/tmp}/exo-test-update-hardlink.XXXXXX")"
+cp -p "$target/.exocortex/COMMAND_SYSTEM.md" "$outside_hardlink"
+rm -f "$target/.exocortex/COMMAND_SYSTEM.md"
+ln "$outside_hardlink" "$target/.exocortex/COMMAND_SYSTEM.md"
+outside_hardlink_hash_before="$(hash_file "$outside_hardlink")"
+outside_hardlink_mode_before="$(python3 -c 'import os,stat,sys; print(format(stat.S_IMODE(os.stat(sys.argv[1]).st_mode), "04o"))' "$outside_hardlink")"
+backup="$(mktemp -d "${TMPDIR:-/tmp}/exo-test-backup.XXXXXX")"
+work_temp="$(mktemp -d "${TMPDIR:-/tmp}/exo-test-safe-temp.XXXXXX")"
+if (cd "$target" && TMPDIR="$work_temp" bash "$TEMPLATE_DIR/scripts/safe-update.sh" \
+    --template "$TEMPLATE_DIR" --candidate-digest "$(hash_file "$TEMPLATE_DIR/SHA256SUMS")" \
+    --backup-dir "$backup" --dry-run) >/dev/null 2>&1 \
+    || [ "$(hash_file "$outside_hardlink")" != "$outside_hardlink_hash_before" ] \
+    || [ "$(python3 -c 'import os,stat,sys; print(format(stat.S_IMODE(os.stat(sys.argv[1]).st_mode), "04o"))' "$outside_hardlink")" != "$outside_hardlink_mode_before" ] \
+    || [ -n "$(find "$backup" -mindepth 1 -print -quit)" ] \
+    || [ -n "$(find "$work_temp" -mindepth 1 -print -quit)" ]; then
+    bad "safe-update rejects an external hard-linked code-plane file before backup"
+else
+    ok "safe-update rejects an external hard-linked code-plane file before backup"
+fi
+rm -rf "$target" "$fake_home" "$backup" "$work_temp"
+rm -f "$outside_hardlink"
+
+target="$(new_target)"
+fake_home="$(mktemp -d "${TMPDIR:-/tmp}/exo-test-home.XXXXXX")"
+run_install "$target" "$TEMPLATE_DIR" "$fake_home" >/dev/null
+backup="$(mktemp -d "${TMPDIR:-/tmp}/exo-test-backup.XXXXXX")"
+work_temp="$(mktemp -d "${TMPDIR:-/tmp}/exo-test-safe-temp.XXXXXX")"
+target_before="$(tree_digest "$target")"
+if (cd "$target" && TMPDIR="$work_temp" bash "$TEMPLATE_DIR/scripts/safe-update.sh" \
+    --template "$TEMPLATE_DIR" --candidate-digest "$(hash_file "$TEMPLATE_DIR/SHA256SUMS")" \
+    --backup-dir "$backup" --apply --capability .exocortex/local/protocol/capabilities/missing.json \
+    --work-item-id TEST-UPGRADE-001 --work-item-revision 0 --request-id unauthorized-update \
+    --surface-id test-surface --executor-id test-executor --adapter-version test-v1) >/dev/null 2>&1; then
+    bad "unauthorized safe-update creates no backup or rehearsal"
+elif [ "$(tree_digest "$target")" != "$target_before" ] \
+    || [ -n "$(find "$backup" -mindepth 1 -print -quit)" ] \
+    || [ -n "$(find "$work_temp" -mindepth 1 -print -quit)" ]; then
+    bad "unauthorized safe-update creates no backup or rehearsal"
+else
+    ok "unauthorized safe-update creates no backup or rehearsal"
+fi
+
+outside="$(mktemp -d "${TMPDIR:-/tmp}/exo-test-outside.XXXXXX")"
+printf 'backup path canary\n' > "$outside/canary.txt"
+canary_before="$(hash_file "$outside/canary.txt")"
+ln -s "$target/.exocortex" "$outside/redirect"
+if (cd "$target" && bash "$TEMPLATE_DIR/scripts/safe-update.sh" \
+    --template "$TEMPLATE_DIR" --candidate-digest "$(hash_file "$TEMPLATE_DIR/SHA256SUMS")" \
+    --backup-dir "$outside/redirect/redirected-backup" --dry-run) >/dev/null 2>&1; then
+    bad "safe-update rejects backup ancestor symlink before mutation"
+elif [ "$(tree_digest "$target")" != "$target_before" ] \
+    || [ "$(hash_file "$outside/canary.txt")" != "$canary_before" ] \
+    || [ -e "$target/.exocortex/redirected-backup" ]; then
+    bad "safe-update rejects backup ancestor symlink before mutation"
+else
+    ok "safe-update rejects backup ancestor symlink before mutation"
+fi
+rm -rf "$target" "$fake_home" "$backup" "$work_temp" "$outside"
+
+target="$(new_target)"
+fake_home="$(mktemp -d "${TMPDIR:-/tmp}/exo-test-home.XXXXXX")"
+run_install "$target" "$TEMPLATE_DIR" "$fake_home" >/dev/null
+printf 'KEEP_ME\n' > "$target/.exocortex/LESSONS.md"
+target_before="$(tree_digest "$target")"
+backup="$(mktemp -d "${TMPDIR:-/tmp}/exo-test-backup.XXXXXX")"
+(cd "$target" && bash "$TEMPLATE_DIR/scripts/safe-update.sh" --template "$TEMPLATE_DIR" --candidate-digest "$(hash_file "$TEMPLATE_DIR/SHA256SUMS")" --backup-dir "$backup" --dry-run) >/tmp/exo-safe-update-test.log 2>&1
+target_after="$(tree_digest "$target")"
+[ "$target_before" = "$target_after" ] && ok "safe-update dry-run leaves target byte-identical" || bad "safe-update dry-run leaves target byte-identical"
+grep -Fq 'Protected data check: PASS' /tmp/exo-safe-update-test.log && ok "safe-update proves protected data" || bad "safe-update proves protected data"
+restore_archive="$(find "$backup" -type f -name '*.tar.gz.*' -print -quit)"
+if [ -n "$restore_archive" ] \
+    && [ "$(python3 -c 'import os,stat,sys; print(format(stat.S_IMODE(os.stat(sys.argv[1]).st_mode), "04o"))' "$restore_archive")" = "0600" ] \
+    && tar -tzf "$restore_archive" | grep -Fq '.exocortex/COMMAND_SYSTEM.md' \
+    && ! tar -tzf "$restore_archive" | grep -Eq '^\\.?/?\\.exocortex/(LESSONS\\.md|local/|events/)'; then
+    ok "safe-update creates a private code-plane-only restore archive"
+else
+    bad "safe-update creates a private code-plane-only restore archive"
+fi
+rm -rf "$target" "$fake_home" "$backup"
+
+target="$(new_target)"
+fake_home="$(mktemp -d "${TMPDIR:-/tmp}/exo-test-home.XXXXXX")"
+run_install "$target" "$TEMPLATE_DIR" "$fake_home" >/dev/null
+source_copy="$(mktemp -d "${TMPDIR:-/tmp}/exo-test-source.XXXXXX")"
+cp -Rp "$TEMPLATE_DIR/." "$source_copy/"
+chmod 755 "$source_copy/.exocortex/scripts/check_keys.sh"
+backup="$(mktemp -d "${TMPDIR:-/tmp}/exo-test-backup.XXXXXX")"
+target_before="$(tree_digest "$target")"
+if (cd "$target" && bash "$TEMPLATE_DIR/scripts/safe-update.sh" \
+    --template "$source_copy" \
+    --candidate-digest "$(hash_file "$source_copy/SHA256SUMS")" \
+    --backup-dir "$backup" --dry-run) >/dev/null 2>&1; then
+    bad "safe-update rejects a checksum-approved source-mode change before backup"
+elif [ "$(tree_digest "$target")" != "$target_before" ] \
+    || [ -n "$(find "$backup" -mindepth 1 -print -quit)" ]; then
+    bad "safe-update rejects a checksum-approved source-mode change before backup"
+else
+    ok "safe-update rejects a checksum-approved source-mode change before backup"
+fi
+rm -rf "$target" "$fake_home" "$source_copy" "$backup"
+
+target="$(new_target)"
+fake_home="$(mktemp -d "${TMPDIR:-/tmp}/exo-test-home.XXXXXX")"
+run_install "$target" "$TEMPLATE_DIR" "$fake_home" >/dev/null
+source_copy="$(mktemp -d "${TMPDIR:-/tmp}/exo-test-source.XXXXXX")"
+cp -Rp "$TEMPLATE_DIR/." "$source_copy/"
+external_sums="$(mktemp "${TMPDIR:-/tmp}/exo-test-external-sums.XXXXXX")"
+cp -p "$source_copy/SHA256SUMS" "$external_sums"
+rm -f "$source_copy/SHA256SUMS"
+ln -s "$external_sums" "$source_copy/SHA256SUMS"
+backup="$(mktemp -d "${TMPDIR:-/tmp}/exo-test-backup.XXXXXX")"
+target_before="$(tree_digest "$target")"
+if (cd "$target" && bash "$TEMPLATE_DIR/scripts/safe-update.sh" \
+    --template "$source_copy" \
+    --candidate-digest "$(hash_file "$source_copy/SHA256SUMS")" \
+    --backup-dir "$backup" --dry-run) >/dev/null 2>&1; then
+    bad "safe-update rejects a symlinked candidate SHA256SUMS before backup"
+elif [ "$(tree_digest "$target")" != "$target_before" ] \
+    || [ -n "$(find "$backup" -mindepth 1 -print -quit)" ]; then
+    bad "safe-update rejects a symlinked candidate SHA256SUMS before backup"
+else
+    ok "safe-update rejects a symlinked candidate SHA256SUMS before backup"
+fi
+rm -rf "$target" "$fake_home" "$source_copy" "$backup"
+rm -f "$external_sums"
+rm -f /tmp/exo-safe-update-test.log
+
+target="$(new_target)"
+fake_home="$(mktemp -d "${TMPDIR:-/tmp}/exo-test-home.XXXXXX")"
+run_install "$target" "$TEMPLATE_DIR" "$fake_home" >/dev/null
+fixture_meta="$(mktemp "${TMPDIR:-/tmp}/exo-test-complete-paths-meta.XXXXXX")"
+python3 - "$target" "$fixture_meta" <<'PY'
+import hashlib, json, sys
+from pathlib import Path
+
+root = Path(sys.argv[1])
+meta = Path(sys.argv[2])
+manifest = root / '.exocortex/.install-manifest'
+records = {}
+for line in manifest.read_text(encoding='utf-8').splitlines():
+    if not line or line.startswith('#'):
+        continue
+    rel, digest = line.rsplit(' ', 1)
+    path = root / rel
+    if path.is_file() and not path.is_symlink():
+        records[rel] = digest
+selected = sorted(records)[:121]
+if len(selected) != 121:
+    raise SystemExit('fixture requires at least 121 manifest-managed files')
+for index, rel in enumerate(selected):
+    path = root / rel
+    path.write_bytes(path.read_bytes() + f'\nOLD_TEMPLATE_FIXTURE_{index:03d}\n'.encode())
+    records[rel] = hashlib.sha256(path.read_bytes()).hexdigest()
+manifest.write_text(
+    '# Exocortex install manifest - template code plane only\n'
+    + ''.join(f'{rel} {digest}\n' for rel, digest in sorted(records.items())),
+    encoding='utf-8',
+)
+meta.write_text(json.dumps({'selected_count': len(selected), 'sentinel': selected[-1]}) + '\n', encoding='utf-8')
+PY
+target_before="$(tree_digest "$target")"
+backup_one="$(mktemp -d "${TMPDIR:-/tmp}/exo-test-backup.XXXXXX")"
+backup_two="$(mktemp -d "${TMPDIR:-/tmp}/exo-test-backup.XXXXXX")"
+complete_log_one="$(mktemp "${TMPDIR:-/tmp}/exo-test-complete-paths-one.XXXXXX")"
+complete_log_two="$(mktemp "${TMPDIR:-/tmp}/exo-test-complete-paths-two.XXXXXX")"
+complete_paths_one="$(mktemp "${TMPDIR:-/tmp}/exo-test-complete-paths-list-one.XXXXXX")"
+complete_paths_two="$(mktemp "${TMPDIR:-/tmp}/exo-test-complete-paths-list-two.XXXXXX")"
+(cd "$target" && bash "$TEMPLATE_DIR/scripts/safe-update.sh" \
+    --template "$TEMPLATE_DIR" --candidate-digest "$(hash_file "$TEMPLATE_DIR/SHA256SUMS")" \
+    --backup-dir "$backup_one" --dry-run) > "$complete_log_one" 2>&1
+(cd "$target" && bash "$TEMPLATE_DIR/scripts/safe-update.sh" \
+    --template "$TEMPLATE_DIR" --candidate-digest "$(hash_file "$TEMPLATE_DIR/SHA256SUMS")" \
+    --backup-dir "$backup_two" --dry-run) > "$complete_log_two" 2>&1
+awk '/^Rehearsal changed paths:/ {capture=1; next} /^Dry run complete/ {capture=0} capture && NF {print}' "$complete_log_one" > "$complete_paths_one"
+awk '/^Rehearsal changed paths:/ {capture=1; next} /^Dry run complete/ {capture=0} capture && NF {print}' "$complete_log_two" > "$complete_paths_two"
+if python3 - "$complete_log_one" "$complete_paths_one" "$complete_log_two" "$complete_paths_two" "$fixture_meta" <<'PY'
+import hashlib, json, re, sys
+from pathlib import Path
+
+def evidence(log_name, paths_name):
+    log = Path(log_name).read_text(encoding='utf-8')
+    count_match = re.search(r'^Rehearsal changed paths: ([0-9]+)$', log, re.MULTILINE)
+    digest_match = re.search(r'^Rehearsal changed paths SHA-256: ([0-9a-f]{64})$', log, re.MULTILINE)
+    if not count_match or not digest_match:
+        raise SystemExit(1)
+    raw = Path(paths_name).read_bytes()
+    paths = raw.decode('utf-8').splitlines()
+    if raw != ''.join(path + '\n' for path in paths).encode('utf-8'):
+        raise SystemExit(1)
+    if int(count_match.group(1)) != len(paths) or len(paths) <= 120:
+        raise SystemExit(1)
+    if paths != sorted(set(paths)):
+        raise SystemExit(1)
+    if hashlib.sha256(raw).hexdigest() != digest_match.group(1):
+        raise SystemExit(1)
+    return paths, digest_match.group(1)
+
+first_paths, first_digest = evidence(sys.argv[1], sys.argv[2])
+second_paths, second_digest = evidence(sys.argv[3], sys.argv[4])
+meta = json.loads(Path(sys.argv[5]).read_text(encoding='utf-8'))
+if meta['sentinel'] not in first_paths:
+    raise SystemExit(1)
+if first_paths != second_paths or first_digest != second_digest:
+    raise SystemExit(1)
+PY
+then
+    if [ "$(tree_digest "$target")" = "$target_before" ]; then
+        ok "safe-update emits complete deterministic sorted path evidence and digest above 120 paths"
+    else
+        bad "safe-update emits complete deterministic sorted path evidence and digest above 120 paths"
+    fi
+else
+    bad "safe-update emits complete deterministic sorted path evidence and digest above 120 paths"
+fi
+rm -rf "$target" "$fake_home" "$backup_one" "$backup_two"
+rm -f "$fixture_meta" "$complete_log_one" "$complete_log_two" "$complete_paths_one" "$complete_paths_two"
+
+make_old_template_source() {
+    local source old_hash
+    source="$(mktemp -d "${TMPDIR:-/tmp}/exo-test-old-template.XXXXXX")"
+    cp -Rp "$TEMPLATE_DIR/." "$source/"
+    printf '\nOLD_TEMPLATE_FIXTURE\n' >> "$source/.exocortex/COMMAND_SYSTEM.md"
+    old_hash="$(hash_file "$source/.exocortex/COMMAND_SYSTEM.md")"
+    awk -v h="$old_hash" 'BEGIN{OFS="  "} $2==".exocortex/COMMAND_SYSTEM.md"{$1=h} {print $1,$2}' "$source/SHA256SUMS" > "$source/SHA256SUMS.tmp"
+    mv "$source/SHA256SUMS.tmp" "$source/SHA256SUMS"
+    chmod 0644 "$source/SHA256SUMS"
+    printf '%s\n' "$source"
+}
+
+old_source="$(make_old_template_source)"
+target="$(new_target)"
+fake_home="$(mktemp -d "${TMPDIR:-/tmp}/exo-test-home.XXXXXX")"
+run_install "$target" "$old_source" "$fake_home" >/dev/null
+printf 'KEEP_PROTECTED\n' > "$target/.exocortex/TODO.md"
+backup="$(mktemp -d "${TMPDIR:-/tmp}/exo-test-backup.XXXXXX")"
+apply_probe_log="$(mktemp "${TMPDIR:-/tmp}/exo-test-apply-probe.XXXXXX")"
+candidate_digest="$(hash_file "$TEMPLATE_DIR/SHA256SUMS")"
+(cd "$target" && bash "$TEMPLATE_DIR/scripts/safe-update.sh" --template "$TEMPLATE_DIR" --candidate-digest "$candidate_digest" --backup-dir "$backup" --dry-run) > "$apply_probe_log" 2>&1
+changed_paths="$(mktemp "${TMPDIR:-/tmp}/exo-test-changed-paths.XXXXXX")"
+awk '/^Rehearsal changed paths:/ {capture=1; next} /^Dry run complete/ {capture=0} capture && NF {print}' "$apply_probe_log" > "$changed_paths"
+guard_digest="$(python3 "$TEMPLATE_DIR/.exocortex/scripts/authority_guard.py" guard-digest)"
+python3 - "$target" "$guard_digest" "$candidate_digest" "$changed_paths" <<'PY'
+import json, sys
+from pathlib import Path
+root=Path(sys.argv[1])
+guard=sys.argv[2]
+candidate=sys.argv[3]
+paths=Path(sys.argv[4]).read_text(encoding='utf-8').splitlines()
+registry={
+  'schema_version':'public-v2','kind':'executor_registry','registry_version':1,
+  'default_role':'read_only','executors':[{
+    'surface_id':'test-surface','executor_id':'test-executor','adapter_version':'test-v1',
+    'guard_digest':guard,'roles':['read_only','writer'],'status':'active',
+    'registered_at':'2026-01-01T00:00:00Z','expires_at':'2099-01-01T00:00:00Z','revoked_at':None,
+  }],
+}
+capability={
+  'schema_version':'public-v2','kind':'approval_capability','capability_id':'cap-update-apply',
+  'work_item_id':'TEST-UPGRADE-001','work_item_revision':0,'operation':'apply_template_update',
+  'scope':{'allowed_paths':paths,'target_sha':candidate},
+  'executor':{'surface_id':'test-surface','executor_id':'test-executor','adapter_version':'test-v1','guard_digest':guard,'registry_version':1},
+  'approval':{'approved_by':'fixture-human','accepted_at':'2026-01-01T00:00:00Z','expires_at':'2099-01-01T00:00:00Z','one_time':True,'summary':'fictional apply fixture'},
+  'status':{'state':'active','revoked_at':None,'consumed_at':None,'consumed_by_request_id':None},
+}
+for rel,value in (
+  ('.exocortex/control/EXECUTOR_REGISTRY.json',registry),
+  ('.exocortex/local/protocol/capabilities/update-apply.json',capability),
+):
+  path=root/rel
+  path.parent.mkdir(parents=True,exist_ok=True)
+  path.write_text(json.dumps(value,indent=2,sort_keys=True)+'\n',encoding='utf-8')
+PY
+apply_log="$(mktemp "${TMPDIR:-/tmp}/exo-test-apply.XXXXXX")"
+if (cd "$target" && bash "$TEMPLATE_DIR/scripts/safe-update.sh" \
+    --template "$TEMPLATE_DIR" --candidate-digest "$candidate_digest" --backup-dir "$backup" --apply \
+    --capability .exocortex/local/protocol/capabilities/update-apply.json \
+    --work-item-id TEST-UPGRADE-001 --work-item-revision 0 --request-id apply-update \
+    --surface-id test-surface --executor-id test-executor --adapter-version test-v1) > "$apply_log" 2>&1 \
+    && [ "$(hash_file "$target/.exocortex/COMMAND_SYSTEM.md")" = "$(hash_file "$TEMPLATE_DIR/.exocortex/COMMAND_SYSTEM.md")" ] \
+    && grep -Fq 'KEEP_PROTECTED' "$target/.exocortex/TODO.md" \
+    && grep -Fq '"state": "consumed"' "$target/.exocortex/local/protocol/capabilities/update-apply.json"; then
+    ok "guarded safe-update apply matches rehearsal and preserves protected data"
+else
+    bad "guarded safe-update apply matches rehearsal and preserves protected data"
+fi
+rm -rf "$old_source" "$target" "$fake_home" "$backup"
+rm -f "$apply_probe_log" "$changed_paths" "$apply_log"
+
+old_source="$(make_old_template_source)"
+target="$(new_target)"
+fake_home="$(mktemp -d "${TMPDIR:-/tmp}/exo-test-home.XXXXXX")"
+run_install "$target" "$old_source" "$fake_home" >/dev/null
+rm -f "$target/.exocortex/AI_BOOTSTRAP.md"
+printf 'RESTORE_PROTECTED_CANARY\n' > "$target/.exocortex/PROJECT_MEMORY.md"
+backup="$(mktemp -d "${TMPDIR:-/tmp}/exo-test-backup.XXXXXX")"
+barrier_root="$(mktemp -d "${TMPDIR:-/tmp}/exo-test-barrier.XXXXXX")"
+race_log="$barrier_root/safe-update.log"
+race_probe_backup="$(mktemp -d "${TMPDIR:-/tmp}/exo-test-backup.XXXXXX")"
+race_probe_log="$barrier_root/probe.log"
+race_changed_paths="$barrier_root/changed-paths.txt"
+(cd "$target" && bash "$TEMPLATE_DIR/scripts/safe-update.sh" \
+  --template "$TEMPLATE_DIR" --candidate-digest "$candidate_digest" \
+  --backup-dir "$race_probe_backup" --dry-run) > "$race_probe_log" 2>&1
+awk '/^Rehearsal changed paths:/ {capture=1; next} /^Dry run complete/ {capture=0} capture && NF {print}' \
+  "$race_probe_log" > "$race_changed_paths"
+guard_digest="$(python3 "$TEMPLATE_DIR/.exocortex/scripts/authority_guard.py" guard-digest)"
+python3 - "$target" "$guard_digest" "$candidate_digest" "$race_changed_paths" <<'PY'
+import json, sys
+from pathlib import Path
+root=Path(sys.argv[1])
+guard=sys.argv[2]
+candidate=sys.argv[3]
+paths=Path(sys.argv[4]).read_text(encoding='utf-8').splitlines()
+registry={
+  'schema_version':'public-v2','kind':'executor_registry','registry_version':1,
+  'default_role':'read_only','executors':[{
+    'surface_id':'test-surface','executor_id':'test-executor','adapter_version':'test-v1',
+    'guard_digest':guard,'roles':['read_only','writer'],'status':'active',
+    'registered_at':'2026-01-01T00:00:00Z','expires_at':'2099-01-01T00:00:00Z','revoked_at':None,
+  }],
+}
+capability={
+  'schema_version':'public-v2','kind':'approval_capability','capability_id':'cap-update-race',
+  'work_item_id':'TEST-UPGRADE-001','work_item_revision':0,'operation':'apply_template_update',
+  'scope':{'allowed_paths':paths,'target_sha':candidate},
+  'executor':{'surface_id':'test-surface','executor_id':'test-executor','adapter_version':'test-v1','guard_digest':guard,'registry_version':1},
+  'approval':{'approved_by':'fixture-human','accepted_at':'2026-01-01T00:00:00Z','expires_at':'2099-01-01T00:00:00Z','one_time':True,'summary':'fictional race fixture'},
+  'status':{'state':'active','revoked_at':None,'consumed_at':None,'consumed_by_request_id':None},
+}
+for rel,value in (
+  ('.exocortex/control/EXECUTOR_REGISTRY.json',registry),
+  ('.exocortex/local/protocol/capabilities/update-race.json',capability),
+):
+  path=root/rel
+  path.parent.mkdir(parents=True,exist_ok=True)
+  path.write_text(json.dumps(value,indent=2,sort_keys=True)+'\n',encoding='utf-8')
+PY
+rollback_baseline="$(mktemp -d "${TMPDIR:-/tmp}/exo-test-rollback-baseline.XXXXXX")"
+cp -pR "$target/." "$rollback_baseline/"
+rollback_baseline_digest="$(code_plane_digest "$rollback_baseline")"
+archive_capability="$target/.exocortex/local/protocol/capabilities/update-race.json"
+archive_ungated_backup="$(mktemp -d "${TMPDIR:-/tmp}/exo-test-archive-fault.XXXXXX")"
+archive_ungated_log="$barrier_root/archive-ungated.log"
+archive_ungated_code_before="$(code_plane_digest "$target")"
+archive_ungated_protected_before="$(protected_plane_digest "$target")"
+archive_ungated_capability_before="$(hash_file "$archive_capability")"
+if (cd "$target" && EXOCORTEX_TEST_ARCHIVE_FAULT=corrupt \
+  bash "$TEMPLATE_DIR/scripts/safe-update.sh" --template "$TEMPLATE_DIR" --candidate-digest "$candidate_digest" \
+  --backup-dir "$archive_ungated_backup" --apply --capability .exocortex/local/protocol/capabilities/update-race.json \
+  --work-item-id TEST-UPGRADE-001 --work-item-revision 0 --request-id archive-ungated \
+  --surface-id test-surface --executor-id test-executor --adapter-version test-v1) > "$archive_ungated_log" 2>&1 \
+  || ! grep -Fq 'archive fault injection is available only in explicit test mode' "$archive_ungated_log" \
+  || [ "$(code_plane_digest "$target")" != "$archive_ungated_code_before" ] \
+  || [ "$(protected_plane_digest "$target")" != "$archive_ungated_protected_before" ] \
+  || [ "$(hash_file "$archive_capability")" != "$archive_ungated_capability_before" ] \
+  || [ -n "$(find "$archive_ungated_backup" -mindepth 1 -print -quit)" ]; then
+    bad "safe-update rejects archive fault injection outside explicit test mode"
+else
+    ok "safe-update rejects archive fault injection outside explicit test mode"
+fi
+rm -rf "$archive_ungated_backup"
+archive_invalid_backup="$(mktemp -d "${TMPDIR:-/tmp}/exo-test-archive-fault.XXXXXX")"
+archive_invalid_log="$barrier_root/archive-invalid.log"
+if (cd "$target" && EXOCORTEX_TEST_MODE=1 EXOCORTEX_TEST_ARCHIVE_FAULT=invalid \
+  bash "$TEMPLATE_DIR/scripts/safe-update.sh" --template "$TEMPLATE_DIR" --candidate-digest "$candidate_digest" \
+  --backup-dir "$archive_invalid_backup" --apply --capability .exocortex/local/protocol/capabilities/update-race.json \
+  --work-item-id TEST-UPGRADE-001 --work-item-revision 0 --request-id archive-invalid \
+  --surface-id test-surface --executor-id test-executor --adapter-version test-v1) > "$archive_invalid_log" 2>&1 \
+  || ! grep -Fq 'unknown test-only archive fault' "$archive_invalid_log" \
+  || [ -n "$(find "$archive_invalid_backup" -mindepth 1 -print -quit)" ]; then
+    bad "safe-update rejects an unknown archive fault selector"
+else
+    ok "safe-update rejects an unknown archive fault selector"
+fi
+rm -rf "$archive_invalid_backup"
+
+archive_dry_run_backup="$(mktemp -d "${TMPDIR:-/tmp}/exo-test-archive-fault.XXXXXX")"
+archive_dry_run_log="$barrier_root/archive-dry-run.log"
+if (cd "$target" && EXOCORTEX_TEST_MODE=1 EXOCORTEX_TEST_ARCHIVE_FAULT=corrupt \
+  bash "$TEMPLATE_DIR/scripts/safe-update.sh" --template "$TEMPLATE_DIR" --candidate-digest "$candidate_digest" \
+  --backup-dir "$archive_dry_run_backup" --dry-run) > "$archive_dry_run_log" 2>&1 \
+  || ! grep -Fq 'archive fault injection requires an apply rehearsal' "$archive_dry_run_log" \
+  || [ -n "$(find "$archive_dry_run_backup" -mindepth 1 -print -quit)" ]; then
+    bad "safe-update rejects archive fault injection during dry-run"
+else
+    ok "safe-update rejects archive fault injection during dry-run"
+fi
+rm -rf "$archive_dry_run_backup"
+
+archive_nonfixture_backup="$(mktemp -d "${TMPDIR:-/tmp}/exo-test-not-archive.XXXXXX")"
+archive_nonfixture_log="$barrier_root/archive-nonfixture.log"
+if (cd "$target" && EXOCORTEX_TEST_MODE=1 EXOCORTEX_TEST_ARCHIVE_FAULT=corrupt \
+  bash "$TEMPLATE_DIR/scripts/safe-update.sh" --template "$TEMPLATE_DIR" --candidate-digest "$candidate_digest" \
+  --backup-dir "$archive_nonfixture_backup" --apply --capability .exocortex/local/protocol/capabilities/update-race.json \
+  --work-item-id TEST-UPGRADE-001 --work-item-revision 0 --request-id archive-nonfixture \
+  --surface-id test-surface --executor-id test-executor --adapter-version test-v1) > "$archive_nonfixture_log" 2>&1 \
+  || ! grep -Fq 'archive fault injection requires a dedicated temporary backup fixture' "$archive_nonfixture_log" \
+  || [ -n "$(find "$archive_nonfixture_backup" -mindepth 1 -print -quit)" ]; then
+    bad "safe-update confines archive faults to a dedicated temporary fixture"
+else
+    ok "safe-update confines archive faults to a dedicated temporary fixture"
+fi
+rm -rf "$archive_nonfixture_backup"
+
+for archive_fault in substitute corrupt file-fsync directory-fsync; do
+    case "$archive_fault" in
+        substitute)
+            archive_fault_detector='rollback archive identity changed before write'
+            archive_fault_failure='rollback archive creation failed'
+            ;;
+        corrupt)
+            archive_fault_detector='rollback archive digest mismatch'
+            archive_fault_failure='rollback archive failed identity, privacy, or integrity verification'
+            ;;
+        file-fsync)
+            archive_fault_detector='injected test-only rollback archive file-fsync failure'
+            archive_fault_failure='rollback archive creation failed'
+            ;;
+        directory-fsync)
+            archive_fault_detector='injected test-only rollback archive directory-fsync failure'
+            archive_fault_failure='rollback archive publication failed'
+            ;;
+    esac
+    archive_fault_backup="$(mktemp -d "${TMPDIR:-/tmp}/exo-test-archive-fault.XXXXXX")"
+    archive_fault_code_before="$(code_plane_digest "$target")"
+    archive_fault_protected_before="$(protected_plane_digest "$target")"
+    archive_fault_capability_before="$(hash_file "$archive_capability")"
+    archive_fault_log="$barrier_root/archive-$archive_fault.log"
+    if (cd "$target" && EXOCORTEX_TEST_MODE=1 EXOCORTEX_TEST_ARCHIVE_FAULT="$archive_fault" \
+      bash "$TEMPLATE_DIR/scripts/safe-update.sh" --template "$TEMPLATE_DIR" --candidate-digest "$candidate_digest" \
+      --backup-dir "$archive_fault_backup" --apply --capability .exocortex/local/protocol/capabilities/update-race.json \
+      --work-item-id TEST-UPGRADE-001 --work-item-revision 0 --request-id "archive-$archive_fault" \
+      --surface-id test-surface --executor-id test-executor --adapter-version test-v1) > "$archive_fault_log" 2>&1 \
+      || ! grep -Fq "$archive_fault_detector" "$archive_fault_log" \
+      || ! grep -Fq "$archive_fault_failure" "$archive_fault_log" \
+      || { [ "$archive_fault" = "substitute" ] \
+          && ! grep -Fq 'test-only rollback archive substitution canary preserved' "$archive_fault_log"; } \
+      || grep -Fq 'Backup:' "$archive_fault_log" \
+      || grep -Fq 'Update applied' "$archive_fault_log" \
+      || [ "$(code_plane_digest "$target")" != "$archive_fault_code_before" ] \
+      || [ "$(protected_plane_digest "$target")" != "$archive_fault_protected_before" ] \
+      || [ "$(hash_file "$archive_capability")" != "$archive_fault_capability_before" ] \
+      || ! grep -Fq '"state": "active"' "$target/.exocortex/local/protocol/capabilities/update-race.json" \
+      || [ -n "$(find "$archive_fault_backup" -mindepth 1 -print -quit)" ]; then
+        bad "safe-update fails closed on rollback archive $archive_fault fault"
+    else
+        ok "safe-update fails closed on rollback archive $archive_fault fault"
+    fi
+    rm -rf "$archive_fault_backup"
+done
+(cd "$target" && EXOCORTEX_TEST_MODE=1 EXOCORTEX_TEST_APPLY_BARRIER="$barrier_root/gate" \
+  bash "$TEMPLATE_DIR/scripts/safe-update.sh" --template "$TEMPLATE_DIR" --candidate-digest "$candidate_digest" \
+  --backup-dir "$backup" --apply --capability .exocortex/local/protocol/capabilities/update-race.json \
+  --work-item-id TEST-UPGRADE-001 --work-item-revision 0 --request-id race-update \
+  --surface-id test-surface --executor-id test-executor --adapter-version test-v1) > "$race_log" 2>&1 &
+race_pid=$!
+race_wait=0
+while [ ! -e "$barrier_root/gate.ready" ] && [ "$race_wait" -lt 800 ]; do
+    sleep 0.05
+    race_wait=$((race_wait + 1))
+done
+if [ -e "$barrier_root/gate.ready" ]; then
+    chmod 0755 "$target/.exocortex/COMMAND_SYSTEM.md"
+    : > "$barrier_root/gate.continue"
+fi
+wait "$race_pid"
+race_rc=$?
+if [ "$race_rc" -ne 0 ] \
+    && grep -Fq 'live target changed after rehearsal' "$race_log" \
+    && grep -Fq 'OLD_TEMPLATE_FIXTURE' "$target/.exocortex/COMMAND_SYSTEM.md" \
+    && [ -x "$target/.exocortex/COMMAND_SYSTEM.md" ] \
+    && grep -Fq '"state": "active"' "$target/.exocortex/local/protocol/capabilities/update-race.json"; then
+    ok "safe-update denies a mode-only target race before capability consumption"
+else
+    bad "safe-update denies a mode-only target race before capability consumption"
+fi
+
+chmod 0644 "$target/.exocortex/COMMAND_SYSTEM.md"
+hardlink_barrier="$barrier_root/hardlink-gate"
+hardlink_log="$barrier_root/hardlink-race.log"
+hardlink_outside="$barrier_root/hardlink-outside"
+cp -p "$target/.exocortex/COMMAND_SYSTEM.md" "$hardlink_outside"
+(cd "$target" && EXOCORTEX_TEST_MODE=1 EXOCORTEX_TEST_APPLY_BARRIER="$hardlink_barrier" \
+  bash "$TEMPLATE_DIR/scripts/safe-update.sh" --template "$TEMPLATE_DIR" --candidate-digest "$candidate_digest" \
+  --backup-dir "$backup" --apply --capability .exocortex/local/protocol/capabilities/update-race.json \
+  --work-item-id TEST-UPGRADE-001 --work-item-revision 0 --request-id hardlink-race-update \
+  --surface-id test-surface --executor-id test-executor --adapter-version test-v1) > "$hardlink_log" 2>&1 &
+hardlink_pid=$!
+hardlink_wait=0
+while [ ! -e "$hardlink_barrier.ready" ] && [ "$hardlink_wait" -lt 800 ]; do
+    sleep 0.05
+    hardlink_wait=$((hardlink_wait + 1))
+done
+if [ -e "$hardlink_barrier.ready" ]; then
+    rm -f "$target/.exocortex/COMMAND_SYSTEM.md"
+    ln "$hardlink_outside" "$target/.exocortex/COMMAND_SYSTEM.md"
+    : > "$hardlink_barrier.continue"
+fi
+wait "$hardlink_pid"
+hardlink_rc=$?
+if [ "$hardlink_rc" -ne 0 ] \
+    && grep -Fq 'external hard-linked file' "$hardlink_log" \
+    && grep -Fq '"state": "active"' "$target/.exocortex/local/protocol/capabilities/update-race.json" \
+    && [ "$(python3 -c 'import os,sys; print(os.lstat(sys.argv[1]).st_nlink)' "$hardlink_outside")" = "2" ]; then
+    ok "safe-update denies a barrier-time hard-link race before capability consumption"
+else
+    bad "safe-update denies a barrier-time hard-link race before capability consumption"
+fi
+rm -f "$target/.exocortex/COMMAND_SYSTEM.md"
+cp -p "$hardlink_outside" "$target/.exocortex/COMMAND_SYSTEM.md"
+
+directory_barrier="$barrier_root/directory-mode-gate"
+directory_log="$barrier_root/directory-mode-race.log"
+directory_mode_before="$(python3 -c 'import os,stat,sys; print(format(stat.S_IMODE(os.lstat(sys.argv[1]).st_mode), "04o"))' "$target/.exocortex")"
+if [ "$directory_mode_before" = "0700" ]; then
+    directory_mode_raced="0755"
+else
+    directory_mode_raced="0700"
+fi
+(cd "$target" && EXOCORTEX_TEST_MODE=1 EXOCORTEX_TEST_APPLY_BARRIER="$directory_barrier" \
+  bash "$TEMPLATE_DIR/scripts/safe-update.sh" --template "$TEMPLATE_DIR" --candidate-digest "$candidate_digest" \
+  --backup-dir "$backup" --apply --capability .exocortex/local/protocol/capabilities/update-race.json \
+  --work-item-id TEST-UPGRADE-001 --work-item-revision 0 --request-id directory-mode-race-update \
+  --surface-id test-surface --executor-id test-executor --adapter-version test-v1) > "$directory_log" 2>&1 &
+directory_pid=$!
+directory_wait=0
+while [ ! -e "$directory_barrier.ready" ] && [ "$directory_wait" -lt 800 ]; do
+    sleep 0.05
+    directory_wait=$((directory_wait + 1))
+done
+if [ -e "$directory_barrier.ready" ]; then
+    chmod "$directory_mode_raced" "$target/.exocortex"
+    : > "$directory_barrier.continue"
+fi
+wait "$directory_pid"
+directory_rc=$?
+if [ "$directory_rc" -ne 0 ] \
+    && grep -Fq 'live target changed after rehearsal' "$directory_log" \
+    && grep -Fq '"state": "active"' "$target/.exocortex/local/protocol/capabilities/update-race.json"; then
+    ok "safe-update denies a directory-mode race before capability consumption"
+else
+    bad "safe-update denies a directory-mode race before capability consumption"
+fi
+chmod "$directory_mode_before" "$target/.exocortex"
+
+post_apply_log="$barrier_root/post-apply.log"
+(cd "$target" && EXOCORTEX_TEST_MODE=1 EXOCORTEX_TEST_INSTALL_FAULT_AFTER_COPIES=1 \
+  bash "$TEMPLATE_DIR/scripts/safe-update.sh" --template "$TEMPLATE_DIR" --candidate-digest "$candidate_digest" \
+  --backup-dir "$backup" --apply --capability .exocortex/local/protocol/capabilities/update-race.json \
+  --work-item-id TEST-UPGRADE-001 --work-item-revision 0 --request-id post-apply-race \
+  --surface-id test-surface --executor-id test-executor --adapter-version test-v1) > "$post_apply_log" 2>&1
+post_apply_rc=$?
+if [ "$post_apply_rc" -ne 0 ] \
+    && grep -Fq 'injected test-only install fault after 1 copies' "$post_apply_log" \
+    && [ -f "$target/.exocortex/AI_BOOTSTRAP.md" ] \
+    && grep -Fq 'OLD_TEMPLATE_FIXTURE' "$target/.exocortex/COMMAND_SYSTEM.md" \
+    && grep -Fq '"state": "consumed"' "$target/.exocortex/local/protocol/capabilities/update-race.json" \
+    && [ "$(find "$backup" -type f -name '*.tar.gz.*' | wc -l | tr -d ' ')" -ge 2 ] \
+    && python3 - "$backup" <<'PY'
+import os, stat, sys, tarfile
+from pathlib import Path
+archives = sorted(Path(sys.argv[1]).glob('*.tar.gz.*'))
+if len(archives) < 2 or len({path.name for path in archives}) != len(archives):
+    raise SystemExit(1)
+for path in archives:
+    value = os.lstat(path)
+    if stat.S_IMODE(value.st_mode) != 0o600 or value.st_nlink != 1:
+        raise SystemExit(1)
+    with tarfile.open(path, 'r:gz') as archive:
+        archive.getmembers()
+PY
+then
+    ok "safe-update reaches a live post-consumption fault with unique verified private archives"
+else
+    bad "safe-update reaches a live post-consumption fault with unique verified private archives"
+fi
+
+restore_target="$(mktemp -d "${TMPDIR:-/tmp}/exo-test-rollback-restore.XXXXXX")"
+restore_stash="$(mktemp -d "${TMPDIR:-/tmp}/exo-test-rollback-stash.XXXXXX")"
+post_fault_protected_digest="$(protected_plane_digest "$target")"
+cp -pR "$target/." "$restore_target/"
+restore_archive="$(awk -F': ' '/^Backup: /{print $2; exit}' "$post_apply_log")"
+python3 - "$restore_target" "$restore_stash" <<'PY'
+import os
+from pathlib import Path
+import shutil
+import sys
+
+root, stash = map(Path, sys.argv[1:3])
+surface = (
+    '.exocortex', '.agents', '.cursor', '.claude', '.github', '.windsurf',
+    'AI_START_HERE.md', 'AGENTS.md', 'CLAUDE.md', '.windsurfrules', '.rules', '.gitignore',
+)
+protected = (
+    '.exocortex/SESSION_CONTEXT.md', '.exocortex/SESSION_CONTEXT.local.md',
+    '.exocortex/TODO.md', '.exocortex/LESSONS.md', '.exocortex/PROJECT_MEMORY.md',
+    '.exocortex/OPEN_DECISIONS.md', '.exocortex/subconscious_patterns.md',
+    '.exocortex/.env', '.exocortex/.project-name', '.exocortex/events',
+    '.exocortex/archive', '.exocortex/hub', '.exocortex/local', '.exocortex/planning',
+    '.exocortex/work-items', '.exocortex/control/ACTIVE_WORK.md',
+    '.exocortex/control/BRANCH_POLICY.md', '.exocortex/control/REPO_STATE.md',
+    '.exocortex/control/EXECUTOR_REGISTRY.json',
+    '.exocortex/control/EXTERNAL_SYNC_POLICY.json',
+    '.exocortex/control/INTERRUPTS.md', '.exocortex/control/BACKLOG.md',
+    '.exocortex/control/ROADMAP.md', '.exocortex/control/ARCH_OVERVIEW.md',
+    '.exocortex/control/REPO_ORGANIZATION_REPORT.md',
+    '.exocortex/.hub_enabled', '.exocortex/.hub_disabled',
+)
+for relative in protected:
+    source = root / relative
+    if not os.path.lexists(source):
+        continue
+    destination = stash / relative
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    if source.is_dir():
+        shutil.copytree(source, destination, copy_function=shutil.copy2)
+    else:
+        shutil.copy2(source, destination, follow_symlinks=False)
+for relative in surface:
+    path = root / relative
+    if path.is_dir() and not path.is_symlink():
+        shutil.rmtree(path)
+    elif os.path.lexists(path):
+        path.unlink()
+PY
+if [ -n "$restore_archive" ] \
+    && COPYFILE_DISABLE=1 tar -xzpf "$restore_archive" -C "$restore_target" \
+    && python3 - "$restore_target" "$restore_stash" <<'PY'
+import os
+from pathlib import Path
+import shutil
+import sys
+
+root, stash = map(Path, sys.argv[1:3])
+for source in sorted(stash.rglob('*'), key=lambda path: len(path.parts)):
+    relative = source.relative_to(stash)
+    destination = root / relative
+    if source.is_dir():
+        destination.mkdir(parents=True, exist_ok=True)
+        shutil.copystat(source, destination, follow_symlinks=False)
+    elif source.is_file():
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(source, destination, follow_symlinks=False)
+PY
+then
+    :
+else
+    false
+fi
+if [ -n "$restore_archive" ] \
+    && [ "$(code_plane_digest "$restore_target")" = "$rollback_baseline_digest" ] \
+    && [ "$(protected_plane_digest "$restore_target")" = "$post_fault_protected_digest" ] \
+    && [ ! -e "$restore_target/.exocortex/AI_BOOTSTRAP.md" ] \
+    && grep -Fq 'RESTORE_PROTECTED_CANARY' "$restore_target/.exocortex/PROJECT_MEMORY.md" \
+    && ! tar -tzf "$restore_archive" | grep -Eq '^\\.?/?\\.exocortex/local(/|$)' \
+    && grep -Fq '"state": "consumed"' "$restore_target/.exocortex/local/protocol/capabilities/update-race.json"; then
+    ok "rollback removes post-fault additions and restores the exact prior code plane in place"
+else
+    bad "rollback removes post-fault additions and restores the exact prior code plane in place"
+fi
+replay_code_before="$(code_plane_digest "$restore_target")"
+replay_protected_before="$(protected_plane_digest "$restore_target")"
+replay_same_backup="$(mktemp -d "${TMPDIR:-/tmp}/exo-test-replay-backup.XXXXXX")"
+replay_different_backup="$(mktemp -d "${TMPDIR:-/tmp}/exo-test-replay-backup.XXXXXX")"
+if (cd "$restore_target" && bash "$TEMPLATE_DIR/scripts/safe-update.sh" \
+      --template "$TEMPLATE_DIR" --candidate-digest "$candidate_digest" \
+      --backup-dir "$replay_same_backup" --apply \
+      --capability .exocortex/local/protocol/capabilities/update-race.json \
+      --work-item-id TEST-UPGRADE-001 --work-item-revision 0 --request-id post-apply-race \
+      --surface-id test-surface --executor-id test-executor --adapter-version test-v1) >/dev/null 2>&1 \
+    || (cd "$restore_target" && bash "$TEMPLATE_DIR/scripts/safe-update.sh" \
+      --template "$TEMPLATE_DIR" --candidate-digest "$candidate_digest" \
+      --backup-dir "$replay_different_backup" --apply \
+      --capability .exocortex/local/protocol/capabilities/update-race.json \
+      --work-item-id TEST-UPGRADE-001 --work-item-revision 0 --request-id replay-different-request \
+      --surface-id test-surface --executor-id test-executor --adapter-version test-v1) >/dev/null 2>&1 \
+    || [ "$(code_plane_digest "$restore_target")" != "$replay_code_before" ] \
+    || [ "$(protected_plane_digest "$restore_target")" != "$replay_protected_before" ] \
+    || [ -n "$(find "$replay_same_backup" "$replay_different_backup" -mindepth 1 -print -quit)" ]; then
+    bad "consumed update capability denies same-request and different-request replay"
+else
+    ok "consumed update capability denies same-request and different-request replay"
+fi
+rm -rf "$replay_same_backup" "$replay_different_backup"
+rm -rf "$old_source" "$target" "$fake_home" "$backup" "$race_probe_backup" "$barrier_root" "$rollback_baseline" "$restore_target" "$restore_stash"
+
+hook_target="$(new_target)"
+hook_before="$(tree_digest "$hook_target")"
+hook_output="$(printf '%s\n' '{"description":"Phase 2 complete"}' | (cd "$hook_target" && bash "$TEMPLATE_DIR/.cursor/hooks/auto-save-phase.sh"))"
+hook_after="$(tree_digest "$hook_target")"
+if [ "$hook_before" = "$hook_after" ] && printf '%s' "$hook_output" | grep -Fq 'Do not save automatically'; then
+    ok "legacy-named phase hook is reminder-only"
+else
+    bad "legacy-named phase hook is reminder-only"
+fi
+rm -rf "$hook_target"
+
+invalid_evidence_existing="$(mktemp -d "${TMPDIR:-/tmp}/exo-phase-b-evidence.existing.XXXXXX")"
+invalid_evidence_cases=(
+    "relative-evidence"
+    "${TMPDIR:-/tmp}/not-phase-b-evidence"
+    "$TEMPLATE_DIR/tests/phase-b/exo-phase-b-evidence.workspace"
+    "${HOME:-/__no_home__}/exo-phase-b-evidence.home"
+    "$invalid_evidence_existing"
+)
+for invalid_evidence in "${invalid_evidence_cases[@]}"; do
+    if bash "$TEMPLATE_DIR/tests/phase-b/run.sh" "$invalid_evidence" >/dev/null 2>&1; then
+        bad "phase-b harness rejects unsafe evidence path"
+    else
+        ok "phase-b harness rejects unsafe evidence path"
+    fi
+done
+rm -rf "$invalid_evidence_existing"
+
+fake_workspace_tmp="$(mktemp -d "${TMPDIR:-/tmp}/exo-test-fake-workspace.XXXXXX")"
+fake_home_tmp="$(mktemp -d "${TMPDIR:-/tmp}/exo-test-fake-home.XXXXXX")"
+for caller_tmp in "$fake_workspace_tmp" "$fake_home_tmp"; do
+    requested="$caller_tmp/exo-phase-b-evidence.caller-controlled"
+    if TMPDIR="$caller_tmp" bash "$TEMPLATE_DIR/tests/phase-b/run.sh" "$requested" >/dev/null 2>&1 \
+        || [ -e "$requested" ]; then
+        bad "phase-b harness ignores caller-controlled TMPDIR"
+    else
+        ok "phase-b harness ignores caller-controlled TMPDIR"
+    fi
+done
+rm -rf "$fake_workspace_tmp" "$fake_home_tmp"
+
+batch_root="$(mktemp -d "${TMPDIR:-/tmp}/exo-test-batch.XXXXXX")"
+mkdir -p "$batch_root/one/.exocortex"
+bash "$TEMPLATE_DIR/scripts/update-all-repos.sh" "$batch_root" --dry-run >/dev/null && ok "batch updater inventory is read-only" || bad "batch updater inventory is read-only"
+if bash "$TEMPLATE_DIR/scripts/update-all-repos.sh" "$batch_root" --yes >/dev/null 2>&1; then bad "batch live mutation denied"; else ok "batch live mutation denied"; fi
+rm -rf "$batch_root"
+
+if rg -n 'curl|urllib\.request|requests\.|mcp_' "$TEMPLATE_DIR/.exocortex/scripts" \
+    --glob '!egress_guard.py' --glob '!**/tests/**' >/dev/null; then
+    bad "legacy scripts contain no direct network/provider path"
+else
+    ok "legacy scripts contain no direct network/provider path"
+fi
+
+install_target="$(new_target)"
+fake_home="$(mktemp -d "${TMPDIR:-/tmp}/exo-test-home.XXXXXX")"
+run_install "$install_target" "$TEMPLATE_DIR" "$fake_home" >/dev/null
+if privacy_scan "$install_target" tree "$privacy_fingerprint"; then
+    ok "fresh install contains no private Phase B evidence"
+else
+    bad "fresh install contains no private Phase B evidence"
+fi
+rm -rf "$install_target" "$fake_home"
+
+source_copy="$(mktemp -d "${TMPDIR:-/tmp}/exo-test-source.XXXXXX")"
+cp -Rp "$TEMPLATE_DIR/." "$source_copy/"
+cat "$privacy_fingerprint" >> "$source_copy/README.md"
+if privacy_scan "$source_copy" checksums "$privacy_fingerprint"; then
+    bad "candidate privacy scan rejects injected fingerprint"
+else
+    ok "candidate privacy scan rejects injected fingerprint"
+fi
+rm -rf "$source_copy"
+
+install_target="$(new_target)"
+fake_home="$(mktemp -d "${TMPDIR:-/tmp}/exo-test-home.XXXXXX")"
+run_install "$install_target" "$TEMPLATE_DIR" "$fake_home" >/dev/null
+cat "$privacy_fingerprint" >> "$install_target/AI_START_HERE.md"
+if privacy_scan "$install_target" tree "$privacy_fingerprint"; then
+    bad "installed-output privacy scan rejects injected fingerprint"
+else
+    ok "installed-output privacy scan rejects injected fingerprint"
+fi
+rm -rf "$install_target" "$fake_home"
+
+source_copy="$(mktemp -d "${TMPDIR:-/tmp}/exo-test-source.XXXXXX")"
+cp -Rp "$TEMPLATE_DIR/." "$source_copy/"
+mkdir -p "$source_copy/.exocortex/planning"
+cp "$privacy_fingerprint" "$source_copy/.exocortex/planning/private-fixture.txt"
+install_target="$(new_target)"
+fake_home="$(mktemp -d "${TMPDIR:-/tmp}/exo-test-home.XXXXXX")"
+if privacy_scan "$source_copy" checksums "$privacy_fingerprint" \
+    && run_install "$install_target" "$source_copy" "$fake_home" >/dev/null \
+    && [ ! -e "$install_target/.exocortex/planning/private-fixture.txt" ]; then
+    ok "protected planning fingerprint is excluded from public install"
+else
+    bad "protected planning fingerprint is excluded from public install"
+fi
+rm -rf "$source_copy" "$install_target" "$fake_home"
+
+if [ "$privacy_fingerprint_owned" = true ]; then
+    rm -f "$privacy_fingerprint"
+fi
+
+if PYTHONDONTWRITEBYTECODE=1 python3 "$TEMPLATE_DIR/tests/test_documentation_contract.py" "$TEMPLATE_DIR"; then
+    ok "active installation documentation contract"
+else
+    bad "active installation documentation contract"
+fi
+
+docs_negative_base="$(mktemp -d "${TMPDIR:-/tmp}/exo-doc-contract-base.XXXXXX")"
+while IFS='  ' read -r _ rel; do
+    [ -n "$rel" ] || continue
+    mkdir -p "$docs_negative_base/$(dirname "$rel")"
+    cp "$TEMPLATE_DIR/$rel" "$docs_negative_base/$rel"
+done < "$TEMPLATE_DIR/SHA256SUMS"
+cp "$TEMPLATE_DIR/SHA256SUMS" "$docs_negative_base/SHA256SUMS"
+
+expect_docs_contract_failure() {
+    label="$1"
+    relative="$2"
+    mutation="$3"
+    expected="$4"
+    docs_negative="$(mktemp -d "${TMPDIR:-/tmp}/exo-doc-contract-negative.XXXXXX")"
+    cp -R "$docs_negative_base/." "$docs_negative/"
+    printf '\n%b\n' "$mutation" >> "$docs_negative/$relative"
+    if PYTHONDONTWRITEBYTECODE=1 python3 \
+        "$docs_negative/tests/test_documentation_contract.py" \
+        "$docs_negative" >"$docs_negative/result.log" 2>&1; then
+        bad "$label"
+    elif grep -Fq "$expected" "$docs_negative/result.log"; then
+        ok "$label"
+    else
+        bad "$label"
+    fi
+    rm -rf "$docs_negative"
+}
+
+expect_docs_contract_failure \
+    "documentation contract rejects legacy copy guidance" \
+    ".exocortex/README.md" \
+    'cp templates/* .exocortex/' \
+    '.exocortex/README.md: forbidden'
+expect_docs_contract_failure \
+    "documentation contract rejects credential-shaped guidance" \
+    ".exocortex/README.md" \
+    'OPENAI_API_KEY=sk-fixture-only' \
+    '.exocortex/README.md: forbidden'
+expect_docs_contract_failure \
+    "documentation contract rejects remote pipe guidance" \
+    "SECURITY.md" \
+    '`curl | bash` is convenient.' \
+    'SECURITY.md: forbidden'
+expect_docs_contract_failure \
+    "documentation contract rejects stale fixed test count" \
+    "CONTRIBUTING.md" \
+    'All 8 tests must pass.' \
+    'CONTRIBUTING.md: forbidden'
+expect_docs_contract_failure \
+    "documentation contract rejects stale dependency baseline" \
+    "CONTRIBUTING.md" \
+    'Do not add external runtime dependencies beyond git and bash.' \
+    'CONTRIBUTING.md: forbidden'
+expect_docs_contract_failure \
+    "documentation contract rejects full-suite hook overclaim" \
+    "CONTRIBUTING.md" \
+    'The hook runs the full test suite.' \
+    'CONTRIBUTING.md: forbidden'
+expect_docs_contract_failure \
+    "documentation contract rejects save-as-checkpoint guidance" \
+    ".exocortex/control/README.md" \
+    'Use /save to checkpoint your work state.' \
+    '.exocortex/control/README.md: forbidden'
+expect_docs_contract_failure \
+    "documentation contract rejects stale relative links" \
+    ".exocortex/docs/user-guide.md" \
+    'See the root `README.md` and `UPGRADE_MANIFEST.md`.' \
+    '.exocortex/docs/user-guide.md: forbidden'
+expect_docs_contract_failure \
+    "documentation contract rejects stale command-registry claim" \
+    "WHATSNEW.md" \
+    'The canonical command JSON files remain unchanged.' \
+    'WHATSNEW.md: forbidden'
+expect_docs_contract_failure \
+    "documentation contract rejects native Windows support claim" \
+    "README.md" \
+    'Native Windows is supported.' \
+    'README.md: forbidden'
+expect_docs_contract_failure \
+    "documentation contract rejects bare-yes authority" \
+    ".exocortex/docs/AI_INSTALLATION.md" \
+    'A bare yes authorizes installation and push.' \
+    '.exocortex/docs/AI_INSTALLATION.md: forbidden'
+expect_docs_contract_failure \
+    "documentation contract rejects bundled Git authority" \
+    ".exocortex/docs/AI_INSTALLATION.md" \
+    'Installation includes commit and push.' \
+    '.exocortex/docs/AI_INSTALLATION.md: forbidden'
+expect_docs_contract_failure \
+    "documentation contract rejects transaction-exclusion overclaim" \
+    ".exocortex/docs/AI_INSTALLATION.md" \
+    'Confirm that capability and transaction paths were excluded.' \
+    '.exocortex/docs/AI_INSTALLATION.md: forbidden'
+expect_docs_contract_failure \
+    "documentation contract rejects automatic handoff write" \
+    ".exocortex/docs/AI_INSTALLATION.md" \
+    'After install, write a handoff.' \
+    '.exocortex/docs/AI_INSTALLATION.md: forbidden'
+expect_docs_contract_failure \
+    "documentation contract rejects wrong clean-install gate" \
+    ".exocortex/docs/AI_INSTALLATION.md" \
+    'Stop and ask for my exact local-install approval.' \
+    '.exocortex/docs/AI_INSTALLATION.md: forbidden'
+expect_docs_contract_failure \
+    "documentation contract rejects broken inline link" \
+    "README.md" \
+    '[missing inline](docs/does-not-exist.md)' \
+    'README.md: broken local link: docs/does-not-exist.md'
+expect_docs_contract_failure \
+    "documentation contract rejects broken reference link" \
+    "README.md" \
+    '[missing reference][missing-doc]\n\n[missing-doc]: docs/also-missing.md' \
+    'README.md: broken local link: docs/also-missing.md'
+
+rm -rf "$docs_negative_base"
+
+finish_suite
