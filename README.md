@@ -6,6 +6,41 @@ are interchangeable workers.
 
 This template is public beta. Read `VERSION` for the packaged version.
 
+## Install in 60 seconds
+
+Works on macOS and Linux today; on Windows, run everything inside WSL.
+
+**With a coding AI** (Cursor, Claude, Copilot, or any agent with local
+filesystem and terminal access): open the repository you want Exocortex
+installed into and paste this prompt:
+
+> Install Exocortex into this repository. Clone
+> `https://github.com/EnkratFlow/exocortex-template` at its newest release
+> tag into a sibling directory. Compute the SHA-256 of the clone's
+> `SHA256SUMS` file and confirm it equals the candidate digest published in
+> that release's notes; stop if it does not match. Then, from this
+> repository's root, run
+> `EXOCORTEX_LOCAL_SOURCE=<clone path> EXOCORTEX_CANDIDATE_DIGEST=<digest> bash <clone path>/install.sh <project-name>`
+> and show me the full result. Do not commit, push, publish, or configure
+> anything beyond that.
+
+**By hand**, three commands from the repository you are installing into:
+
+```bash
+git clone --branch v3.2.1 https://github.com/EnkratFlow/exocortex-template.git ../exocortex-template
+shasum -a 256 ../exocortex-template/SHA256SUMS   # compare with the digest in the release notes
+EXOCORTEX_LOCAL_SOURCE=../exocortex-template EXOCORTEX_CANDIDATE_DIGEST=<digest from release notes> bash ../exocortex-template/install.sh my-project
+```
+
+**Already running an older Exocortex?** Use the rehearsed updater instead of
+reinstalling: run `scripts/safe-update.sh --dry-run` with the same template
+path and digest to see the exact change list first, then follow the guarded
+update flow in
+[`.exocortex/docs/AI_INSTALLATION.md`](.exocortex/docs/AI_INSTALLATION.md).
+Your project data, customized files, and anything you have added to the
+repository are preserved; a verified rollback archive is created before any
+byte changes.
+
 ## Core model
 
 - `AI_START_HERE.md` is the canonical provider-neutral entry point.
