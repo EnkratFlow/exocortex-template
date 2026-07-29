@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/exocortex/schemas/external-sync-policy.schema.json",
+  "title": "Exocortex destination policy",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "kind", "default", "policy_version", "destinations"],
+  "properties": {
+    "schema_version": { "const": "public-v2" },
+    "kind": { "const": "external_sync_policy" },
+    "default": { "const": "deny" },
+    "policy_version": { "type": "integer", "minimum": 1 },
+    "destinations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["destination_id", "transport", "methods", "endpoint", "credential_env", "status", "max_payload_bytes"],
+        "properties": {
+          "destination_id": { "$ref": "#/$defs/id" },
+          "transport": { "type": "string", "enum": ["https_json", "local_copy", "fake"] },
+          "methods": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": { "type": "string", "enum": ["POST", "PUT", "COPY"] }
+          },
+          "endpoint": { "type": "string", "minLength": 1, "maxLength": 1000 },
+          "credential_env": { "type": ["string", "null"], "pattern": "^[A-Z][A-Z0-9_]*$" },
+          "status": { "type": "string", "enum": ["active", "disabled"] },
+          "max_payload_bytes": { "type": "integer", "minimum": 0, "maximum": 10485760 }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "id": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,199}$" }
+  }
+}

@@ -1,544 +1,332 @@
-# Exocortex v3
+# Exocortex
 
-> ⚠️ **Public Beta** — works well but may have rough edges. Use at your own risk. Feedback welcome via [Issues](https://github.com/EnkratFlow/exocortex-template/issues).
+Exocortex is a project-local memory, delivery, and multi-AI entry protocol for
+software repositories. The repository owns its history and gates; AI providers
+are interchangeable workers.
 
-> A portable memory system for developers and AI assistants that never forgets context.
+This template is public beta. Read `VERSION` for the packaged version.
 
-**Current template version:** 3.1.7
+## Core model
 
-## What is This?
+- `AI_START_HERE.md` is the canonical provider-neutral entry point.
+- `.exocortex/AI_BOOTSTRAP.md` discovers the 24 command specifications.
+- `.exocortex/control/MODEL_ROUTING.md` selects by capability, risk,
+  exact current-session availability, a route timestamp within 60 seconds of
+  current UTC, and measured cost per successful completion—not latency claims
+  or permanent model names.
+- `.exocortex/control/DELIVERY_WORKFLOW.md` applies minutes-long Kanban/SDLC
+  gates from requirements through hypercare.
+- `.exocortex/scripts/authority_guard.py` and
+  `.exocortex/scripts/orchestrate_work_item.py` enforce registered one-writer,
+  one-time scoped mutation capabilities for public-v2 runtime work items.
+- `.exocortex/scripts/egress_guard.py` separates local immutable payload staging
+  from destination-specific outward authorization.
 
-The **Exocortex** is an external memory system for your development projects. It helps you (and AI coding assistants) maintain context, track decisions, capture lessons, and manage daily work -- across sessions, machines, and editors.
+Unknown or unregistered AI surfaces are read-only. A save is local narrative
+memory, not a lifecycle checkpoint. A handoff transfers evidence, not
+authority. Human-facing decisions use four business-level envelopes:
+`local_delivery`, `publication`, `integration_rollout`, and exact-target
+`production_egress`. Internal reservations, capabilities, evidence records,
+handoffs, and writer release are not separate human approvals.
 
-**Think of it as:** Your project's external brain that remembers what you're working on, what you've learned, and what needs to be done.
+## Install with a coding AI
 
----
+You do not have to type the installation commands yourself. Open the intended
+repository in a coding AI that has local filesystem and terminal access, then
+paste the clean-install or existing-update prompt from
+[`.exocortex/docs/AI_INSTALLATION.md`](.exocortex/docs/AI_INSTALLATION.md).
 
-## Quick Start
+The provider-neutral prompt works by contract, not by provider identity. The AI
+must start read-only, identify the exact target, pin and verify the template,
+rehearse in disposable state, and show the complete scope. Installation uses
+two understandable local decisions: disposable rehearsal, then one
+named-target local apply. The second decision contains isolated-worktree
+setup, internal authority mechanics, installation/update, verification, local
+handoff, and writer release. It never bundles publication, merge,
+deployment, synchronization, or promotion.
 
-### Install Exocortex
+Chat-only assistants and provider menus without local repository and terminal
+access can explain the process but cannot perform it.
 
-Run this once inside any project you want Exocortex to manage:
+Current platform truth:
 
-```bash
-cd /path/to/your-project
-curl -sL https://raw.githubusercontent.com/EnkratFlow/exocortex-template/main/install.sh | bash
-```
-
-The memory system is named **exocortex** by default. You can override the project name:
-
-```bash
-curl -sL https://raw.githubusercontent.com/EnkratFlow/exocortex-template/main/install.sh | bash -s "my-project"
-```
-
-### Update Exocortex Safely
-
-For existing projects, this is the recommended update path. It creates a restore archive, rehearses the update in a temporary copy, verifies protected memory/data files are unchanged, shows the diff summary, and asks before touching the real project.
-
-```bash
-cd /path/to/your-project
-
-curl -sL https://raw.githubusercontent.com/EnkratFlow/exocortex-template/main/scripts/safe-update.sh -o /tmp/exocortex-safe-update.sh
-bash /tmp/exocortex-safe-update.sh
-```
-
-Watch for these lines before approving the update:
-
-```text
-Backup: /path/to/restore/archive.tar.gz
-Protected data check: PASS
-Apply this update to the real project now? [y/N]
-```
-
-Type `y` only after the protected data check passes. If anything goes wrong after applying, the script prints a rollback command using the restore archive it created.
-
-### Which Command Should I Use?
-
-| Situation | Use |
+| Environment | Status |
 |---|---|
-| New project | `install.sh` |
-| Existing important project | `safe-update.sh` |
-| Existing throwaway/simple project | re-run `install.sh` |
-| Many projects | `scripts/update-all-repos.sh` |
-| Offline/private environment | `EXOCORTEX_LOCAL_SOURCE=/path/to/exocortex-template bash /path/to/exocortex-template/install.sh` |
-
-### What The Installer Protects
-
-The installer detects whether this is a first install or an update. On update, it uses `.exocortex/.install-manifest` to update only files that are safe to update.
-
-- Template file unchanged since last install -> skip
-- File present in manifest and unmodified by you -> update to latest template version
-- File modified by you since install -> preserve your version
-- File not in manifest -> skip
-
-Protected memory/data files are never copied from the public template and are never tracked in `.exocortex/.install-manifest`, including `PROJECT_MEMORY.md`, `LESSONS.md`, `TODO.md`, `SESSION_CONTEXT.md`, `.env`, and everything under `events/`.
-
----
-
-## Cursor Setup (One-Time, Cursor Users Only)
-
-This section is only relevant if you use Cursor. Skip it entirely if you use VS Code + Copilot, Claude Code, Codex, Windsurf, Zed, or another AI-capable editor. Those editors use the pointer files or the universal adapter prompt described below.
-
-Cursor uses **user rules** and **global skills** instead of per-project files. You need to do **both steps below once** — the skills give the AI domain expertise, and the user rules tell it to follow the exocortex command protocol. Without the user rules, the AI won't know what `/work`, `/save`, or any other command means, even if the skills are installed.
-
-### 1. Install Specialist Skills
-
-The exocortex includes 17 specialist skills (devops, architect, ux-designer, etc.) that give the AI domain expertise when you need it.
-
-```bash
-# Clone the template (if you haven't already)
-git clone https://github.com/EnkratFlow/exocortex-template.git /tmp/exocortex
-
-# Preview what will be installed
-bash /tmp/exocortex/scripts/install-cursor-skills.sh --list
-
-# Install skills
-bash /tmp/exocortex/scripts/install-cursor-skills.sh
-
-# Clean up
-rm -rf /tmp/exocortex
-```
-
-Skills install to `~/.cursor/skills/` (global, not per-project).
-
-**Safe for existing setups:**
-- New skills are added without touching your existing ones
-- Skills you haven't modified are updated to the latest version
-- Skills you've customized are skipped (use `--force` to overwrite all)
-- Custom skills not in the template are never deleted
-
-**Available skills:**
-
-| Category | Skills |
-|----------|--------|
-| Build | architect, engineer, devops, sre, security, ai-architect |
-| Product | product-manager, project-planner, ux-designer, cx-strategist, behavioral |
-| Quality | qa-strategist, technical-writer, data-engineer |
-| Strategy | chief-of-staff, deep-agent |
-| Orientation | onboard |
-
-### 2. Add User Rules (manual, in Cursor settings)
-
-Add these two rules in **Cursor Settings > General > Rules for AI**:
-
-**Rule 1 (Exocortex commands):**
-
-```
-All projects use the exocortex system. When the user types a command (/work, /save, /daily-end, etc.), read .exocortex/AI_BOOTSTRAP.md in the relevant repo for the full command protocol. In a multi-root workspace, determine the target repo FIRST: (1) user specified a repo, (2) a file is focused in the IDE, (3) session touched repos - list them, offer "all" or pick, WAIT for answer, (4) none - ask which repo, WAIT. Do NOT run shell steps until the target repo is confirmed. When starting work on a project, read .exocortex/reference/MEMORY.md for project context and reading order.
-```
-
-**Rule 2 (Specialist skills):**
-
-```
-Before starting any non-trivial task, read the matching specialist skill from ~/.cursor/skills/ based on the topic (CI/CD/deploy/Docker/nginx = devops, UI/UX/design = ux-designer, system design/API/scaling = architect, RAG/embeddings/AI = ai-architect, code quality/refactoring = engineer, auth/secrets = security, monitoring/logging = sre, tests/QA = qa-strategist, data pipelines/ETL = data-engineer, requirements/MVP = product-manager, planning/roadmap = project-planner, customer journey/retention = cx-strategist, habits/engagement = behavioral, strategy/priorities = chief-of-staff, docs/guides = technical-writer, complex/ambiguous = deep-agent). Read the skill file FIRST before doing any work. If unsure which skill, read ~/.cursor/skills/roster/SKILL.md.
-```
-
-**Note:** The AI may not always follow user rules automatically. If it skips a command or doesn't load a skill, prompt it directly: "read .exocortex/AI_BOOTSTRAP.md" or "read the devops skill".
-
----
-
-## Other Editors
-
-For non-Cursor editors, thin pointer files are created in your project during install:
-
-- `CLAUDE.md` -- Claude Code (auto-loads)
-- `.github/copilot-instructions.md` -- VS Code Copilot (auto-loads)
-- `.windsurfrules` -- Windsurf (auto-loads)
-
-All point to `.exocortex/AI_BOOTSTRAP.md` as the single source of truth.
-
-For Codex, Zed, or any other AI-capable editor/IDE, the installer prints a copy-paste adapter prompt. Add that prompt to the editor's project instructions, agent rules, system prompt, command snippet, custom mode, or memory file.
-
-The full reference is saved at `.exocortex/docs/IDE_INTEGRATION_GUIDE.md`.
-
-**Current Codex support:** Exocortex works in Codex through the universal adapter prompt. Native `.agents/skills/*` bridge files are planned, but are not installed by this template yet.
-
----
-
-## What's Included
-
-```
-CLAUDE.md                                 <-- Thin pointer (Claude Code auto-loads)
-.windsurfrules                            <-- Thin pointer (Windsurf auto-loads)
-.github/copilot-instructions.md           <-- Thin pointer (VS Code Copilot auto-loads)
-.exocortex/
-  |-- AI_BOOTSTRAP.md                     <-- Single source of truth for commands
-  |-- COMMAND_SYSTEM.md                   <-- Schema reference & full command index
-  |-- PERSONA_AND_COMMANDS.md             <-- AI persona & mode documentation
-  |-- MEMORY_TIERS.md                     <-- Memory tier architecture
-  |-- PROJECT_MEMORY.md                   <-- [CUSTOMIZE] System purpose & constraints
-  |-- SESSION_CONTEXT.md                  <-- Current work state (auto-generated)
-  |-- TODO.md                             <-- [CUSTOMIZE] Daily task board
-  |-- LESSONS.md                          <-- Lessons learned
-  |-- OPEN_DECISIONS.md                   <-- Unresolved decisions
-  |-- .install-manifest                   <-- SHA-256 hashes of installed files (safe to commit)
-  |-- commands/                           <-- 23 JSON command specs
-  |-- control/                            <-- Project control center
-  |-- docs/                               <-- System documentation
-  |-- events/                             <-- Append-only work events
-  |-- reference/                          <-- Quick reference files
-  |-- scripts/                            <-- Automation (memory, events, etc.)
-```
-
-**Cursor-specific (per-project, installed by installer):**
-
-```
-.cursor/
-  |-- commands/                           <-- Cursor slash command triggers (work, save, onboard, ...)
-  |-- skills/                             <-- Specialist skills (project-scoped copy)
-  |-- rules/                              <-- Auto-loaded rules (incl. plan-orchestrate.mdc)
-  |-- agents/                             <-- Cursor subagent definitions
-  |-- hooks/                              <-- Lifecycle hooks (auto-save-phase.sh)
-  |-- hooks.json                          <-- Hook registration manifest (subagentStop)
-```
-
-**Cursor-specific (global, installed separately):**
-
-```
-~/.cursor/skills/                         <-- 17 specialist skills + roster guide (global)
-  |-- roster/SKILL.md                     <-- Skill selection guide
-  |-- onboard/SKILL.md                    <-- Codebase onboarding
-  |-- devops/SKILL.md                     <-- Docker, CI/CD, VPS, nginx
-  |-- architect/SKILL.md                  <-- System design, API contracts
-  |-- engineer/SKILL.md                   <-- Code quality, patterns
-  |-- ...                                 <-- 12 more specialist skills
-```
-
----
-
-## Plan Orchestration & Auto-Save Hook
-
-For multi-phase work (refactors, feature builds, design + implementation), exocortex ships a Cursor rule and a `subagentStop` hook that together cut Opus spend by roughly 3-5x without losing planning quality.
-
-**The rule** (`.cursor/rules/plan-orchestrate.mdc`) tells Opus to:
-
-1. Decompose plan-class work into numbered phases before any execution.
-2. Route each phase to the cheapest model that can do the job (composer-2-fast for mechanical edits, gpt-5.3-codex for feature code and tests, claude-4.5-haiku-thinking for docs, claude-4.6-sonnet-medium-thinking for tricky debugging).
-3. Keep Opus for orchestration, review, and architectural calls only.
-
-**The hook** (`.cursor/hooks/auto-save-phase.sh`, registered via `.cursor/hooks.json`) fires when any subagent stops. If the subagent's description matches `Phase N: ...` or `phase-N-...`, the hook injects a follow-up message telling the parent agent to run `/save` before starting the next phase. Non-phase subagents (exploration, browser automation, quick lookups) are silently ignored.
-
-A hybrid `/save` pattern uses claude-4.5-haiku-thinking for the LLM-heavy event drafting, with the parent shelling out for the `create_event.sh` and `sync_event_to_vault.sh` steps. Manual saves, `/daily-end`, `/weekly-review`, and `/monthly-review` still run on the parent for full reflection quality.
-
-During fresh install, `install.sh` asks whether to also copy these files to `~/.cursor/` so they apply to non-exocortex projects too. Default is yes.
-
----
-
-## 23 Workflow Commands
-
-### Daily
-| Command | Purpose |
-|---------|---------|
-| `/work` | Load context, see what to work on (includes QMD cross-project results if installed) |
-| `/scrum` | Daily standup |
-| `/save` | Save progress before breaks |
-| `/daily-end` | End of day review |
-| `/interrupt` | Capture ideas without breaking flow |
-| `/brief` | Quick status check |
-
-### Memory (AI-powered)
-| Command | Purpose |
-|---------|---------|
-| `/shortterm` | 7-31 day semantic memory |
-| `/longterm` | 31+ day compressed memory |
-| `/subconscious` | Cross-cutting pattern detection |
-| `/drill <topic>` | Deep-dive on a specific topic |
-| `/history` | Search older events |
-
-### Planning
-| Command | Purpose |
-|---------|---------|
-| `/groom` | Process interrupts |
-| `/refine-backlog` | Promote backlog to TODO |
-| `/prioritize` | Reorder TODO |
-| `/weekly-review` | Weekly planning |
-| `/monthly-review` | Monthly strategic review |
-| `/pattern-review` | Turn recurring friction into skills or memory updates |
-
-### System
-| Command | Purpose |
-|---------|---------|
-| `/onboard` | Read and understand the codebase before working |
-| `/system-scan` | Repository health check |
-| `/ai-export` | Generate system doc |
-| `/ecosystem` | Cross-project view |
-| `/init-exocortex` | Bootstrap new project |
-| `/check-keys` | Validate API key status without exposing values |
-
-### Codebase Onboarding
-
-`/onboard` scans the project and produces a structured summary: stack, structure, entry points, key modules, data layer, deployment, and current context from exocortex files. Caps at ~20 file reads so it stays fast and token-efficient.
-
-For projects without exocortex, the same behavior is available as the `onboard` skill. Say "onboard to this project" or "read the codebase" and the AI will follow the same structured scan.
-
----
-
-## Four-Tier Memory System
-
-| Tier | Window | Purpose | Script |
-|------|--------|---------|--------|
-| **RIGHT NOW** | 0-7 days | Current work events | `get_rightnow_memory.py` |
-| **SHORT-TERM** | 7-31 days | Semantic themes & patterns | `get_shortterm_memory.py` |
-| **LONG-TERM** | 31+ days | Compressed context | `get_longterm_memory.py` |
-| **SUBCONSCIOUS** | All events | Cross-cutting patterns, emotional valence | `get_subconscious_memory.py` |
-
-Memory scripts use OpenAI (primary) with Anthropic fallback. API keys are loaded from `~/.exocortex/.env` (global, works for all projects) with `.exocortex/.env` in each project as an optional override. See [API Key Setup](#api-key-setup) below.
-
----
-
-## Daily Workflow
-
-### Morning (2 minutes)
-1. Type `/work` -- loads context, shows next task
-2. Pick ONE task from TODO
-3. Start coding
-
-### During Work
-- Focus on your task
-- Got an idea? `/interrupt` (< 1 minute capture, keep working)
-- Before a break? `/save`
-
-### End of Day (5 minutes)
-1. Type `/daily-end`
-2. Review proposed updates
-3. Approve structural changes only
-
-### Weekly
-- `/groom` -- process interrupts
-- `/refine-backlog` -- promote ready items
-- `/prioritize` -- reorder TODO
-
-### Backlog Flow
-
-Exocortex separates ideas from executable work:
-
-1. `INTERRUPTS.md` captures ideas, distractions, and observations while you keep working.
-2. `/groom` reviews interrupts and moves useful investigation items into `control/BACKLOG.md`.
-3. `/refine-backlog` turns ready backlog items into executable tasks in `TODO.md`.
-4. `/prioritize` orders `TODO.md` by strategic importance.
-
-This keeps random thoughts from becoming work automatically.
-
----
-
-## After Installation
-
-1. **Customize** `.exocortex/PROJECT_MEMORY.md` -- describe your system
-2. **Map files** in `.exocortex/reference/ESSENTIAL_FILES.md`
-3. **Add tasks** to `.exocortex/TODO.md`
-4. **Start working** with `/work`
-
----
-
-## Contributing / Testing
-
-The install logic is tested with a full suite before any change can be merged.
-
-### Run the test suite
-
-```bash
-git clone https://github.com/EnkratFlow/exocortex-template.git
-cd exocortex-template
-bash tests/run_tests.sh
-```
-
-Expected output: `ALL 18 TESTS PASSED` covering:
-
-| Test | What it verifies |
-|------|-----------------|
-| T01 fresh install | Skeleton files created, manifest written |
-| T02 update no manifest | User data preserved, new template files added |
-| T03 system file updates | Manifest-tracked files updated when template changes |
-| T04 user-modified preserved | Files you've edited are never overwritten |
-| T05 idempotent | Running install twice produces identical results |
-| T06 critical data files | SESSION\_CONTEXT, TODO, LESSONS, PROJECT\_MEMORY untouched |
-| T07 events preserved | Event files byte-for-byte identical after update |
-| T08 events not in manifest | Event files never added to the hash manifest |
-| T09 hooks installed | Cursor hook files are copied and executable |
-| T10 hook user-modified preserved | User-edited hook scripts are not overwritten |
-| T11 ai-export generic | `/ai-export` has no app-specific Trading Journal leak |
-| T12 data-plane boundary | Memory/state files are never manifest-tracked |
-| T13 public template data | Public template does not ship live session memory |
-| T14 save surfaces | Save docs and bridges do not use legacy prompt flow |
-| T15 IDE guidance | Universal adapter guide is installed and printed |
-| T16 orchestration guidance | Branch/testing guidance stays public-safe |
-| T17 README accuracy | README does not drift on command/test/editor support claims |
-| T18 safe update | Restore-point dry-run rehearses without changing the real project |
-
-### Pre-commit hook (contributor setup, one-time)
-
-If you're contributing to the template itself, install the git hook once after cloning:
-
-```bash
-bash tests/install-pre-commit-hook.sh
-```
-
-The hook runs the full test suite before any commit that touches `install.sh`, `tests/`, `.exocortex/`, `.cursor/`, `.claude/`, or `.github/skills/`. The commit is blocked if any test fails.
-
-Bypass when needed: `git commit --no-verify`
-
-### CI
-
-GitHub Actions runs the same test suite on every push and pull request that modifies those paths. See `.github/workflows/test.yml`. On failure, test output is uploaded as an artifact (7-day retention).
-
----
-
-## API Key Setup
-
-**Keys are optional.** The system works without them — `/save`, `/daily-end`, `/interrupt`, and all planning commands work with no key at all. Your events are stored as plain markdown files on your machine.
-
-The commands that need a key are the AI memory summarisers: `/work`, `/shortterm`, `/longterm`, `/subconscious`, and `/drill`. Without a key, these commands display your raw event files. With a key, they send your events to an LLM and return a readable, compressed summary of what you've been working on.
-
-### What data leaves your machine
-
-When you run a memory command, the content of your event files (your work journal entries) is sent to OpenAI or Anthropic over HTTPS. This includes whatever you wrote in `/save` and `/daily-end` — typically: what you worked on, decisions made, git state. **Do not use AI memory features if your work is under NDA or you are uncomfortable with work logs leaving your machine.**
-
-### What it costs
-
-Keys are billed to your own account — exocortex has no subscription and takes no cut. The default model is `gpt-4o-mini`, one of OpenAI's cheapest. A typical `/work` call costs less than $0.01. Most developers running this daily spend **under $1/month**.
-
-### Setup (one-time, covers all your projects)
-
-```bash
-mkdir -p ~/.exocortex
-nano ~/.exocortex/.env   # or open in your editor
-```
-
-Add your keys:
-
-```bash
-OPENAI_API_KEY=sk-...
-ANTHROPIC_API_KEY=sk-ant-...   # optional — used as fallback if OpenAI fails
-```
-
-Every exocortex project on your machine reads this one file automatically. When you rotate a key, update it here and all projects are fixed instantly.
-
-If you need a project-specific key (separate billing account, different rate limit), add it to `.exocortex/.env` inside that project — it overrides the global one for that project only.
-
-Get keys: [OpenAI](https://platform.openai.com/api-keys) · [Anthropic](https://console.anthropic.com/settings/keys)
-
-### Keys are never committed
-
-`.exocortex/.env` and `~/.exocortex/.env` are both gitignored. Your keys stay on your machine. The repo contains no credentials of any kind.
-
----
-
-## Requirements
-
-- **git** (for installation)
-- **bash** (macOS/Linux, Windows WSL works too)
-- **OpenAI or Anthropic API key** (optional, for AI memory features — see [API Key Setup](#api-key-setup))
-- **qmd** (optional, for cross-project context in `/work`) — if `qmd` is installed and on your PATH, `/work` automatically surfaces the top 3 related documents from your knowledge base. Silently skipped if not available.
-- **Works with:** Cursor, VS Code + Copilot, Claude Code, Windsurf, Codex via universal adapter prompt, Zed/other AI editors via copied project instructions
-
----
-
-## License
-
-MIT — use freely, modify freely, no attribution required (but appreciated).
-
-See [LICENSE](LICENSE) for the full text.
-
----
-
-## Advanced Maintenance
-
-Most users only need the Quick Start commands above. This section is for verification, batch updates, local/offline installs, and release-specific maintenance.
-
-### Verify The Installer Manually
-
-The installer runs a built-in integrity check automatically. If you want to inspect it before running:
-
-```bash
-curl -sL https://raw.githubusercontent.com/EnkratFlow/exocortex-template/main/install.sh -o install.sh
-curl -sL https://raw.githubusercontent.com/EnkratFlow/exocortex-template/main/SHA256SUMS -o SHA256SUMS
-
-less install.sh
-shasum -a 256 install.sh
-# Compare against the install.sh line in SHA256SUMS
-
-bash install.sh "my-project"
-```
-
-You can also clone the repo directly:
-
-```bash
-git clone https://github.com/EnkratFlow/exocortex-template.git
-bash exocortex-template/install.sh "my-project"
-```
-
-### Quick Update Without Rehearsal
-
-For low-risk projects, re-run the installer from the project root:
-
-```bash
-cd /path/to/your-project
-curl -sL https://raw.githubusercontent.com/EnkratFlow/exocortex-template/main/install.sh | bash
-```
-
-For important projects, prefer the safe updater from Quick Start.
-
-### Safe Update Options
-
-```bash
-# Rehearse only; do not apply the real update
-bash /tmp/exocortex-safe-update.sh --dry-run
-
-# Use a local template clone instead of downloading latest
-bash /tmp/exocortex-safe-update.sh --template /path/to/exocortex-template
-
-# Rehearse, verify, then apply without prompting
-bash /tmp/exocortex-safe-update.sh --yes
-```
-
-Protected files/directories checked by the safe updater include:
-
-- `.exocortex/events/`
-- `.exocortex/local/`
-- `.exocortex/.env`
-- `.exocortex/SESSION_CONTEXT.md`
-- `.exocortex/TODO.md`
-- `.exocortex/LESSONS.md`
-- `.exocortex/PROJECT_MEMORY.md`
-- `.exocortex/OPEN_DECISIONS.md`
-- `.exocortex/control/INTERRUPTS.md`
-- `.exocortex/control/BACKLOG.md`
-- `.exocortex/control/ROADMAP.md`
-
-### Update Many Projects
-
-If you have several projects on this template, the batch updater handles them in one pass:
+| macOS with the documented Bash/Unix tools | `verified` |
+| Linux | `compatible_pending_candidate_CI` |
+| Windows through WSL | `human_uat_pending` |
+| Git Bash or native Windows PowerShell/Command Prompt | `unsupported` |
+
+Do not advertise native Windows support. WSL must pass the same bounded
+rehearsal before its status changes. See the AI installation guide for the
+copy-paste prompts, guarded update command, GitHub boundary, and Human UAT.
+
+## Safe installation
+
+Do not pipe an unpinned remote installer into a shell. Clone or otherwise
+obtain an exact reviewed template revision and verify `SHA256SUMS`. Rehearse in
+a sanitized disposable fixture first. After that evidence is accepted, a
+named-target local-delivery decision may create one clean isolated Git worktree
+from the exact approved target HEAD, run the installer, verify it,
+record the permitted local handoff, and release the writer. Preserve the
+SHA-256 of the reviewed `SHA256SUMS` as the accepted candidate digest; do not
+derive it from an unreviewed source at install time:
+
+`FILEMODES` is checksum-bound and records the only accepted source modes:
+`0644` or `0755` for every checksum-listed path. A byte-valid candidate with a
+changed executable bit fails before target mutation.
 
 ```bash
 git clone https://github.com/EnkratFlow/exocortex-template.git /tmp/exocortex-template
-cd /tmp/exocortex-template
-
-# List what would update; no writes
-bash scripts/update-all-repos.sh ~/code --dry-run
-
-# Walk ~/code and prompt before each repo
-bash scripts/update-all-repos.sh ~/code
-
-# Skip prompts
-bash scripts/update-all-repos.sh ~/code --yes
+git -C /tmp/exocortex-template checkout <approved-exact-sha>
+git -C /path/to/project worktree add --detach \
+  /path/to/approved-isolated-worktree <approved-target-head>
+cd /path/to/approved-isolated-worktree
+HOME=<absolute-disposable-home> \
+EXOCORTEX_LOCAL_SOURCE=/tmp/exocortex-template \
+EXOCORTEX_CANDIDATE_DIGEST=<approved-sha256-of-SHA256SUMS> \
+  bash /tmp/exocortex-template/install.sh "project-name"
 ```
 
-The script walks the root directory looking for projects with `.exocortex/`, skips dirty git worktrees, uses `EXOCORTEX_LOCAL_SOURCE` to avoid re-cloning the template once per repo, and prints a summary.
+Worktree creation, installation, verification, local handoff, and writer
+release are internal steps inside that one local-delivery envelope. Exact
+technical capabilities still fail closed on any target, base, digest,
+path/plan, operation, risk, or expiry mismatch. The installer must run
+non-interactively with a fake `HOME`. Direct installation into a shared or primary checkout is unsupported because the current clean installer writes in
+place and has no restore archive. Project installation never grants global
+editor-home, launchd, provider, credential, hub, deployment, Git publication,
+or external-sync authority.
 
-### Offline / Vendored Install
+New installs generate project-local defaults when absent:
 
-If you cannot reach GitHub from a build machine, point `install.sh` at a local copy of the template:
+- `.exocortex/control/EXECUTOR_REGISTRY.json`: no registered writers or egress
+  executors; default role read-only.
+- `.exocortex/control/EXTERNAL_SYNC_POLICY.json`: deny by default; no
+  destinations.
+
+These files are protected data, not template payload or manifest content.
+
+## Safe update path
+
+Use a pinned local template and the safe updater. Rehearse only in a newly
+created disposable copy, hash every protected path, and keep the restore
+archive outside the target:
+
+Older installations must first pass the metadata-only protected-default
+preflight in `.exocortex/docs/AI_INSTALLATION.md`. Missing generic scaffolding
+uses an internal guarded bootstrap under the accepted named-target local
+apply; the updater must not create it after consuming apply authority.
 
 ```bash
-EXOCORTEX_LOCAL_SOURCE=/path/to/exocortex-template bash /path/to/exocortex-template/install.sh
+cd /path/to/existing-project
+bash /tmp/exocortex-template/scripts/safe-update.sh \
+  --template /tmp/exocortex-template \
+  --candidate-digest <approved-sha256-of-SHA256SUMS> \
+  --backup-dir /tmp/exocortex-restore \
+  --dry-run
 ```
 
-The installer skips the clone step and copies from the directory you provided.
+Apply to a real repository only after the rehearsal evidence is accepted and
+one exact named-target local-delivery decision is approved. Re-run with the
+same pinned template and candidate digest, `--apply`, the exact internally
+derived one-time capability, and the registered executor identity. The
+updater has no interactive or implicit approval prompt.
 
----
+The updater protects the full project data plane, including:
 
-## Disclaimer
+- memory, TODO, lessons, decisions, generated session context, and `.env`;
+- events, archive, hub, local protocol state, planning, and work items;
+- interrupt/backlog/roadmap and live control records;
+- executor registry, external-sync policy, hub markers, and custom untracked
+  extensions.
 
-This software is provided **"as is"**, without warranty of any kind. By installing or using this software you accept full responsibility for any consequences. The author(s) are not liable for data loss, security issues, unexpected behaviour, or any other outcome resulting from use of this software.
+User-modified manifest files are preserved. Missing, malformed, incomplete, or
+mismatched checksums and any candidate-source symlink fail before target
+mutation. Target symlinks and external hard-linked mutable files also fail
+before backup. Dry-run leaves the target unchanged and writes one
+collision-resistant `0600` code-plane-only restore archive beneath an
+owner-controlled, non-group/world-writable backup directory. The archive is
+streamed to its reserved inode, fsynced, integrity-checked, reconstructed, and
+compared with the exact prior code plane before durable publication or any
+capability consumption. Private staging remains beneath `${TMPDIR:-/tmp}` (or
+the platform's equivalent system temporary directory). Protected project data
+and local authority state are excluded from the archive because the updater
+never mutates them. Treat both locations as disposable evidence storage and
+verify their permissions.
 
-This is a developer productivity tool. It writes files to your project directory and runs shell scripts. Review the code before running it if you have any concerns — everything is plain text and open for inspection.
+Every dry run prints the SHA-256, count, and complete sorted list of changed
+paths. The digest covers the full UTF-8 path list with one LF after every path,
+including the last. It is evidence for review, not approval by itself.
+
+Provider adapters are validated against the canonical command registry before
+target mutation. During an update, a superseded legacy wrapper is removed only
+when its current bytes still match its prior install-manifest hash, its mode is
+the reviewed legacy text mode `0644`, and its canonical replacement installed
+successfully. Customized bytes or modes and unknown wrappers are preserved
+with an `EXOCORTEX_ADAPTER_COLLISION_PRESERVED` warning.
+
+Target-specific collisions are not silently resolved by the ordinary updater.
+After its dry run, use the separately reviewed reconciliation workflow in
+`.exocortex/docs/AI_INSTALLATION.md`. A deterministic reconciliation plan
+binds the candidate digest, target surface, prior dry-run path set, exact final
+bytes, and complete effect-path set. Applying it requires the distinct
+one-time `apply_template_reconciliation` capability; ordinary
+`apply_template_update` authority cannot be reused. The same plan is rehearsed
+before capability consumption, and protected project data remains outside its
+effect set. After apply, the complete non-protected code plane—path type,
+presence, bytes, and mode—must exactly match the disposable rehearsal.
+
+Broad legacy and batch updaters fail closed. Update projects one at a time with
+fresh evidence; “all” never grants batch authority.
+
+The complete AI-operated dry-run and guarded-apply sequence, including every
+required executor and capability argument, is documented in
+`.exocortex/docs/AI_INSTALLATION.md`.
+
+## Three planes
+
+| Plane | Direction | Contents |
+|---|---|---|
+| Code | Template to project | generic commands, adapters, guards, docs, tests |
+| Data | Project-local only | memory, events, work items, control state, registry, policy, protocol transactions |
+| External | Explicitly staged and approved | one immutable payload to one exact destination/method |
+
+Code can flow down after promotion. Project memory never flows sideways.
+Nothing flows out automatically.
+
+## Multi-AI orchestration
+
+The parent model owns integration and gate decisions. It selects the least
+expensive available model capable of the complete task and risk, then delegates
+bounded evidence work to cheaper capable models. One registered guarded writer
+holds the mutation lane; parallel workers are read-only unless separately
+approved. Deterministic tools precede model work. Routing changes and estimates
+are reported to the owner.
+
+No vendor or named model is required. A stronger model is used when the work's
+capability or risk requires it, not as a permanent starting rule.
+
+### Source-backed model freshness
+
+The packaged source registry covers only configured official public sources.
+It does not promise knowledge of every model worldwide. Refreshing those
+sources is an explicit external read with no credentials; the local registry
+tool never fetches, authenticates, or writes.
+
+Discovery compares the catalog-bound baseline registry with a separately
+normalized refreshed snapshot. Stable source definitions must match exactly,
+while retrieval timestamps and content digests may advance. Model, lifecycle,
+and pricing facts are accepted only from sources registered for those roles;
+cross-file duplicates or conflicting facts fail closed.
+
+Newly observed models are quarantined for review. They do not become routing
+choices merely because they are newer or advertise a lower price. Routing
+requires a current local availability observation and fresh, digest-bound,
+measured capability and cost-per-success evidence. Stale or mismatched
+evidence fails closed, and missing observations never silently deprecate a
+model. Production routing also rejects a caller timestamp more than 60 seconds
+behind or ahead of the runtime UTC clock; deterministic historical validation
+is a separate non-routing operation.
+
+The packaged 3.2.0 catalog is advisory and has zero route-eligible models or
+verified evaluation profiles. It cannot select a model as shipped. A model
+becomes eligible only through a separately reviewed guarded catalog update
+that binds measured evaluation evidence, followed by fresh availability
+evidence for the exact current surface.
+
+See [the routing policy](.exocortex/control/MODEL_ROUTING.md) for the evidence
+planes, discovery command, admission rules, and deterministic selection
+contract. Project-local observations and availability live under
+`.exocortex/local/model-routing/**`; installation and update never create,
+copy, checksum, or overwrite them.
+
+## Agile delivery and recursive improvement
+
+Work is sliced into small Kanban items with requirements, acceptance criteria,
+implementation, developer verification, risk-based independent review, QA/SIT,
+Human UAT, release, deployment, and hypercare evidence as applicable.
+
+Retrospectives generate prospective improvement proposals only. They cannot
+self-authorize implementation or modify the protocol that grants their own
+authority. Recursive improvement therefore compounds safely:
+
+1. execute a bounded item;
+2. collect deterministic and human evidence;
+3. record a local retrospective proposal;
+4. approve one bounded local-delivery outcome;
+5. verify, rehearse, and promote separately.
+
+## Commands
+
+- Daily: `/work`, `/scrum`, `/save`, `/daily-end`, `/interrupt`, `/brief`
+- Memory: `/shortterm`, `/longterm`, `/subconscious`, `/drill`, `/history`
+- Planning: `/groom`, `/refine-backlog`, `/prioritize`, `/weekly-review`,
+  `/monthly-review`, `/pattern-review`
+- System: `/onboard`, `/system-scan`, `/ai-export`, `/ecosystem`,
+  `/init-exocortex`, `/check-keys`, `/handoff`
+
+The 24 JSON specifications are retained as the single behavior source; the
+commands are not being removed. The deterministic adapter generator produces
+72 thin repository adapters from them: 24 portable Agent Skills, 24 Claude
+skills, and 24 Cursor skills.
+
+Current evidence is version- and surface-scoped. `verified` means the recorded
+client displayed every Exocortex entry during bounded Human UAT; it does not
+mean a command was executed or that mutation authority was granted.
+
+| Surface | Repository adapter | Native invocation | Recorded evidence |
+|---|---|---|---|
+| Codex | `.agents/skills/{command}/SKILL.md` | `$command` or the skills selector | `compatible`; repository catalog resolves 24/24, but desktop selector UAT remains pending |
+| Claude Desktop 1.24012.1 (0adcae) | `.claude/skills/{command}/SKILL.md` | `/command` | `verified`; all 24 Exocortex commands appeared exactly once |
+| Cursor Stable 3.12.30 | `.cursor/skills/{command}/SKILL.md` | `/command` | `verified`; all 24 Exocortex commands appeared exactly once among 72 unique skills |
+| GitHub Copilot | `.agents/skills/{command}/SKILL.md` | `/command` where repository skills are supported | `compatible`; 24/24 was observed, but the exact client version was not captured |
+| Kimi Code CLI 1.14.0 | `.agents/skills/{command}/SKILL.md` | `/skill:{name}` | `verified`; all 24 Exocortex entries appeared exactly once among 26 unique skills |
+| Kimi Desktop Work 3.1.3 | No Desktop-specific adapter claim | Not advertised | `failed`; 0/24 appeared and exact `/skill:ai-export` produced no match |
+| Zed 1.12.0 stable.328 built-in Agent | `.agents/skills/{command}/SKILL.md` | Built-in Agent skills selector | `verified`; all 24 Exocortex skills appeared exactly once among 25 unique skills; ACP agents excluded |
+| Windsurf | None in active/default installation | Not advertised | `unavailable`; no installed version was available for Human UAT |
+| Generic or unidentified host | `AI_START_HERE.md` plus the matching JSON | Host-dependent | No native-menu claim |
+
+Kimi Desktop Work and Kimi Code CLI are different discovery surfaces. The
+Desktop 0/24 result does not invalidate the verified CLI result.
+
+Run `python3 .exocortex/scripts/generate_command_adapters.py --check` to prove
+repository parity. File generation does not certify provider-menu visibility.
+Any provider version, adapter-family, discovery, or configuration change
+requires new bounded Human UAT before its evidence is reused. Evidence uses only
+`verified`, `compatible`, `failed`, `blocked`, or `unavailable`; see
+`.exocortex/docs/IDE_INTEGRATION_GUIDE.md` for the current matrix and limits.
+
+Provider-assisted memory and key validation are unavailable by default. The
+active conversation model can summarize local evidence without keys or network
+access. Any external provider call uses the same immutable egress protocol.
+
+## Verification
+
+Run deterministic local tests from the template checkout:
+
+```bash
+bash tests/run_tests.sh
+bash .exocortex/scripts/tests/test_orchestration_protocol.sh
+bash .exocortex/scripts/tests/test_event_tooling.sh
+bash tests/phase-b/run.sh
+python3 .exocortex/scripts/generate_command_adapters.py --check
+```
+
+The Phase B harness uses only newly created disposable targets, fake `HOME`,
+fake transports, and deny-network shims. It emits hashes and machine-readable
+evidence. No test requires real credentials, providers, repositories, or
+deployment access.
+
+## Limits
+
+The guards enforce cooperative project-local entrypoints. They do not turn an
+unrestricted editor or operating-system account into a security sandbox.
+Host-level prevention of bypass, network access, or binary replacement requires
+an OS sandbox or privileged broker and a trusted signing/attestation root.
+The current local JSON approval records are not cryptographic proof of a human
+decision against a process that can rewrite both the registry and capability;
+that external trust-root risk remains open until such a broker is integrated.
+
+## License
+
+MIT. See `LICENSE`.

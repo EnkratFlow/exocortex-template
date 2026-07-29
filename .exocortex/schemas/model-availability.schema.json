@@ -1,0 +1,73 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/exocortex/model-availability.schema.json",
+  "title": "Exocortex local model availability evidence",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "kind",
+    "catalog_digest",
+    "surface_id",
+    "surface_version",
+    "surface_session_id",
+    "scope",
+    "observed_at",
+    "expires_at",
+    "evidence_sha256",
+    "model_ids"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "public-v2"
+    },
+    "kind": {
+      "const": "model_availability"
+    },
+    "catalog_digest": {
+      "$ref": "#/$defs/sha256"
+    },
+    "surface_id": {
+      "$ref": "#/$defs/id"
+    },
+    "surface_version": {
+      "$ref": "#/$defs/id"
+    },
+    "surface_session_id": {
+      "$ref": "#/$defs/id"
+    },
+    "scope": {
+      "const": "current_surface_session"
+    },
+    "observed_at": {
+      "$ref": "#/$defs/timestamp"
+    },
+    "expires_at": {
+      "$ref": "#/$defs/timestamp"
+    },
+    "evidence_sha256": {
+      "$ref": "#/$defs/sha256"
+    },
+    "model_ids": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/id"
+      }
+    }
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$"
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+}

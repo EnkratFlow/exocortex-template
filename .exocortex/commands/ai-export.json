@@ -1,11 +1,17 @@
 {
   "name": "/ai-export",
   "description": "Generate a comprehensive system understanding document from the current project",
+  "protocol": {
+    "entry_contract": "AI_START_HERE.md",
+    "authority": "exact_capability_required_for_mutation",
+    "egress": "separate_destination_specific_authorization",
+    "default_role": "read_only"
+  },
   "steps": [
     {
       "type": "ai",
-      "action": "Discover the current project and generate an AI export document",
-      "context": "Generate an external-AI handoff for the project that contains this .exocortex directory. First identify the project root, repository type, primary languages/frameworks, package/build files, entrypoints, source directories, tests, docs, and Exocortex memory files that exist in this project. Read actual project files; do not assume app-specific filenames, frameworks, domains, or architecture. Prefer source-of-truth files such as README files, package manifests, pyproject.toml, Cargo.toml, go.mod, composer.json, src/, app/, lib/, tests/, docs/, .exocortex/PROJECT_MEMORY.md, .exocortex/LESSONS.md, and .exocortex/control/ARCH_OVERVIEW.md when present. Do not read secrets or expose secret values; avoid .env files and credential stores. Build a 7-section markdown document: 1) System Overview, 2) Architecture, 3) Component Responsibilities with brief evidence-backed file references, 4) Data Flow and execution paths, 5) QA Strategy with real test commands/counts when discoverable, 6) Constraints & Invariants from code/docs/memory, 7) Risks, Gaps, and Unknowns. If evidence is missing, say so clearly instead of guessing. Write to AI_EXPORT_v{N}.md with changelog, confidence assessment, validation date, and a short list of files inspected."
+      "action": "Draft a project-local external-AI handoff in memory",
+    "context": "Generate an external-AI handoff in chat for the project that contains this .exocortex directory. First identify the project root, repository type, primary languages/frameworks, package/build files, entrypoints, source directories, tests, docs, and Exocortex memory files that exist in this project. Read actual project files; do not assume app-specific filenames, frameworks, domains, or architecture. Prefer source-of-truth files such as README files, package manifests, pyproject.toml, Cargo.toml, go.mod, composer.json, src/, app/, lib/, tests/, docs/, .exocortex/PROJECT_MEMORY.md, .exocortex/LESSONS.md, and .exocortex/control/ARCH_OVERVIEW.md when present. Do not read secrets or expose secret values; avoid .env files and credential stores. Build a 7-section markdown document: 1) System Overview, 2) Architecture, 3) Component Responsibilities with brief evidence-backed file references, 4) Data Flow and execution paths, 5) QA Strategy with real test commands/counts when discoverable, 6) Constraints & Invariants from code/docs/memory, 7) Risks, Gaps, and Unknowns. If evidence is missing, say so clearly instead of guessing. Structure it as a prospective AI_EXPORT_v{N}.md with changelog, confidence assessment, validation date, and a short list of files inspected, but do not create that file.\n\nPresent the export in chat first. Writing it requires a separately approved guarded writer operation bound to the exact path and content digest. Sending it externally requires a second exact egress authorization."
     }
   ]
 }

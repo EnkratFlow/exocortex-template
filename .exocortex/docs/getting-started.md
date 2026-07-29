@@ -1,291 +1,75 @@
 # Getting Started
 
-## Quick Setup (5 minutes)
-
-### 1. Initialize the exocortex
-```bash
-# Create the directory structure
-mkdir -p .exocortex/{events,commands,scripts}
-
-# Copy the core scripts (adjust paths to your exocortex installation)
-cp -r /path/to/exocortex/scripts/* .exocortex/scripts/
-cp -r /path/to/exocortex/commands/* .exocortex/commands/
-
-# Make scripts executable
-chmod +x .exocortex/scripts/*.sh
-```
-
-### 2. Configure AI providers
-```bash
-# Create environment file
-echo "OPENAI_API_KEY=your_openai_key_here" > .exocortex/.env
-echo "ANTHROPIC_API_KEY=your_anthropic_key_here" >> .exocortex/.env
-```
-
-### 3. Set up AI assistant integration
-
-**Cursor (recommended):** Add the exocortex user rule in **Cursor Settings > General > Rules for AI**. See the README for the exact rule text. This is a one-time setup that applies to all projects.
-
-**Other editors:** At the start of each session, tell the AI: "read .exocortex/AI_BOOTSTRAP.md"
-
-**Note:** The AI may not always follow user rules automatically. If it doesn't recognize a `/command`, prompt it: "read .exocortex/AI_BOOTSTRAP.md"
-
-### 4. Create your first event
-```bash
-# Start a work session
-.exocortex/scripts/create_event.sh "Setting up exocortex"
-
-# Or let it auto-detect your work
-.exocortex/scripts/detect_work_state.sh
-```
-
-### 5. Test the system
-In your AI assistant, type:
-```
-/work
-```
-
-You should see:
-- ✓ Context loaded
-- ✓ Memory tiers processed  
-- ✓ Work state detected
-- Brief summary of recent activity
-
-## Detailed Setup
-
-### Prerequisites
-- **AI Assistant** (Cursor, VS Code with Copilot, Claude Desktop, etc.)
-- **API Keys** for OpenAI and/or Anthropic  
-- **Python 3.7+** for memory processing scripts
-- **Git repository** (optional but recommended for multi-machine sync)
-
-### File Structure After Setup
-```
-your-project/
-├── .exocortex/
-│   ├── .env                  # API keys (keep private!)
-│   ├── commands/             # Command specifications
-│   │   ├── work.json
-│   │   ├── drill.json
-│   │   └── ...
-│   ├── scripts/             # Processing scripts
-│   │   ├── generate_context.sh
-│   │   ├── get_rightnow_memory.py
-│   │   ├── get_shortterm_memory.py
-│   │   ├── get_longterm_memory.py
-│   │   ├── get_subconscious_memory.py
-│   │   ├── drill_memory.py
-│   │   ├── create_event.sh
-│   │   └── ...
-│   ├── events/              # Event storage (will be created)
-│   └── *.md                 # Context and documentation files
-```
-
-### API Key Setup
-
-**Option 1: OpenAI (recommended for cost)**
-1. Get API key from https://platform.openai.com/api-keys
-2. Add to `.exocortex/.env`: `OPENAI_API_KEY=sk-...`
-3. Approximate cost: ~$0.0001 per memory operation
-
-**Option 2: Anthropic (fallback)**  
-1. Get API key from https://console.anthropic.com/  
-2. Add to `.exocortex/.env`: `ANTHROPIC_API_KEY=sk-ant-...`
-3. Approximate cost: ~$0.001 per memory operation
-
-**Option 3: Both (recommended)**
-Scripts will use OpenAI by default, fallback to Anthropic if needed.
-
-### Multi-Machine Setup
-
-The exocortex works across multiple development environments:
-
-**Method 1: Git sync (recommended)**
-```bash
-# Add to .gitignore
-echo ".exocortex/.env" >> .gitignore  # Keep API keys private
-echo ".exocortex/SESSION_CONTEXT.md" >> .gitignore  # Regenerated automatically
-
-# Commit everything else
-git add .exocortex/
-git commit -m "Add exocortex setup"
-```
-
-**Method 2: Manual sync**
-Copy the `.exocortex/` directory (excluding `.env`) to other machines, then configure API keys locally.
-
-## First Commands
-
-### /work - Load Context
-Your main command for starting work sessions:
-
-```
-/work
-```
-
-**What it does:**
-- Generates recent context (last 7 days)  
-- Processes memory tiers automatically
-- Detects current work state (git status, recent files)
-- Provides brief of what you were working on
-
-**Example output:**
-```
-✓ Context generated (15 events from last 7 days)
-✓ Right now memory processed  
-✓ Work state detected (3 modified files, main branch)
-✓ Brief: Continuing work on exocortex documentation system
-```
-
-### /drill \<topic> - Deep Dive
-Search all events for a specific topic:
-
-```
-/drill authentication system
-```
-
-**What it does:**
-- Searches ALL events (no time limit) for the topic
-- Reconstructs chronological development history  
-- Shows key decisions and implementation details
-- Provides cross-references to related work
-
-### /shortterm - 7-31 Day Memory  
-See what you worked on in the past month:
-
-```
-/shortterm
-```
-
-**What it does:**
-- Analyzes events from 7-31 days ago
-- Groups work into themed blocks  
-- Shows how projects evolved
-- Identifies patterns and recurring topics
-
-## Common Workflows
-
-### Daily Startup Routine
-```
-1. Type "/work" to load recent context
-2. Review what was happening last time you worked
-3. Start coding/writing/designing
-4. System automatically creates events as you work
-```
-
-### Weekly Review
-```
-1. Type "/shortterm" to see the past 7-31 days
-2. Use "/drill <project>" for specific deep-dives
-3. Review patterns and themes that emerged
-4. Plan next week's priorities
-```
-
-### Project Archeology
-```
-1. Use "/drill <project name>" to reconstruct history
-2. Use "/longterm" to see monthly arcs
-3. Use "/subconscious" to detect recurring patterns
-4. Export findings to project documentation
-```
-
-### Debugging Memory Issues
-```bash
-# Check event creation
-ls -la .exocortex/events/ | tail -10
-
-# Test memory script manually  
-python3 .exocortex/scripts/get_rightnow_memory.py
-
-# Regenerate context
-.exocortex/scripts/generate_context.sh
-
-# Check AI integration
-cat .exocortex/.env  # Ensure API keys are set
-```
-
-## Tips for Success
-
-### 1. Event Quality
-**Good events** describe:
-- What you accomplished  
-- Key decisions made
-- Problems encountered
-- Context about why you made certain choices
-
-**Example:**
-```markdown
-# Feature Implementation
-
-## What I Did
-- Simplified the position entry form by removing redundant fields
-- Added client-side validation for price/quantity inputs  
-- Fixed the date picker to default to current date
-
-## Key Decisions
-- Chose to use Zod for validation instead of manual checks
-- Decided against real-time price validation due to API costs
-
-## Problems
-- Vite dev server keeps crashing with TypeScript errors
-- Need to investigate the build process
-
-## Context  
-- Working toward MVP launch next week
-- Focus on core functionality over nice-to-haves
-```
-
-### 2. Command Usage Patterns
-- Use `/work` at the beginning of every session
-- Use `/drill` when you can't remember how something works
-- Use `/shortterm` for weekly reviews  
-- Use `/longterm` for quarterly planning
-- Use `/subconscious` when you feel stuck or need fresh perspective
-
-### 3. Multi-Project Setup
-You can have multiple exocortex installations:
-
-```
-~/projects/
-├── my-project/.exocortex/     # Project-specific
-├── personal-site/.exocortex/       # Project-specific  
-└── .exocortex/                     # Global (for general development)
-```
-
-Commands will use the closest `.exocortex/` directory in the directory tree.
-
-### 4. Performance Optimization
-- Archive events older than 6 months if you have thousands
-- Use `/drill` for specific searches instead of reading all events manually
-- The system is designed to be fast with hundreds of events
-
----
-
-## Troubleshooting
-
-### Command not recognized
-- Check that the exocortex user rule is set in Cursor Settings > General > Rules for AI
-- Verify the command exists in `.exocortex/commands/command.json`
-- Try prompting: "read .exocortex/AI_BOOTSTRAP.md"
-
-### Scripts not running
-- Check file permissions: `chmod +x .exocortex/scripts/*.sh`  
-- Verify Python is available: `python3 --version`
-- Check API keys: `cat .exocortex/.env`
-
-### Memory scripts failing
-- Test API connectivity manually
-- Check for rate limiting (wait a few minutes)  
-- Verify event files exist: `ls .exocortex/events/`
-- Try running scripts individually to isolate issues
-
-### Events not being created
-- Check if `create_event.sh` is executable
-- Verify the events directory exists
-- Check git status (some integrations depend on git)
-
-**Still having issues?** Check the [troubleshooting guide](troubleshooting.md) or [open an issue](contributing.md).
-
----
-
-*Next: Read the [User Guide](user-guide.md) for detailed usage patterns and advanced features.*
+## New project
+
+You may perform these steps manually or paste the clean-install prompt from
+`AI_INSTALLATION.md` into a coding AI with local repository and terminal
+access. The same evidence and approval boundaries apply either way.
+
+1. Obtain and review an exact pinned template revision.
+2. Verify the committed checksums and bind the accepted SHA-256 of
+   `SHA256SUMS` as the candidate digest.
+3. Use a sanitized disposable fixture and fake `HOME` for the first rehearsal.
+4. Run the local `install.sh`; exercise both preflight rejection and a
+   controlled mid-copy failure, then recreate the fixture from its clean base.
+5. Verify only expected code-plane files and generic local defaults were added.
+6. After one named-target local-apply decision, create a clean isolated Git worktree
+   from the exact target HEAD, install and verify there, create the
+   permitted local handoff, and release the writer. Internal bootstrap,
+   reservation, and technical capability records do not require additional
+   human prompts. Never install directly in a shared or primary checkout, and
+   never pipe an unpinned remote script.
+7. Open a new AI session and ask it to read `AI_START_HERE.md`.
+8. Confirm zero-context orientation is read-only and identifies the exact Git
+   state, work item, writer status, evidence, and next gate.
+
+## Existing project
+
+Use `scripts/safe-update.sh` with an exact local template, its separately
+approved `--candidate-digest`, an explicit disposable backup directory, and
+`--dry-run`. First run the metadata-only legacy protected-default preflight in
+`.exocortex/docs/AI_INSTALLATION.md`; missing generic scaffolding requires a
+guarded internal bootstrap and must never overwrite existing project data.
+Approve the disposable rehearsal once, then approve one exact named-target
+local apply. That second decision contains bootstrap, reservation, apply,
+verification, local handoff, and writer release as internal mechanics. See
+`README.md` and
+`.exocortex/docs/UPGRADE_MANIFEST.md`. The existing-update prompt and complete
+guarded apply command are in `.exocortex/docs/AI_INSTALLATION.md`.
+
+## Platform boundary
+
+The current scripts are verified on macOS with the documented Bash/Unix tools.
+Linux is compatible pending the final candidate's Ubuntu CI. WSL requires
+separate Human UAT. Git Bash and native Windows PowerShell/Command Prompt are
+unsupported; do not translate the installer security logic ad hoc.
+
+## First commands
+
+- `/work`: read-only orientation and next-work options.
+- `/onboard`: project-local codebase orientation.
+- `/system-scan`: read-only health report.
+- `/save`: draft local narrative memory; not a checkpoint.
+- `/handoff`: strict local evidence packet; not authority.
+
+Memory commands summarize local evidence with the active conversation model.
+They do not discover credentials or call providers directly.
+
+For multi-model delegation, read `.exocortex/control/MODEL_ROUTING.md`.
+The packaged catalog is advisory and has no eligible models. New source
+observations produce quarantine proposals only; routing requires fresh,
+separately reviewed evaluation and current-surface availability evidence.
+
+## Safety expectations
+
+- one registered guarded writer;
+- deterministic evidence before model judgment;
+- one exact business-level envelope per local delivery, publication,
+  integration/rollout, or named production/egress outcome;
+- internal reservations, technical capabilities, evidence records, handoffs,
+  and writer release are not separate human approvals;
+- no cross-project, global-editor, service, deployment, or provider change from
+  repository installation;
+- no automatic external sync;
+- no real target testing until disposable clean-install and upgrade rehearsals
+  pass and Human UAT is accepted.

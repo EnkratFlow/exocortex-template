@@ -1,6 +1,12 @@
 {
   "name": "/scrum",
   "description": "Control Center: Daily standup (yesterday/today/blockers)",
+  "protocol": {
+    "entry_contract": "AI_START_HERE.md",
+    "authority": "exact_capability_required_for_mutation",
+    "egress": "separate_destination_specific_authorization",
+    "default_role": "read_only"
+  },
   "steps": [
     {
       "type": "shell",
@@ -9,7 +15,7 @@
       "success_format": "✓ Daily standup complete"
     },
     {
-      "type": "ai", 
+      "type": "ai",
       "command": "Based on the standup output, identify the top 1-2 priorities for today and any critical blockers that need immediate attention. Provide a focused action plan.",
       "description": "Generating daily action plan",
       "success_format": "✓ Action plan: {priorities}"

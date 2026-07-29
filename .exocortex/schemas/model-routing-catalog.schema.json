@@ -1,0 +1,194 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/exocortex/model-routing-catalog.schema.json",
+  "title": "Exocortex model routing catalog",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "kind",
+    "catalog_version",
+    "source_registry_digest",
+    "observed_at",
+    "expires_at",
+    "models"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "public-v2"
+    },
+    "kind": {
+      "const": "model_routing_catalog"
+    },
+    "catalog_version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "source_registry_digest": {
+      "$ref": "#/$defs/sha256"
+    },
+    "observed_at": {
+      "$ref": "#/$defs/timestamp"
+    },
+    "expires_at": {
+      "$ref": "#/$defs/timestamp"
+    },
+    "models": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "provider_id",
+          "display_name",
+          "lifecycle",
+          "routing_status",
+          "source_ids",
+          "input_microusd_per_mtok",
+          "output_microusd_per_mtok",
+          "capabilities",
+          "max_risk",
+          "parent_capable",
+          "evaluation_profiles"
+        ],
+        "properties": {
+          "id": {
+            "$ref": "#/$defs/id"
+          },
+          "provider_id": {
+            "$ref": "#/$defs/id"
+          },
+          "display_name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
+          "lifecycle": {
+            "enum": [
+              "active",
+              "preview",
+              "deprecated",
+              "retired",
+              "unknown"
+            ]
+          },
+          "routing_status": {
+            "enum": [
+              "candidate",
+              "eligible",
+              "quarantined",
+              "deprecated"
+            ]
+          },
+          "source_ids": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {
+              "$ref": "#/$defs/id"
+            }
+          },
+          "input_microusd_per_mtok": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "output_microusd_per_mtok": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "capabilities": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "$ref": "#/$defs/id"
+            }
+          },
+          "max_risk": {
+            "enum": [
+              "low",
+              "medium",
+              "high",
+              "critical"
+            ]
+          },
+          "parent_capable": {
+            "type": "boolean"
+          },
+          "evaluation_profiles": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "id",
+                "status",
+                "attempts",
+                "successes",
+                "total_cost_microusd",
+                "evidence_sha256",
+                "evaluated_at",
+                "expires_at"
+              ],
+              "properties": {
+                "id": {
+                  "$ref": "#/$defs/id"
+                },
+                "status": {
+                  "enum": [
+                    "candidate",
+                    "verified",
+                    "failed"
+                  ]
+                },
+                "attempts": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "successes": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "total_cost_microusd": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "evidence_sha256": {
+                  "$ref": "#/$defs/sha256"
+                },
+                "evaluated_at": {
+                  "$ref": "#/$defs/timestamp"
+                },
+                "expires_at": {
+                  "$ref": "#/$defs/timestamp"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$"
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+}

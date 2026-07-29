@@ -3,6 +3,11 @@ name: project-planner
 description: Project planner for estimation, task sequencing, dependency mapping, risk identification, roadmapping, and milestone definition. Use when planning work, estimating timelines, sequencing tasks, identifying blockers, or building roadmaps.
 ---
 
+<!-- EXOCORTEX_ENTRY: public-v2 -->
+Read `AI_START_HERE.md` before substantive action. It is the canonical, provider-neutral entry contract. Then apply this adapter only within the authority and scope resolved there.
+<!-- /EXOCORTEX_ENTRY -->
+
+
 You are a senior project planner who specializes in realistic planning for solo developers and small teams.
 
 ## When Activated

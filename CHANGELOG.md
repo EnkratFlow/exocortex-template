@@ -4,6 +4,99 @@ All notable changes to this project will be documented here.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+No changes recorded after the 3.2.0 release candidate.
+
+## [3.2.0] - 2026-07-27
+
+Historical release entries below preserve what earlier versions shipped. Their
+installation commands and support claims are not current instructions; the
+root `README.md`, `SECURITY.md`, and
+`.exocortex/docs/AI_INSTALLATION.md` are authoritative.
+
+This entry describes the packaged local release candidate. It does not prove
+that a Git commit, tag, GitHub release, deployment, or template promotion
+exists.
+
+### Added
+- **Provider-neutral entry and delivery protocol** — added
+  `AI_START_HERE.md`, minute-scale Kanban/SDLC gates, model-neutral
+  capability/risk/cost routing, public-v2 work items, one-writer authority,
+  checkpoint/handoff separation, and deny-by-default external egress.
+- **AI-guided installation and update** — added copy-paste clean-install and
+  existing-repository prompts for coding agents with local filesystem and
+  terminal access. The AI must pin and verify the template and rehearse before
+  one named-target local apply.
+- **Business-level approval envelopes** — human-facing decisions are now
+  local delivery, publication, integration/rollout, and exact-target
+  production/egress. Work-item bookkeeping, writer reservations, one-time
+  technical capabilities, UAT recording, local handoffs, and writer release
+  remain fail-closed internal mechanics instead of repeated owner prompts.
+- **Safe existing-repository migration** — added complete protected-data
+  inventory, hard-link denial, durable identity-verified private code-plane-only
+  restore archives, complete changed-path evidence, guarded apply, retry,
+  idempotency, exact post-apply rehearsal parity, live-fault rollback, and
+  one-target-at-a-time rules.
+- **Platform evidence matrix** — macOS is verified; Linux requires
+  final-candidate CI; WSL requires Human UAT; Git Bash and native Windows remain
+  unsupported.
+- **Documentation contract tests** — active documentation now fails
+  deterministically on obsolete manual-copy, credential-creation,
+  remote-pipe-install, save-as-checkpoint, stale test-count, wrong upgrade-link,
+  unsupported-platform, implicit-approval, or bundled-publication guidance.
+- **Source-backed model registry** — added configured-official-source
+  inventory, normalized advisory catalog, offline discovery validation,
+  quarantine, exact-surface availability, source freshness and purpose checks,
+  prospective baseline-versus-refreshed snapshot comparison, role-authorized
+  fact merging, and digest-bound measured cost-per-success routing.
+- **Target-specific update reconciliation** — added deterministic
+  non-mutating plan preparation and the distinct one-time
+  `apply_template_reconciliation` path for reviewed candidate adoption,
+  reviewed objects, and managed retirements after ordinary update collisions.
+
+### Changed
+- **Provider-native command parity** — the 72 generated command adapters are
+  now 24 portable Agent Skills, 24 Claude skills, and 24 dedicated Cursor
+  skills. All remain thin, manual-only pointers to the canonical JSON commands.
+- **Accepted provider visibility evidence** — Cursor Stable 3.12.30, Claude
+  Desktop 1.24012.1 (0adcae), Kimi Code CLI 1.14.0, and Zed 1.12.0 stable.328
+  built-in Agent each passed version-scoped native visibility UAT for all 24
+  Exocortex entries. No command was executed during those checks.
+- **Kimi surface distinction** — Kimi Desktop Work 3.1.3 is recorded separately
+  as `failed` at 0/24. That result does not invalidate the verified Kimi Code
+  CLI result.
+- **Remaining evidence limits** — Codex and GitHub Copilot remain `compatible`;
+  Codex selector UAT is pending and the passing Copilot client version was not
+  captured. Cursor 3.6.21's earlier portable-adapter failure remains historical
+  version-and-family evidence.
+- **Windsurf status** — removed Windsurf from active/default support and
+  installation because no installed version was available for Human UAT.
+  Older Windsurf entries below remain historical release records.
+- **Routing admission** — the packaged catalog contains public candidate facts
+  only: zero eligible models and zero verified evaluation profiles. Admission
+  requires a separately reviewed catalog update and fresh project-local
+  current-surface availability evidence.
+
+### Migration
+- Preserved 26 earlier Cursor/GitHub retirement mappings and added 25 Windsurf
+  retirements. Removal requires prior manifest ownership, byte equality, and
+  the reviewed legacy text mode; customized or unknown files remain with
+  `EXOCORTEX_ADAPTER_COLLISION_PRESERVED`.
+
+### Tests
+- Added deterministic provider-matrix, frontmatter, generated-path,
+  pre-C1/C1 direct-update, collision-preservation, manifest-uniqueness, and
+  idempotency coverage.
+- Added source digest/purpose/freshness, partial observation, duplicate-key,
+  cross-observation conflict, expiry-boundary, availability-version,
+  quarantine, reconciliation-plan, and one-time exact-effect coverage.
+- Added checksum-bound file-mode, source-topology, restrictive-umask,
+  mid-copy fault containment, private archive, exact rollback, and pre- and
+  post-consumption race coverage.
+
+[3.2.0]: https://github.com/EnkratFlow/exocortex-template/releases/tag/v3.2.0
+
 ## [3.1.9] - 2026-05-18
 
 ### Changed

@@ -1,84 +1,31 @@
-# RAG Memory Search Integration
+# External Memory and RAG Integration
 
-Your exocortex can persist events and search past memory via the EnkratFlow RAG API.
-This is what powers the `/work`, `/shortterm`, `/longterm`, and `/subconscious` memory commands.
+External memory is disabled by default. No command reads credential files,
+discovers endpoints, calls MCP, copies to a vault, or sends project content
+automatically.
 
-**RAG integration is optional.** All exocortex commands work without it.
-You'll just lose persistent search across sessions.
+To authorize one outward payload:
 
----
+1. Approve and issue a one-time `inspect_egress_payload` local capability for
+   the exact project-relative source path and registered executor.
+2. Run `egress_guard.py inspect`. It consumes that capability before opening
+   the source and returns metadata only: digest, size, class, object path, and
+   descriptor path. It creates no descriptor or payload object.
+3. Approve and issue a separate one-time `prepare_egress_payload` capability for those
+   exact values and registered executor.
+4. Run `stage`; it creates immutable content-addressed local state only.
+5. Review the descriptor without reading credentials.
+6. Separately approve the exact destination ID, method, descriptor, digest,
+   outward effect, and expiry under the deny-by-default project policy.
+7. Run `send`. Metadata is checked before payload access; bytes are verified;
+   credentials are resolved only afterward; authority is rechecked and consumed
+   immediately before transport, with one final policy recheck after credential
+   lookup.
 
-## Quick setup
+No indeterminate send is automatically retried. A new approval is required
+unless the destination has an explicitly tested idempotency contract bound in
+policy and capability.
 
-### 1. Get an API key
-
-Hosted service: [enkratflow.ai](https://enkratflow.ai)
-Self-hosted: deploy [enkratflow-rag-api](https://github.com/EnkratFlow/enkratflow-rag-api)
-
-### 2. Add key to your env file
-
-```bash
-echo "RAG_API_KEY=your-key-here" >> ~/.exocortex/.env
-# Optional: set URL if self-hosted (defaults to https://rag-e-api.enkratflow.ai)
-echo "RAG_API_URL=https://your-instance.example.com" >> ~/.exocortex/.env
-```
-
-### 3. Install the MCP server (for AI client search)
-
-```bash
-pipx install 'enkratflow-mcp'
-```
-
-Then configure your AI client ([setup guide](https://github.com/EnkratFlow/enkratflow-mcp-server#mcp-client-config)).
-
----
-
-## What gets synced automatically
-
-| Command | What it saves |
-|---------|--------------|
-| `/save` | End-of-day event |
-| `/daily-end` | Detailed day summary with conversation context |
-| `/groom` | Interrupt processing summary |
-| `/weekly-review` | Week summary with direction check |
-| `/monthly-review` | Monthly directional review |
-| `/interrupt` | Individual interrupts (hot memory tier) |
-
-All syncs are **silent and non-blocking** — if the RAG API is unreachable,
-the command still completes normally.
-
----
-
-## Key resolution order
-
-Scripts resolve your RAG API key in this order:
-
-1. `RAG_API_KEY_PERSONAL` in `~/.exocortex/.env`
-2. `ENKRATFLOW_RAG_API_KEY` in `~/.exocortex/.env`
-3. `RAG_API_KEY` in `~/.exocortex/.env`
-
-Any of these names will work. Use whichever matches how your key is named.
-
----
-
-## Manual sync
-
-To manually sync an event file:
-
-```bash
-bash .exocortex/scripts/sync_event_to_vault.sh .exocortex/events/2026-05-01_10-00-00_my-event.md
-```
-
-The script posts directly to the RAG API and optionally copies to a local vault directory
-if `EXOCORTEX_VAULT_DIR` is set in `~/.exocortex/.env`.
-
----
-
-## Troubleshooting
-
-**"No RAG API key found"** — Add `RAG_API_KEY=...` to `~/.exocortex/.env`
-
-**"RAG API unreachable"** — Check your `RAG_API_URL` setting and network connectivity
-
-**Memory commands return nothing** — Ensure `enkratflow-mcp` is installed and configured
-in your AI client's MCP settings
+Legacy `sync_event_to_vault.sh` and `post_to_hub.sh` accept only
+`inspect|stage|send` egress-guard arguments. Passing an event path directly is
+denied before credential or payload access.

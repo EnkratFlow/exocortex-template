@@ -1,23 +1,29 @@
 {
   "name": "/groom",
   "description": "Control Center: Process captured interrupts",
+  "protocol": {
+    "entry_contract": "AI_START_HERE.md",
+    "authority": "exact_capability_required_for_mutation",
+    "egress": "separate_destination_specific_authorization",
+    "default_role": "read_only"
+  },
   "steps": [
     {
-      "type": "shell",
-      "command": ".exocortex/scripts/groom_interrupts.sh",
-      "description": "Reviewing captured interrupts",
-      "success_format": "✓ Interrupts reviewed"
+      "type": "ai",
+      "action": "Prepare a read-only groom report from project-local evidence",
+      "context": "Read only project-local Exocortex and Git evidence. Do not mutate TODO, BACKLOG, memory, events, or another repository. Present proposed changes with exact target paths."
+    },
+    {
+      "type": "user_choice",
+      "options": [
+        "A) Keep the report read-only",
+        "B) Request a separately scoped guarded local recording operation"
+      ]
     },
     {
       "type": "ai",
-      "command": "Read the .exocortex/control/INTERRUPTS.md file and help the user process each interrupt. For each one, ask: Should this be (A) moved to BACKLOG for investigation, (B) added to TODO as urgent, (C) deleted as not relevant, or (D) kept in interrupts for later? Process them one by one and update the files accordingly.",
-      "description": "Interactive interrupt processing",
-      "success_format": "✓ Interrupts processed and filed"
-    },
-    {
-      "type": "ai",
-      "action": "Write groom summary event and sync to RAG API",
-      "context": "Write a brief groom summary to /tmp/groom_event.md using your FILE EDITOR TOOL (not a terminal command). Format:\n\n# Groom session — {date}\n\n## Processed\n- Moved to TODO: {list or 'none'}\n- Moved to BACKLOG: {list or 'none'}\n- Deleted: {count}\n- Kept in interrupts: {list or 'none'}\n\n## Notes\n{1-2 lines on themes or patterns noticed, if any}\n\nThen run: `bash .exocortex/scripts/create_event.sh --body-file /tmp/groom_event.md` followed by `bash .exocortex/scripts/sync_event_to_vault.sh $(ls -t .exocortex/events/*.md 2>/dev/null | head -1)`. Show one line: '✓ Groom event saved and synced' or '✓ Groom event saved (sync skipped — no RAG key)'."
+      "action": "Respect the selected authority boundary",
+      "context": "If A, stop with zero writes. If B, produce the exact operation, paths, work-item revision, and proposed content needed for a one-time capability; do not write or sync yet."
     }
   ]
 }

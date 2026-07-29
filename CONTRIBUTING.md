@@ -2,7 +2,7 @@
 
 Thanks for your interest in contributing to **exocortex-template**. This project provides a portable memory system for AI-assisted development, and contributions are welcome.
 
-**Last updated:** 2026-04-19
+**Last updated:** 2026-07-27
 
 ## Getting Started
 
@@ -10,9 +10,15 @@ Thanks for your interest in contributing to **exocortex-template**. This project
 git clone https://github.com/EnkratFlow/exocortex-template.git
 cd exocortex-template
 bash tests/run_tests.sh
+bash .exocortex/scripts/tests/test_orchestration_protocol.sh
+bash .exocortex/scripts/tests/test_event_tooling.sh
+bash tests/phase-b/run.sh
+python3 .exocortex/scripts/generate_command_adapters.py --check
 ```
 
-The expected result is all 8 tests passing.
+Every deterministic group must pass. Do not hardcode an expected test count in
+documentation; the machine-readable evidence emitted by the current suite is
+authoritative.
 
 ## Install the Pre-Commit Hook (One-Time)
 
@@ -20,7 +26,7 @@ The expected result is all 8 tests passing.
 bash tests/install-pre-commit-hook.sh
 ```
 
-The hook runs the full test suite before any commit that touches:
+The hook runs only `bash tests/run_tests.sh` before a commit that touches:
 
 - `install.sh`
 - `tests/`
@@ -31,18 +37,28 @@ The hook runs the full test suite before any commit that touches:
 
 If tests fail, the commit is blocked.
 
-## What the 8 Tests Cover
+The hook does not run the orchestration, event-tooling, Phase B, or adapter
+generator checks listed under Getting Started. It also does not trigger for
+`.agents/`, the root `scripts/safe-update.sh`, root documentation and
+checksums, or root AI-entry files. Run every listed command manually before
+review whenever those paths or their contracts may be affected.
 
-| Test | What it verifies |
-|------|------------------|
-| T01 fresh install | Skeleton files created, manifest written |
-| T02 update no manifest | User data preserved, new template files added |
-| T03 system file updates | Manifest-tracked files updated when template changes |
-| T04 user-modified preserved | Files you've edited are never overwritten |
-| T05 idempotent | Running install twice produces identical results |
-| T06 critical data files | `SESSION_CONTEXT`, `TODO`, `LESSONS`, `PROJECT_MEMORY` untouched |
-| T07 events preserved | Event files byte-for-byte identical after update |
-| T08 events not in manifest | Event files never added to the hash manifest |
+## What the suites cover
+
+- pinned-source, complete-checksum, and checksum-bound `FILEMODES` validation;
+- clean install, repeated install, migration, collision preservation, and
+  guarded existing-repository update;
+- protected project data, candidate and target symlink/path safety, hard-link
+  denial, durable identity-verified private restore archives, post-consumption
+  fault injection, exact in-place code-plane rollback, and idempotency;
+- provider adapters, orchestration, lifecycle/checkpoint behavior, egress, and
+  privacy;
+- official-source registry validation, model quarantine, freshness and
+  availability denial, measured cost-per-success routing, and exact
+  evidence-digest binding;
+- target-specific reconciliation planning, protected-path rejection,
+  exact-effect rehearsal, one-time authority, and convergence;
+- active documentation and AI-installation contract drift.
 
 ## Adding a New Test
 
@@ -52,7 +68,7 @@ Keep each test focused on one behavior and ensure it is deterministic in CI.
 
 ## Pull Request Guidelines
 
-- All 8 tests must pass before submitting.
+- Every applicable deterministic suite must pass before submitting.
 - Keep PRs focused (one change per PR).
 - Write a clear PR description of what changed and why.
 - Install and use the pre-commit hook; it must pass.
@@ -75,4 +91,9 @@ Report bugs through [GitHub Issues](https://github.com/EnkratFlow/exocortex-temp
 
 - Use plain Bash.
 - Keep scripts POSIX-compatible where practical.
-- Do not add external runtime dependencies beyond `git` and `bash`.
+- Preserve the documented runtime baseline: Bash 3.2+, Python 3.9+ with Unix
+  `fcntl` for guarded apply, Git, `shasum` or `sha256sum`, `awk`, `tar`, `find`, `grep`, `sed`,
+  `sort`, `mktemp`, `diff`, `cp`, `mv`, `chmod`, `mkdir`, `rm`, `basename`,
+  `dirname`, `cat`, `date`, `tr`, and `wc`; `rsync` is optional.
+- Any new runtime dependency requires documentation, deterministic
+  cross-platform verification, and explicit review.

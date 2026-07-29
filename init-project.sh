@@ -1,210 +1,154 @@
 #!/bin/bash
+# Minimal project-local initializer. It never reads credentials, rewrites
+# memory, installs packages, or changes editor/system state.
 
-# Exocortex v3 — Project Initialization Script
-# Replaces placeholders with your project-specific values
-#
-# USAGE: Run this script from your PROJECT ROOT directory after copying
-#        the .exocortex/ directory and editor pointer files to your project.
-#
-# This script is run automatically by install.sh, or manually:
-#   cd /path/to/your-project
-#   bash .exocortex/init-project.sh
+set -euo pipefail
 
-set -e
+PROJECT_NAME="${1:-$(basename "$PWD")}"
+command -v python3 >/dev/null 2>&1 \
+    || { echo "ERROR: python3 is required for non-following project initialization" >&2; exit 1; }
 
-echo ""
-echo "🧠 Exocortex v3 — Project Initialization"
-echo "========================================="
-echo ""
+# Use lstat plus a private same-directory temporary file and no-replace
+# publication so neither a symlinked .exocortex directory, a dangling leaf,
+# restrictive umask, nor an interrupted write can expose a partial project
+# name outside or at the canonical destination.
+PYTHONDONTWRITEBYTECODE=1 python3 - "$PROJECT_NAME" "${HOME:-}" <<'PY'
+import os
+from pathlib import Path
+import stat
+import sys
+import tempfile
 
-# Find .exocortex directory (could be run from project root or from .exocortex/)
-if [ -d ".exocortex" ]; then
-    EXOCORTEX_DIR=".exocortex"
-elif [ -d "../.exocortex" ] && [ "$(basename "$(pwd)")" = ".exocortex" ]; then
-    cd ..
-    EXOCORTEX_DIR=".exocortex"
-else
-    echo "❌ Error: .exocortex directory not found"
-    echo ""
-    echo "Run this script from your project root:"
-    echo "  cd /path/to/your-project"
-    echo "  bash .exocortex/init-project.sh"
-    echo ""
-    exit 1
-fi
+project_name = sys.argv[1]
+home_input = sys.argv[2]
+test_fault = os.environ.get("EXOCORTEX_TEST_INIT_FAULT", "")
+if test_fault:
+    if os.environ.get("EXOCORTEX_TEST_MODE") != "1":
+        raise SystemExit("ERROR: initializer fault injection requires explicit test mode")
+    if test_fault not in {"write", "file-fsync", "directory-fsync"}:
+        raise SystemExit("ERROR: unknown test-only initializer fault")
+root = Path.cwd().resolve(strict=True)
+if root == Path(root.anchor):
+    raise SystemExit("ERROR: refusing to initialize filesystem root")
+if home_input:
+    home = Path(home_input)
+    if home.is_dir() and root == home.resolve(strict=True):
+        raise SystemExit("ERROR: refusing to initialize user home")
 
-echo "✓ Found $EXOCORTEX_DIR/"
-echo ""
+exocortex = root / ".exocortex"
+try:
+    exocortex_stat = os.lstat(exocortex)
+except FileNotFoundError as exc:
+    raise SystemExit("ERROR: .exocortex directory not found") from exc
+if stat.S_ISLNK(exocortex_stat.st_mode) or not stat.S_ISDIR(exocortex_stat.st_mode):
+    raise SystemExit("ERROR: .exocortex must be a real project-local directory")
+if exocortex.resolve(strict=True) != root / ".exocortex":
+    raise SystemExit("ERROR: .exocortex escapes the canonical project root")
 
-# ── Project name (defaults to 'exocortex' if not provided) ────────────
+target = exocortex / ".project-name"
+try:
+    target_stat = os.lstat(target)
+except FileNotFoundError:
+    target_stat = None
+if target_stat is not None:
+    if (
+        stat.S_ISLNK(target_stat.st_mode)
+        or not stat.S_ISREG(target_stat.st_mode)
+        or target_stat.st_nlink != 1
+    ):
+        raise SystemExit("ERROR: .project-name must be a single-link regular file")
+else:
+    fd = None
+    temp_path = None
+    created_identity = None
+    published = False
+    try:
+        fd, temp_name = tempfile.mkstemp(prefix=".project-name.tmp.", dir=exocortex)
+        temp_path = Path(temp_name)
+        opened = os.fstat(fd)
+        created_identity = (opened.st_dev, opened.st_ino)
+        if not stat.S_ISREG(opened.st_mode) or opened.st_nlink != 1:
+            raise OSError("project-name temporary file is not a single-link regular file")
+        os.fchmod(fd, 0o644)
+        payload = project_name.encode("utf-8") + b"\n"
+        while payload:
+            write_payload = payload[:1] if test_fault == "write" else payload
+            written = os.write(fd, write_payload)
+            if written <= 0:
+                raise OSError("short project-name write")
+            payload = payload[written:]
+            if test_fault == "write":
+                raise OSError("injected test-only project-name write failure")
+        if test_fault == "file-fsync":
+            raise OSError("injected test-only project-name file-fsync failure")
+        os.fsync(fd)
+        created = os.fstat(fd)
+        if (
+            not stat.S_ISREG(created.st_mode)
+            or created.st_nlink != 1
+            or stat.S_IMODE(created.st_mode) != 0o644
+            or (created.st_dev, created.st_ino) != created_identity
+        ):
+            raise OSError("project-name creation failed its safety verification")
+        os.close(fd)
+        fd = None
+        os.link(temp_path, target, follow_symlinks=False)
+        published = True
+        directory_fd = os.open(exocortex, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0))
+        try:
+            if test_fault == "directory-fsync":
+                raise OSError("injected test-only project-name directory-fsync failure")
+            os.fsync(directory_fd)
+        finally:
+            os.close(directory_fd)
+        os.unlink(temp_path)
+        temp_path = None
+        final = os.lstat(target)
+        if (
+            not stat.S_ISREG(final.st_mode)
+            or final.st_nlink != 1
+            or stat.S_IMODE(final.st_mode) != 0o644
+            or (final.st_dev, final.st_ino) != created_identity
+            or target.read_bytes() != project_name.encode("utf-8") + b"\n"
+        ):
+            raise OSError("published project-name failed its safety verification")
+        directory_fd = os.open(exocortex, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0))
+        try:
+            os.fsync(directory_fd)
+        finally:
+            os.close(directory_fd)
+    except BaseException:
+        if fd is not None:
+            os.close(fd)
+        cleanup_changed = False
+        if published and created_identity is not None:
+            try:
+                current = os.lstat(target)
+            except FileNotFoundError:
+                current = None
+            if current is not None and (current.st_dev, current.st_ino) == created_identity:
+                os.unlink(target)
+                cleanup_changed = True
+        if temp_path is not None and created_identity is not None:
+            try:
+                current = os.lstat(temp_path)
+            except FileNotFoundError:
+                current = None
+            if current is not None and (current.st_dev, current.st_ino) == created_identity:
+                os.unlink(temp_path)
+                cleanup_changed = True
+        if cleanup_changed:
+            directory_fd = os.open(exocortex, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0))
+            try:
+                os.fsync(directory_fd)
+            finally:
+                os.close(directory_fd)
+        raise
+PY
 
-if [ -n "$1" ]; then
-    PROJECT_NAME="$1"
-    echo "📝 Project name: $PROJECT_NAME (from argument)"
-else
-    PROJECT_NAME="exocortex"
-    echo "📝 Project name: exocortex (default)"
-fi
+# Installation applies each checksum-bound reviewed file mode. Initialization
+# never normalizes or broadens permissions; byte-identical local mode choices
+# and intentionally non-executable compatibility helpers remain untouched.
 
-# Get current date
-CURRENT_DATE=$(date +%Y-%m-%d)
-
-# Show summary
-echo ""
-echo "📋 Summary:"
-echo "  Project Name:    $PROJECT_NAME"
-echo "  Date:            $CURRENT_DATE"
-echo ""
-
-# Confirm (skip if project name was passed as argument — means automated install)
-if [ -z "$1" ]; then
-    read -p "✅ Continue with initialization? (y/n): " -n 1 -r
-    echo ""
-    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-        echo "❌ Initialization cancelled"
-        exit 0
-    fi
-fi
-
-# Write project name file for generate_context.sh
-echo "$PROJECT_NAME" > "$EXOCORTEX_DIR/.project-name"
-echo "  ✓ Project name saved to .exocortex/.project-name"
-
-echo ""
-echo "🔄 Replacing placeholders..."
-
-# ── Detect OS for sed compatibility ────────────────────────────────────
-
-if [[ "$OSTYPE" == "darwin"* ]]; then
-    SED_INPLACE="sed -i .bak"
-else
-    SED_INPLACE="sed -i.bak"
-fi
-
-# ── Replace placeholders in all .md files ──────────────────────────────
-
-FILE_COUNT=0
-
-# Process all .md files recursively in .exocortex/
-while IFS= read -r -d '' file; do
-    if [ -f "$file" ]; then
-        $SED_INPLACE "s/\[PROJECT_NAME\]/$PROJECT_NAME/g" "$file"
-        $SED_INPLACE "s/\[DATE\]/$CURRENT_DATE/g" "$file"
-        ((FILE_COUNT++))
-        echo "  ✓ $file"
-    fi
-done < <(find "$EXOCORTEX_DIR" -name "*.md" -print0)
-
-# Update pointer files if they exist (thin pointers — no placeholders to replace)
-for pfile in .cursorrules CLAUDE.md .windsurfrules .github/copilot-instructions.md; do
-    if [ -f "$pfile" ]; then
-        echo "  ✓ $pfile (pointer — no changes needed)"
-    fi
-done
-
-echo ""
-echo "🧹 Cleaning up backup files..."
-find "$EXOCORTEX_DIR" -name "*.bak" -type f -delete 2>/dev/null
-find . -maxdepth 1 -name "*.bak" -type f -delete 2>/dev/null
-echo "  ✓ Cleaned up"
-
-echo ""
-echo "🔧 Making scripts executable..."
-
-# Make ALL scripts in scripts/ executable
-if [ -d "$EXOCORTEX_DIR/scripts" ]; then
-    chmod +x "$EXOCORTEX_DIR/scripts/"*.sh 2>/dev/null && echo "  ✓ Shell scripts (.sh)" || true
-    chmod +x "$EXOCORTEX_DIR/scripts/"*.py 2>/dev/null && echo "  ✓ Python scripts (.py)" || true
-fi
-
-# ── API Key setup (optional) ──────────────────────────────────────────
-
-echo ""
-echo "🔑 API Key Setup"
-echo ""
-echo "  The exocortex AI memory features (short-term, long-term, subconscious)"
-echo "  require an OpenAI API key. An Anthropic key is optional (fallback)."
-echo ""
-
-ENV_FILE="$EXOCORTEX_DIR/.env"
-
-if [ -f "$ENV_FILE" ]; then
-    echo "  ⚠️  .env already exists — skipping"
-elif [ -z "$1" ]; then
-    read -p "  Set up API keys now? (y/n): " -n 1 -r
-    echo ""
-    if [[ $REPLY =~ ^[Yy]$ ]]; then
-        echo ""
-        read -p "  OpenAI API key (sk-...): " OPENAI_KEY
-        read -p "  Anthropic API key (sk-ant-..., or press Enter to skip): " ANTHROPIC_KEY
-
-        echo ""
-        echo "  📡 RAG Memory Search (optional)"
-        echo "  Enables /work, /shortterm, /longterm, /subconscious memory commands."
-        echo "  Leave blank to skip — can be added to .exocortex/.env later."
-        echo ""
-        read -p "  RAG API URL (leave blank to use hosted service): " RAG_URL
-        read -p "  RAG API key (leave blank to skip): " RAG_KEY
-
-        if [ -n "$OPENAI_KEY" ] || [ -n "$ANTHROPIC_KEY" ] || [ -n "$RAG_KEY" ]; then
-            echo "OPENAI_API_KEY=${OPENAI_KEY}" > "$ENV_FILE"
-            echo "ANTHROPIC_API_KEY=${ANTHROPIC_KEY}" >> "$ENV_FILE"
-            if [ -n "$RAG_KEY" ]; then
-                echo "RAG_API_URL=${RAG_URL:-https://rag-e-api.enkratflow.ai}" >> "$ENV_FILE"
-                echo "RAG_API_KEY=${RAG_KEY}" >> "$ENV_FILE"
-            fi
-            echo ""
-            echo "  ✓ API keys saved to $ENV_FILE"
-            echo "  ℹ️  This file is gitignored — your keys won't be committed"
-        fi
-    else
-        echo ""
-        echo "  ℹ️  You can set up keys later by copying .env.example to .env"
-    fi
-else
-    # Automated install — create .env from .env.example so keys can be filled in immediately
-    if [ -f "$EXOCORTEX_DIR/.env.example" ]; then
-        cp "$EXOCORTEX_DIR/.env.example" "$ENV_FILE"
-        echo "  ✓ .env created from .env.example — open $ENV_FILE and add your API keys"
-    else
-        echo "  ℹ️  Add your API keys to $ENV_FILE when ready"
-    fi
-fi
-
-# ── Verify .gitignore covers .env ─────────────────────────────────────
-
-if [ -f "$EXOCORTEX_DIR/.gitignore" ]; then
-    if grep -q "\.env" "$EXOCORTEX_DIR/.gitignore"; then
-        echo ""
-        echo "  ✓ .gitignore protects .env files"
-    fi
-fi
-
-# ── Done ──────────────────────────────────────────────────────────────
-
-echo ""
-echo "════════════════════════════════════════════"
-echo "  ✅ Exocortex v3 Initialized!"
-echo "════════════════════════════════════════════"
-echo ""
-echo "📁 Files updated: $FILE_COUNT"
-echo ""
-echo "🎯 Next Steps:"
-echo "  1. Customize .exocortex/PROJECT_MEMORY.md (describe your system)"
-echo "  2. Map your files in .exocortex/reference/ESSENTIAL_FILES.md"
-echo "  3. Add your first tasks to .exocortex/TODO.md"
-echo "  4. Start working with '/work' command"
-echo ""
-echo "📖 Key Documents:"
-echo "  - .exocortex/AI_BOOTSTRAP.md       — Command protocol (start here)"
-echo "  - .exocortex/COMMAND_SYSTEM.md      — Full command reference"
-echo "  - .exocortex/reference/MEMORY.md    — Memory entry point"
-echo ""
-echo "📂 Editor pointers (thin — all point to AI_BOOTSTRAP.md):"
-echo "  - .cursorrules                      — Cursor"
-echo "  - CLAUDE.md                         — Claude Code"
-echo "  - .github/copilot-instructions.md   — VS Code Copilot"
-echo "  - .windsurfrules                    — Windsurf"
-echo ""
-echo "🚀 Happy coding!"
-echo ""
+echo "Project-local initialization complete for: $PROJECT_NAME"
+echo "Credentials, providers, packages, global editor state, services, and external sync: not accessed."

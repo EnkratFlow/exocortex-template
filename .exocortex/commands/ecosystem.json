@@ -1,11 +1,17 @@
 {
   "name": "/ecosystem",
   "description": "Cross-project activity view from EnkratFlow hub (read-only)",
+  "protocol": {
+    "entry_contract": "AI_START_HERE.md",
+    "authority": "exact_capability_required_for_mutation",
+    "egress": "separate_destination_specific_authorization",
+    "default_role": "read_only"
+  },
   "steps": [
     {
       "type": "ai",
-      "action": "Read hub data and display ecosystem view",
-      "context": "Read the hub directory configured in EXOCORTEX_HUB_DIR (from ~/.exocortex/.env), falling back to checking for a hub/ sibling directory. Look for activity_stream.txt (last 50 lines) and projects/*.txt. If hub directory doesn't exist or EXOCORTEX_HUB_DIR is not set, tell the user to configure it in ~/.exocortex/.env and exit gracefully. Group events by project, show last 24h activity, show last known state per project. Suggest focus based on activity patterns (most active, stale, recent switches). Read-only — no modifications."
+      "action": "Display project-local ecosystem evidence when already present",
+      "context": "Read only files beneath the current project .exocortex/hub directory. Do not read global config, credential files, sibling repositories, or an external hub. If local hub evidence is absent, say so."
     },
     {
       "type": "user_choice",

@@ -1,0 +1,152 @@
+{
+  "schema_version": "public-v2",
+  "kind": "model_source_registry",
+  "registry_version": 1,
+  "observed_at": "2026-07-27T16:30:00Z",
+  "expires_at": "2026-08-03T16:30:00Z",
+  "sources": [
+    {
+      "id": "anthropic-models",
+      "provider_id": "anthropic",
+      "url": "https://platform.claude.com/docs/en/about-claude/models/overview",
+      "roles": [
+        "models",
+        "lifecycle"
+      ],
+      "retrieved_at": "2026-07-27T16:30:00Z",
+      "content_sha256": "1f3f73322fcf8bf71ca8075f3c30335da737eb59491f17b96acb3c3241dcd562",
+      "refresh_interval_hours": 168
+    },
+    {
+      "id": "anthropic-pricing",
+      "provider_id": "anthropic",
+      "url": "https://platform.claude.com/docs/en/about-claude/pricing",
+      "roles": [
+        "pricing",
+        "lifecycle"
+      ],
+      "retrieved_at": "2026-07-27T16:30:00Z",
+      "content_sha256": "d30eb7842dde527b7002d1a6a2dc70e1a8557552bf5c755021d1c258716c160f",
+      "refresh_interval_hours": 168
+    },
+    {
+      "id": "deepseek-models-pricing",
+      "provider_id": "deepseek",
+      "url": "https://api-docs.deepseek.com/quick_start/pricing",
+      "roles": [
+        "models",
+        "pricing",
+        "lifecycle"
+      ],
+      "retrieved_at": "2026-07-27T16:30:00Z",
+      "content_sha256": "08773e4021852f3c5cd4defdf91ccdc57573a7b4e859d84f0a18ba35156d4e69",
+      "refresh_interval_hours": 168
+    },
+    {
+      "id": "google-models",
+      "provider_id": "google",
+      "url": "https://ai.google.dev/gemini-api/docs/models",
+      "roles": [
+        "models",
+        "lifecycle"
+      ],
+      "retrieved_at": "2026-07-27T16:30:00Z",
+      "content_sha256": "17e10c4be229caa56cffc50c693acaf1141480d8e87478f9427f2af648947b1e",
+      "refresh_interval_hours": 168
+    },
+    {
+      "id": "google-pricing",
+      "provider_id": "google",
+      "url": "https://ai.google.dev/gemini-api/docs/pricing",
+      "roles": [
+        "pricing"
+      ],
+      "retrieved_at": "2026-07-27T16:30:00Z",
+      "content_sha256": "125c59bf3e943fdb59be9091c3fbbbcffb7fed6f5a618e51ae440b7f2f3a455d",
+      "refresh_interval_hours": 168
+    },
+    {
+      "id": "kimi-models-pricing",
+      "provider_id": "kimi",
+      "url": "https://platform.kimi.ai/",
+      "roles": [
+        "models",
+        "pricing",
+        "lifecycle"
+      ],
+      "retrieved_at": "2026-07-27T16:30:00Z",
+      "content_sha256": "c54debcae0a90ecdf794d3fed169631ca50ae266aa1207c8ae63f10cf24d607c",
+      "refresh_interval_hours": 168
+    },
+    {
+      "id": "mistral-models",
+      "provider_id": "mistral",
+      "url": "https://docs.mistral.ai/models/",
+      "roles": [
+        "models",
+        "lifecycle"
+      ],
+      "retrieved_at": "2026-07-27T16:30:00Z",
+      "content_sha256": "4c50f6e0665d8905094e576856dc6478d3822a74eee722c36f1d39fb72609abc",
+      "refresh_interval_hours": 168
+    },
+    {
+      "id": "mistral-pricing",
+      "provider_id": "mistral",
+      "url": "https://docs.mistral.ai/models/model-selection-guide",
+      "roles": [
+        "pricing"
+      ],
+      "retrieved_at": "2026-07-27T16:30:00Z",
+      "content_sha256": "60c1c1185bb8afe91ab385673e4a5745c2b9d620ad0802ec00dd8f35aabecba9",
+      "refresh_interval_hours": 168
+    },
+    {
+      "id": "openai-models",
+      "provider_id": "openai",
+      "url": "https://developers.openai.com/api/docs/models",
+      "roles": [
+        "models",
+        "lifecycle"
+      ],
+      "retrieved_at": "2026-07-27T16:30:00Z",
+      "content_sha256": "980191eed5c9b4df179c874fe353e7738eb6efb78f05c5a91c2bc1aded091caa",
+      "refresh_interval_hours": 168
+    },
+    {
+      "id": "openai-pricing",
+      "provider_id": "openai",
+      "url": "https://developers.openai.com/api/docs/pricing",
+      "roles": [
+        "pricing"
+      ],
+      "retrieved_at": "2026-07-27T16:30:00Z",
+      "content_sha256": "c083fe3cde840ad6ecea66c9fd1fb256f0414bd92d9789e4b20d269ccaed9910",
+      "refresh_interval_hours": 168
+    },
+    {
+      "id": "xai-models",
+      "provider_id": "xai",
+      "url": "https://docs.x.ai/developers/models",
+      "roles": [
+        "models",
+        "lifecycle"
+      ],
+      "retrieved_at": "2026-07-27T16:30:00Z",
+      "content_sha256": "e537ea16a2f170f224504b6f0a1bfe940bc630f191d1ce04205d6bc2f035813e",
+      "refresh_interval_hours": 168
+    },
+    {
+      "id": "xai-pricing",
+      "provider_id": "xai",
+      "url": "https://docs.x.ai/developers/pricing",
+      "roles": [
+        "pricing",
+        "lifecycle"
+      ],
+      "retrieved_at": "2026-07-27T16:30:00Z",
+      "content_sha256": "f3b9a5700aca83f32448f56cc01c75f64ff77d4a001109ae5278394e7ceedfd2",
+      "refresh_interval_hours": 168
+    }
+  ]
+}

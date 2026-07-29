@@ -1,225 +1,245 @@
-# Architecture
+# Exocortex architecture
 
-## System Overview
+Exocortex is a project-local memory, delivery, and multi-AI control protocol.
+The repository owns its context, authority, evidence, and lifecycle state. AI
+systems are interchangeable workers operating through the same checked entry
+contract.
 
-The exocortex is a file-based system that integrates with AI assistants to provide persistent context and intelligent memory retrieval. It operates through three main subsystems working in concert.
+## Design goals
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                     EXOCORTEX ARCHITECTURE                 │
-├─────────────────────────────────────────────────────────────┤
-│                                                             │
-│  ┌──────────────┐    ┌─────────────┐    ┌──────────────┐   │
-│  │   COMMAND    │    │   MEMORY    │    │    EVENT     │   │
-│  │   SYSTEM     │◄──►│   SYSTEM    │◄──►│   SYSTEM     │   │  
-│  │              │    │             │    │              │   │
-│  └──────────────┘    └─────────────┘    └──────────────┘   │
-│         │                    │                   │         │
-│         │                    │                   │         │
-│         ▼                    ▼                   ▼         │
-│  ┌──────────────┐    ┌─────────────┐    ┌──────────────┐   │
-│  │ AI Assistant │    │ Memory APIs │    │ File Storage │   │
-│  │ Integration  │    │ (OpenAI/    │    │ (.md files) │   │
-│  │ (User Rules/ │    │ Anthropic)  │    │              │   │
-│  └──────────────┘    └─────────────┘    └──────────────┘   │
-│                                                             │
-└─────────────────────────────────────────────────────────────┘
-```
+- Give any AI surface a zero-context path into the repository.
+- Default unknown or unregistered actors to read-only behavior.
+- Route work to the least-expensive available model capable of the complete
+  bounded task and its risk.
+- Keep one accountable writer while parallel evidence and review lanes remain
+  read-only.
+- Separate narrative memory, lifecycle checkpoints, handoffs, and outward
+  actions.
+- Preserve project data during installation, update, and public-template
+  promotion.
+- Turn retrospectives into prospective improvements without allowing a system
+  to expand its own authority.
 
-## Core Components
+## System boundary
 
-### 1. Event System
-**Purpose:** Append-only storage of work sessions  
-**Location:** `.exocortex/events/`  
-**Format:** `YYYY-MM-DD_HH-MM-SS_machine-editor.md`
-
-**Architecture:**
-- **Append-only** — Events are never modified, only created
-- **Machine-scoped** — Events capture which environment was used
-- **Editor-aware** — Different editors create separate event streams
-- **Time-ordered** — Natural chronological sorting by filename
-
-**Key Scripts:**
-- `create_event.sh` — Records new work sessions
-- `generate_context.sh` — Aggregates events into session context
-- `archive_events.sh` — Manages event storage lifecycle
-
-### 2. Memory System
-**Purpose:** AI-curated multi-tier memory retrieval  
-**Location:** `.exocortex/scripts/get_*_memory.py`
-
-**Four-Tier Architecture:**
-
-```
-Tier 0: RIGHT NOW (0-7 days)     │ Auto-loaded │ Full detail
-        ↓                        │             │
-Tier 1: SHORT-TERM (7-31 days)   │ Auto-loaded │ Themed blocks  
-        ↓                        │             │
-Tier 2: LONG-TERM (31+ days)     │ On-demand   │ Monthly arcs
-        ↓                        │             │
-Tier 3: SUBCONSCIOUS (all events)│ On-demand   │ Pattern detection
+```text
+human approval
+      |
+      v
+AI_START_HERE.md -> command adapter -> authority/orchestration guards
+      |                                      |
+      v                                      v
+project memory and Git truth          bounded local mutation
+      |                                      |
+      +--------------> evidence <------------+
+                             |
+                             v
+              independent review and gates
+                             |
+                             v
+            separately approved outward action
 ```
 
-**Memory Processing Pipeline:**
-1. **Event Collection** — Mechanical gathering from `.exocortex/events/`
-2. **AI Analysis** — Two-pass prompt processing with self-critique
-3. **Format Curation** — Scannable output with bold anchors
-4. **Context Integration** — Ready for consumption by command system
+`AI_START_HERE.md` is the canonical entry contract. Editor rules, skills,
+command bridges, and automations are thin adapters: they may discover the
+contract, but they cannot broaden it.
 
-**Key Innovation:** Each tier uses a **2-pass Ralph-style loop**:
-- Pass 1: Generate memory reconstruction from raw events
-- Pass 2: Self-critique for format, tone, and completeness
+## Three planes
 
-### 3. Command System  
-**Purpose:** Structured workflow automation  
-**Location:** `.exocortex/commands/*.json`
+| Plane | Direction | Contents |
+|---|---|---|
+| Code | Promoted template to a project | Generic entry files, commands, guards, schemas, adapters, documentation, and tests |
+| Data | Project-local only | Memory, events, work items, approvals, reservations, registries, policies, and protocol transactions |
+| External | One explicitly approved destination | One immutable, digest-bound payload sent by one approved method |
 
-**Execution Flow:**
-```
-User types "/work" → AI reads work.json → Executes steps → Auto-verifies → Shows brief
-```
+Code may flow down after review and promotion. Project data never flows
+sideways into the template or another repository. Nothing flows outward
+automatically.
 
-**Command Specification Format:**
-```json
-{
-  "name": "/command",
-  "description": "What this command does",
-  "steps": [
-    {
-      "type": "shell|ai",
-      "command": "script to run",
-      "description": "Human-readable step name",
-      "success_format": "✓ Template for success message"
-    }
-  ]
-}
-```
+## Canonical entry and orientation
 
-**Current Commands:**
-- `/work` — Context loading and task identification
-- `/drill <topic>` — Deep-dive memory reconstruction  
-- `/shortterm` — 7-31 day memory analysis
-- `/longterm` — 31+ day memory analysis  
-- `/subconscious` — Cross-cutting pattern detection
+Every AI, editor, command, skill, and automation follows the same sequence:
 
-## Data Flow Architecture
+1. Read `AI_START_HERE.md`.
+2. Read `.exocortex/AI_BOOTSTRAP.md` and the matching command specification.
+3. Load the project memory entry point and its required files.
+4. Resolve live Git, the active work item, its revision, current state, and
+   exact approval records.
+5. Declare one role: `read_only`, `writer`, or `independent_reviewer`.
+6. Stop before mutation if any base, path, reservation, executor, capability,
+   expiry, revocation, or verification requirement is missing or ambiguous.
 
-### 1. Context Generation Flow
-```
-Work Sessions → Events → Context Generation → Memory Tiers → Command Briefings
-```
+Generated session context and prior chat are convenience evidence. Live Git
+and project-local protocol records are authoritative.
 
-1. **Session Capture** — Developer works, creates events via `/save` or automatic triggers
-2. **Event Storage** — Append-only `.md` files with structured metadata
-3. **Context Aggregation** — `generate_context.sh` builds `SESSION_CONTEXT.md`
-4. **Memory Analysis** — AI processes events into memory tiers
-5. **Command Integration** — Memory surfaces in `/work` and other commands
+## Command system
 
-### 2. Memory Retrieval Flow
-```
-Command Trigger → Event Query → AI Processing → Format Output → User Display
+The 24 JSON specifications in `.exocortex/commands/` describe read, shell, AI,
+and user-choice steps. The bootstrap discovers those commands and specifies
+read-only defaults; guarded executors enforce mutations. A command description
+containing an action verb is a proposal, not permission.
+
+Command adapters exist for supported editor surfaces. All adapters point back
+to the same entry contract and command JSON; none owns a separate authority
+model.
+
+## Memory and event system
+
+Project-local events are append-only narrative records. Deterministic scripts
+select events for four views:
+
+```text
+RIGHT NOW       0-7 days     detailed current work
+SHORT TERM      7-31 days    recurring themes
+LONG TERM       31+ days     historical arcs
+SUBCONSCIOUS    all events   cross-cutting patterns
 ```
 
-1. **Event Selection** — Scripts filter events by time window or criteria
-2. **AI Invocation** — Raw events sent to OpenAI/Anthropic with specialized prompts
-3. **Two-Pass Processing** — Generate → Self-critique → Refine → Output
-4. **Format Standardization** — Bold anchors, short paragraphs, scannable structure
+The active conversation model can summarize selected local evidence without a
+network call. Provider-assisted curation is unavailable by default and, if
+ever enabled, must use the same immutable outward-action protocol as any other
+external delivery.
 
-### 3. AI Integration Flow
+`SESSION_CONTEXT.md` is generated from events for convenience. It must be
+reconciled against live Git and exact work-item records before decisions.
+
+## Saves, checkpoints, and handoffs
+
+These mechanisms intentionally differ:
+
+- A save is a user-requested local narrative event.
+- A lifecycle checkpoint is created only as part of an accepted, durable,
+  checkpoint-eligible state transition.
+- A handoff records evidence for the next actor but grants no authority.
+
+Rejected, invalid, unauthorized, stale, conflicting, read-only, test, support,
+ordinary-chat, and replay activity creates no new lifecycle checkpoint. A
+retry of an accepted transition converges on its existing checkpoint.
+
+## Orchestration and model routing
+
+`.exocortex/control/MODEL_ROUTING.md` defines capability- and cost-aware
+routing. The accountable parent must be capable of interpreting authority,
+decomposing the task, integrating results, making risk decisions, and
+validating final evidence.
+
+The routing sequence is:
+
+1. Classify complexity, ambiguity, context, tools, and outward effects.
+2. Classify privacy, security, data, financial, migration, destructive, and
+   deployment risk.
+3. Use deterministic tooling first.
+4. Select the least-cost model capable of owning the complete bounded task.
+5. Delegate only independently useful evidence or review slices.
+6. Keep one registered guarded writer; keep other lanes read-only.
+7. Escalate when risk, ambiguity, repeated failure, or material design judgment
+   exceeds the selected role.
+8. Stop duplicate reviews when evidence converges.
+
+Provider adapters may map available models to these roles using versioned
+capability, reliability, latency, and cost metadata. Those mappings are
+advisory; no provider, model name, or permanent highest-tier-first rule is part
+of the protocol.
+
+The public source registry defines configured official-source coverage and
+freshness limits. The reviewed catalog normalizes public lifecycle and price
+facts, while protected `.exocortex/local/model-routing/**` evidence records
+current-surface availability and measured evaluation results. Discovery is
+offline and proposal-only: new models enter quarantine, missing observations
+do not imply deprecation, and only fresh digest-bound eligible evidence can
+route. A production route additionally binds its explicit timestamp to the
+runtime's current UTC clock within 60 seconds, so the deterministic historical
+validator cannot be reused to replay a stale or future live route.
+
+## Agile delivery lifecycle
+
+`.exocortex/control/DELIVERY_WORKFLOW.md` defines the minute-scale Kanban/SDLC
+path:
+
+```text
+captured -> triaged -> refined -> ready -> reserved -> developing
+-> developer_verified -> independent_review -> qa_sit -> uat_ready
+-> human_uat -> release_ready -> awaiting_release -> deployment_approved
+-> deployed -> hypercare -> done
 ```
-User Rule → AI_BOOTSTRAP.md → Command Recognition → JSON Spec → Step Execution → Auto-verification
-```
 
-1. **Command Recognition** — AI assistant recognizes `/command` patterns
-2. **Spec Loading** — `.exocortex/commands/command.json` provides execution plan
-3. **Step Processing** — Scripts run in sequence with auto-verification
-4. **Output Formatting** — Structured response with success indicators
+Each transition checks the exact revision, state, writer, executor,
+capability, target, expiry, revocation, and required evidence immediately
+before mutation. Implementation, local commit, push or pull request, merge,
+release, deployment, service action, external synchronization, and template
+promotion remain separate approvals.
 
-## File System Architecture
+Human UAT establishes acceptance of meaning and usability that deterministic
+tests cannot prove. A model may prepare UAT evidence but cannot accept its own
+UAT.
 
-```
-.exocortex/
-├── .env                    # API keys for AI providers
-├── commands/               # JSON command specifications  
-│   ├── work.json          # Main context loading command
-│   ├── drill.json         # Deep-dive memory reconstruction
-│   └── *.json             # Other workflow commands
-├── scripts/               # Processing and utility scripts
-│   ├── generate_context.sh    # Event → context aggregation
-│   ├── get_*_memory.py         # Memory tier processors (Python + OpenAI)
-│   ├── create_event.sh         # Session recording
-│   └── detect_work_state.sh    # Git state analysis
-├── events/                # Append-only event storage
-│   └── YYYY-MM-DD_HH-MM-SS_machine-editor.md
-└── *.md                   # Documentation and context files
-```
+## Authority and transaction layer
 
-## Technical Architecture Decisions
+The runtime protocol consists of:
 
-### Language Choices
-- **Python for memory scripts** — Better string handling, JSON processing, API calls
-- **Bash for utilities** — System integration, file operations, git commands  
-- **JSON for specifications** — Human-readable, AI-parseable command definitions
-- **Markdown for storage** — Readable, versionable, editor-agnostic
+- `.exocortex/scripts/orchestrate_work_item.py` for orientation, routing, and
+  guarded work-item operations;
+- `.exocortex/scripts/authority_guard.py` for registered executors and exact
+  one-time capabilities;
+- JSON schemas for work items, approvals, reservations, transitions,
+  capabilities, registries, and external-sync policy;
+- `.exocortex/local/protocol/` for project-local immutable transactions and
+  idempotency records.
 
-### AI Provider Architecture
-**Primary:** OpenAI `gpt-4o-mini` (~$0.0001/call)  
-**Fallback:** Anthropic `claude-sonnet-4-6`
+The guard verifies exact allowed paths at the high-level entry point, not only
+inside leaf helpers. Accepted transitions and their checkpoint records are one
+durable operation. Invalid attempts fail before partial state is written.
 
-**Rationale:**
-- Cost optimization for frequent memory operations
-- Dual-provider redundancy for reliability  
-- Consistent prompt format across providers
-- Quality sufficient for memory curation tasks
+## External-action architecture
 
-### File Format Decisions
-**Event files:** Structured markdown with YAML frontmatter  
-**Memory output:** Markdown with bold anchor formatting  
-**Commands:** JSON with shell/AI step types  
+`.exocortex/scripts/egress_guard.py` separates inspection, immutable staging,
+and sending:
 
-**Benefits:**
-- Human-readable for debugging and manual inspection
-- Version control friendly (line-based diffs)
-- Editor-agnostic (work in any text editor)
-- AI-parseable (natural language + structured data)
+1. An exact local inspection capability is accepted before source content is
+   opened or hashed.
+2. A second capability binds digest, size, class, source, object path, and
+   descriptor before immutable local staging.
+3. A human reviews that descriptor and separately approves one destination,
+   method, digest, executor, and expiry.
+4. Send-time checks occur before payload access and again immediately before
+   transport.
 
-### Memory Architecture Design
+Without the complete chain, the system does not inspect outward content, read
+credentials, initialize a destination, open the payload for delivery, spawn a
+transport, or make a network call. Sends are never retried automatically after
+an indeterminate result.
 
-**Four-tier system** based on Conway's autobiographical memory research:
-- Mirrors natural human memory compression
-- Auto-loading for immediate relevance (0-31 days)
-- On-demand for historical context (31+ days)
-- Cross-cutting pattern detection (subconscious)
+## Installation and update architecture
 
-**2-pass processing** inspired by Ralph continuous improvement:
-- Pass 1: Generate from raw events
-- Pass 2: Self-critique and refinement
-- Improves consistency and reduces AI drift
+Installation and update use an exact local template revision plus the approved
+SHA-256 of `SHA256SUMS`. The installer verifies the code plane before target
+mutation and creates deny-by-default project-local registry and external-sync
+policy files when absent.
 
-### Integration Architecture
+Updates rehearse in a newly created disposable copy, keep restore material
+outside the target, preserve the full data plane and user-modified manifest
+files, and revalidate exact authority immediately before apply. Batch and
+legacy update paths fail closed.
 
-**AI Assistant Integration:** Via Cursor user rules (Settings > General > Rules for AI) or manual prompt to read `.exocortex/AI_BOOTSTRAP.md`  
-**Multi-editor Support:** Command system works in Cursor, VS Code, Claude Desktop  
-**Multi-machine Sync:** Event-based append-only model prevents conflicts
+## Recursive improvement
 
-## Scalability Considerations
+Recursive improvement is a sequence of separately governed work items:
 
-### Event Storage
-- Events older than 1 year can be archived without affecting performance
-- Compression strategies available for large event histories
-- File-based storage scales to thousands of events without performance issues
+1. complete a bounded delivery slice;
+2. collect deterministic, reviewer, Human UAT, and operational evidence;
+3. produce a local retrospective proposal;
+4. approve a new isolated work item;
+5. implement and verify it under the same controls;
+6. rehearse and promote it through separate gates.
 
-### AI Processing  
-- Memory tier processing is independent (can be parallelized)  
-- Cost scales linearly with event count (no exponential growth)
-- Caching strategies available for frequently accessed memory tiers
+A retrospective cannot mutate the protocol, grant a writer lane, accept UAT,
+or authorize promotion. This prevents self-approval while allowing evidence to
+compound into safer future behavior.
 
-### Multi-User Extensions
-Architecture supports future team features:
-- Shared event streams
-- Cross-developer pattern detection  
-- Collaborative context preservation
+## Security limits
 
----
-
-*The architecture prioritizes simplicity, observability, and human control — every component can be inspected, modified, or bypassed as needed.*
+The repository guards are cooperative controls. They do not sandbox an
+unrestricted operating-system account or prove that a human signed local JSON.
+Host-level bypass prevention requires an external trusted broker plus signed or
+attested authority. Until that trust root exists, externally trusted execution
+remains an open risk and must be treated accordingly.

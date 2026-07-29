@@ -2,52 +2,67 @@
 
 ## Overview
 
-The **Exocortex** is a neuroscience-inspired external memory system for software developers. It provides persistent context, intelligent memory retrieval, and workflow automation designed to eliminate the cognitive overhead of project re-entry and context switching.
+Exocortex is a project-local memory, delivery, and multi-AI entry protocol for
+software repositories. The repository owns its history and approval gates;
+models and providers are interchangeable workers.
 
 ## Table of Contents
 
 ### Core Documentation
-- [**Vision & Philosophy**](vision.md) - Why the exocortex exists and its guiding principles
-- [**Architecture**](architecture.md) - System design, components, and data flows  
-- [**Getting Started**](getting-started.md) - Installation and initial setup
-- [**User Guide**](user-guide.md) - Day-to-day usage patterns
+- [**Vision & Philosophy**](docs/vision.md) — Why Exocortex exists
+- [**Architecture**](docs/architecture.md) — System design and data planes
+- [**Getting Started**](docs/getting-started.md) — Installation and orientation
+- [**Install with a coding AI**](docs/AI_INSTALLATION.md) — Copy-paste
+  clean-install and existing-update prompts
+- [**User Guide**](docs/user-guide.md) — Day-to-day usage
 
 ### Technical Documentation
-- [**Memory System**](memory-system.md) - Four-tier memory architecture and AI curation
-- [**Command System**](command-system.md) - JSON-based command specifications and execution
-- [**Event System**](event-system.md) - Append-only event storage and context generation
-- [**API Reference**](api-reference.md) - Script interfaces and command specifications
+- [**Memory System**](docs/memory-system.md) — Project-local memory tiers
+- [**Command System**](COMMAND_SYSTEM.md) — Canonical JSON commands
+- [**Event System**](docs/event-system.md) — Append-only narrative events
+- [**IDE Integration**](docs/IDE_INTEGRATION_GUIDE.md) — Provider adapters
+- [**Upgrade Manifest**](docs/UPGRADE_MANIFEST.md) — Code/data boundaries
+- [**Model Routing**](control/MODEL_ROUTING.md) — Source freshness,
+  quarantine, availability, and measured cost-per-success
 
 ### Development
-- [**Implementation Guide**](implementation.md) - Adding exocortex to new projects
-- [**Roadmap**](roadmap.md) - Planned features and development timeline  
-- [**Research Foundation**](research.md) - Neuroscience research that informed the design
-- [**Contributing**](contributing.md) - Development guidelines and architecture decisions
+- [**Implementation Guide**](docs/implementation.md) — Installing and evolving
+  the protocol
+- [**Roadmap**](docs/roadmap.md) — Planned work and evidence status
+- [**Repository contributing guide**](../CONTRIBUTING.md) — Deterministic
+  development and review expectations
 
 ---
 
 ## Quick Start
 
-```bash
-# 1. Initialize exocortex in your project
-mkdir .exocortex
-cp templates/* .exocortex/
+For a new or existing repository, use the pinned local installer/update path in
+the root [`README.md`](../README.md). A coding AI with local terminal access can
+operate it using the copy-paste prompts in
+[`docs/AI_INSTALLATION.md`](docs/AI_INSTALLATION.md).
 
-# 2. Set up API keys for AI memory curation
-echo "OPENAI_API_KEY=sk-..." > .exocortex/.env
-
-# 3. Start working 
-/work
-```
+Never manually copy a partial template, create a credential file as part of
+installation, request an unpinned `latest`, or pipe a remote installer into a
+shell. Rehearse in a sanitized disposable fixture, then use one named-target
+local-delivery decision to create a clean isolated Git worktree, install,
+verify, record the permitted local handoff, and release the writer; direct
+installation in a shared or primary checkout is unsupported. Internal
+reservations and technical capabilities are not separate human approvals.
+After a verified installation, open a new AI session and ask it to read
+`AI_START_HERE.md`, then use `/work` for read-only orientation.
 
 ## Key Features
 
-- **Zero Context Loss** — Never lose track of what you were working on
-- **Intelligent Memory** — AI-curated recall across multiple time scales  
-- **Workflow Automation** — Command system for consistent development patterns
-- **Multi-Machine Sync** — Work seamlessly across different environments
-- **Neuroscience-Based** — Memory architecture based on human cognition research
+- **Project-owned memory** — Durable local context across AI providers
+- **Provider-neutral entry** — One canonical orientation and authority contract
+- **Guarded delivery** — Four human-facing business gate classes, one writer,
+  exact internal capabilities, and deterministic evidence
+- **Safe upgrades** — Protected project data, dry runs, rollback, and idempotency
+- **Freshness-gated routing** — Official-source catalog proposals remain
+  advisory until separately reviewed evaluation and local availability admit them
+- **Deny-by-default egress** — Nothing synchronizes externally without a
+  separate destination-specific approval
 
 ---
 
-*The exocortex transforms your development experience from "what was I doing?" to "here's exactly where we left off."*
+*Root coordinates. Projects remember. Providers remain interchangeable.*
