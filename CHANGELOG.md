@@ -6,7 +6,36 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 ## [Unreleased]
 
-No changes recorded after the 3.2.0 release candidate.
+No changes recorded after the 3.2.1 release candidate.
+
+## [3.2.1] - 2026-07-29
+
+Patch release fixing the existing-repository upgrade path, discovered during a
+twelve-repository fleet rehearsal of 3.2.0. Clean installs were unaffected.
+
+### Fixed
+- **Legacy protected-path bootstrap** — a target predating
+  `.exocortex/.project-name` and `.exocortex/local` no longer fails
+  `safe-update.sh` with "protected data changed in rehearsal". Installer-created
+  defaults that appear only on the rehearsal side are recognized as bootstraps:
+  `.project-name` must exactly match the project directory name and
+  `.exocortex/local` must contain no runtime records (directories only). Digest
+  comparisons treat approved bootstraps as absent, and the apply path verifies
+  the created content matches the same rules before accepting it.
+- **Runtime editor worktrees excluded from the update surface** — embedded
+  `.claude/worktrees/` (Claude Code session state) previously tripped the
+  update-surface symlink guard, and on macOS bsdtar's unanchored `--exclude`
+  patterns stripped a nested worktree's protected-named paths from the rollback
+  archive while the root-anchored code-plane digest still counted them, failing
+  archive reconstruction. `.claude/worktrees` is now uniformly excluded from
+  preflight scans, inventory digests, the rehearsal copy, the rollback archive,
+  and changed-path evidence, and the archive member safety check rejects any
+  archive that contains it.
+
+### Added
+- Installer-suite regression tests: a legacy-layout target bootstraps cleanly
+  in dry-run, and a target with a symlinked, `.exocortex`-bearing embedded
+  worktree passes with the worktree absent from all rollback evidence.
 
 ## [3.2.0] - 2026-07-27
 
@@ -95,6 +124,7 @@ exists.
   mid-copy fault containment, private archive, exact rollback, and pre- and
   post-consumption race coverage.
 
+[3.2.1]: https://github.com/EnkratFlow/exocortex-template/releases/tag/v3.2.1
 [3.2.0]: https://github.com/EnkratFlow/exocortex-template/releases/tag/v3.2.0
 
 ## [3.1.9] - 2026-05-18

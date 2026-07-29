@@ -994,6 +994,49 @@ rm -rf "$target" "$fake_home" "$backup"
 target="$(new_target)"
 fake_home="$(mktemp -d "${TMPDIR:-/tmp}/exo-test-home.XXXXXX")"
 run_install "$target" "$TEMPLATE_DIR" "$fake_home" >/dev/null
+rm -f "$target/.exocortex/.project-name"
+rm -rf "$target/.exocortex/local"
+target_before="$(tree_digest "$target")"
+backup="$(mktemp -d "${TMPDIR:-/tmp}/exo-test-backup.XXXXXX")"
+if (cd "$target" && bash "$TEMPLATE_DIR/scripts/safe-update.sh" \
+    --template "$TEMPLATE_DIR" --candidate-digest "$(hash_file "$TEMPLATE_DIR/SHA256SUMS")" \
+    --backup-dir "$backup" --dry-run) >/tmp/exo-legacy-bootstrap-test.log 2>&1 \
+    && [ "$(tree_digest "$target")" = "$target_before" ] \
+    && grep -Fq 'Protected data check: PASS' /tmp/exo-legacy-bootstrap-test.log \
+    && grep -Fq '.exocortex/.project-name' /tmp/exo-legacy-bootstrap-test.log; then
+    ok "safe-update dry-run bootstraps a legacy target missing installer-created protected defaults"
+else
+    bad "safe-update dry-run bootstraps a legacy target missing installer-created protected defaults"
+fi
+rm -rf "$target" "$fake_home" "$backup"
+
+target="$(new_target)"
+fake_home="$(mktemp -d "${TMPDIR:-/tmp}/exo-test-home.XXXXXX")"
+run_install "$target" "$TEMPLATE_DIR" "$fake_home" >/dev/null
+mkdir -p "$target/.claude/worktrees/stale-wt/node_modules/.bin" "$target/.claude/worktrees/stale-wt/.exocortex"
+ln -s /usr/bin/true "$target/.claude/worktrees/stale-wt/node_modules/.bin/linked-tool"
+printf 'runtime session data\n' > "$target/.claude/worktrees/stale-wt/.exocortex/SESSION_CONTEXT.md"
+target_before="$(tree_digest "$target")"
+backup="$(mktemp -d "${TMPDIR:-/tmp}/exo-test-backup.XXXXXX")"
+if (cd "$target" && bash "$TEMPLATE_DIR/scripts/safe-update.sh" \
+    --template "$TEMPLATE_DIR" --candidate-digest "$(hash_file "$TEMPLATE_DIR/SHA256SUMS")" \
+    --backup-dir "$backup" --dry-run) >/tmp/exo-runtime-worktree-test.log 2>&1 \
+    && [ "$(tree_digest "$target")" = "$target_before" ] \
+    && grep -Fq 'Protected data check: PASS' /tmp/exo-runtime-worktree-test.log; then
+    worktree_archive="$(find "$backup" -type f -name '*.tar.gz.*' -print -quit)"
+    if [ -n "$worktree_archive" ] && ! tar -tzf "$worktree_archive" | grep -q 'worktrees'; then
+        ok "safe-update excludes runtime editor worktrees from surface and rollback evidence"
+    else
+        bad "safe-update excludes runtime editor worktrees from surface and rollback evidence"
+    fi
+else
+    bad "safe-update excludes runtime editor worktrees from surface and rollback evidence"
+fi
+rm -rf "$target" "$fake_home" "$backup"
+
+target="$(new_target)"
+fake_home="$(mktemp -d "${TMPDIR:-/tmp}/exo-test-home.XXXXXX")"
+run_install "$target" "$TEMPLATE_DIR" "$fake_home" >/dev/null
 source_copy="$(mktemp -d "${TMPDIR:-/tmp}/exo-test-source.XXXXXX")"
 cp -Rp "$TEMPLATE_DIR/." "$source_copy/"
 chmod 755 "$source_copy/.exocortex/scripts/check_keys.sh"

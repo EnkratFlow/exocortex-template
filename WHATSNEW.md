@@ -1,3 +1,28 @@
+# What's New in 3.2.1 — Legacy upgrade path fixes
+
+This patch makes `scripts/safe-update.sh` work against repositories installed
+from earlier template versions. It was driven by a twelve-repository fleet
+rehearsal of 3.2.0 in which every existing repository failed one of two guards
+while clean installs passed.
+
+- A legacy target missing `.exocortex/.project-name` or `.exocortex/local` now
+  updates cleanly: installer-created defaults appearing only on the rehearsal
+  side are treated as approved bootstraps (exact-content checked, and verified
+  again on apply), not as protected-data drift.
+- Embedded editor session worktrees under `.claude/worktrees/` are runtime
+  state, not update surface. They are now excluded from preflight symlink and
+  hard-link scans, inventory digests, the rehearsal copy, the rollback archive,
+  and changed-path evidence. This also fixes a macOS bsdtar behavior where
+  unanchored exclude patterns silently stripped a nested worktree's
+  protected-named paths from the rollback archive, failing reconstruction.
+- Two installer-suite regression tests pin both behaviors.
+
+This document describes packaged 3.2.1 candidate behavior. It does not prove
+Git publication, a GitHub release, installation, deployment, or template
+promotion.
+
+---
+
 # What's New in 3.2.0 — Multi-AI delivery and source-backed model routing
 
 - `AI_START_HERE.md` is now the provider-neutral entry contract, with
