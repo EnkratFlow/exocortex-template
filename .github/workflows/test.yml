@@ -19,11 +19,11 @@ jobs:
       - name: Verify generated provider adapters
         run: python3 .exocortex/scripts/generate_command_adapters.py --check
       - name: Run Phase B evidence harness
-        run: bash tests/phase-b/run.sh /tmp/exocortex-phase-b-evidence
+        run: bash tests/phase-b/run.sh /tmp/exo-phase-b-evidence.github
       - name: Upload evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: phase-b-evidence
-          path: /tmp/exocortex-phase-b-evidence
+          path: /tmp/exo-phase-b-evidence.github
           retention-days: 14
