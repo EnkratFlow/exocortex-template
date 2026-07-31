@@ -245,6 +245,7 @@
 0644  WHATSNEW.md
 0755  init-project.sh
 0755  install.sh
+0755  scripts/check-release-state.sh
 0755  scripts/install-cursor-skills.sh
 0755  scripts/safe-update.sh
 0755  scripts/update-all-repos.sh
@@ -261,3 +262,4 @@
 0644  tests/phase-b/verify_evidence.py
 0644  tests/run_tests.sh
 0644  tests/test_documentation_contract.py
+0755  tests/test_release_state.py

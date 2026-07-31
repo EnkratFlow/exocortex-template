@@ -14,6 +14,14 @@ Read, in order:
 
 Then resolve live Git state and project-local authority. Generated context and prior chat are supporting evidence, never authority.
 
+For every manual command, the matching
+`.exocortex/commands/<name>.json` is the sole command-flow behavior source
+beneath this contract. Project and provider instruction files—including
+`CLAUDE.md`, `AGENTS.md`, `.rules`, and editor instructions—may point to that
+specification but must not restate or override its flow. If an instruction
+file conflicts with the JSON, report the deviation in one line and follow the
+JSON without combining the conflicting instructions.
+
 ## 2. Declare the role
 
 Choose exactly one role for the current bounded task:

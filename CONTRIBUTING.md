@@ -2,7 +2,7 @@
 
 Thanks for your interest in contributing to **exocortex-template**. This project provides a portable memory system for AI-assisted development, and contributions are welcome.
 
-**Last updated:** 2026-07-27
+**Last updated:** 2026-07-31
 
 ## Getting Started
 
@@ -72,6 +72,33 @@ Keep each test focused on one behavior and ensure it is deterministic in CI.
 - Keep PRs focused (one change per PR).
 - Write a clear PR description of what changed and why.
 - Install and use the pre-commit hook; it must pass.
+
+## Release closeout
+
+Release work from an isolated branch does not update the original local
+`main` worktree automatically. After the reviewed PR is merged and before a
+release is advertised:
+
+1. Stop if the primary `main` worktree is dirty. Preserve and reconcile those
+   local files; never force-update, reset, or overwrite them.
+2. In a clean `main` worktree, run `git fetch --prune --tags origin` and
+   fast-forward only with `git merge --ff-only origin/main`.
+3. Tag the merged commit as `v<VERSION>` and publish a GitHub release that
+   names the peeled commit SHA and SHA-256 of that tag's `SHA256SUMS`.
+4. Fetch the published tag, then run:
+
+   ```bash
+   bash scripts/check-release-state.sh \
+     --published-digest <digest-from-the-GitHub-release-notes>
+   ```
+
+5. Clone the exact tag into a new disposable directory and follow the public
+   README installation/update instructions. Do not validate a release from an
+   unpublished development worktree.
+
+The checker is read-only and uses already-fetched refs. It fails when local
+`main`, `origin/main`, the packaged version, tag ancestry, main-worktree
+cleanliness, or the published digest disagree.
 
 ## What Not to Change
 

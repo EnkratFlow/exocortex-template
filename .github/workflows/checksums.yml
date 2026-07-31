@@ -53,3 +53,6 @@ jobs:
           Path('/tmp/SHA256SUMS.expected').write_text(''.join(lines), encoding='utf-8')
           PY
           diff -u SHA256SUMS /tmp/SHA256SUMS.expected
+      - name: Verify tag matches packaged version
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: test "v$(sed -n '1p' VERSION)" = "$GITHUB_REF_NAME"

@@ -1,3 +1,31 @@
+# What's New in 3.2.2 — Command authority and release alignment
+
+- `.exocortex/commands/<name>.json` is now explicitly the sole command-flow
+  behavior source beneath `AI_START_HERE.md`. Root and provider instruction
+  files may point to a command specification but cannot restate or override
+  it; a conflict is reported once and the JSON flow is followed without
+  combining instructions.
+- Existing customized instruction files remain untouched. The installer emits
+  path-only findings for preserved command-authority collisions and known
+  obsolete command guidance, while `safe-update.sh --dry-run` requires a
+  reviewed target-specific reconciliation. Ordinary guarded apply stops
+  before capability consumption while that finding remains.
+- Public installation and update instructions now pin the exact `v3.2.2`
+  release, verify its peeled commit and published `SHA256SUMS` digest, and
+  rehearse the named target before guarded apply.
+- A read-only release-state checker and deterministic fixtures catch a dirty
+  or stale local `main`, tag/version drift, missing tags, and published digest
+  mismatches without fetching or changing repository state.
+- The 24 canonical commands and their native adapter families are retained;
+  this patch corrects authority and upgrade behavior rather than removing
+  commands.
+
+This document describes packaged 3.2.2 candidate behavior. It does not prove
+Git publication, a GitHub release, installation, deployment, or template
+promotion.
+
+---
+
 # What's New in 3.2.1 — Legacy upgrade path fixes
 
 This patch makes `scripts/safe-update.sh` work against repositories installed

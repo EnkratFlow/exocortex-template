@@ -18,11 +18,13 @@
     "authorized inspection, immutable staging recovery, egress ordering, policy revocation, and audit-chain integrity",
     "fresh install, independently approved candidate digest, ancestor-symlink denial, and idempotency",
     "existing repository protected-path upgrade rehearsal",
+    "command authority precedence, stale-guidance preservation, and pre-consumption update denial",
     "plan-digest-bound target reconciliation, reviewed-object adoption, drift denial, and convergence",
     "manifest-owned legacy retirement and customized-adapter collision preservation",
     "complete sorted changed-path evidence and digest above 120 paths",
     "checksum completeness, generated-artifact exclusion, and pre-write failure",
     "candidate-inventory and installed-output privacy fingerprint scan",
+    "read-only release-state, exact-tag, version, and published-digest alignment",
     "local-only event tooling"
   ]
 }
