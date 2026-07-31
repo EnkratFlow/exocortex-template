@@ -397,6 +397,57 @@ copy_with_bound_mode() {
     record_copy_and_maybe_fault
 }
 
+is_generated_command_adapter() {
+    local target_file="$1" command_name
+    case "$target_file" in
+        .agents/skills/*/SKILL.md)
+            command_name="${target_file#.agents/skills/}"
+            command_name="${command_name%/SKILL.md}"
+            ;;
+        .claude/skills/*/SKILL.md)
+            command_name="${target_file#.claude/skills/}"
+            command_name="${command_name%/SKILL.md}"
+            ;;
+        .cursor/skills/*/SKILL.md)
+            command_name="${target_file#.cursor/skills/}"
+            command_name="${command_name%/SKILL.md}"
+            ;;
+        *) return 1 ;;
+    esac
+    [ -f "$SOURCE_COPY/.exocortex/commands/$command_name.json" ]
+}
+
+is_command_authority_path() {
+    case "$1" in
+        AI_START_HERE.md|.exocortex/AI_BOOTSTRAP.md|.exocortex/COMMAND_SYSTEM.md|.exocortex/commands/*.json)
+            return 0 ;;
+    esac
+    is_generated_command_adapter "$1"
+}
+
+is_root_instruction_adapter() {
+    case "$1" in
+        CLAUDE.md|AGENTS.md|.rules|.github/copilot-instructions.md) return 0 ;;
+        *) return 1 ;;
+    esac
+}
+
+contains_known_stale_command_guidance() {
+    LC_ALL=C grep -Eiq \
+        'HYBRID[[:space:]]+PATTERN|sync_event_to_vault\.sh|/tmp/save_event\.md|Phase[[:space:]]+checkpoint|haiku[[:space:]-]+(tier[[:space:]-]+)?subagent' \
+        "$1"
+}
+
+report_preserved_command_drift() {
+    local target_file="$1"
+    if is_command_authority_path "$target_file"; then
+        echo "EXOCORTEX_COMMAND_AUTHORITY_COLLISION_PRESERVED: $target_file (reviewed reconciliation required before live apply)"
+    elif is_root_instruction_adapter "$target_file" \
+        && contains_known_stale_command_guidance "$target_file"; then
+        echo "EXOCORTEX_STALE_COMMAND_GUIDANCE_PRESERVED: $target_file (matching command JSON remains authoritative; reviewed reconciliation required before live apply)"
+    fi
+}
+
 safe_copy_file() {
     local source_file="$1"
     local target_file="$2"
@@ -422,6 +473,7 @@ safe_copy_file() {
     else
         [ -n "$installed_hash" ] && record_manifest "$target_file" "$installed_hash"
         echo "preserve user-modified or unknown file: $target_file"
+        report_preserved_command_drift "$target_file"
     fi
 }
 

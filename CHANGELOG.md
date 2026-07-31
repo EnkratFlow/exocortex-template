@@ -6,7 +6,42 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 ## [Unreleased]
 
-No changes recorded after the 3.2.1 release candidate.
+No changes recorded after the 3.2.2 release candidate.
+
+## [3.2.2] - 2026-07-31
+
+Patch release preventing project instruction files and customized command
+surfaces from silently overriding the canonical Exocortex command contracts.
+
+### Added
+- **Explicit command-spec precedence** — `AI_START_HERE.md`, the bootstrap and
+  command-system references, and the installed provider instruction adapters
+  now state that `.exocortex/commands/<name>.json` is the sole command-flow
+  behavior source beneath the entry contract. A conflicting project
+  instruction is reported once and is never combined with the JSON flow.
+- **Deterministic command-drift findings** — preserved customized authority
+  paths and known stale root-instruction patterns are reported by path only.
+  Dry runs surface `EXOCORTEX_COMMAND_RECONCILIATION_REQUIRED`; ordinary
+  guarded apply stops before consuming its one-time capability until a
+  reviewed target-specific reconciliation clears the finding.
+- **Release-state closeout check** — `scripts/check-release-state.sh` verifies,
+  without network access or repository mutation, that clean local `main`,
+  cached `origin/main`, `v<VERSION>`, tag ancestry, packaged version, and the
+  published `SHA256SUMS` digest agree.
+
+### Changed
+- **Exact public update source** — active installation and update guidance now
+  pins `v3.2.2`, verifies the peeled release commit and published candidate
+  digest, rehearses with `safe-update.sh --dry-run`, and keeps guarded apply a
+  separate named-target action.
+- **Release closeout procedure** — contributors must preserve a dirty primary
+  checkout, fast-forward a clean local `main`, publish the exact release
+  evidence, run the read-only closeout check, and verify a fresh tag clone.
+
+### Tests
+- Added command-authority collision, stale-guidance preservation,
+  idempotency, pre-consumption denial, exact-tag documentation, tag/version
+  CI, and read-only release-state regression coverage.
 
 ## [3.2.1] - 2026-07-29
 
@@ -134,6 +169,7 @@ exists.
   mid-copy fault containment, private archive, exact rollback, and pre- and
   post-consumption race coverage.
 
+[3.2.2]: https://github.com/EnkratFlow/exocortex-template/releases/tag/v3.2.2
 [3.2.1]: https://github.com/EnkratFlow/exocortex-template/releases/tag/v3.2.1
 [3.2.0]: https://github.com/EnkratFlow/exocortex-template/releases/tag/v3.2.0
 

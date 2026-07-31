@@ -52,8 +52,12 @@ request for one reviewed candidate; it cannot authorize merge or any later
 class. Never combine a local record and external synchronization in one
 envelope.
 
-Command JSON is behavior authority beneath `AI_START_HERE.md`. Provider and
-editor bridges are thin adapters and cannot expand it.
+For every manual command, the matching JSON is the sole command-flow behavior
+source beneath `AI_START_HERE.md`. Project and provider instruction files,
+including `CLAUDE.md`, `AGENTS.md`, `.rules`, and editor instructions, may
+point to the JSON but cannot restate, replace, or expand its flow. If they
+conflict, report the deviation in one line and follow the JSON without
+combining the conflicting instructions.
 
 ## Available commands (24)
 

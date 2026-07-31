@@ -128,6 +128,12 @@ destination/method approval. Project memory never flows sideways.
    bytes rather than permission provenance. Do not create unreported mode-only mutations
    with blanket permission changes. Retire a legacy adapter only when its
    manifest hash and reviewed legacy text mode `0644` both still match.
+   The matching `.exocortex/commands/<name>.json` remains the sole command-flow
+   behavior source beneath `AI_START_HERE.md`; project/provider instructions
+   cannot override it. A preserved command-authority surface or known stale
+   command guidance is a required-reconciliation finding, not a successful
+   collision-free update. Dry run reports it deterministically, and ordinary
+   live apply fails before capability consumption.
 10. If reviewed target-specific convergence is required, prepare a
     deterministic reconciliation plan whose candidate, target surface,
     ordinary dry-run path set, exact final bytes, expected `0644`/`0755` mode,

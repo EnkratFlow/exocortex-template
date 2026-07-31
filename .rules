@@ -3,3 +3,5 @@
 Read `AI_START_HERE.md` before substantive action. It is the sole provider-neutral entry and authority contract.
 
 Then follow `.exocortex/AI_BOOTSTRAP.md` for command discovery and `.exocortex/reference/MEMORY.md` for project orientation. Without exact current authority and a registered guarded executor, remain read-only and perform no egress. Never read or expose secret values or `.env` contents.
+
+For manual commands, `.exocortex/commands/<name>.json` is the sole command-flow behavior source. This adapter cannot restate or override it; if they conflict, report the deviation and follow the JSON without combining instructions.

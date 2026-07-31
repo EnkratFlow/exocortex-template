@@ -15,8 +15,9 @@ filesystem and terminal access): open the repository you want Exocortex
 installed into and paste this prompt:
 
 > Install Exocortex into this repository. Clone
-> `https://github.com/EnkratFlow/exocortex-template` at its newest release
-> tag into a sibling directory. Compute the SHA-256 of the clone's
+> `https://github.com/EnkratFlow/exocortex-template` at the exact `v3.2.2`
+> release tag into a sibling directory. Confirm the clone's HEAD equals the
+> peeled commit SHA published in that release's notes. Compute the SHA-256 of the clone's
 > `SHA256SUMS` file and confirm it equals the candidate digest published in
 > that release's notes; stop if it does not match. Then, from this
 > repository's root, run
@@ -24,12 +25,13 @@ installed into and paste this prompt:
 > and show me the full result. Do not commit, push, publish, or configure
 > anything beyond that.
 
-**By hand**, three commands from the repository you are installing into:
+**By hand**, run these commands from the repository you are installing into:
 
 ```bash
-git clone --branch v3.2.1 https://github.com/EnkratFlow/exocortex-template.git ../exocortex-template
-shasum -a 256 ../exocortex-template/SHA256SUMS   # compare with the digest in the release notes
-EXOCORTEX_LOCAL_SOURCE=../exocortex-template EXOCORTEX_CANDIDATE_DIGEST=<digest from release notes> bash ../exocortex-template/install.sh my-project
+git clone --depth 1 --branch v3.2.2 https://github.com/EnkratFlow/exocortex-template.git ../exocortex-template-v3.2.2
+git -C ../exocortex-template-v3.2.2 rev-parse HEAD # compare with the peeled commit in the release notes
+shasum -a 256 ../exocortex-template-v3.2.2/SHA256SUMS # compare with the digest in the release notes
+EXOCORTEX_LOCAL_SOURCE=../exocortex-template-v3.2.2 EXOCORTEX_CANDIDATE_DIGEST=<digest from release notes> bash ../exocortex-template-v3.2.2/install.sh my-project
 ```
 
 **Already running an older Exocortex?** Use the rehearsed updater instead of
@@ -147,6 +149,22 @@ Use a pinned local template and the safe updater. Rehearse only in a newly
 created disposable copy, hash every protected path, and keep the restore
 archive outside the target:
 
+To test the same public path as any other user, acquire only the exact GitHub
+release and verify both values published in its release notes before reading
+the update instructions from that clone:
+
+```bash
+git clone --depth 1 --branch v3.2.2 \
+  https://github.com/EnkratFlow/exocortex-template.git \
+  /tmp/exocortex-template-v3.2.2
+git -C /tmp/exocortex-template-v3.2.2 rev-parse HEAD
+shasum -a 256 /tmp/exocortex-template-v3.2.2/SHA256SUMS
+```
+
+The first output must equal the release's peeled commit SHA and the second
+must equal its published candidate digest. Do not substitute `main`, `latest`,
+or a different checkout.
+
 Older installations must first pass the metadata-only protected-default
 preflight in `.exocortex/docs/AI_INSTALLATION.md`. Missing generic scaffolding
 uses an internal guarded bootstrap under the accepted named-target local
@@ -154,8 +172,8 @@ apply; the updater must not create it after consuming apply authority.
 
 ```bash
 cd /path/to/existing-project
-bash /tmp/exocortex-template/scripts/safe-update.sh \
-  --template /tmp/exocortex-template \
+bash /tmp/exocortex-template-v3.2.2/scripts/safe-update.sh \
+  --template /tmp/exocortex-template-v3.2.2 \
   --candidate-digest <approved-sha256-of-SHA256SUMS> \
   --backup-dir /tmp/exocortex-restore \
   --dry-run
@@ -199,6 +217,15 @@ when its current bytes still match its prior install-manifest hash, its mode is
 the reviewed legacy text mode `0644`, and its canonical replacement installed
 successfully. Customized bytes or modes and unknown wrappers are preserved
 with an `EXOCORTEX_ADAPTER_COLLISION_PRESERVED` warning.
+
+Customized command-authority files and generated command adapters are
+preserved with `EXOCORTEX_COMMAND_AUTHORITY_COLLISION_PRESERVED`. A preserved
+project instruction file containing known obsolete command mechanics produces
+`EXOCORTEX_STALE_COMMAND_GUIDANCE_PRESERVED`. Either finding makes the dry run
+report `EXOCORTEX_COMMAND_RECONCILIATION_REQUIRED` and blocks an ordinary live
+apply before capability consumption. Use the reviewed target-specific
+reconciliation path below; a version marker alone never proves those command
+surfaces converged.
 
 Target-specific collisions are not silently resolved by the ordinary updater.
 After its dry run, use the separately reviewed reconciliation workflow in

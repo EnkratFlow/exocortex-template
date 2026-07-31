@@ -11,6 +11,31 @@ human operator. It does not invent a provider-specific installer, fetch
 `latest`, pipe a remote script into a shell, read credentials, change a global
 editor home, or combine installation with Git publication.
 
+For every manual command, `.exocortex/commands/<name>.json` is the sole
+command-flow behavior source beneath `AI_START_HERE.md`. Project/provider
+instructions may point to it but cannot restate or override it. If they
+conflict, report the deviation in one line and follow the JSON without
+combining the conflicting instructions.
+
+## Acquire an exact GitHub release
+
+The release notes must publish the exact tag, its peeled 40-character commit
+SHA, and the SHA-256 of that tag's `SHA256SUMS`. For version 3.2.2, acquire and
+verify the public artifact like this:
+
+```bash
+git clone --depth 1 --branch v3.2.2 \
+  https://github.com/EnkratFlow/exocortex-template.git \
+  /tmp/exocortex-template-v3.2.2
+git -C /tmp/exocortex-template-v3.2.2 rev-parse HEAD
+shasum -a 256 /tmp/exocortex-template-v3.2.2/SHA256SUMS
+```
+
+Compare both outputs with the release notes. Stop on either mismatch. Never
+replace the exact tag with `main`, `latest`, or another mutable reference.
+After verification, use that clone as `<absolute-pinned-template-path>` and
+its published digest in the prompts below.
+
 ## Local prerequisites
 
 The current installer and updater require Bash 3.2+, Python 3.9+, `shasum` or
@@ -197,6 +222,15 @@ deterministic checks inside the rehearsal described below. Stop and ask once
 for my disposable-rehearsal decision. Do not apply to the named target,
 commit, push, open a PR, merge, deploy, synchronize, or promote.
 ```
+
+The dry run also classifies command-contract drift. A preserved customized
+command specification, canonical entry/bootstrap file, or generated command
+adapter emits `EXOCORTEX_COMMAND_AUTHORITY_COLLISION_PRESERVED`. Known obsolete
+command mechanics in a preserved root instruction file emit
+`EXOCORTEX_STALE_COMMAND_GUIDANCE_PRESERVED`. Either condition produces
+`EXOCORTEX_COMMAND_RECONCILIATION_REQUIRED`; an ordinary live apply must stop
+before capability consumption and use the target-specific reconciliation
+workflow.
 
 ## Legacy protected-default preflight
 
@@ -516,7 +550,9 @@ systems remain outside the effect set.
 
 This path is for reviewed target-specific convergence, not automatic conflict
 resolution. The standard updater remains the default for collision-free
-targets.
+targets. After materializing the reviewed objects, the final rehearsal
+installer pass must emit no command-authority or stale-command-guidance drift;
+otherwise reconciliation fails before live mutation.
 
 ## WSL evidence required before support
 

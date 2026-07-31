@@ -471,6 +471,8 @@ CHANGES="$WORK_DIR/changed-paths.txt"
 PROTECTED_DIFF="$WORK_DIR/protected-diff.txt"
 PLANNED_EFFECTS="$WORK_DIR/planned-effect-paths.txt"
 BACKUP_VERIFY="$WORK_DIR/backup-verify"
+REHEARSAL_INSTALL_LOG="$WORK_DIR/rehearsal-install.log"
+RECONCILED_INSTALL_LOG="$WORK_DIR/reconciled-install.log"
 trap 'rm -rf "$WORK_DIR"' EXIT
 mkdir -p "$REHEARSAL" "$FAKE_HOME" "$BACKUP_VERIFY"
 if [ -n "$RECONCILIATION_PLAN" ]; then
@@ -768,9 +770,30 @@ PY
 }
 verify_backup_archive || fail "rollback archive changed after durable publication"
 
-(cd "$REHEARSAL" && HOME="$FAKE_HOME" EXOCORTEX_TEST_INSTALL_FAULT_AFTER_COPIES=0 \
-    EXOCORTEX_LOCAL_SOURCE="$TEMPLATE_ROOT" EXOCORTEX_CANDIDATE_DIGEST="$CANDIDATE_DIGEST" \
-    bash "$TEMPLATE_ROOT/install.sh" "$(basename "$PROJECT_ROOT")")
+run_installer_logged() {
+    local destination="$1" log_file="$2" status
+    if (cd "$destination" && HOME="$FAKE_HOME" EXOCORTEX_TEST_INSTALL_FAULT_AFTER_COPIES=0 \
+        EXOCORTEX_LOCAL_SOURCE="$TEMPLATE_ROOT" EXOCORTEX_CANDIDATE_DIGEST="$CANDIDATE_DIGEST" \
+        bash "$TEMPLATE_ROOT/install.sh" "$(basename "$PROJECT_ROOT")") > "$log_file" 2>&1; then
+        cat "$log_file"
+    else
+        status=$?
+        cat "$log_file" >&2
+        return "$status"
+    fi
+}
+
+command_reconciliation_required() {
+    LC_ALL=C grep -Eq \
+        '^EXOCORTEX_(COMMAND_AUTHORITY_COLLISION|STALE_COMMAND_GUIDANCE)_PRESERVED:' \
+        "$1"
+}
+
+run_installer_logged "$REHEARSAL" "$REHEARSAL_INSTALL_LOG"
+COMMAND_RECONCILIATION_REQUIRED=false
+if command_reconciliation_required "$REHEARSAL_INSTALL_LOG"; then
+    COMMAND_RECONCILIATION_REQUIRED=true
+fi
 
 materialize_reconciliation() {
     local destination="$1"
@@ -817,10 +840,11 @@ if [ -n "$RECONCILIATION_PLAN" ]; then
     # candidate adoptions are reflected in the install manifest while
     # reviewed unknown objects remain preserved. This pass is part of the
     # rehearsed exact effect and must not add paths outside the plan.
-    (cd "$REHEARSAL" && HOME="$FAKE_HOME" EXOCORTEX_TEST_INSTALL_FAULT_AFTER_COPIES=0 \
-        EXOCORTEX_LOCAL_SOURCE="$TEMPLATE_ROOT" \
-        EXOCORTEX_CANDIDATE_DIGEST="$CANDIDATE_DIGEST" \
-        bash "$TEMPLATE_ROOT/install.sh" "$(basename "$PROJECT_ROOT")")
+    run_installer_logged "$REHEARSAL" "$RECONCILED_INSTALL_LOG"
+    if command_reconciliation_required "$RECONCILED_INSTALL_LOG"; then
+        fail "reviewed reconciliation left command authority or stale command-guidance drift"
+    fi
+    COMMAND_RECONCILIATION_REQUIRED=false
 fi
 REHEARSAL_CODE_PLANE_DIGEST="$(inventory_digest "$REHEARSAL" code_plane)"
 
@@ -976,6 +1000,9 @@ fi
 
 echo "Backup: $BACKUP_PATH"
 echo "Protected data check: PASS"
+if [ "$COMMAND_RECONCILIATION_REQUIRED" = true ]; then
+    echo "EXOCORTEX_COMMAND_RECONCILIATION_REQUIRED: ordinary live apply is blocked; prepare and rehearse an exact target-specific reconciliation plan"
+fi
 echo "Rehearsal changed paths SHA-256: $(sha256_file "$CHANGES")"
 echo "Rehearsal changed paths: $(wc -l < "$CHANGES" | tr -d ' ')"
 cat "$CHANGES"
@@ -984,6 +1011,9 @@ if [ "$APPLY" != true ]; then
     echo "Dry run complete. Real target unchanged."
     exit 0
 fi
+
+[ "$COMMAND_RECONCILIATION_REQUIRED" != true ] \
+    || fail "ordinary live apply cannot preserve conflicting command authority or known stale command guidance"
 
 [ -s "$CHANGES" ] || { echo "No update required."; exit 0; }
 

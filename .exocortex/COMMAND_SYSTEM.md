@@ -4,6 +4,13 @@
 `.exocortex/AI_BOOTSTRAP.md` defines command discovery and execution.
 `.exocortex/commands/*.json` defines the 24 individual command behaviors.
 
+For each manual command, its matching JSON is the sole command-flow behavior
+source beneath `AI_START_HERE.md`. Project and provider instruction files may
+point to the specification but must not restate or override its flow. If a
+`CLAUDE.md`, `AGENTS.md`, `.rules`, or editor instruction conflicts with the
+JSON, report the deviation in one line and follow the JSON without combining
+the conflicting instructions.
+
 Every JSON specification contains:
 
 ```json

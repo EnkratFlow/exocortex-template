@@ -29,11 +29,26 @@ def require(relative: str, *needles: str) -> None:
             FAILURES.append(f"{relative}: missing required text: {needle}")
 
 
+def require_compact(relative: str, *needles: str) -> None:
+    text = " ".join(read(relative).split())
+    for needle in needles:
+        compact_needle = " ".join(needle.split())
+        if compact_needle not in text:
+            FAILURES.append(
+                f"{relative}: missing required normalized text: {compact_needle}"
+            )
+
+
 def forbid(relative: str, *patterns: str) -> None:
     text = read(relative)
     for pattern in patterns:
         if re.search(pattern, text, flags=re.IGNORECASE | re.MULTILINE):
             FAILURES.append(f"{relative}: forbidden active guidance matched: {pattern}")
+
+
+PACKAGED_VERSION = read("VERSION").strip()
+if not re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+", PACKAGED_VERSION):
+    FAILURES.append(f"VERSION: expected SemVer, found {PACKAGED_VERSION!r}")
 
 
 require(
@@ -119,7 +134,35 @@ require(
     "complete non-protected code plane",
     "four business-level envelopes",
     "not separate human approvals",
+    f"--branch v{PACKAGED_VERSION}",
+    f"exocortex-template-v{PACKAGED_VERSION}",
+    "EXOCORTEX_COMMAND_AUTHORITY_COLLISION_PRESERVED",
+    "EXOCORTEX_COMMAND_RECONCILIATION_REQUIRED",
 )
+require(
+    ".exocortex/docs/AI_INSTALLATION.md",
+    f"--branch v{PACKAGED_VERSION}",
+    f"exocortex-template-v{PACKAGED_VERSION}",
+    "EXOCORTEX_COMMAND_AUTHORITY_COLLISION_PRESERVED",
+    "EXOCORTEX_STALE_COMMAND_GUIDANCE_PRESERVED",
+    "EXOCORTEX_COMMAND_RECONCILIATION_REQUIRED",
+)
+require_compact(
+    ".exocortex/docs/AI_INSTALLATION.md",
+    "peeled 40-character commit SHA",
+)
+for command_authority_doc in (
+    "AI_START_HERE.md",
+    ".exocortex/AI_BOOTSTRAP.md",
+    ".exocortex/COMMAND_SYSTEM.md",
+    "CLAUDE.md",
+    "AGENTS.md",
+):
+    require_compact(
+        command_authority_doc,
+        "sole command-flow behavior source",
+        "without combining",
+    )
 require(
     "AI_START_HERE.md",
     "Use four human-facing gate classes",
@@ -261,6 +304,9 @@ require(
     "Preserve the documented runtime baseline",
     "runs only `bash tests/run_tests.sh`",
     "does not trigger for",
+    "scripts/check-release-state.sh",
+    "peeled commit SHA",
+    "published-digest",
 )
 require(
     "CHANGELOG.md",
@@ -321,6 +367,13 @@ for relative in (
     forbid(relative, r"curl[^\n|]*\|[^\n]*bash", r"\bsk-[A-Za-z0-9_-]+")
 
 forbid("README.md", r"native\s+Windows[^\n]*\bis\s+supported\b")
+for relative in ("README.md", ".exocortex/docs/AI_INSTALLATION.md"):
+    forbid(
+        relative,
+        r"newest\s+release",
+        r"--branch\s+(?:main|latest)\b",
+        r"releases/latest",
+    )
 for relative in (
     "README.md",
     ".exocortex/control/MODEL_ROUTING.md",
@@ -469,10 +522,12 @@ else:
         elif stat.S_IMODE(path.stat().st_mode) != mode_records[relative]:
             FAILURES.append(f"FILEMODES: mode mismatch: {relative}")
 
-version = read("VERSION").strip()
-if version != "3.2.1":
-    FAILURES.append(f"VERSION: expected packaged candidate 3.2.1, found {version!r}")
-if f"## [{version}] - 2026-07-29" not in read("CHANGELOG.md"):
+version = PACKAGED_VERSION
+if not re.search(
+    rf"^## \[{re.escape(version)}\] - \d{{4}}-\d{{2}}-\d{{2}}$",
+    read("CHANGELOG.md"),
+    flags=re.MULTILINE,
+):
     FAILURES.append("CHANGELOG.md: packaged VERSION entry is missing")
 if f"# What's New in {version} " not in whatsnew:
     FAILURES.append("WHATSNEW.md: packaged VERSION heading is missing")

@@ -2608,7 +2608,8 @@ class EntryAndPrivacyTests(unittest.TestCase):
 
     def test_all_entry_surfaces_point_to_canonical_contract(self) -> None:
         paths = [
-            TEMPLATE / "CLAUDE.md", TEMPLATE / ".github/copilot-instructions.md", TEMPLATE / ".rules",
+            TEMPLATE / "CLAUDE.md", TEMPLATE / "AGENTS.md",
+            TEMPLATE / ".github/copilot-instructions.md", TEMPLATE / ".rules",
             TEMPLATE / ".cursor/rules/plan-orchestrate.mdc",
             *sorted((TEMPLATE / ".cursor/skills").glob("*/SKILL.md")),
             *sorted((TEMPLATE / ".github/skills").glob("*/SKILL.md")),
@@ -2625,6 +2626,18 @@ class EntryAndPrivacyTests(unittest.TestCase):
             doc = json.loads(path.read_text(encoding="utf-8"))
             self.assertEqual(doc["protocol"]["entry_contract"], "AI_START_HERE.md")
             self.assertEqual(doc["protocol"]["default_role"], "read_only")
+
+        for relative in (
+            "AI_START_HERE.md",
+            ".exocortex/AI_BOOTSTRAP.md",
+            ".exocortex/COMMAND_SYSTEM.md",
+            "CLAUDE.md",
+            "AGENTS.md",
+        ):
+            command_authority = (TEMPLATE / relative).read_text(encoding="utf-8")
+            compact_authority = " ".join(command_authority.split())
+            self.assertIn("sole command-flow behavior source", compact_authority)
+            self.assertIn("without combining", compact_authority)
 
     def test_entry_contract_uses_business_envelopes_and_denies_wildcards(self) -> None:
         entry = (TEMPLATE / "AI_START_HERE.md").read_text(encoding="utf-8")

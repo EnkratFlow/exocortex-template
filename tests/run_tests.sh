@@ -805,6 +805,133 @@ run_install "$target" "$TEMPLATE_DIR" "$fake_home" >/dev/null
 [ "$(hash_file "$target/.exocortex/COMMAND_SYSTEM.md")" = "$custom_hash" ] && ok "user-modified code-plane file preserved" || bad "user-modified code-plane file preserved"
 rm -rf "$target" "$fake_home"
 
+target="$(new_target)"
+fake_home="$(mktemp -d "${TMPDIR:-/tmp}/exo-test-home.XXXXXX")"
+run_install "$target" "$TEMPLATE_DIR" "$fake_home" >/dev/null
+printf '\n## /save - HYBRID PATTERN\nUse /tmp/save_event.md, a haiku subagent, a Phase checkpoint, and sync_event_to_vault.sh.\n' \
+    >> "$target/CLAUDE.md"
+stale_claude_hash="$(hash_file "$target/CLAUDE.md")"
+stale_claude_mode="$(python3 -c 'import os,stat,sys; print(format(stat.S_IMODE(os.stat(sys.argv[1]).st_mode), "04o"))' "$target/CLAUDE.md")"
+stale_claude_before="$(tree_digest "$target")"
+stale_claude_log_one="$(mktemp "${TMPDIR:-/tmp}/exo-test-stale-claude-one.XXXXXX")"
+stale_claude_log_two="$(mktemp "${TMPDIR:-/tmp}/exo-test-stale-claude-two.XXXXXX")"
+if run_install "$target" "$TEMPLATE_DIR" "$fake_home" > "$stale_claude_log_one" 2>&1 \
+    && run_install "$target" "$TEMPLATE_DIR" "$fake_home" > "$stale_claude_log_two" 2>&1 \
+    && [ "$(tree_digest "$target")" = "$stale_claude_before" ] \
+    && [ "$(hash_file "$target/CLAUDE.md")" = "$stale_claude_hash" ] \
+    && [ "$(python3 -c 'import os,stat,sys; print(format(stat.S_IMODE(os.stat(sys.argv[1]).st_mode), "04o"))' "$target/CLAUDE.md")" = "$stale_claude_mode" ] \
+    && [ "$(grep -Fc 'EXOCORTEX_STALE_COMMAND_GUIDANCE_PRESERVED: CLAUDE.md' "$stale_claude_log_one")" = "1" ] \
+    && [ "$(grep -Fc 'EXOCORTEX_STALE_COMMAND_GUIDANCE_PRESERVED: CLAUDE.md' "$stale_claude_log_two")" = "1" ]; then
+    ok "installer preserves stale customized CLAUDE guidance and warns deterministically"
+else
+    bad "installer preserves stale customized CLAUDE guidance and warns deterministically"
+fi
+rm -rf "$target" "$fake_home"
+rm -f "$stale_claude_log_one" "$stale_claude_log_two"
+
+target="$(new_target)"
+fake_home="$(mktemp -d "${TMPDIR:-/tmp}/exo-test-home.XXXXXX")"
+run_install "$target" "$TEMPLATE_DIR" "$fake_home" >/dev/null
+awk '$1 != "AGENTS.md"' "$target/.exocortex/.install-manifest" > "$target/.exocortex/.install-manifest.tmp"
+mv "$target/.exocortex/.install-manifest.tmp" "$target/.exocortex/.install-manifest"
+printf '# Project agent rules\n\nUse the /save HYBRID PATTERN and sync_event_to_vault.sh.\n' > "$target/AGENTS.md"
+unknown_agents_hash="$(hash_file "$target/AGENTS.md")"
+unknown_agents_before="$(tree_digest "$target")"
+unknown_agents_log="$(mktemp "${TMPDIR:-/tmp}/exo-test-unknown-agents.XXXXXX")"
+if run_install "$target" "$TEMPLATE_DIR" "$fake_home" > "$unknown_agents_log" 2>&1 \
+    && [ "$(tree_digest "$target")" = "$unknown_agents_before" ] \
+    && [ "$(hash_file "$target/AGENTS.md")" = "$unknown_agents_hash" ] \
+    && [ "$(grep -Fc 'EXOCORTEX_STALE_COMMAND_GUIDANCE_PRESERVED: AGENTS.md' "$unknown_agents_log")" = "1" ]; then
+    ok "installer preserves unknown stale AGENTS guidance and emits one path-only warning"
+else
+    bad "installer preserves unknown stale AGENTS guidance and emits one path-only warning"
+fi
+rm -rf "$target" "$fake_home"
+rm -f "$unknown_agents_log"
+
+target="$(new_target)"
+fake_home="$(mktemp -d "${TMPDIR:-/tmp}/exo-test-home.XXXXXX")"
+run_install "$target" "$TEMPLATE_DIR" "$fake_home" >/dev/null
+printf '\nProject-specific harmless note.\n' >> "$target/CLAUDE.md"
+harmless_log="$(mktemp "${TMPDIR:-/tmp}/exo-test-harmless-adapter.XXXXXX")"
+if run_install "$target" "$TEMPLATE_DIR" "$fake_home" > "$harmless_log" 2>&1 \
+    && ! grep -Fq 'EXOCORTEX_STALE_COMMAND_GUIDANCE_PRESERVED:' "$harmless_log"; then
+    ok "installer does not flag harmless customized instruction text as stale command guidance"
+else
+    bad "installer does not flag harmless customized instruction text as stale command guidance"
+fi
+rm -rf "$target" "$fake_home"
+rm -f "$harmless_log"
+
+target="$(new_target)"
+fake_home="$(mktemp -d "${TMPDIR:-/tmp}/exo-test-home.XXXXXX")"
+run_install "$target" "$TEMPLATE_DIR" "$fake_home" >/dev/null
+printf '\nSTALE_COMMAND_SPEC_FIXTURE\n' >> "$target/.exocortex/commands/save.json"
+stale_spec_hash="$(hash_file "$target/.exocortex/commands/save.json")"
+backup="$(mktemp -d "${TMPDIR:-/tmp}/exo-test-backup.XXXXXX")"
+stale_spec_before="$(tree_digest "$target")"
+stale_spec_probe="$(mktemp "${TMPDIR:-/tmp}/exo-test-stale-spec-probe.XXXXXX")"
+if (cd "$target" && bash "$TEMPLATE_DIR/scripts/safe-update.sh" \
+    --template "$TEMPLATE_DIR" --candidate-digest "$(hash_file "$TEMPLATE_DIR/SHA256SUMS")" \
+    --backup-dir "$backup" --dry-run) > "$stale_spec_probe" 2>&1 \
+    && [ "$(tree_digest "$target")" = "$stale_spec_before" ] \
+    && [ "$(hash_file "$target/.exocortex/commands/save.json")" = "$stale_spec_hash" ] \
+    && grep -Fq 'EXOCORTEX_COMMAND_AUTHORITY_COLLISION_PRESERVED: .exocortex/commands/save.json' "$stale_spec_probe" \
+    && grep -Fq 'EXOCORTEX_COMMAND_RECONCILIATION_REQUIRED:' "$stale_spec_probe"; then
+    ok "safe-update dry run reports preserved command authority and requires reconciliation"
+else
+    bad "safe-update dry run reports preserved command authority and requires reconciliation"
+fi
+guard_digest="$(python3 "$TEMPLATE_DIR/.exocortex/scripts/authority_guard.py" guard-digest)"
+candidate_digest="$(hash_file "$TEMPLATE_DIR/SHA256SUMS")"
+python3 - "$target" "$guard_digest" "$candidate_digest" <<'PY'
+import json, sys
+from pathlib import Path
+root=Path(sys.argv[1])
+guard=sys.argv[2]
+candidate=sys.argv[3]
+registry={
+  'schema_version':'public-v2','kind':'executor_registry','registry_version':1,
+  'default_role':'read_only','executors':[{
+    'surface_id':'test-surface','executor_id':'test-executor','adapter_version':'test-v1',
+    'guard_digest':guard,'roles':['read_only','writer'],'status':'active',
+    'registered_at':'2026-01-01T00:00:00Z','expires_at':'2099-01-01T00:00:00Z','revoked_at':None,
+  }],
+}
+capability={
+  'schema_version':'public-v2','kind':'approval_capability','capability_id':'cap-command-collision',
+  'work_item_id':'TEST-COMMAND-COLLISION','work_item_revision':0,'operation':'apply_template_update',
+  'scope':{'allowed_paths':[],'target_sha':candidate},
+  'executor':{'surface_id':'test-surface','executor_id':'test-executor','adapter_version':'test-v1','guard_digest':guard,'registry_version':1},
+  'approval':{'approved_by':'fixture-human','accepted_at':'2026-01-01T00:00:00Z','expires_at':'2099-01-01T00:00:00Z','one_time':True,'summary':'fictional collision apply fixture'},
+  'status':{'state':'active','revoked_at':None,'consumed_at':None,'consumed_by_request_id':None},
+}
+for rel,value in (
+  ('.exocortex/control/EXECUTOR_REGISTRY.json',registry),
+  ('.exocortex/local/protocol/capabilities/command-collision.json',capability),
+):
+  path=root/rel
+  path.parent.mkdir(parents=True,exist_ok=True)
+  path.write_text(json.dumps(value,indent=2,sort_keys=True)+'\n',encoding='utf-8')
+PY
+stale_spec_apply_before="$(tree_digest "$target")"
+stale_spec_apply_log="$(mktemp "${TMPDIR:-/tmp}/exo-test-stale-spec-apply.XXXXXX")"
+if (cd "$target" && bash "$TEMPLATE_DIR/scripts/safe-update.sh" \
+    --template "$TEMPLATE_DIR" --candidate-digest "$candidate_digest" --backup-dir "$backup" --apply \
+    --capability .exocortex/local/protocol/capabilities/command-collision.json \
+    --work-item-id TEST-COMMAND-COLLISION --work-item-revision 0 --request-id command-collision-apply \
+    --surface-id test-surface --executor-id test-executor --adapter-version test-v1) > "$stale_spec_apply_log" 2>&1; then
+    bad "ordinary safe-update apply fails closed before consuming command-collision authority"
+elif [ "$(tree_digest "$target")" = "$stale_spec_apply_before" ] \
+    && grep -Fq 'ordinary live apply cannot preserve conflicting command authority' "$stale_spec_apply_log" \
+    && grep -Fq '"state": "active"' "$target/.exocortex/local/protocol/capabilities/command-collision.json"; then
+    ok "ordinary safe-update apply fails closed before consuming command-collision authority"
+else
+    bad "ordinary safe-update apply fails closed before consuming command-collision authority"
+fi
+rm -rf "$target" "$fake_home" "$backup"
+rm -f "$stale_spec_probe" "$stale_spec_apply_log"
+
 for case_name in missing malformed mismatch duplicate traversal extra; do
     source_copy="$(mktemp -d "${TMPDIR:-/tmp}/exo-test-source.XXXXXX")"
     cp -Rp "$TEMPLATE_DIR/." "$source_copy/"
@@ -1853,6 +1980,12 @@ if PYTHONDONTWRITEBYTECODE=1 python3 "$TEMPLATE_DIR/tests/test_documentation_con
     ok "active installation documentation contract"
 else
     bad "active installation documentation contract"
+fi
+
+if PYTHONDONTWRITEBYTECODE=1 python3 "$TEMPLATE_DIR/tests/test_release_state.py" "$TEMPLATE_DIR"; then
+    ok "read-only release-state closeout contract"
+else
+    bad "read-only release-state closeout contract"
 fi
 
 docs_negative_base="$(mktemp -d "${TMPDIR:-/tmp}/exo-doc-contract-base.XXXXXX")"
