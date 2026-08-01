@@ -13,3 +13,4 @@ archive/pre-upgrade-*/
 
 # Session context backups
 SESSION_CONTEXT_BACKUP_*.md
+SESSION_CONTEXT.md.backup

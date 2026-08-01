@@ -34,7 +34,7 @@ surface = (
     'AI_START_HERE.md', 'AGENTS.md', 'CLAUDE.md', '.windsurfrules', '.rules', '.gitignore',
 )
 protected = (
-    '.exocortex/SESSION_CONTEXT.md', '.exocortex/SESSION_CONTEXT.local.md',
+    '.exocortex/SESSION_CONTEXT.md', '.exocortex/SESSION_CONTEXT.md.backup', '.exocortex/SESSION_CONTEXT.local.md',
     '.exocortex/TODO.md', '.exocortex/LESSONS.md', '.exocortex/PROJECT_MEMORY.md',
     '.exocortex/OPEN_DECISIONS.md', '.exocortex/subconscious_patterns.md',
     '.exocortex/.env', '.exocortex/.project-name', '.exocortex/events',
@@ -121,7 +121,7 @@ from pathlib import Path
 
 root = Path(sys.argv[1]).resolve(strict=True)
 protected = (
-    '.exocortex/SESSION_CONTEXT.md', '.exocortex/SESSION_CONTEXT.local.md',
+    '.exocortex/SESSION_CONTEXT.md', '.exocortex/SESSION_CONTEXT.md.backup', '.exocortex/SESSION_CONTEXT.local.md',
     '.exocortex/TODO.md', '.exocortex/LESSONS.md', '.exocortex/PROJECT_MEMORY.md',
     '.exocortex/OPEN_DECISIONS.md', '.exocortex/subconscious_patterns.md',
     '.exocortex/.env', '.exocortex/.project-name', '.exocortex/events',
@@ -777,7 +777,7 @@ target="$(new_target)"
 fake_home="$(mktemp -d "${TMPDIR:-/tmp}/exo-test-home.XXXXXX")"
 mkdir -p "$target/.exocortex"/{events,archive,hub,local,planning,work-items,control}
 protected=(
-  SESSION_CONTEXT.md SESSION_CONTEXT.local.md TODO.md LESSONS.md PROJECT_MEMORY.md
+  SESSION_CONTEXT.md SESSION_CONTEXT.md.backup SESSION_CONTEXT.local.md TODO.md LESSONS.md PROJECT_MEMORY.md
   OPEN_DECISIONS.md subconscious_patterns.md .env .project-name .hub_enabled .hub_disabled
   events/canary.md archive/canary.md hub/canary.md local/canary.md planning/canary.md work-items/canary.md
   control/ACTIVE_WORK.md control/BRANCH_POLICY.md control/REPO_STATE.md
@@ -794,6 +794,11 @@ for rel in "${protected[@]}"; do
     grep -Fq "PRIVATE_CANARY_$rel" "$target/.exocortex/$rel" || bad "protected path preserved: $rel"
 done
 ok "full protected-path canary matrix preserved"
+if git -C "$target" check-ignore -q -- .exocortex/SESSION_CONTEXT.md.backup; then
+    ok "session-context backup sidecar is ignored by Git"
+else
+    bad "session-context backup sidecar is ignored by Git"
+fi
 rm -rf "$target" "$fake_home"
 
 target="$(new_target)"
@@ -1107,17 +1112,22 @@ target="$(new_target)"
 fake_home="$(mktemp -d "${TMPDIR:-/tmp}/exo-test-home.XXXXXX")"
 run_install "$target" "$TEMPLATE_DIR" "$fake_home" >/dev/null
 printf 'KEEP_ME\n' > "$target/.exocortex/LESSONS.md"
+printf 'KEEP_CONTEXT_BACKUP\n' > "$target/.exocortex/SESSION_CONTEXT.md.backup"
+git -c core.hooksPath=/dev/null -C "$target" add -f -- .exocortex/SESSION_CONTEXT.md.backup
 target_before="$(tree_digest "$target")"
 backup="$(mktemp -d "${TMPDIR:-/tmp}/exo-test-backup.XXXXXX")"
 (cd "$target" && bash "$TEMPLATE_DIR/scripts/safe-update.sh" --template "$TEMPLATE_DIR" --candidate-digest "$(hash_file "$TEMPLATE_DIR/SHA256SUMS")" --backup-dir "$backup" --dry-run) >/tmp/exo-safe-update-test.log 2>&1
 target_after="$(tree_digest "$target")"
 [ "$target_before" = "$target_after" ] && ok "safe-update dry-run leaves target byte-identical" || bad "safe-update dry-run leaves target byte-identical"
 grep -Fq 'Protected data check: PASS' /tmp/exo-safe-update-test.log && ok "safe-update proves protected data" || bad "safe-update proves protected data"
+grep -Fq 'EXOCORTEX_TRACKED_PROTECTED_SIDECAR:' /tmp/exo-safe-update-test.log \
+    && ok "safe-update warns when a protected backup sidecar is already Git-tracked" \
+    || bad "safe-update warns when a protected backup sidecar is already Git-tracked"
 restore_archive="$(find "$backup" -type f -name '*.tar.gz.*' -print -quit)"
 if [ -n "$restore_archive" ] \
     && [ "$(python3 -c 'import os,stat,sys; print(format(stat.S_IMODE(os.stat(sys.argv[1]).st_mode), "04o"))' "$restore_archive")" = "0600" ] \
     && tar -tzf "$restore_archive" | grep -Fq '.exocortex/COMMAND_SYSTEM.md' \
-    && ! tar -tzf "$restore_archive" | grep -Eq '^\\.?/?\\.exocortex/(LESSONS\\.md|local/|events/)'; then
+    && ! tar -tzf "$restore_archive" | grep -Eq '^\.?/?\.exocortex/(LESSONS\.md|SESSION_CONTEXT\.md\.backup|local/|events/)'; then
     ok "safe-update creates a private code-plane-only restore archive"
 else
     bad "safe-update creates a private code-plane-only restore archive"
@@ -1780,7 +1790,7 @@ surface = (
     'AI_START_HERE.md', 'AGENTS.md', 'CLAUDE.md', '.windsurfrules', '.rules', '.gitignore',
 )
 protected = (
-    '.exocortex/SESSION_CONTEXT.md', '.exocortex/SESSION_CONTEXT.local.md',
+    '.exocortex/SESSION_CONTEXT.md', '.exocortex/SESSION_CONTEXT.md.backup', '.exocortex/SESSION_CONTEXT.local.md',
     '.exocortex/TODO.md', '.exocortex/LESSONS.md', '.exocortex/PROJECT_MEMORY.md',
     '.exocortex/OPEN_DECISIONS.md', '.exocortex/subconscious_patterns.md',
     '.exocortex/.env', '.exocortex/.project-name', '.exocortex/events',
@@ -1969,6 +1979,23 @@ if privacy_scan "$source_copy" checksums "$privacy_fingerprint" \
     ok "protected planning fingerprint is excluded from public install"
 else
     bad "protected planning fingerprint is excluded from public install"
+fi
+rm -rf "$source_copy" "$install_target" "$fake_home"
+
+source_copy="$(mktemp -d "${TMPDIR:-/tmp}/exo-test-source.XXXXXX")"
+cp -Rp "$TEMPLATE_DIR/." "$source_copy/"
+printf 'SOURCE_CONTEXT_BACKUP\n' > "$source_copy/.exocortex/SESSION_CONTEXT.md.backup"
+install_target="$(new_target)"
+fake_home="$(mktemp -d "${TMPDIR:-/tmp}/exo-test-home.XXXXXX")"
+mkdir -p "$install_target/.exocortex"
+printf 'TARGET_CONTEXT_BACKUP\n' > "$install_target/.exocortex/SESSION_CONTEXT.md.backup"
+if run_install "$install_target" "$source_copy" "$fake_home" >/dev/null \
+    && grep -Fqx 'TARGET_CONTEXT_BACKUP' "$install_target/.exocortex/SESSION_CONTEXT.md.backup" \
+    && ! grep -Fq '.exocortex/SESSION_CONTEXT.md.backup' "$install_target/.exocortex/.install-manifest" \
+    && git -C "$install_target" check-ignore -q -- .exocortex/SESSION_CONTEXT.md.backup; then
+    ok "session-context backup sidecar is preserved, unmanifested, and ignored"
+else
+    bad "session-context backup sidecar is preserved, unmanifested, and ignored"
 fi
 rm -rf "$source_copy" "$install_target" "$fake_home"
 

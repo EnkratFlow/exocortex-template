@@ -82,6 +82,15 @@ TEMPLATE_ROOT="$(cd "$TEMPLATE_SOURCE" && pwd -P)"
 [ "$PROJECT_ROOT" != "$TEMPLATE_ROOT" ] || fail "template and target must differ"
 case "$TEMPLATE_ROOT/" in "$PROJECT_ROOT/"*) fail "template must not be inside the target" ;; esac
 case "$PROJECT_ROOT/" in "$TEMPLATE_ROOT/"*) fail "target must not be inside the template" ;; esac
+# An ignore rule cannot change Git's index. This is intentionally advisory:
+# the protected sidecar stays untouched, and any Git cleanup remains a separate
+# owner decision outside an Exocortex update.
+TRACKED_PROTECTED_SIDECAR=false
+if git -C "$PROJECT_ROOT" rev-parse --is-inside-work-tree >/dev/null 2>&1 \
+    && git -C "$PROJECT_ROOT" ls-files --error-unmatch -- .exocortex/SESSION_CONTEXT.md.backup >/dev/null 2>&1; then
+    TRACKED_PROTECTED_SIDECAR=true
+fi
+
 [ -f "$TEMPLATE_ROOT/SHA256SUMS" ] && [ ! -L "$TEMPLATE_ROOT/SHA256SUMS" ] \
     || fail "template SHA256SUMS must be a regular non-symlink file"
 SOURCE_LINK="$(find "$TEMPLATE_ROOT" -path "$TEMPLATE_ROOT/.git" -prune -o -type l -print -quit 2>/dev/null)" \
@@ -158,6 +167,7 @@ PY
 surface_paths=(.exocortex .agents .cursor .claude .github .windsurf AI_START_HERE.md AGENTS.md CLAUDE.md .windsurfrules .rules .gitignore)
 protected_paths=(
     .exocortex/SESSION_CONTEXT.md
+    .exocortex/SESSION_CONTEXT.md.backup
     .exocortex/SESSION_CONTEXT.local.md
     .exocortex/TODO.md
     .exocortex/LESSONS.md
@@ -317,7 +327,7 @@ root = Path(sys.argv[1]).resolve(strict=True)
 mode = sys.argv[2]
 surface = ['.exocortex','.agents','.cursor','.claude','.github','.windsurf','AI_START_HERE.md','AGENTS.md','CLAUDE.md','.windsurfrules','.rules','.gitignore']
 protected = [
-    '.exocortex/SESSION_CONTEXT.md','.exocortex/SESSION_CONTEXT.local.md',
+    '.exocortex/SESSION_CONTEXT.md','.exocortex/SESSION_CONTEXT.md.backup','.exocortex/SESSION_CONTEXT.local.md',
     '.exocortex/TODO.md','.exocortex/LESSONS.md','.exocortex/PROJECT_MEMORY.md',
     '.exocortex/OPEN_DECISIONS.md','.exocortex/subconscious_patterns.md',
     '.exocortex/.env','.exocortex/.project-name','.exocortex/events',
@@ -688,7 +698,7 @@ with open(path, "rb") as stream:
 if digest.hexdigest() != expected_digest:
     raise SystemExit("rollback archive digest mismatch")
 protected = (
-    ".exocortex/SESSION_CONTEXT.md", ".exocortex/SESSION_CONTEXT.local.md",
+    ".exocortex/SESSION_CONTEXT.md", ".exocortex/SESSION_CONTEXT.md.backup", ".exocortex/SESSION_CONTEXT.local.md",
     ".exocortex/TODO.md", ".exocortex/LESSONS.md", ".exocortex/PROJECT_MEMORY.md",
     ".exocortex/OPEN_DECISIONS.md", ".exocortex/subconscious_patterns.md",
     ".exocortex/.env", ".exocortex/.project-name", ".exocortex/events",
@@ -1000,6 +1010,9 @@ fi
 
 echo "Backup: $BACKUP_PATH"
 echo "Protected data check: PASS"
+if [ "$TRACKED_PROTECTED_SIDECAR" = true ]; then
+    echo "EXOCORTEX_TRACKED_PROTECTED_SIDECAR: .exocortex/SESSION_CONTEXT.md.backup is already tracked by Git; it is preserved, but ignore rules do not untrack it. Handle any Git cleanup separately; never automate it during an update."
+fi
 if [ "$COMMAND_RECONCILIATION_REQUIRED" = true ]; then
     echo "EXOCORTEX_COMMAND_RECONCILIATION_REQUIRED: ordinary live apply is blocked; prepare and rehearse an exact target-specific reconciliation plan"
 fi

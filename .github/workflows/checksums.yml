@@ -19,7 +19,7 @@ jobs:
           from pathlib import Path
 
           protected_files = {
-              'SESSION_CONTEXT.md','SESSION_CONTEXT.local.md','TODO.md','LESSONS.md',
+              'SESSION_CONTEXT.md','SESSION_CONTEXT.md.backup','SESSION_CONTEXT.local.md','TODO.md','LESSONS.md',
               'PROJECT_MEMORY.md','OPEN_DECISIONS.md','subconscious_patterns.md','.env',
               '.project-name','.install-manifest','.hub_enabled','.hub_disabled',
           }
