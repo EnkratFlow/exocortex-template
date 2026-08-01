@@ -99,7 +99,7 @@ record_copy_and_maybe_fault() {
 
 is_data_relpath() {
     case "$1" in
-        SESSION_CONTEXT.md|SESSION_CONTEXT.local.md|TODO.md|LESSONS.md|PROJECT_MEMORY.md|OPEN_DECISIONS.md|subconscious_patterns.md|.env|.project-name|.install-manifest|.hub_enabled|.hub_disabled)
+        SESSION_CONTEXT.md|SESSION_CONTEXT.md.backup|SESSION_CONTEXT.local.md|TODO.md|LESSONS.md|PROJECT_MEMORY.md|OPEN_DECISIONS.md|subconscious_patterns.md|.env|.project-name|.install-manifest|.hub_enabled|.hub_disabled)
             return 0 ;;
         events/*|archive/*|hub/*|local/*|planning/*|work-items/*)
             return 0 ;;

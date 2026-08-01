@@ -39,6 +39,7 @@ SURFACE_PATHS = (
 )
 PROTECTED_PATHS = (
     ".exocortex/SESSION_CONTEXT.md",
+    ".exocortex/SESSION_CONTEXT.md.backup",
     ".exocortex/SESSION_CONTEXT.local.md",
     ".exocortex/TODO.md",
     ".exocortex/LESSONS.md",

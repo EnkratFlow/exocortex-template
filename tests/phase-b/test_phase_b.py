@@ -2259,6 +2259,9 @@ class ReconciliationPlanTests(unittest.TestCase):
         protected = self.prepare("--adopt", ".exocortex/PROJECT_MEMORY.md")
         self.assertNotEqual(protected.returncode, 0)
         self.assertIn("protected_path", protected.stdout)
+        context_backup = self.prepare("--adopt", ".exocortex/SESSION_CONTEXT.md.backup")
+        self.assertNotEqual(context_backup.returncode, 0)
+        self.assertIn("protected_path", context_backup.stdout)
         candidate = self.prepare("--adopt", "AI_START_HERE.md")
         self.assertEqual(candidate.returncode, 0, candidate.stdout + candidate.stderr)
         self.plan.write_text(candidate.stdout, encoding="utf-8")
@@ -2314,6 +2317,7 @@ class ReconciliationPlanTests(unittest.TestCase):
         (target / ".exocortex/.project-name").write_text("fictional-canary\n", encoding="utf-8")
         for relative, content in (
             ("SESSION_CONTEXT.md", "# Session Context\n"),
+            ("SESSION_CONTEXT.md.backup", "KEEP_CONTEXT_BACKUP\n"),
             ("TODO.md", "# TODO\n"),
             ("LESSONS.md", "# Lessons\n"),
             ("PROJECT_MEMORY.md", "KEEP_PROJECT_MEMORY\n"),

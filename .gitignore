@@ -17,6 +17,7 @@ __pycache__/
 # Phase 2 (after RAG API): Switch to RAG-based sync, stop committing events
 # Only ignore backups (not needed in repo)
 .exocortex/SESSION_CONTEXT_BACKUP_*.md
+.exocortex/SESSION_CONTEXT.md.backup
 
 # Note: Archive directory is tracked during Phase 1 for complete cross-machine sync
 # Will be ignored in Phase 2 when RAG API becomes primary sync mechanism

@@ -6,7 +6,32 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 ## [Unreleased]
 
-No changes recorded after the 3.2.2 release candidate.
+No changes recorded after the 3.2.3 release candidate.
+
+## [3.2.3] - 2026-08-01
+
+Patch release closing a project-memory backup sidecar gap found during a
+disposable existing-repository upgrade rehearsal.
+
+### Fixed
+- **Exact session-context backup protection** —
+  `.exocortex/SESSION_CONTEXT.md.backup` is now protected project data. The
+  installer never copies or manifest-tracks it; the safe updater excludes it
+  from rehearsal, code-plane inventory, reconciliation, and private restore
+  archives; and the reconciliation planner rejects it as an effect path.
+- **Checksum and Git-ignore parity** — public checksum CI and the installed
+  `.exocortex/.gitignore` use the same exact sidecar classification, preventing
+  a later code-plane mismatch or accidental new Git tracking.
+- **Tracked-sidecar warning** — when a project already tracks that optional
+  sidecar, the updater reports the condition and preserves it. It never
+  auto-untracks files or rewrites Git history.
+
+### Tests
+- Added source-sidecar, target-preservation, manifest, Git-ignore,
+  reconciliation-rejection, and restore-archive regression coverage.
+- Re-ran the full installer/update suite, Phase B protocol tests, and a
+  disposable Trading Journal reconciliation rehearsal with protected-data and
+  archive checks.
 
 ## [3.2.2] - 2026-07-31
 
@@ -170,6 +195,7 @@ exists.
   post-consumption race coverage.
 
 [3.2.2]: https://github.com/EnkratFlow/exocortex-template/releases/tag/v3.2.2
+[3.2.3]: https://github.com/EnkratFlow/exocortex-template/releases/tag/v3.2.3
 [3.2.1]: https://github.com/EnkratFlow/exocortex-template/releases/tag/v3.2.1
 [3.2.0]: https://github.com/EnkratFlow/exocortex-template/releases/tag/v3.2.0
 

@@ -110,6 +110,10 @@ require(
     "all `.exocortex/local` authority and evidence paths",
     "one `publication` decision",
     "simple accept or reject",
+    "Existing Git-tracked backup sidecars",
+    "Git-ignore rules affect only files Git does not\nalready track",
+    "EXOCORTEX_TRACKED_PROTECTED_SIDECAR",
+    "never\nperform it automatically",
 )
 require(
     "README.md",
@@ -138,6 +142,7 @@ require(
     f"exocortex-template-v{PACKAGED_VERSION}",
     "EXOCORTEX_COMMAND_AUTHORITY_COLLISION_PRESERVED",
     "EXOCORTEX_COMMAND_RECONCILIATION_REQUIRED",
+    "Git-ignore rules cannot untrack it",
 )
 require(
     ".exocortex/docs/AI_INSTALLATION.md",
@@ -217,6 +222,7 @@ require(
     "Archive only the code plane",
     "reviewed legacy text mode `0644`",
     "complete non-protected code-plane path types",
+    "it cannot remove an existing Git index entry",
 )
 require(
     "SECURITY.md",

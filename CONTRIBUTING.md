@@ -105,6 +105,7 @@ cleanliness, or the published digest disagree.
 Never modify user data files in template update logic:
 
 - `SESSION_CONTEXT.md`
+- `SESSION_CONTEXT.md.backup`
 - `TODO.md`
 - `LESSONS.md`
 - `PROJECT_MEMORY.md`
