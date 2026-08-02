@@ -113,6 +113,8 @@ require(
     "Existing Git-tracked backup sidecars",
     "Git-ignore rules affect only files Git does not\nalready track",
     "EXOCORTEX_TRACKED_PROTECTED_SIDECAR",
+    "EXOCORTEX_TRACKED_LEGACY_SESSION_CONTEXT_BACKUP",
+    "SESSION_CONTEXT_BACKUP_*.md",
     "never\nperform it automatically",
 )
 require(
@@ -143,6 +145,7 @@ require(
     "EXOCORTEX_COMMAND_AUTHORITY_COLLISION_PRESERVED",
     "EXOCORTEX_COMMAND_RECONCILIATION_REQUIRED",
     "Git-ignore rules cannot untrack it",
+    "SESSION_CONTEXT_BACKUP_*.md",
 )
 require(
     ".exocortex/docs/AI_INSTALLATION.md",

@@ -48,6 +48,13 @@ protected = (
     '.exocortex/control/REPO_ORGANIZATION_REPORT.md',
     '.exocortex/.hub_enabled', '.exocortex/.hub_disabled',
 )
+legacy_backup_prefix = '.exocortex/SESSION_CONTEXT_BACKUP_'
+def legacy_session_context_backup(relative):
+    return (
+        relative.startswith(legacy_backup_prefix)
+        and relative.endswith('.md')
+        and '/' not in relative[len(legacy_backup_prefix):]
+    )
 def excluded(relative):
     parts = relative.split('/')
     if any(
@@ -55,7 +62,9 @@ def excluded(relative):
         for index in range(len(parts) - 1)
     ):
         return True
-    return any(relative == item or relative.startswith(item + '/') for item in protected)
+    return legacy_session_context_backup(relative) or any(
+        relative == item or relative.startswith(item + '/') for item in protected
+    )
 def directory_record(path, relative):
     value = os.lstat(path)
     return f'dir:{stat.S_IMODE(value.st_mode):04o}'
@@ -135,6 +144,23 @@ protected = (
     '.exocortex/control/REPO_ORGANIZATION_REPORT.md',
     '.exocortex/.hub_enabled', '.exocortex/.hub_disabled',
 )
+legacy_backup_prefix = '.exocortex/SESSION_CONTEXT_BACKUP_'
+def legacy_session_context_backup(relative):
+    return (
+        relative.startswith(legacy_backup_prefix)
+        and relative.endswith('.md')
+        and '/' not in relative[len(legacy_backup_prefix):]
+    )
+legacy_root = root / '.exocortex'
+legacy_paths = (
+    sorted(
+        path.relative_to(root).as_posix()
+        for path in legacy_root.iterdir()
+        if legacy_session_context_backup(path.relative_to(root).as_posix())
+    )
+    if legacy_root.is_dir() and not legacy_root.is_symlink()
+    else []
+)
 def record(path):
     value = os.lstat(path)
     if stat.S_ISLNK(value.st_mode):
@@ -148,7 +174,7 @@ def record(path):
         return f'dir:{stat.S_IMODE(value.st_mode):04o}'
     return f'other:{stat.S_IFMT(value.st_mode):o}:{stat.S_IMODE(value.st_mode):04o}:{value.st_nlink}'
 records = {}
-for relative in protected:
+for relative in (*protected, *legacy_paths):
     base = root / relative
     try:
         os.lstat(base)
@@ -777,7 +803,7 @@ target="$(new_target)"
 fake_home="$(mktemp -d "${TMPDIR:-/tmp}/exo-test-home.XXXXXX")"
 mkdir -p "$target/.exocortex"/{events,archive,hub,local,planning,work-items,control}
 protected=(
-  SESSION_CONTEXT.md SESSION_CONTEXT.md.backup SESSION_CONTEXT.local.md TODO.md LESSONS.md PROJECT_MEMORY.md
+  SESSION_CONTEXT.md SESSION_CONTEXT.md.backup SESSION_CONTEXT_BACKUP_CANARY.md SESSION_CONTEXT.local.md TODO.md LESSONS.md PROJECT_MEMORY.md
   OPEN_DECISIONS.md subconscious_patterns.md .env .project-name .hub_enabled .hub_disabled
   events/canary.md archive/canary.md hub/canary.md local/canary.md planning/canary.md work-items/canary.md
   control/ACTIVE_WORK.md control/BRANCH_POLICY.md control/REPO_STATE.md
@@ -794,10 +820,11 @@ for rel in "${protected[@]}"; do
     grep -Fq "PRIVATE_CANARY_$rel" "$target/.exocortex/$rel" || bad "protected path preserved: $rel"
 done
 ok "full protected-path canary matrix preserved"
-if git -C "$target" check-ignore -q -- .exocortex/SESSION_CONTEXT.md.backup; then
-    ok "session-context backup sidecar is ignored by Git"
+if git -C "$target" check-ignore -q -- .exocortex/SESSION_CONTEXT.md.backup \
+    && git -C "$target" check-ignore -q -- .exocortex/SESSION_CONTEXT_BACKUP_CANARY.md; then
+    ok "session-context backup sidecars are ignored by Git"
 else
-    bad "session-context backup sidecar is ignored by Git"
+    bad "session-context backup sidecars are ignored by Git"
 fi
 rm -rf "$target" "$fake_home"
 
@@ -1113,7 +1140,9 @@ fake_home="$(mktemp -d "${TMPDIR:-/tmp}/exo-test-home.XXXXXX")"
 run_install "$target" "$TEMPLATE_DIR" "$fake_home" >/dev/null
 printf 'KEEP_ME\n' > "$target/.exocortex/LESSONS.md"
 printf 'KEEP_CONTEXT_BACKUP\n' > "$target/.exocortex/SESSION_CONTEXT.md.backup"
+printf 'KEEP_LEGACY_CONTEXT_BACKUP\n' > "$target/.exocortex/SESSION_CONTEXT_BACKUP_CANARY.md"
 git -c core.hooksPath=/dev/null -C "$target" add -f -- .exocortex/SESSION_CONTEXT.md.backup
+git -c core.hooksPath=/dev/null -C "$target" add -f -- .exocortex/SESSION_CONTEXT_BACKUP_CANARY.md
 target_before="$(tree_digest "$target")"
 backup="$(mktemp -d "${TMPDIR:-/tmp}/exo-test-backup.XXXXXX")"
 (cd "$target" && bash "$TEMPLATE_DIR/scripts/safe-update.sh" --template "$TEMPLATE_DIR" --candidate-digest "$(hash_file "$TEMPLATE_DIR/SHA256SUMS")" --backup-dir "$backup" --dry-run) >/tmp/exo-safe-update-test.log 2>&1
@@ -1123,11 +1152,14 @@ grep -Fq 'Protected data check: PASS' /tmp/exo-safe-update-test.log && ok "safe-
 grep -Fq 'EXOCORTEX_TRACKED_PROTECTED_SIDECAR:' /tmp/exo-safe-update-test.log \
     && ok "safe-update warns when a protected backup sidecar is already Git-tracked" \
     || bad "safe-update warns when a protected backup sidecar is already Git-tracked"
+grep -Fq 'EXOCORTEX_TRACKED_LEGACY_SESSION_CONTEXT_BACKUP:' /tmp/exo-safe-update-test.log \
+    && ok "safe-update warns when a legacy protected backup sidecar is already Git-tracked" \
+    || bad "safe-update warns when a legacy protected backup sidecar is already Git-tracked"
 restore_archive="$(find "$backup" -type f -name '*.tar.gz.*' -print -quit)"
 if [ -n "$restore_archive" ] \
     && [ "$(python3 -c 'import os,stat,sys; print(format(stat.S_IMODE(os.stat(sys.argv[1]).st_mode), "04o"))' "$restore_archive")" = "0600" ] \
     && tar -tzf "$restore_archive" | grep -Fq '.exocortex/COMMAND_SYSTEM.md' \
-    && ! tar -tzf "$restore_archive" | grep -Eq '^\.?/?\.exocortex/(LESSONS\.md|SESSION_CONTEXT\.md\.backup|local/|events/)'; then
+    && ! tar -tzf "$restore_archive" | grep -Eq '^\.?/?\.exocortex/(LESSONS\.md|SESSION_CONTEXT\.md\.backup|SESSION_CONTEXT_BACKUP_.*\.md|local/|events/)'; then
     ok "safe-update creates a private code-plane-only restore archive"
 else
     bad "safe-update creates a private code-plane-only restore archive"
@@ -1804,7 +1836,18 @@ protected = (
     '.exocortex/control/REPO_ORGANIZATION_REPORT.md',
     '.exocortex/.hub_enabled', '.exocortex/.hub_disabled',
 )
-for relative in protected:
+legacy_prefix = '.exocortex/SESSION_CONTEXT_BACKUP_'
+legacy_root = root / '.exocortex'
+legacy = (
+    sorted(
+        path.relative_to(root).as_posix()
+        for path in legacy_root.iterdir()
+        if path.name.startswith('SESSION_CONTEXT_BACKUP_') and path.name.endswith('.md')
+    )
+    if legacy_root.is_dir() and not legacy_root.is_symlink()
+    else []
+)
+for relative in (*protected, *legacy):
     source = root / relative
     if not os.path.lexists(source):
         continue
@@ -1985,19 +2028,64 @@ rm -rf "$source_copy" "$install_target" "$fake_home"
 source_copy="$(mktemp -d "${TMPDIR:-/tmp}/exo-test-source.XXXXXX")"
 cp -Rp "$TEMPLATE_DIR/." "$source_copy/"
 printf 'SOURCE_CONTEXT_BACKUP\n' > "$source_copy/.exocortex/SESSION_CONTEXT.md.backup"
+printf 'SOURCE_LEGACY_CONTEXT_BACKUP\n' > "$source_copy/.exocortex/SESSION_CONTEXT_BACKUP_CANARY.md"
+mkdir -p "$source_copy/.exocortex/SESSION_CONTEXT_BACKUP_folder"
+printf 'MANAGED_NESTED_FIXTURE\n' > "$source_copy/.exocortex/SESSION_CONTEXT_BACKUP_folder/nested.md"
+python3 - "$source_copy" <<'PY'
+import hashlib
+from pathlib import Path
+import sys
+
+root = Path(sys.argv[1])
+nested = ".exocortex/SESSION_CONTEXT_BACKUP_folder/nested.md"
+modes = {
+    line[6:]: line[:4]
+    for line in (root / "FILEMODES").read_text(encoding="utf-8").splitlines()
+}
+modes[nested] = "0644"
+(root / "FILEMODES").write_text(
+    "".join(f"{modes[path]}  {path}\n" for path in sorted(modes)),
+    encoding="utf-8",
+)
+sums = {
+    line[66:]: line[:64]
+    for line in (root / "SHA256SUMS").read_text(encoding="utf-8").splitlines()
+}
+for relative in (nested, "FILEMODES"):
+    sums[relative] = hashlib.sha256((root / relative).read_bytes()).hexdigest()
+(root / "SHA256SUMS").write_text(
+    "".join(f"{sums[path]}  {path}\n" for path in sorted(sums)),
+    encoding="utf-8",
+)
+PY
 install_target="$(new_target)"
 fake_home="$(mktemp -d "${TMPDIR:-/tmp}/exo-test-home.XXXXXX")"
 mkdir -p "$install_target/.exocortex"
 printf 'TARGET_CONTEXT_BACKUP\n' > "$install_target/.exocortex/SESSION_CONTEXT.md.backup"
+printf 'TARGET_LEGACY_CONTEXT_BACKUP\n' > "$install_target/.exocortex/SESSION_CONTEXT_BACKUP_CANARY.md"
 if run_install "$install_target" "$source_copy" "$fake_home" >/dev/null \
     && grep -Fqx 'TARGET_CONTEXT_BACKUP' "$install_target/.exocortex/SESSION_CONTEXT.md.backup" \
+    && grep -Fqx 'TARGET_LEGACY_CONTEXT_BACKUP' "$install_target/.exocortex/SESSION_CONTEXT_BACKUP_CANARY.md" \
+    && grep -Fqx 'MANAGED_NESTED_FIXTURE' "$install_target/.exocortex/SESSION_CONTEXT_BACKUP_folder/nested.md" \
     && ! grep -Fq '.exocortex/SESSION_CONTEXT.md.backup' "$install_target/.exocortex/.install-manifest" \
-    && git -C "$install_target" check-ignore -q -- .exocortex/SESSION_CONTEXT.md.backup; then
-    ok "session-context backup sidecar is preserved, unmanifested, and ignored"
+    && ! grep -Fq '.exocortex/SESSION_CONTEXT_BACKUP_CANARY.md' "$install_target/.exocortex/.install-manifest" \
+    && grep -Fq '.exocortex/SESSION_CONTEXT_BACKUP_folder/nested.md' "$install_target/.exocortex/.install-manifest" \
+    && git -C "$install_target" check-ignore -q -- .exocortex/SESSION_CONTEXT.md.backup \
+    && git -C "$install_target" check-ignore -q -- .exocortex/SESSION_CONTEXT_BACKUP_CANARY.md; then
+    ok "session-context backup sidecars are preserved, unmanifested, and ignored"
 else
-    bad "session-context backup sidecar is preserved, unmanifested, and ignored"
+    bad "session-context backup sidecars are preserved, unmanifested, and ignored"
 fi
-rm -rf "$source_copy" "$install_target" "$fake_home"
+empty_target="$(new_target)"
+empty_home="$(mktemp -d "${TMPDIR:-/tmp}/exo-test-home.XXXXXX")"
+if run_install "$empty_target" "$source_copy" "$empty_home" >/dev/null \
+    && [ ! -e "$empty_target/.exocortex/SESSION_CONTEXT_BACKUP_CANARY.md" ] \
+    && [ -f "$empty_target/.exocortex/SESSION_CONTEXT_BACKUP_folder/nested.md" ]; then
+    ok "source legacy backup sidecar is never installed while nested managed paths remain installable"
+else
+    bad "source legacy backup sidecar is never installed while nested managed paths remain installable"
+fi
+rm -rf "$source_copy" "$install_target" "$fake_home" "$empty_target" "$empty_home"
 
 if [ "$privacy_fingerprint_owned" = true ]; then
     rm -f "$privacy_fingerprint"

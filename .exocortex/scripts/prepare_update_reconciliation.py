@@ -67,11 +67,11 @@ PROTECTED_PATHS = (
     ".exocortex/.hub_enabled",
     ".exocortex/.hub_disabled",
 )
+LEGACY_SESSION_CONTEXT_BACKUP_PREFIX = ".exocortex/SESSION_CONTEXT_BACKUP_"
 REVIEWED_OBJECT_PREFIX = ".exocortex/local/update-reconciliation/objects/"
 # Protected project data is preserved and verified separately by safe-update.
 # It is not part of the mutable template code-plane surface. In particular, a
 # reviewed plan stored under .exocortex/local must not invalidate itself.
-PLAN_DIGEST_EXCLUSIONS = PROTECTED_PATHS
 BOUNDARIES = {
     "commit": False,
     "push": False,
@@ -159,6 +159,13 @@ def is_under(path: str, parent: str) -> bool:
     return path == parent or path.startswith(parent + "/")
 
 
+def is_legacy_session_context_backup(path: str) -> bool:
+    """Return whether path is the direct legacy session-backup filename family."""
+    if not path.startswith(LEGACY_SESSION_CONTEXT_BACKUP_PREFIX) or not path.endswith(".md"):
+        return False
+    return "/" not in path[len(LEGACY_SESSION_CONTEXT_BACKUP_PREFIX) :]
+
+
 def is_runtime_state(path: str) -> bool:
     # Editor session worktrees are runtime state at any depth, never part of
     # the template surface; safe-update.sh applies the identical exclusion.
@@ -174,7 +181,9 @@ def is_surface_path(path: str) -> bool:
 
 
 def is_protected_path(path: str) -> bool:
-    return any(is_under(path, protected) for protected in PROTECTED_PATHS)
+    return is_legacy_session_context_backup(path) or any(
+        is_under(path, protected) for protected in PROTECTED_PATHS
+    )
 
 
 def require_safe_effect_path(path: object) -> str:
@@ -326,17 +335,13 @@ def inventory_digest(root: Path) -> str:
                 filenames.sort()
                 here = Path(dirpath)
                 here_relative = here.relative_to(root).as_posix()
-                if is_runtime_state(here_relative) or any(
-                    is_under(here_relative, excluded) for excluded in PLAN_DIGEST_EXCLUSIONS
-                ):
+                if is_runtime_state(here_relative) or is_protected_path(here_relative):
                     dirnames[:] = []
                     continue
                 for name in list(dirnames):
                     path = here / name
                     child = path.relative_to(root).as_posix()
-                    if is_runtime_state(child) or any(
-                        is_under(child, excluded) for excluded in PLAN_DIGEST_EXCLUSIONS
-                    ):
+                    if is_runtime_state(child) or is_protected_path(child):
                         continue
                     if path.is_symlink():
                         records[child] = symlink_record(path)
@@ -347,17 +352,12 @@ def inventory_digest(root: Path) -> str:
                     for name in dirnames
                     if not (here / name).is_symlink()
                     and not is_runtime_state((here / name).relative_to(root).as_posix())
-                    and not any(
-                        is_under((here / name).relative_to(root).as_posix(), excluded)
-                        for excluded in PLAN_DIGEST_EXCLUSIONS
-                    )
+                    and not is_protected_path((here / name).relative_to(root).as_posix())
                 ]
                 for name in filenames:
                     path = here / name
                     child = path.relative_to(root).as_posix()
-                    if is_runtime_state(child) or any(
-                        is_under(child, excluded) for excluded in PLAN_DIGEST_EXCLUSIONS
-                    ):
+                    if is_runtime_state(child) or is_protected_path(child):
                         continue
                     if path.is_symlink():
                         records[child] = symlink_record(path)

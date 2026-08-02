@@ -97,7 +97,17 @@ record_copy_and_maybe_fault() {
     fi
 }
 
+is_legacy_session_context_backup_relpath() {
+    case "$1" in
+        SESSION_CONTEXT_BACKUP_*.md)
+            case "$1" in */*) return 1 ;; *) return 0 ;; esac
+            ;;
+    esac
+    return 1
+}
+
 is_data_relpath() {
+    is_legacy_session_context_backup_relpath "$1" && return 0
     case "$1" in
         SESSION_CONTEXT.md|SESSION_CONTEXT.md.backup|SESSION_CONTEXT.local.md|TODO.md|LESSONS.md|PROJECT_MEMORY.md|OPEN_DECISIONS.md|subconscious_patterns.md|.env|.project-name|.install-manifest|.hub_enabled|.hub_disabled)
             return 0 ;;

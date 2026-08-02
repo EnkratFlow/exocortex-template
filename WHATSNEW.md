@@ -1,21 +1,19 @@
-# What's New in 3.2.3 — Backup sidecar privacy hardening
+# What's New in 3.2.4 — Legacy backup privacy hardening
 
-- `.exocortex/SESSION_CONTEXT.md.backup` is now classified as protected
-  project data everywhere that matters: installation, manifests, update
-  rehearsal, integrity inventories, reconciliation, rollback archives, and
-  Git-ignore rules.
-- The protection is deliberately exact. It does not broadly exempt arbitrary
-  `*.backup` files from checksums or update evidence.
-- If an older project already tracks this optional sidecar in Git, the updater
-  now reports it and preserves it. Ignore rules prevent new tracking only;
-  cleanup is a separate owner decision and is never automatic.
-- A disposable Trading Journal rehearsal confirmed the sidecar remains in the
-  project, is absent from the private code-only restore archive, and cannot be
-  selected by an update reconciliation plan.
+- The direct legacy `.exocortex/SESSION_CONTEXT_BACKUP_*.md` family now has
+  the same protected-data handling as the exact
+  `.exocortex/SESSION_CONTEXT.md.backup` sidecar: it is never installed,
+  manifest-tracked, included in update evidence, selected by a reconciliation
+  plan, or placed in a private code-only restore archive.
+- The protection remains deliberately narrow. It covers that direct legacy
+  naming family, not arbitrary backup files.
+- If an older project already tracks legacy sidecars in Git, the updater
+  reports and preserves them. Ignore rules prevent new tracking only; cleanup
+  is a separate owner decision and is never automatic.
 - The full installer/update and Phase B protocol suites add regression
-  coverage for this behavior.
+  coverage for legacy sidecar preservation and archive exclusion.
 
-This document describes packaged 3.2.3 candidate behavior. It does not prove
+This document describes packaged 3.2.4 candidate behavior. It does not prove
 Git publication, a GitHub release, installation, deployment, or template
 promotion.
 

@@ -6,7 +6,27 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 ## [Unreleased]
 
-No changes recorded after the 3.2.3 release candidate.
+No changes recorded after the 3.2.4 release candidate.
+
+## [3.2.4] - 2026-08-01
+
+Patch release closing a legacy session-context backup filename gap found while
+preparing the first real existing-repository update.
+
+### Fixed
+- **Legacy backup-family protection** — the direct
+  `.exocortex/SESSION_CONTEXT_BACKUP_*.md` family is now protected project
+  data everywhere the exact `.backup` sidecar is protected: installation,
+  manifests, update rehearsal, integrity inventories, reconciliation, and
+  private restore archives. This does not broadly exempt arbitrary backup
+  files.
+- **Tracked legacy-sidecar warning** — the updater preserves already-tracked
+  legacy sidecars and reports the condition without changing Git tracking.
+
+### Tests
+- Added legacy source/target preservation, manifest, tracking-warning,
+  reconciliation-rejection, code-plane, and restore-archive regression
+  coverage.
 
 ## [3.2.3] - 2026-08-01
 
@@ -195,6 +215,7 @@ exists.
   post-consumption race coverage.
 
 [3.2.2]: https://github.com/EnkratFlow/exocortex-template/releases/tag/v3.2.2
+[3.2.4]: https://github.com/EnkratFlow/exocortex-template/releases/tag/v3.2.4
 [3.2.3]: https://github.com/EnkratFlow/exocortex-template/releases/tag/v3.2.3
 [3.2.1]: https://github.com/EnkratFlow/exocortex-template/releases/tag/v3.2.1
 [3.2.0]: https://github.com/EnkratFlow/exocortex-template/releases/tag/v3.2.0

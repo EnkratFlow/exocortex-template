@@ -6,7 +6,7 @@ from pathlib import Path
 
 
 PROTECTED = [
-    "SESSION_CONTEXT.md", "SESSION_CONTEXT.md.backup", "SESSION_CONTEXT.local.md", "TODO.md", "LESSONS.md",
+    "SESSION_CONTEXT.md", "SESSION_CONTEXT.md.backup", "SESSION_CONTEXT_BACKUP_CANARY.md", "SESSION_CONTEXT.local.md", "TODO.md", "LESSONS.md",
     "PROJECT_MEMORY.md", "OPEN_DECISIONS.md", "subconscious_patterns.md", ".env",
     "events/canary.md", "archive/canary.md", "hub/canary.md", "local/canary.md",
     "planning/canary.md", "work-items/canary.md", "control/ACTIVE_WORK.md",
