@@ -38,6 +38,7 @@ jobs:
               if rel.startswith('.exocortex/'):
                   value=rel[len('.exocortex/'):]
                   if value in protected_files or value in protected_control: return False
+                  if value.startswith('SESSION_CONTEXT_BACKUP_') and value.endswith('.md') and '/' not in value: return False
                   if value.startswith(protected_prefixes): return False
               return True
           lines=[]

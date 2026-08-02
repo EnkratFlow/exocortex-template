@@ -90,6 +90,11 @@ if git -C "$PROJECT_ROOT" rev-parse --is-inside-work-tree >/dev/null 2>&1 \
     && git -C "$PROJECT_ROOT" ls-files --error-unmatch -- .exocortex/SESSION_CONTEXT.md.backup >/dev/null 2>&1; then
     TRACKED_PROTECTED_SIDECAR=true
 fi
+TRACKED_LEGACY_SESSION_CONTEXT_BACKUP=false
+if git -C "$PROJECT_ROOT" rev-parse --is-inside-work-tree >/dev/null 2>&1 \
+    && git -C "$PROJECT_ROOT" ls-files -- '.exocortex/SESSION_CONTEXT_BACKUP_*.md' | grep -q .; then
+    TRACKED_LEGACY_SESSION_CONTEXT_BACKUP=true
+fi
 
 [ -f "$TEMPLATE_ROOT/SHA256SUMS" ] && [ ! -L "$TEMPLATE_ROOT/SHA256SUMS" ] \
     || fail "template SHA256SUMS must be a regular non-symlink file"
@@ -195,6 +200,9 @@ protected_paths=(
     .exocortex/.hub_enabled
     .exocortex/.hub_disabled
 )
+# This is the documented direct legacy filename family only. It deliberately
+# does not broadly exempt arbitrary backup files from the update code plane.
+protected_globs=(".exocortex/SESSION_CONTEXT_BACKUP_*.md")
 
 preflight_surface_paths() {
     local rel cursor link hardlink
@@ -341,9 +349,24 @@ protected = [
     '.exocortex/control/REPO_ORGANIZATION_REPORT.md',
     '.exocortex/.hub_enabled','.exocortex/.hub_disabled',
 ]
+legacy_backup_prefix = '.exocortex/SESSION_CONTEXT_BACKUP_'
 selected = surface if mode in ('surface', 'code_plane') else protected if mode == 'protected' else None
 if selected is None:
     raise SystemExit('invalid inventory mode')
+def legacy_session_context_backup(relative):
+    return (
+        relative.startswith(legacy_backup_prefix)
+        and relative.endswith('.md')
+        and '/' not in relative[len(legacy_backup_prefix):]
+    )
+if mode == 'protected':
+    legacy_root = root / '.exocortex'
+    if legacy_root.is_dir() and not legacy_root.is_symlink():
+        selected = selected + sorted(
+            path.relative_to(root).as_posix()
+            for path in legacy_root.iterdir()
+            if legacy_session_context_backup(path.relative_to(root).as_posix())
+        )
 skip_argument = sys.argv[3] if len(sys.argv) > 3 else ''
 skip = (
     [entry for entry in skip_argument.splitlines() if entry]
@@ -365,9 +388,9 @@ def scaffold_directory(relative):
 def excluded(relative):
     if runtime_state(relative):
         return True
-    return mode == 'code_plane' and any(
-        relative == item or relative.startswith(item + '/')
-        for item in protected
+    return mode in ('surface', 'code_plane') and (
+        legacy_session_context_backup(relative)
+        or any(relative == item or relative.startswith(item + '/') for item in protected)
     )
 def directory_record(path, relative):
     value = os.lstat(path)
@@ -556,7 +579,7 @@ backup_items=()
 for rel in "${surface_paths[@]}"; do [ -e "$PROJECT_ROOT/$rel" ] && backup_items+=("$rel"); done
 [ "${#backup_items[@]}" -gt 0 ] || fail "nothing to back up"
 backup_excludes=()
-for rel in "${protected_paths[@]}"; do backup_excludes+=("--exclude=$rel"); done
+for rel in "${protected_paths[@]}" "${protected_globs[@]}"; do backup_excludes+=("--exclude=$rel"); done
 # Editor session worktrees are runtime state: excluded from the rollback
 # archive exactly as they are excluded from every inventory digest, so the
 # archive reconstruction comparison stays exact.
@@ -712,6 +735,13 @@ protected = (
     ".exocortex/control/REPO_ORGANIZATION_REPORT.md",
     ".exocortex/.hub_enabled", ".exocortex/.hub_disabled",
 )
+legacy_backup_prefix = ".exocortex/SESSION_CONTEXT_BACKUP_"
+def legacy_session_context_backup(name):
+    return (
+        name.startswith(legacy_backup_prefix)
+        and name.endswith(".md")
+        and "/" not in name[len(legacy_backup_prefix):]
+    )
 def runtime_state(name):
     parts = name.split("/")
     return any(
@@ -733,6 +763,7 @@ with tarfile.open(path, "r:gz") as archive:
             or member.islnk()
             or not (member.isfile() or member.isdir())
             or runtime_state(name)
+            or legacy_session_context_backup(name)
             or any(name == item or name.startswith(item + "/") for item in protected)
         ):
             raise SystemExit(f"unsafe or protected rollback archive member: {name}")
@@ -966,6 +997,27 @@ from pathlib import Path
 
 left, right, output = map(Path, sys.argv[1:])
 surface = ['.exocortex','.agents','.cursor','.claude','.github','.windsurf','AI_START_HERE.md','AGENTS.md','CLAUDE.md','.windsurfrules','.rules','.gitignore']
+protected = [
+    '.exocortex/SESSION_CONTEXT.md','.exocortex/SESSION_CONTEXT.md.backup','.exocortex/SESSION_CONTEXT.local.md',
+    '.exocortex/TODO.md','.exocortex/LESSONS.md','.exocortex/PROJECT_MEMORY.md',
+    '.exocortex/OPEN_DECISIONS.md','.exocortex/subconscious_patterns.md',
+    '.exocortex/.env','.exocortex/.project-name','.exocortex/events',
+    '.exocortex/archive','.exocortex/hub','.exocortex/local','.exocortex/planning',
+    '.exocortex/work-items','.exocortex/control/ACTIVE_WORK.md',
+    '.exocortex/control/BRANCH_POLICY.md','.exocortex/control/REPO_STATE.md',
+    '.exocortex/control/EXECUTOR_REGISTRY.json',
+    '.exocortex/control/EXTERNAL_SYNC_POLICY.json',
+    '.exocortex/control/INTERRUPTS.md','.exocortex/control/BACKLOG.md',
+    '.exocortex/control/ROADMAP.md','.exocortex/control/ARCH_OVERVIEW.md',
+    '.exocortex/control/REPO_ORGANIZATION_REPORT.md',
+    '.exocortex/.hub_enabled','.exocortex/.hub_disabled',
+]
+legacy_backup_prefix = '.exocortex/SESSION_CONTEXT_BACKUP_'
+def protected_path(rel):
+    return (
+        (rel.startswith(legacy_backup_prefix) and rel.endswith('.md') and '/' not in rel[len(legacy_backup_prefix):])
+        or any(rel == item or rel.startswith(item + '/') for item in protected)
+    )
 def runtime(rel):
     # Editor session worktrees are runtime state at any depth.
     parts = rel.split('/')
@@ -990,7 +1042,7 @@ def inventory(root):
                 for name in sorted(filenames):
                     path=Path(dirpath)/name
                     child=path.relative_to(root).as_posix()
-                    if runtime(child):
+                    if runtime(child) or protected_path(child):
                         continue
                     if path.is_symlink():
                         result[child]='symlink:'+os.readlink(path)
@@ -1012,6 +1064,9 @@ echo "Backup: $BACKUP_PATH"
 echo "Protected data check: PASS"
 if [ "$TRACKED_PROTECTED_SIDECAR" = true ]; then
     echo "EXOCORTEX_TRACKED_PROTECTED_SIDECAR: .exocortex/SESSION_CONTEXT.md.backup is already tracked by Git; it is preserved, but ignore rules do not untrack it. Handle any Git cleanup separately; never automate it during an update."
+fi
+if [ "$TRACKED_LEGACY_SESSION_CONTEXT_BACKUP" = true ]; then
+    echo "EXOCORTEX_TRACKED_LEGACY_SESSION_CONTEXT_BACKUP: one or more legacy protected session-context backup sidecars are already tracked by Git; they are preserved, but ignore rules do not untrack them. Handle any Git cleanup separately; never automate it during an update."
 fi
 if [ "$COMMAND_RECONCILIATION_REQUIRED" = true ]; then
     echo "EXOCORTEX_COMMAND_RECONCILIATION_REQUIRED: ordinary live apply is blocked; prepare and rehearse an exact target-specific reconciliation plan"

@@ -33,6 +33,7 @@ Never copy from the template, overwrite, delete, or manifest-track:
 ```text
 SESSION_CONTEXT.md
 SESSION_CONTEXT.md.backup
+SESSION_CONTEXT_BACKUP_*.md
 SESSION_CONTEXT.local.md
 TODO.md
 LESSONS.md
@@ -62,12 +63,12 @@ control/REPO_ORGANIZATION_REPORT.md
 .hub_disabled
 ```
 
-`.exocortex/SESSION_CONTEXT.md.backup` is protected whether it is untracked or
-already tracked by Git. Its ignore rule prevents future accidental tracking;
-it cannot remove an existing Git index entry. The updater preserves an
-already-tracked sidecar and reports it, while any index or history cleanup is a
-separate owner-approved action that must never be automated by installation or
-update.
+`.exocortex/SESSION_CONTEXT.md.backup` and the direct legacy family
+`.exocortex/SESSION_CONTEXT_BACKUP_*.md` are protected whether untracked or
+already tracked by Git. The classification does not broadly cover arbitrary
+backup files. Their ignore rules prevent future accidental tracking; it cannot remove an existing Git index entry.
+The updater preserves already-tracked sidecars and reports them, while any index or history cleanup is a separate
+owner-approved action that must never be automated by installation or update.
 
 The `local/**` protection includes
 `.exocortex/local/model-routing/**` observations, availability, evaluations,

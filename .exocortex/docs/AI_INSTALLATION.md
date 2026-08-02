@@ -20,15 +20,15 @@ combining the conflicting instructions.
 ## Acquire an exact GitHub release
 
 The release notes must publish the exact tag, its peeled 40-character commit
-SHA, and the SHA-256 of that tag's `SHA256SUMS`. For version 3.2.3, acquire and
+SHA, and the SHA-256 of that tag's `SHA256SUMS`. For version 3.2.4, acquire and
 verify the public artifact like this:
 
 ```bash
-git clone --depth 1 --branch v3.2.3 \
+git clone --depth 1 --branch v3.2.4 \
   https://github.com/EnkratFlow/exocortex-template.git \
-  /tmp/exocortex-template-v3.2.3
-git -C /tmp/exocortex-template-v3.2.3 rev-parse HEAD
-shasum -a 256 /tmp/exocortex-template-v3.2.3/SHA256SUMS
+  /tmp/exocortex-template-v3.2.4
+git -C /tmp/exocortex-template-v3.2.4 rev-parse HEAD
+shasum -a 256 /tmp/exocortex-template-v3.2.4/SHA256SUMS
 ```
 
 Compare both outputs with the release notes. Stop on either mismatch. Never
@@ -269,19 +269,24 @@ partially written final `.project-name`; review any residue before retrying.
 
 ### Existing Git-tracked backup sidecars
 
-`.exocortex/SESSION_CONTEXT.md.backup` is optional protected project data, not
-a required legacy default. Git-ignore rules affect only files Git does not
-already track. Before a dry run, inspect its tracking metadata without reading
-its content:
+`.exocortex/SESSION_CONTEXT.md.backup` and the direct legacy family
+`.exocortex/SESSION_CONTEXT_BACKUP_*.md` are optional protected project data,
+not required legacy defaults. The classification is deliberately narrow; it
+does not broadly exempt arbitrary backup files. Git-ignore rules affect only files Git does not
+already track. Before a dry run, inspect their tracking metadata without
+reading their content:
 
 ```bash
-git ls-files --error-unmatch -- .exocortex/SESSION_CONTEXT.md.backup
+git ls-files -- .exocortex/SESSION_CONTEXT.md.backup \
+  '.exocortex/SESSION_CONTEXT_BACKUP_*.md'
 ```
 
-If that command succeeds, the sidecar is already tracked. The updater emits
-`EXOCORTEX_TRACKED_PROTECTED_SIDECAR`, preserves the file, and never changes
-Git tracking. Removing an existing sidecar from the Git index or history is a
-separate owner-approved cleanup decision; an installation or update must never
+If the command lists either form, that sidecar is already tracked. The updater
+emits `EXOCORTEX_TRACKED_PROTECTED_SIDECAR` for the exact sidecar or
+`EXOCORTEX_TRACKED_LEGACY_SESSION_CONTEXT_BACKUP` for legacy sidecars,
+preserves the files, and never changes Git tracking. Removing an existing
+sidecar from the Git index or history is a separate owner-approved cleanup
+decision; an installation or update must never
 perform it automatically.
 
 Inside the accepted disposable-rehearsal envelope, create only absent paths in
