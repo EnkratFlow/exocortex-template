@@ -31,7 +31,7 @@ from pathlib import Path
 root = Path(sys.argv[1]).resolve(strict=True)
 surface = (
     '.exocortex', '.agents', '.cursor', '.claude', '.github', '.windsurf',
-    'AI_START_HERE.md', 'AGENTS.md', 'CLAUDE.md', '.windsurfrules', '.rules', '.gitignore',
+    'AI_START_HERE.md', 'AGENTS.md', 'CLAUDE.md', '.cursorrules', '.windsurfrules', '.rules', '.gitignore',
 )
 protected = (
     '.exocortex/SESSION_CONTEXT.md', '.exocortex/SESSION_CONTEXT.md.backup', '.exocortex/SESSION_CONTEXT.local.md',
@@ -435,6 +435,8 @@ else
     bad "fresh install contains exact validated provider-adapter parity"
 fi
 if [ ! -e "$target/.cursor/commands/save.md" ] \
+    && [ ! -e "$target/.claude/commands/save.md" ] \
+    && [ ! -e "$target/.cursor/rules/00-ide-model-router.mdc" ] \
     && [ -f "$target/.cursor/skills/onboard/SKILL.md" ] \
     && [ ! -e "$target/.github/skills/onboard/SKILL.md" ] \
     && [ ! -e "$target/.windsurfrules" ] \
@@ -628,9 +630,10 @@ from pathlib import Path
 root = Path(sys.argv[1])
 matrix = json.loads(Path(sys.argv[2]).read_text(encoding='utf-8'))
 meta = Path(sys.argv[3])
-custom = '.cursor/commands/work.md'
-mode_custom = '.cursor/commands/check-keys.md'
-unknown = '.cursor/skills/onboard/SKILL.md'
+custom = '.claude/commands/save.md'
+mode_custom = '.cursor/rules/10-context-budget.mdc'
+unknown = '.claude/commands/CLAUDE.md'
+reactivated = '.cursor/skills/onboard/SKILL.md'
 records = {}
 managed = []
 for index, item in enumerate(matrix['legacy_retirements']):
@@ -648,7 +651,7 @@ for index, item in enumerate(matrix['legacy_retirements']):
         path.write_text(path.read_text(encoding='utf-8') + 'user customization\n', encoding='utf-8')
     elif rel == mode_custom:
         path.chmod(0o755)
-    else:
+    elif rel != reactivated:
         managed.append(rel)
 manifest = root / '.exocortex/.install-manifest'
 manifest.write_text(
@@ -667,15 +670,17 @@ meta.write_text(json.dumps({
 PY
 pre_c1_log="$(mktemp "${TMPDIR:-/tmp}/exo-test-pre-c1-migration.XXXXXX")"
 if run_install "$target" "$TEMPLATE_DIR" "$fake_home" > "$pre_c1_log" 2>&1 \
-    && grep -Fq 'EXOCORTEX_ADAPTER_COLLISION_PRESERVED: .cursor/commands/work.md' "$pre_c1_log" \
-    && grep -Fq 'EXOCORTEX_ADAPTER_COLLISION_PRESERVED: .cursor/commands/check-keys.md' "$pre_c1_log" \
-    && grep -Fq 'EXOCORTEX_ADAPTER_COLLISION_PRESERVED: .cursor/skills/onboard/SKILL.md' "$pre_c1_log" \
+    && grep -Fq 'EXOCORTEX_ADAPTER_COLLISION_PRESERVED: .claude/commands/save.md' "$pre_c1_log" \
+    && grep -Fq 'EXOCORTEX_ADAPTER_COLLISION_PRESERVED: .cursor/rules/10-context-budget.mdc' "$pre_c1_log" \
+    && grep -Fq 'EXOCORTEX_ADAPTER_COLLISION_PRESERVED: .claude/commands/CLAUDE.md' "$pre_c1_log" \
     && python3 - "$target" "$pre_c1_meta" <<'PY'
 import json, stat, sys
 from pathlib import Path
 root = Path(sys.argv[1])
 meta = json.loads(Path(sys.argv[2]).read_text(encoding='utf-8'))
 if any((root / rel).exists() for rel in meta['managed']):
+    raise SystemExit(1)
+if not (root / '.cursor/skills/onboard/SKILL.md').is_file():
     raise SystemExit(1)
 if 'user customization' not in (root / meta['custom']).read_text(encoding='utf-8'):
     raise SystemExit(1)
@@ -712,6 +717,34 @@ else
 fi
 rm -rf "$target" "$fake_home"
 rm -f "$pre_c1_meta" "$pre_c1_log"
+
+target="$(new_target)"
+fake_home="$(mktemp -d "${TMPDIR:-/tmp}/exo-test-home.XXXXXX")"
+run_install "$target" "$TEMPLATE_DIR" "$fake_home" >/dev/null
+mkdir -p "$target/.claude/commands" "$target/.cursor/rules"
+printf 'manifestless old Claude command wrapper\n' > "$target/.claude/commands/save.md"
+printf 'manifestless old Cursor rule\n' > "$target/.cursor/rules/00-ide-model-router.mdc"
+chmod 0644 "$target/.claude/commands/save.md" "$target/.cursor/rules/00-ide-model-router.mdc"
+bridge_log="$(mktemp "${TMPDIR:-/tmp}/exo-test-manifestless-legacy.XXXXXX")"
+bridge_backup="$(mktemp -d "${TMPDIR:-/tmp}/exo-test-backup.XXXXXX")"
+bridge_dry_log="$(mktemp "${TMPDIR:-/tmp}/exo-test-manifestless-legacy-dry.XXXXXX")"
+if run_install "$target" "$TEMPLATE_DIR" "$fake_home" > "$bridge_log" 2>&1 \
+    && [ -f "$target/.claude/commands/save.md" ] \
+    && [ -f "$target/.cursor/rules/00-ide-model-router.mdc" ] \
+    && ! grep -Fq '.claude/commands/save.md ' "$target/.exocortex/.install-manifest" \
+    && ! grep -Fq '.cursor/rules/00-ide-model-router.mdc ' "$target/.exocortex/.install-manifest" \
+    && grep -Fq 'EXOCORTEX_COMMAND_AUTHORITY_COLLISION_PRESERVED: .claude/commands/save.md' "$bridge_log" \
+    && grep -Fq 'EXOCORTEX_COMMAND_AUTHORITY_COLLISION_PRESERVED: .cursor/rules/00-ide-model-router.mdc' "$bridge_log" \
+    && (cd "$target" && bash "$TEMPLATE_DIR/scripts/safe-update.sh" \
+        --template "$TEMPLATE_DIR" --candidate-digest "$(hash_file "$TEMPLATE_DIR/SHA256SUMS")" \
+        --backup-dir "$bridge_backup" --dry-run) > "$bridge_dry_log" 2>&1 \
+    && grep -Fq 'EXOCORTEX_COMMAND_RECONCILIATION_REQUIRED:' "$bridge_dry_log"; then
+    ok "manifestless intermediate legacy command authority is preserved and blocks ordinary apply"
+else
+    bad "manifestless intermediate legacy command authority is preserved and blocks ordinary apply"
+fi
+rm -rf "$target" "$fake_home" "$bridge_backup"
+rm -f "$bridge_log" "$bridge_dry_log"
 
 target="$(new_target)"
 fake_home="$(mktemp -d "${TMPDIR:-/tmp}/exo-test-home.XXXXXX")"
@@ -894,6 +927,54 @@ else
 fi
 rm -rf "$target" "$fake_home"
 rm -f "$harmless_log"
+
+target="$(new_target)"
+fake_home="$(mktemp -d "${TMPDIR:-/tmp}/exo-test-home.XXXXXX")"
+run_install "$target" "$TEMPLATE_DIR" "$fake_home" >/dev/null
+printf '# Project-owned Cursor rules\n\nUse all 20 commands and strip the / prefix.\n' > "$target/.cursorrules"
+stale_cursor_hash="$(hash_file "$target/.cursorrules")"
+stale_cursor_mode="$(python3 -c 'import os,stat,sys; print(format(stat.S_IMODE(os.stat(sys.argv[1]).st_mode), "04o"))' "$target/.cursorrules")"
+stale_cursor_before="$(tree_digest "$target")"
+backup="$(mktemp -d "${TMPDIR:-/tmp}/exo-test-backup.XXXXXX")"
+stale_cursor_log="$(mktemp "${TMPDIR:-/tmp}/exo-test-stale-cursor.XXXXXX")"
+if (cd "$target" && bash "$TEMPLATE_DIR/scripts/safe-update.sh" \
+    --template "$TEMPLATE_DIR" --candidate-digest "$(hash_file "$TEMPLATE_DIR/SHA256SUMS")" \
+    --backup-dir "$backup" --dry-run) > "$stale_cursor_log" 2>&1 \
+    && [ "$(tree_digest "$target")" = "$stale_cursor_before" ] \
+    && [ "$(hash_file "$target/.cursorrules")" = "$stale_cursor_hash" ] \
+    && [ "$(python3 -c 'import os,stat,sys; print(format(stat.S_IMODE(os.stat(sys.argv[1]).st_mode), "04o"))' "$target/.cursorrules")" = "$stale_cursor_mode" ] \
+    && [ "$(grep -Fc 'EXOCORTEX_STALE_COMMAND_GUIDANCE_PRESERVED: .cursorrules' "$stale_cursor_log")" = "1" ] \
+    && grep -Fq 'EXOCORTEX_COMMAND_RECONCILIATION_REQUIRED:' "$stale_cursor_log" \
+    && archive="$(awk -F': ' '/^Backup: /{print $2; exit}' "$stale_cursor_log")" \
+    && [ -n "$archive" ] && [ -f "$archive" ] \
+    && tar -tzf "$archive" | grep -Eq '(^|/)\.cursorrules$'; then
+    ok "safe-update archives and preserves stale project-owned Cursor guidance for reconciliation"
+else
+    bad "safe-update archives and preserves stale project-owned Cursor guidance for reconciliation"
+fi
+rm -rf "$target" "$fake_home" "$backup"
+rm -f "$stale_cursor_log"
+
+target="$(new_target)"
+fake_home="$(mktemp -d "${TMPDIR:-/tmp}/exo-test-home.XXXXXX")"
+run_install "$target" "$TEMPLATE_DIR" "$fake_home" >/dev/null
+mkdir "$target/.cursorrules"
+cursor_rules_type_before="$(tree_digest "$target")"
+backup="$(mktemp -d "${TMPDIR:-/tmp}/exo-test-backup.XXXXXX")"
+cursor_rules_type_log="$(mktemp "${TMPDIR:-/tmp}/exo-test-cursor-rules-type.XXXXXX")"
+if (cd "$target" && bash "$TEMPLATE_DIR/scripts/safe-update.sh" \
+    --template "$TEMPLATE_DIR" --candidate-digest "$(hash_file "$TEMPLATE_DIR/SHA256SUMS")" \
+    --backup-dir "$backup" --dry-run) > "$cursor_rules_type_log" 2>&1; then
+    bad "safe-update rejects a non-regular project-owned Cursor rules path before archive"
+elif [ "$(tree_digest "$target")" = "$cursor_rules_type_before" ] \
+    && [ -z "$(find "$backup" -mindepth 1 -print -quit)" ] \
+    && grep -Fq 'target project-owned Cursor rules must be a regular file: .cursorrules' "$cursor_rules_type_log"; then
+    ok "safe-update rejects a non-regular project-owned Cursor rules path before archive"
+else
+    bad "safe-update rejects a non-regular project-owned Cursor rules path before archive"
+fi
+rm -rf "$target" "$fake_home" "$backup"
+rm -f "$cursor_rules_type_log"
 
 target="$(new_target)"
 fake_home="$(mktemp -d "${TMPDIR:-/tmp}/exo-test-home.XXXXXX")"
@@ -1819,7 +1900,7 @@ import sys
 root, stash = map(Path, sys.argv[1:3])
 surface = (
     '.exocortex', '.agents', '.cursor', '.claude', '.github', '.windsurf',
-    'AI_START_HERE.md', 'AGENTS.md', 'CLAUDE.md', '.windsurfrules', '.rules', '.gitignore',
+    'AI_START_HERE.md', 'AGENTS.md', 'CLAUDE.md', '.cursorrules', '.windsurfrules', '.rules', '.gitignore',
 )
 protected = (
     '.exocortex/SESSION_CONTEXT.md', '.exocortex/SESSION_CONTEXT.md.backup', '.exocortex/SESSION_CONTEXT.local.md',

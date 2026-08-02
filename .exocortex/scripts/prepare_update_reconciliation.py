@@ -33,6 +33,7 @@ SURFACE_PATHS = (
     "AI_START_HERE.md",
     "AGENTS.md",
     "CLAUDE.md",
+    ".cursorrules",
     ".windsurfrules",
     ".rules",
     ".gitignore",

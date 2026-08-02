@@ -80,9 +80,9 @@ remains `unavailable`.
 
 ## Legacy migration
 
-The old `.cursor/commands/*.md` wrappers and the duplicate Cursor/GitHub
-`onboard` persona entries are superseded; the canonical commands themselves are
-not removed. An installer may retire one of those paths only when:
+The old Cursor and Claude command wrappers, duplicate Cursor/GitHub `onboard`
+persona entries, and four old Cursor rules are superseded; canonical commands
+are not removed. An installer may retire one of those paths only when:
 
 1. its generated replacement installed and byte-matches the candidate;
 2. the old path is owned by the prior install manifest; and
@@ -92,14 +92,19 @@ Customized or unknown paths are preserved and reported with
 `EXOCORTEX_ADAPTER_COLLISION_PRESERVED`. Resolve that warning in a separate,
 reviewed target-specific change before claiming collision-free native parity.
 
-The cumulative migration inventory is 51 paths: 26 prior Cursor/GitHub
-retirements—24 old Cursor command wrappers plus the duplicate Cursor and GitHub
-`onboard` entries—plus 24 Windsurf workflows and `.windsurfrules`. Windsurf paths are
-no longer installed. They are removed only when the prior manifest proves
-ownership and their bytes still match; customized and unknown paths remain.
+The cumulative migration inventory is 80 paths: 55 replacement-backed
+retirements—26 prior Cursor/GitHub paths, 24 Claude command wrappers, one
+legacy Claude persona wrapper, and four old Cursor rules—plus 24 Windsurf
+workflows and `.windsurfrules`. Windsurf paths are no longer installed. They
+are removed only when the prior manifest proves ownership and their bytes still
+match; customized and unknown paths remain.
 The former Cursor `onboard` path is the sole reactivated path: a managed legacy
 copy is retired before the current generated Cursor adapter is installed,
 while customized or unknown content is preserved.
+
+Root `.cursorrules` is not a retirement path. Ordinary updates preserve it,
+but safety-check and archive it. Known obsolete command mechanics produce a
+path-only stale-guidance warning and require a reviewed reconciliation.
 
 The Cursor phase hook remains reminder-only. It never creates a save or
 checkpoint, selects a model, writes a repository, or contacts an external

@@ -1,19 +1,20 @@
-# What's New in 3.2.4 — Legacy backup privacy hardening
+# What's New in 3.2.5 — Safe legacy adapter discovery
 
-- The direct legacy `.exocortex/SESSION_CONTEXT_BACKUP_*.md` family now has
-  the same protected-data handling as the exact
-  `.exocortex/SESSION_CONTEXT.md.backup` sidecar: it is never installed,
-  manifest-tracked, included in update evidence, selected by a reconciliation
-  plan, or placed in a private code-only restore archive.
-- The protection remains deliberately narrow. It covers that direct legacy
-  naming family, not arbitrary backup files.
-- If an older project already tracks legacy sidecars in Git, the updater
-  reports and preserves them. Ignore rules prevent new tracking only; cleanup
-  is a separate owner decision and is never automatic.
-- The full installer/update and Phase B protocol suites add regression
-  coverage for legacy sidecar preservation and archive exclusion.
+- Updates now discover the old Claude command-wrapper family, its legacy
+  persona wrapper, and four historical Cursor rules that could otherwise
+  survive unnoticed after a current Exocortex upgrade.
+- The migration remains conservative: it retires a legacy file only when the
+  prior manifest proves template ownership and its bytes and mode are unchanged
+  and the current canonical replacement is present. Customized or unknown
+  files are retained and reported for reviewed reconciliation.
+- Root `.cursorrules` is project-owned. It is now topology-checked and covered
+  by update rehearsal and private rollback evidence, but ordinary updates never
+  overwrite, remove, normalize, or manifest-track it. Known stale command
+  guidance is retained and blocks ordinary live apply until reconciled.
+- The installer/update and Phase B suites add deterministic coverage for this
+  discovery, preservation, archive, and reconciliation behavior.
 
-This document describes packaged 3.2.4 candidate behavior. It does not prove
+This document describes packaged 3.2.5 candidate behavior. It does not prove
 Git publication, a GitHub release, installation, deployment, or template
 promotion.
 

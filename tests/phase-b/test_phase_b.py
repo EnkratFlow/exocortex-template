@@ -2100,6 +2100,64 @@ class ReconciliationPlanTests(unittest.TestCase):
         self.assertNotEqual(validation.returncode, 0)
         self.assertIn("target_surface_drift", validation.stdout)
 
+    def test_project_owned_root_cursor_rules_require_a_bound_reconciliation(self) -> None:
+        cursor_rules = self.target / ".cursorrules"
+        cursor_rules.write_text("legacy project Cursor guidance\n", encoding="utf-8")
+        os.chmod(cursor_rules, 0o644)
+        prepared = self.prepare("--retire", ".cursorrules")
+        self.assertEqual(prepared.returncode, 0, prepared.stdout + prepared.stderr)
+        self.plan.write_text(prepared.stdout, encoding="utf-8")
+        validation = run(
+            [
+                "python3",
+                str(RECONCILIATION),
+                "validate",
+                "--target",
+                str(self.target),
+                "--template",
+                str(self.template),
+                "--candidate-digest",
+                self.candidate_digest,
+                "--plan",
+                str(self.plan),
+            ],
+            check=True,
+        )
+        self.assertEqual(json.loads(validation.stdout)["effect_paths"], [".cursorrules"])
+        rehearsal = self.root / "cursor-rules-rehearsal"
+        shutil.copytree(self.target, rehearsal)
+        spec = importlib.util.spec_from_file_location("reconciliation_cursor_rules", RECONCILIATION)
+        self.assertIsNotNone(spec)
+        assert spec is not None and spec.loader is not None
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        module.materialize_plan(
+            json.loads(self.plan.read_text(encoding="utf-8")),
+            destination_root=rehearsal,
+            template=self.template,
+            baseline_target=self.target,
+        )
+        self.assertFalse((rehearsal / ".cursorrules").exists())
+        self.assertTrue(cursor_rules.is_file())
+        cursor_rules.write_text("changed after plan\n", encoding="utf-8")
+        drifted = run(
+            [
+                "python3",
+                str(RECONCILIATION),
+                "validate",
+                "--target",
+                str(self.target),
+                "--template",
+                str(self.template),
+                "--candidate-digest",
+                self.candidate_digest,
+                "--plan",
+                str(self.plan),
+            ]
+        )
+        self.assertNotEqual(drifted.returncode, 0)
+        self.assertIn("target_surface_drift", drifted.stdout)
+
     def test_candidate_and_reviewed_object_mode_drift_fail_closed(self) -> None:
         reviewed_spec = (
             "AI_START_HERE.md="
@@ -2823,12 +2881,12 @@ class EntryAndPrivacyTests(unittest.TestCase):
         windsurf_retirement_paths = set(production["windsurf_retirements"])
         self.assertEqual(legacy_retirement_paths, set(golden["legacy_retirement_paths"]))
         self.assertEqual(windsurf_retirement_paths, set(golden["windsurf_retirement_paths"]))
-        self.assertEqual(len(legacy_retirement_paths | windsurf_retirement_paths), 51)
+        self.assertEqual(len(legacy_retirement_paths | windsurf_retirement_paths), 80)
         self.assertFalse(legacy_retirement_paths & windsurf_retirement_paths)
         output_retirement_overlap = legacy_retirement_paths & expected_paths
         self.assertEqual(output_retirement_overlap, set(golden["reactivated_paths"]))
         retired_only = (legacy_retirement_paths | windsurf_retirement_paths) - expected_paths
-        self.assertEqual(len(retired_only), 50)
+        self.assertEqual(len(retired_only), 79)
         self.assertTrue(all(not (TEMPLATE / rel).exists() for rel in retired_only))
         self.assertFalse((TEMPLATE / ".windsurfrules").exists())
         self.assertFalse(any((TEMPLATE / ".windsurf/workflows").glob("*.md")))
@@ -2953,12 +3011,12 @@ class EntryAndPrivacyTests(unittest.TestCase):
         schema = json.loads((TEMPLATE / ".exocortex/schemas/provider-adapter-matrix.schema.json").read_text(encoding="utf-8"))
         production = json.loads(ADAPTER_MATRIX.read_text(encoding="utf-8"))
         self.assertEqual(schema["properties"]["expected_command_count"]["const"], 24)
-        self.assertEqual(schema["properties"]["legacy_retirements"]["minItems"], 26)
-        self.assertEqual(schema["properties"]["legacy_retirements"]["maxItems"], 26)
+        self.assertEqual(schema["properties"]["legacy_retirements"]["minItems"], 55)
+        self.assertEqual(schema["properties"]["legacy_retirements"]["maxItems"], 55)
         self.assertEqual(schema["properties"]["windsurf_retirements"]["minItems"], 25)
         self.assertEqual(schema["properties"]["windsurf_retirements"]["maxItems"], 25)
         self.assertEqual(set(production["status_definitions"]), {"verified", "compatible", "failed", "blocked", "unavailable"})
-        self.assertEqual(production["migration"]["cumulative_retirement_count"], 51)
+        self.assertEqual(production["migration"]["cumulative_retirement_count"], 80)
         self.assertTrue(production["migration"]["retire_only_when_manifest_owned_and_byte_matching"])
         self.assertTrue(production["migration"]["preserve_customized_or_unknown"])
         self.assertEqual(production["migration"]["collision_code"], "EXOCORTEX_ADAPTER_COLLISION_PRESERVED")

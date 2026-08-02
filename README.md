@@ -15,7 +15,7 @@ filesystem and terminal access): open the repository you want Exocortex
 installed into and paste this prompt:
 
 > Install Exocortex into this repository. Clone
-> `https://github.com/EnkratFlow/exocortex-template` at the exact `v3.2.4`
+> `https://github.com/EnkratFlow/exocortex-template` at the exact `v3.2.5`
 > release tag into a sibling directory. Confirm the clone's HEAD equals the
 > peeled commit SHA published in that release's notes. Compute the SHA-256 of the clone's
 > `SHA256SUMS` file and confirm it equals the candidate digest published in
@@ -28,10 +28,10 @@ installed into and paste this prompt:
 **By hand**, run these commands from the repository you are installing into:
 
 ```bash
-git clone --depth 1 --branch v3.2.4 https://github.com/EnkratFlow/exocortex-template.git ../exocortex-template-v3.2.4
-git -C ../exocortex-template-v3.2.4 rev-parse HEAD # compare with the peeled commit in the release notes
-shasum -a 256 ../exocortex-template-v3.2.4/SHA256SUMS # compare with the digest in the release notes
-EXOCORTEX_LOCAL_SOURCE=../exocortex-template-v3.2.4 EXOCORTEX_CANDIDATE_DIGEST=<digest from release notes> bash ../exocortex-template-v3.2.4/install.sh my-project
+git clone --depth 1 --branch v3.2.5 https://github.com/EnkratFlow/exocortex-template.git ../exocortex-template-v3.2.5
+git -C ../exocortex-template-v3.2.5 rev-parse HEAD # compare with the peeled commit in the release notes
+shasum -a 256 ../exocortex-template-v3.2.5/SHA256SUMS # compare with the digest in the release notes
+EXOCORTEX_LOCAL_SOURCE=../exocortex-template-v3.2.5 EXOCORTEX_CANDIDATE_DIGEST=<digest from release notes> bash ../exocortex-template-v3.2.5/install.sh my-project
 ```
 
 **Already running an older Exocortex?** Use the rehearsed updater instead of
@@ -154,11 +154,11 @@ release and verify both values published in its release notes before reading
 the update instructions from that clone:
 
 ```bash
-git clone --depth 1 --branch v3.2.4 \
+git clone --depth 1 --branch v3.2.5 \
   https://github.com/EnkratFlow/exocortex-template.git \
-  /tmp/exocortex-template-v3.2.4
-git -C /tmp/exocortex-template-v3.2.4 rev-parse HEAD
-shasum -a 256 /tmp/exocortex-template-v3.2.4/SHA256SUMS
+  /tmp/exocortex-template-v3.2.5
+git -C /tmp/exocortex-template-v3.2.5 rev-parse HEAD
+shasum -a 256 /tmp/exocortex-template-v3.2.5/SHA256SUMS
 ```
 
 The first output must equal the release's peeled commit SHA and the second
@@ -172,8 +172,8 @@ apply; the updater must not create it after consuming apply authority.
 
 ```bash
 cd /path/to/existing-project
-bash /tmp/exocortex-template-v3.2.4/scripts/safe-update.sh \
-  --template /tmp/exocortex-template-v3.2.4 \
+bash /tmp/exocortex-template-v3.2.5/scripts/safe-update.sh \
+  --template /tmp/exocortex-template-v3.2.5 \
   --candidate-digest <approved-sha256-of-SHA256SUMS> \
   --backup-dir /tmp/exocortex-restore \
   --dry-run
@@ -219,11 +219,20 @@ paths. The digest covers the full UTF-8 path list with one LF after every path,
 including the last. It is evidence for review, not approval by itself.
 
 Provider adapters are validated against the canonical command registry before
-target mutation. During an update, a superseded legacy wrapper is removed only
-when its current bytes still match its prior install-manifest hash, its mode is
-the reviewed legacy text mode `0644`, and its canonical replacement installed
-successfully. Customized bytes or modes and unknown wrappers are preserved
-with an `EXOCORTEX_ADAPTER_COLLISION_PRESERVED` warning.
+target mutation. The migration inventory covers 80 known retired paths: prior
+Cursor/GitHub wrappers, 24 Claude command wrappers, four older Cursor rules,
+and the retired Windsurf surface. During an update, a superseded adapter is
+removed only when its current bytes still match its prior install-manifest
+hash, its mode is the reviewed legacy text mode `0644`, and its canonical
+replacement installed successfully. Customized bytes or modes and unknown
+wrappers are preserved with an `EXOCORTEX_ADAPTER_COLLISION_PRESERVED` warning.
+
+Root `.cursorrules` is project-owned and is not one of those automatic
+retirements. The updater safety-checks and includes it in the rollback archive,
+but ordinary updates never delete, rewrite, or manifest-track it. If it
+contains known obsolete command mechanics, it is retained and produces
+`EXOCORTEX_STALE_COMMAND_GUIDANCE_PRESERVED`, requiring a reviewed
+target-specific reconciliation before live apply.
 
 Customized command-authority files and generated command adapters are
 preserved with `EXOCORTEX_COMMAND_AUTHORITY_COLLISION_PRESERVED`. A preserved

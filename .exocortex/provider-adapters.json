@@ -289,6 +289,122 @@
     {
       "path": ".github/skills/onboard/SKILL.md",
       "replacement": ".agents/skills/onboard/SKILL.md"
+    },
+    {
+      "path": ".claude/commands/ai-export.md",
+      "replacement": ".claude/skills/ai-export/SKILL.md"
+    },
+    {
+      "path": ".claude/commands/brief.md",
+      "replacement": ".claude/skills/brief/SKILL.md"
+    },
+    {
+      "path": ".claude/commands/check-keys.md",
+      "replacement": ".claude/skills/check-keys/SKILL.md"
+    },
+    {
+      "path": ".claude/commands/daily-end.md",
+      "replacement": ".claude/skills/daily-end/SKILL.md"
+    },
+    {
+      "path": ".claude/commands/drill.md",
+      "replacement": ".claude/skills/drill/SKILL.md"
+    },
+    {
+      "path": ".claude/commands/ecosystem.md",
+      "replacement": ".claude/skills/ecosystem/SKILL.md"
+    },
+    {
+      "path": ".claude/commands/groom.md",
+      "replacement": ".claude/skills/groom/SKILL.md"
+    },
+    {
+      "path": ".claude/commands/handoff.md",
+      "replacement": ".claude/skills/handoff/SKILL.md"
+    },
+    {
+      "path": ".claude/commands/history.md",
+      "replacement": ".claude/skills/history/SKILL.md"
+    },
+    {
+      "path": ".claude/commands/init-exocortex.md",
+      "replacement": ".claude/skills/init-exocortex/SKILL.md"
+    },
+    {
+      "path": ".claude/commands/interrupt.md",
+      "replacement": ".claude/skills/interrupt/SKILL.md"
+    },
+    {
+      "path": ".claude/commands/longterm.md",
+      "replacement": ".claude/skills/longterm/SKILL.md"
+    },
+    {
+      "path": ".claude/commands/monthly-review.md",
+      "replacement": ".claude/skills/monthly-review/SKILL.md"
+    },
+    {
+      "path": ".claude/commands/onboard.md",
+      "replacement": ".claude/skills/onboard/SKILL.md"
+    },
+    {
+      "path": ".claude/commands/pattern-review.md",
+      "replacement": ".claude/skills/pattern-review/SKILL.md"
+    },
+    {
+      "path": ".claude/commands/prioritize.md",
+      "replacement": ".claude/skills/prioritize/SKILL.md"
+    },
+    {
+      "path": ".claude/commands/refine-backlog.md",
+      "replacement": ".claude/skills/refine-backlog/SKILL.md"
+    },
+    {
+      "path": ".claude/commands/save.md",
+      "replacement": ".claude/skills/save/SKILL.md"
+    },
+    {
+      "path": ".claude/commands/scrum.md",
+      "replacement": ".claude/skills/scrum/SKILL.md"
+    },
+    {
+      "path": ".claude/commands/shortterm.md",
+      "replacement": ".claude/skills/shortterm/SKILL.md"
+    },
+    {
+      "path": ".claude/commands/subconscious.md",
+      "replacement": ".claude/skills/subconscious/SKILL.md"
+    },
+    {
+      "path": ".claude/commands/system-scan.md",
+      "replacement": ".claude/skills/system-scan/SKILL.md"
+    },
+    {
+      "path": ".claude/commands/weekly-review.md",
+      "replacement": ".claude/skills/weekly-review/SKILL.md"
+    },
+    {
+      "path": ".claude/commands/work.md",
+      "replacement": ".claude/skills/work/SKILL.md"
+    },
+    {
+      "path": ".claude/commands/CLAUDE.md",
+      "replacement": "CLAUDE.md"
+    },
+    {
+      "path": ".cursor/rules/00-ide-model-router.mdc",
+      "replacement": ".cursor/rules/plan-orchestrate.mdc"
+    },
+    {
+      "path": ".cursor/rules/01-project-bootstrap.mdc",
+      "replacement": ".cursor/rules/plan-orchestrate.mdc"
+    },
+    {
+      "path": ".cursor/rules/10-context-budget.mdc",
+      "replacement": ".cursor/rules/plan-orchestrate.mdc"
+    },
+    {
+      "path": ".cursor/rules/20-output-budget.mdc",
+      "replacement": ".cursor/rules/plan-orchestrate.mdc"
     }
   ],
   "windsurf_retirements": [
@@ -319,7 +435,7 @@
     ".windsurfrules"
   ],
   "migration": {
-    "cumulative_retirement_count": 51,
+    "cumulative_retirement_count": 80,
     "retire_only_when_manifest_owned_and_byte_matching": true,
     "preserve_customized_or_unknown": true,
     "collision_code": "EXOCORTEX_ADAPTER_COLLISION_PRESERVED",

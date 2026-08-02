@@ -20,15 +20,15 @@ combining the conflicting instructions.
 ## Acquire an exact GitHub release
 
 The release notes must publish the exact tag, its peeled 40-character commit
-SHA, and the SHA-256 of that tag's `SHA256SUMS`. For version 3.2.4, acquire and
+SHA, and the SHA-256 of that tag's `SHA256SUMS`. For version 3.2.5, acquire and
 verify the public artifact like this:
 
 ```bash
-git clone --depth 1 --branch v3.2.4 \
+git clone --depth 1 --branch v3.2.5 \
   https://github.com/EnkratFlow/exocortex-template.git \
-  /tmp/exocortex-template-v3.2.4
-git -C /tmp/exocortex-template-v3.2.4 rev-parse HEAD
-shasum -a 256 /tmp/exocortex-template-v3.2.4/SHA256SUMS
+  /tmp/exocortex-template-v3.2.5
+git -C /tmp/exocortex-template-v3.2.5 rev-parse HEAD
+shasum -a 256 /tmp/exocortex-template-v3.2.5/SHA256SUMS
 ```
 
 Compare both outputs with the release notes. Stop on either mismatch. Never
@@ -231,6 +231,14 @@ command mechanics in a preserved root instruction file emit
 `EXOCORTEX_COMMAND_RECONCILIATION_REQUIRED`; an ordinary live apply must stop
 before capability consumption and use the target-specific reconciliation
 workflow.
+
+The root `.cursorrules` file is project-owned. It is safety-checked, included
+in disposable-rehearsal and rollback evidence, and retained byte-for-byte by
+ordinary installation and update. It is never copied from the template,
+deleted, normalized, or added to the install manifest. Known obsolete command
+guidance there is reported by path only and requires the same target-specific
+reconciliation; only an exact reviewed reconciliation plan can intentionally
+replace or retire it.
 
 ## Legacy protected-default preflight
 

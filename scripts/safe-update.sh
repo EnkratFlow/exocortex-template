@@ -167,9 +167,10 @@ for relative in sorted(expected_mode_paths):
         raise SystemExit(f"FILEMODES mismatch: {relative}")
 PY
 
-# Retired Windsurf paths remain update surfaces so rehearsals, authorization,
-# backups, changed-path evidence, and rollback all cover their removal.
-surface_paths=(.exocortex .agents .cursor .claude .github .windsurf AI_START_HERE.md AGENTS.md CLAUDE.md .windsurfrules .rules .gitignore)
+# Retired provider paths and project-owned root Cursor rules remain update
+# surfaces so rehearsals, authorization, backups, changed-path evidence, and
+# rollback cover removals while ordinary updates preserve `.cursorrules`.
+surface_paths=(.exocortex .agents .cursor .claude .github .windsurf AI_START_HERE.md AGENTS.md CLAUDE.md .cursorrules .windsurfrules .rules .gitignore)
 protected_paths=(
     .exocortex/SESSION_CONTEXT.md
     .exocortex/SESSION_CONTEXT.md.backup
@@ -215,6 +216,9 @@ preflight_surface_paths() {
             [ ! -L "$cursor" ] || fail "target update surface contains a symlink: $rel"
             [ -e "$cursor" ] || break
         done
+        if [ "$rel" = ".cursorrules" ] && [ -e "$PROJECT_ROOT/$rel" ] && [ ! -f "$PROJECT_ROOT/$rel" ]; then
+            fail "target project-owned Cursor rules must be a regular file: $rel"
+        fi
         if [ -d "$PROJECT_ROOT/$rel" ]; then
             link="$(find "$PROJECT_ROOT/$rel" -path "*/.claude/worktrees" -prune -o -type l -print -quit 2>/dev/null)" \
                 || fail "target update surface could not be inspected safely: $rel"
@@ -333,7 +337,7 @@ from pathlib import Path
 
 root = Path(sys.argv[1]).resolve(strict=True)
 mode = sys.argv[2]
-surface = ['.exocortex','.agents','.cursor','.claude','.github','.windsurf','AI_START_HERE.md','AGENTS.md','CLAUDE.md','.windsurfrules','.rules','.gitignore']
+surface = ['.exocortex','.agents','.cursor','.claude','.github','.windsurf','AI_START_HERE.md','AGENTS.md','CLAUDE.md','.cursorrules','.windsurfrules','.rules','.gitignore']
 protected = [
     '.exocortex/SESSION_CONTEXT.md','.exocortex/SESSION_CONTEXT.md.backup','.exocortex/SESSION_CONTEXT.local.md',
     '.exocortex/TODO.md','.exocortex/LESSONS.md','.exocortex/PROJECT_MEMORY.md',
@@ -996,7 +1000,7 @@ import hashlib, os, stat, sys
 from pathlib import Path
 
 left, right, output = map(Path, sys.argv[1:])
-surface = ['.exocortex','.agents','.cursor','.claude','.github','.windsurf','AI_START_HERE.md','AGENTS.md','CLAUDE.md','.windsurfrules','.rules','.gitignore']
+surface = ['.exocortex','.agents','.cursor','.claude','.github','.windsurf','AI_START_HERE.md','AGENTS.md','CLAUDE.md','.cursorrules','.windsurfrules','.rules','.gitignore']
 protected = [
     '.exocortex/SESSION_CONTEXT.md','.exocortex/SESSION_CONTEXT.md.backup','.exocortex/SESSION_CONTEXT.local.md',
     '.exocortex/TODO.md','.exocortex/LESSONS.md','.exocortex/PROJECT_MEMORY.md',

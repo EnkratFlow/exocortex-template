@@ -6,7 +6,26 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 ## [Unreleased]
 
-No changes recorded after the 3.2.4 release candidate.
+No changes recorded after the 3.2.5 release candidate.
+
+## [3.2.5] - 2026-08-01
+
+### Fixed
+- **Legacy adapter discovery** — updates now recognize 24 old Claude command
+  wrappers, its legacy persona wrapper, and four obsolete Cursor rule files.
+  Manifest-owned, byte-and-mode-matching files retire only after their current
+  canonical replacement has been installed; customized or unknown files remain
+  in place with a path-only collision finding.
+- **Project-owned Cursor rules** — root `.cursorrules` is now safety-checked,
+  included in update rehearsal and rollback evidence, and scanned for known
+  obsolete command mechanics. Ordinary updates never copy, delete, normalize,
+  or manifest-track it; an exact reviewed reconciliation is required to change
+  it.
+
+### Tests
+- Added regression coverage for legacy Claude and Cursor retirement ordering,
+  project-owned root Cursor guidance preservation, archival, and
+  reconciliation-plan binding.
 
 ## [3.2.4] - 2026-08-01
 
@@ -215,6 +234,7 @@ exists.
   post-consumption race coverage.
 
 [3.2.2]: https://github.com/EnkratFlow/exocortex-template/releases/tag/v3.2.2
+[3.2.5]: https://github.com/EnkratFlow/exocortex-template/releases/tag/v3.2.5
 [3.2.4]: https://github.com/EnkratFlow/exocortex-template/releases/tag/v3.2.4
 [3.2.3]: https://github.com/EnkratFlow/exocortex-template/releases/tag/v3.2.3
 [3.2.1]: https://github.com/EnkratFlow/exocortex-template/releases/tag/v3.2.1

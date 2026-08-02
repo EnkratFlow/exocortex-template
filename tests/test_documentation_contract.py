@@ -221,7 +221,8 @@ require(
     "Preserve reviewed source executable bits",
     "unreported mode-only mutations",
     "Candidate modes come only from",
-    "26 prior Cursor/GitHub paths",
+    "55 replacement-backed paths",
+    "project-owned and ordinary updates retain it",
     "Archive only the code plane",
     "reviewed legacy text mode `0644`",
     "complete non-protected code-plane path types",
@@ -274,8 +275,10 @@ require(
     ".exocortex/docs/IDE_INTEGRATION_GUIDE.md",
     "Installation capability is separate",
     ".exocortex/docs/AI_INSTALLATION.md",
-    "cumulative migration inventory is 51 paths",
+    "cumulative migration inventory is 80 paths",
     "26 prior Cursor/GitHub",
+    "24 Claude command wrappers",
+    "Root `.cursorrules` is not a retirement path",
 )
 require(
     "init-project.sh",
