@@ -20,7 +20,7 @@ combining the conflicting instructions.
 ## Acquire an exact GitHub release
 
 The release notes must publish the exact tag, its peeled 40-character commit
-SHA, and the SHA-256 of that tag's `SHA256SUMS`. For version 3.2.3, acquire and
+SHA, and the SHA-256 of that tag's `SHA256SUMS`. For version 3.2.4, acquire and
 verify the public artifact like this:
 
 ```bash
