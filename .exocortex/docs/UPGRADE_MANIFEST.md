@@ -178,8 +178,9 @@ commands, required authority fields, GitHub boundary, and Human UAT are in
 The canonical command JSON files are never retired by the adapter migration.
 The matrix records two cumulative groups:
 
-- 26 prior Cursor/GitHub paths: 24 old Cursor command wrappers plus duplicate
-  Cursor and GitHub `onboard` entries, all with canonical portable replacements; and
+- 55 replacement-backed paths: 24 old Cursor command wrappers, duplicate
+  Cursor/GitHub `onboard` entries, 24 Claude command wrappers, one legacy
+  Claude persona wrapper, and four older Cursor rules; and
 - 25 retired Windsurf paths: 24 workflows plus `.windsurfrules`.
 
 For replacement-backed paths, the replacement must first be present and
@@ -201,6 +202,12 @@ manifest-owned, byte-matching legacy copy is retired before the current Cursor
 adapter is copied. Customized or unknown content is preserved, and the current
 adapter does not overwrite it. The resulting manifest must contain at most one
 record per path.
+
+The root `.cursorrules` is deliberately outside the automatic retirement
+matrix. It remains project-owned and ordinary updates retain it. The safe
+updater includes it in rehearsals, backup archives, and changed-path evidence
+so a stale or unsafe variant cannot be silently ignored; an exact reviewed
+reconciliation is required to change it.
 
 ## Restore portability
 

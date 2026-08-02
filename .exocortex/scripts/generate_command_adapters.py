@@ -45,6 +45,20 @@ EXPECTED_LEGACY_RETIREMENTS = {
     },
     ".cursor/skills/onboard/SKILL.md": ".agents/skills/onboard/SKILL.md",
     ".github/skills/onboard/SKILL.md": ".agents/skills/onboard/SKILL.md",
+    **{
+        f".claude/commands/{name}.md": f".claude/skills/{name}/SKILL.md"
+        for name in EXPECTED_LEGACY_COMMANDS
+    },
+    ".claude/commands/CLAUDE.md": "CLAUDE.md",
+    **{
+        f".cursor/rules/{name}.mdc": ".cursor/rules/plan-orchestrate.mdc"
+        for name in (
+            "00-ide-model-router",
+            "01-project-bootstrap",
+            "10-context-budget",
+            "20-output-budget",
+        )
+    },
 }
 EXPECTED_WINDSURF_RETIREMENTS = {
     f".windsurf/workflows/{name}.md" for name in EXPECTED_CANONICAL_COMMANDS
@@ -273,7 +287,7 @@ def validate_matrix(matrix: dict[str, Any]) -> list[dict[str, Any]]:
 
     migration = matrix.get("migration")
     if migration != {
-        "cumulative_retirement_count": 51,
+        "cumulative_retirement_count": 80,
         "retire_only_when_manifest_owned_and_byte_matching": True,
         "preserve_customized_or_unknown": True,
         "collision_code": "EXOCORTEX_ADAPTER_COLLISION_PRESERVED",
@@ -281,8 +295,8 @@ def validate_matrix(matrix: dict[str, Any]) -> list[dict[str, Any]]:
     }:
         raise AdapterError("provider matrix migration contract mismatch")
     retirements = matrix.get("legacy_retirements")
-    if not isinstance(retirements, list) or len(retirements) != 26:
-        raise AdapterError("provider matrix must define exactly 26 legacy retirement mappings")
+    if not isinstance(retirements, list) or len(retirements) != 55:
+        raise AdapterError("provider matrix must define exactly 55 legacy retirement mappings")
     retirement_map = {
         item.get("path"): item.get("replacement")
         for item in retirements

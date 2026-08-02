@@ -243,7 +243,7 @@ from pathlib import PurePosixPath
 matrix = json.load(open(sys.argv[1], encoding='utf-8'))
 legacy_items = matrix.get('legacy_retirements')
 windsurf_items = matrix.get('windsurf_retirements')
-if not isinstance(legacy_items, list) or len(legacy_items) != 26:
+if not isinstance(legacy_items, list) or len(legacy_items) != 55:
     raise SystemExit('invalid legacy retirement matrix')
 if not isinstance(windsurf_items, list) or len(windsurf_items) != 25:
     raise SystemExit('invalid Windsurf retirement matrix')
@@ -259,7 +259,11 @@ for item in legacy_items:
         path = PurePosixPath(value)
         if value.startswith('/') or '..' in path.parts or '\t' in value or '\n' in value:
             raise SystemExit('unsafe legacy retirement path')
-    if legacy in seen or not re.fullmatch(r'\.agents/skills/[a-z0-9-]+/SKILL\.md', replacement):
+    if legacy in seen or not (
+        re.fullmatch(r'\.agents/skills/[a-z0-9-]+/SKILL\.md', replacement)
+        or re.fullmatch(r'\.claude/skills/[a-z0-9-]+/SKILL\.md', replacement)
+        or replacement in {'CLAUDE.md', '.cursor/rules/plan-orchestrate.mdc'}
+    ):
         raise SystemExit('invalid legacy retirement mapping')
     seen.add(legacy)
     print(f'{legacy}\t{replacement}')
@@ -277,7 +281,7 @@ for legacy in windsurf_items:
     seen.add(legacy)
     print(f'{legacy}\t')
 PY
-[ "$(wc -l < "$RETIREMENTS" | tr -d ' ')" = "51" ] \
+[ "$(wc -l < "$RETIREMENTS" | tr -d ' ')" = "80" ] \
     || fail "provider-adapter retirement matrix is incomplete"
 
 MANIFEST=".exocortex/.install-manifest"
@@ -295,10 +299,20 @@ record_manifest() {
 }
 
 retire_legacy_adapters() {
-    local legacy replacement replacement_source_hash replacement_target_hash
+    local phase="${1:-}" legacy replacement replacement_source_hash replacement_target_hash
     local current_hash current_mode installed_hash
+    case "$phase" in pre|post) ;; *) fail "invalid legacy retirement phase" ;; esac
     while IFS=$'\t' read -r legacy replacement; do
         [ -n "$legacy" ] || fail "invalid legacy retirement row"
+        # This path is both a historical retirement and the current Cursor
+        # adapter destination. Retire its manifest-owned predecessor before
+        # copying the replacement so an already-current file is never removed.
+        if [ "$phase" = pre ] && [ "$legacy" != ".cursor/skills/onboard/SKILL.md" ]; then
+            continue
+        fi
+        if [ "$phase" = post ] && [ "$legacy" = ".cursor/skills/onboard/SKILL.md" ]; then
+            continue
+        fi
         [ -e "$legacy" ] || continue
         assert_safe_target_file_path "$legacy"
         installed_hash="$(manifest_get "$legacy")"
@@ -307,6 +321,7 @@ retire_legacy_adapters() {
             if [ ! -f "$SOURCE_COPY/$replacement" ] || [ ! -f "$replacement" ]; then
                 [ -n "$installed_hash" ] && record_manifest "$legacy" "$installed_hash"
                 echo "EXOCORTEX_ADAPTER_COLLISION_PRESERVED: $legacy (canonical replacement unavailable: $replacement)"
+                report_preserved_legacy_command_drift "$legacy"
                 continue
             fi
             replacement_source_hash="$(file_hash "$SOURCE_COPY/$replacement")"
@@ -314,6 +329,7 @@ retire_legacy_adapters() {
             if [ "$replacement_source_hash" != "$replacement_target_hash" ]; then
                 [ -n "$installed_hash" ] && record_manifest "$legacy" "$installed_hash"
                 echo "EXOCORTEX_ADAPTER_COLLISION_PRESERVED: $legacy (customized replacement preserved: $replacement)"
+                report_preserved_legacy_command_drift "$legacy"
                 continue
             fi
         fi
@@ -327,6 +343,7 @@ retire_legacy_adapters() {
         else
             [ -n "$installed_hash" ] && record_manifest "$legacy" "$installed_hash"
             echo "EXOCORTEX_ADAPTER_COLLISION_PRESERVED: $legacy (customized bytes/mode or unknown legacy adapter)"
+            report_preserved_legacy_command_drift "$legacy"
         fi
     done < "$RETIREMENTS"
 }
@@ -437,14 +454,14 @@ is_command_authority_path() {
 
 is_root_instruction_adapter() {
     case "$1" in
-        CLAUDE.md|AGENTS.md|.rules|.github/copilot-instructions.md) return 0 ;;
+        CLAUDE.md|AGENTS.md|.cursorrules|.rules|.github/copilot-instructions.md) return 0 ;;
         *) return 1 ;;
     esac
 }
 
 contains_known_stale_command_guidance() {
     LC_ALL=C grep -Eiq \
-        'HYBRID[[:space:]]+PATTERN|sync_event_to_vault\.sh|/tmp/save_event\.md|Phase[[:space:]]+checkpoint|haiku[[:space:]-]+(tier[[:space:]-]+)?subagent' \
+        'HYBRID[[:space:]]+PATTERN|sync_event_to_vault\.sh|/tmp/save_event\.md|Phase[[:space:]]+checkpoint|haiku[[:space:]-]+(tier[[:space:]-]+)?subagent|all[[:space:]]+20[[:space:]]+commands|strip[[:space:]]+(the[[:space:]]+)?/[[:space:]]*prefix' \
         "$1"
 }
 
@@ -456,6 +473,18 @@ report_preserved_command_drift() {
         && contains_known_stale_command_guidance "$target_file"; then
         echo "EXOCORTEX_STALE_COMMAND_GUIDANCE_PRESERVED: $target_file (matching command JSON remains authoritative; reviewed reconciliation required before live apply)"
     fi
+}
+
+report_preserved_legacy_command_drift() {
+    case "$1" in
+        .cursor/commands/*.md|.claude/commands/*.md|\
+        .cursor/rules/00-ide-model-router.mdc|\
+        .cursor/rules/01-project-bootstrap.mdc|\
+        .cursor/rules/10-context-budget.mdc|\
+        .cursor/rules/20-output-budget.mdc)
+            echo "EXOCORTEX_COMMAND_AUTHORITY_COLLISION_PRESERVED: $1 (legacy command authority requires reviewed reconciliation)"
+            ;;
+    esac
 }
 
 safe_copy_file() {
@@ -555,6 +584,7 @@ preflight_install_targets() {
     for rel in AI_START_HERE.md AGENTS.md CLAUDE.md .rules; do
         [ -f "$SOURCE_COPY/$rel" ] && assert_safe_target_file_path "$rel"
     done
+    assert_safe_target_file_path .cursorrules
     preflight_source_dir_targets "$SOURCE_COPY/.cursor" .cursor
     preflight_source_dir_targets "$SOURCE_COPY/.github/skills" .github/skills
     [ -f "$SOURCE_COPY/.github/copilot-instructions.md" ] && assert_safe_target_file_path .github/copilot-instructions.md
@@ -603,11 +633,16 @@ for rel in AI_START_HERE.md AGENTS.md CLAUDE.md .rules; do
     safe_copy_file "$SOURCE_COPY/$rel" "$rel"
 done
 safe_copy_dir "$SOURCE_COPY/.agents" .agents
-retire_legacy_adapters
+retire_legacy_adapters pre
 safe_copy_dir "$SOURCE_COPY/.cursor" .cursor
 safe_copy_dir "$SOURCE_COPY/.github/skills" .github/skills
 safe_copy_file "$SOURCE_COPY/.github/copilot-instructions.md" .github/copilot-instructions.md
 safe_copy_dir "$SOURCE_COPY/.claude/skills" .claude/skills
+retire_legacy_adapters post
+# Root Cursor rules are project-owned. They are never copied, normalized,
+# retired, or manifest-tracked by an ordinary update, but known obsolete
+# command mechanics are surfaced for a reviewed reconciliation.
+[ ! -e .cursorrules ] || report_preserved_command_drift .cursorrules
 
 if [ -f "$SOURCE_COPY/VERSION" ]; then
     safe_copy_file "$SOURCE_COPY/VERSION" .exocortex/.version

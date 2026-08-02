@@ -229,8 +229,8 @@
     },
     "legacy_retirements": {
       "type": "array",
-      "minItems": 26,
-      "maxItems": 26,
+      "minItems": 55,
+      "maxItems": 55,
       "uniqueItems": true,
       "items": {
         "type": "object",
@@ -246,7 +246,7 @@
           },
           "replacement": {
             "type": "string",
-            "pattern": "^[.]agents/skills/.+/SKILL[.]md$"
+            "pattern": "^([.]agents/skills/[a-z0-9-]+/SKILL[.]md|[.]claude/skills/[a-z0-9-]+/SKILL[.]md|[.]cursor/rules/plan-orchestrate[.]mdc|CLAUDE[.]md)$"
           }
         }
       }
@@ -273,7 +273,7 @@
       ],
       "properties": {
         "cumulative_retirement_count": {
-          "const": 51
+          "const": 80
         },
         "retire_only_when_manifest_owned_and_byte_matching": {
           "const": true
