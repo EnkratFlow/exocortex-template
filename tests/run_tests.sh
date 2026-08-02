@@ -2031,6 +2031,7 @@ printf 'SOURCE_CONTEXT_BACKUP\n' > "$source_copy/.exocortex/SESSION_CONTEXT.md.b
 printf 'SOURCE_LEGACY_CONTEXT_BACKUP\n' > "$source_copy/.exocortex/SESSION_CONTEXT_BACKUP_CANARY.md"
 mkdir -p "$source_copy/.exocortex/SESSION_CONTEXT_BACKUP_folder"
 printf 'MANAGED_NESTED_FIXTURE\n' > "$source_copy/.exocortex/SESSION_CONTEXT_BACKUP_folder/nested.md"
+chmod 0644 "$source_copy/.exocortex/SESSION_CONTEXT_BACKUP_folder/nested.md"
 python3 - "$source_copy" <<'PY'
 import hashlib
 from pathlib import Path
