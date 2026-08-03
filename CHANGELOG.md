@@ -6,7 +6,27 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 ## [Unreleased]
 
-No changes recorded after the 3.2.5 release candidate.
+No changes recorded after the 3.2.6 release candidate.
+
+## [3.2.6] - 2026-08-03
+
+### Fixed
+- **Project-root memory references** — required project memory, session,
+  decision, lesson, persona, and quick-reference paths now resolve explicitly
+  from the project root. Optional generated session context is labeled as
+  optional.
+- **Authority-aware follow-up capture** — read-only work reports newly found
+  tasks in chat and updates `.exocortex/TODO.md` only when the current task
+  authorizes that local write.
+- **Cost-aware CI triggers** — feature branches no longer run duplicate push
+  and pull-request suites. Superseded runs cancel only within the same pull
+  request, while `main` and version-tag runs use unique groups and retain their
+  own evidence.
+
+### Tests
+- Revalidated generated command adapters, documentation and release-state
+  contracts, complete checksums and file modes, and workflow structure. The
+  complete Phase B suite remains the required GitHub CI gate before merge.
 
 ## [3.2.5] - 2026-08-01
 
@@ -234,6 +254,7 @@ exists.
   post-consumption race coverage.
 
 [3.2.2]: https://github.com/EnkratFlow/exocortex-template/releases/tag/v3.2.2
+[3.2.6]: https://github.com/EnkratFlow/exocortex-template/releases/tag/v3.2.6
 [3.2.5]: https://github.com/EnkratFlow/exocortex-template/releases/tag/v3.2.5
 [3.2.4]: https://github.com/EnkratFlow/exocortex-template/releases/tag/v3.2.4
 [3.2.3]: https://github.com/EnkratFlow/exocortex-template/releases/tag/v3.2.3

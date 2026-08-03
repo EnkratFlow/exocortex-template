@@ -20,15 +20,15 @@ combining the conflicting instructions.
 ## Acquire an exact GitHub release
 
 The release notes must publish the exact tag, its peeled 40-character commit
-SHA, and the SHA-256 of that tag's `SHA256SUMS`. For version 3.2.5, acquire and
+SHA, and the SHA-256 of that tag's `SHA256SUMS`. For version 3.2.6, acquire and
 verify the public artifact like this:
 
 ```bash
-git clone --depth 1 --branch v3.2.5 \
+git clone --depth 1 --branch v3.2.6 \
   https://github.com/EnkratFlow/exocortex-template.git \
-  /tmp/exocortex-template-v3.2.5
-git -C /tmp/exocortex-template-v3.2.5 rev-parse HEAD
-shasum -a 256 /tmp/exocortex-template-v3.2.5/SHA256SUMS
+  /tmp/exocortex-template-v3.2.6
+git -C /tmp/exocortex-template-v3.2.6 rev-parse HEAD
+shasum -a 256 /tmp/exocortex-template-v3.2.6/SHA256SUMS
 ```
 
 Compare both outputs with the release notes. Stop on either mismatch. Never

@@ -1,3 +1,22 @@
+# What's New in 3.2.6 — Clearer entry and leaner CI
+
+- Project memory references now resolve explicitly from the project root,
+  including optional generated session context and the persona and quick
+  reference documents.
+- Read-only agents report newly discovered follow-ups in chat instead of being
+  told to write `.exocortex/TODO.md` without authority.
+- Pull-request updates run each workflow once rather than duplicating the same
+  work through both push and pull-request events. Only superseded runs for the
+  same pull request cancel; `main` and release-tag evidence remains distinct.
+- The canonical 24 commands, provider adapters, guarded installer/update path,
+  and protected project data behavior are unchanged.
+
+This document describes packaged 3.2.6 candidate behavior. It does not prove
+Git publication, a GitHub release, installation, deployment, or template
+promotion.
+
+---
+
 # What's New in 3.2.5 — Safe legacy adapter discovery
 
 - Updates now discover the old Claude command-wrapper family, its legacy
