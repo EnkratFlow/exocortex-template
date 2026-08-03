@@ -15,7 +15,7 @@ filesystem and terminal access): open the repository you want Exocortex
 installed into and paste this prompt:
 
 > Install Exocortex into this repository. Clone
-> `https://github.com/EnkratFlow/exocortex-template` at the exact `v3.2.5`
+> `https://github.com/EnkratFlow/exocortex-template` at the exact `v3.2.6`
 > release tag into a sibling directory. Confirm the clone's HEAD equals the
 > peeled commit SHA published in that release's notes. Compute the SHA-256 of the clone's
 > `SHA256SUMS` file and confirm it equals the candidate digest published in
@@ -28,10 +28,10 @@ installed into and paste this prompt:
 **By hand**, run these commands from the repository you are installing into:
 
 ```bash
-git clone --depth 1 --branch v3.2.5 https://github.com/EnkratFlow/exocortex-template.git ../exocortex-template-v3.2.5
-git -C ../exocortex-template-v3.2.5 rev-parse HEAD # compare with the peeled commit in the release notes
-shasum -a 256 ../exocortex-template-v3.2.5/SHA256SUMS # compare with the digest in the release notes
-EXOCORTEX_LOCAL_SOURCE=../exocortex-template-v3.2.5 EXOCORTEX_CANDIDATE_DIGEST=<digest from release notes> bash ../exocortex-template-v3.2.5/install.sh my-project
+git clone --depth 1 --branch v3.2.6 https://github.com/EnkratFlow/exocortex-template.git ../exocortex-template-v3.2.6
+git -C ../exocortex-template-v3.2.6 rev-parse HEAD # compare with the peeled commit in the release notes
+shasum -a 256 ../exocortex-template-v3.2.6/SHA256SUMS # compare with the digest in the release notes
+EXOCORTEX_LOCAL_SOURCE=../exocortex-template-v3.2.6 EXOCORTEX_CANDIDATE_DIGEST=<digest from release notes> bash ../exocortex-template-v3.2.6/install.sh my-project
 ```
 
 **Already running an older Exocortex?** Use the rehearsed updater instead of
@@ -154,11 +154,11 @@ release and verify both values published in its release notes before reading
 the update instructions from that clone:
 
 ```bash
-git clone --depth 1 --branch v3.2.5 \
+git clone --depth 1 --branch v3.2.6 \
   https://github.com/EnkratFlow/exocortex-template.git \
-  /tmp/exocortex-template-v3.2.5
-git -C /tmp/exocortex-template-v3.2.5 rev-parse HEAD
-shasum -a 256 /tmp/exocortex-template-v3.2.5/SHA256SUMS
+  /tmp/exocortex-template-v3.2.6
+git -C /tmp/exocortex-template-v3.2.6 rev-parse HEAD
+shasum -a 256 /tmp/exocortex-template-v3.2.6/SHA256SUMS
 ```
 
 The first output must equal the release's peeled commit SHA and the second
@@ -172,8 +172,8 @@ apply; the updater must not create it after consuming apply authority.
 
 ```bash
 cd /path/to/existing-project
-bash /tmp/exocortex-template-v3.2.5/scripts/safe-update.sh \
-  --template /tmp/exocortex-template-v3.2.5 \
+bash /tmp/exocortex-template-v3.2.6/scripts/safe-update.sh \
+  --template /tmp/exocortex-template-v3.2.6 \
   --candidate-digest <approved-sha256-of-SHA256SUMS> \
   --backup-dir /tmp/exocortex-restore \
   --dry-run

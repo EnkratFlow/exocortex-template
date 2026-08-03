@@ -15,24 +15,26 @@ does not receive a native-menu claim. Windsurf is currently unavailable and is
 not part of active/default installation.
 
 **AI Persona & Commands:** The AI assistant is configured as a senior multidisciplinary expert. Quick help:
-→ `QUICK_REFERENCE.md` - Fast lookup for commands and when to use them
-→ `PERSONA_AND_COMMANDS.md` - Complete documentation of persona and all commands
+→ `.exocortex/reference/QUICK_REFERENCE.md` - Fast lookup for commands and when to use them
+→ `.exocortex/PERSONA_AND_COMMANDS.md` - Complete documentation of persona and all commands
 
 ---
 
 ## Reading Order
 
-Before making any changes, read these files in order:
+Before making any changes, read these files in order. Paths are relative to the
+project root, not to this folder:
 
-1. **PROJECT_MEMORY.md** — System purpose, philosophy, and non-obvious constraints.
-2. **SESSION_CONTEXT.md** — Current focus, open questions, and frozen areas.
-3. **ESSENTIAL_FILES.md** — Where core truth lives vs reference vs tests.
-4. **LESSONS.md** — Project-specific lessons learned and anti-patterns to avoid.
-5. **OPEN_DECISIONS.md** (if exists) — Unresolved decisions affecting architecture, logic, QA strategy, or product direction.
+1. **`.exocortex/PROJECT_MEMORY.md`** — System purpose, philosophy, and non-obvious constraints.
+2. **`.exocortex/SESSION_CONTEXT.md`** (if exists) — Current focus, open questions, and frozen areas.
+3. **`.exocortex/reference/ESSENTIAL_FILES.md`** — Where core truth lives vs reference vs tests.
+4. **`.exocortex/LESSONS.md`** — Project-specific lessons learned and anti-patterns to avoid.
+5. **`.exocortex/OPEN_DECISIONS.md`** (if exists) — Unresolved decisions affecting architecture, logic, QA strategy, or product direction.
 
 **Rule:** If you have not read these, do not make changes.
 
-If work discovers new tasks, risks, or follow-ups, the agent MUST update `.exocortex/TODO.md`.
+If work discovers new tasks, risks, or follow-ups, report them in chat. Update
+`.exocortex/TODO.md` only when the current task authorizes that local write.
 
 **Note:** If an agent is instructed to "read memory", "load memory", "use project memory", or similar, this file is the intended entry point.
 
