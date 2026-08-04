@@ -82,19 +82,8 @@ TEMPLATE_ROOT="$(cd "$TEMPLATE_SOURCE" && pwd -P)"
 [ "$PROJECT_ROOT" != "$TEMPLATE_ROOT" ] || fail "template and target must differ"
 case "$TEMPLATE_ROOT/" in "$PROJECT_ROOT/"*) fail "template must not be inside the target" ;; esac
 case "$PROJECT_ROOT/" in "$TEMPLATE_ROOT/"*) fail "target must not be inside the template" ;; esac
-# An ignore rule cannot change Git's index. This is intentionally advisory:
-# the protected sidecar stays untouched, and any Git cleanup remains a separate
-# owner decision outside an Exocortex update.
 TRACKED_PROTECTED_SIDECAR=false
-if git -C "$PROJECT_ROOT" rev-parse --is-inside-work-tree >/dev/null 2>&1 \
-    && git -C "$PROJECT_ROOT" ls-files --error-unmatch -- .exocortex/SESSION_CONTEXT.md.backup >/dev/null 2>&1; then
-    TRACKED_PROTECTED_SIDECAR=true
-fi
 TRACKED_LEGACY_SESSION_CONTEXT_BACKUP=false
-if git -C "$PROJECT_ROOT" rev-parse --is-inside-work-tree >/dev/null 2>&1 \
-    && git -C "$PROJECT_ROOT" ls-files -- '.exocortex/SESSION_CONTEXT_BACKUP_*.md' | grep -q .; then
-    TRACKED_LEGACY_SESSION_CONTEXT_BACKUP=true
-fi
 
 [ -f "$TEMPLATE_ROOT/SHA256SUMS" ] && [ ! -L "$TEMPLATE_ROOT/SHA256SUMS" ] \
     || fail "template SHA256SUMS must be a regular non-symlink file"
@@ -1062,6 +1051,19 @@ PY
 if [ -n "$RECONCILIATION_PLAN" ] && ! cmp -s "$CHANGES" "$PLANNED_EFFECTS"; then
     diff -u "$PLANNED_EFFECTS" "$CHANGES" >&2 || true
     fail "rehearsed effect does not match the exact reconciliation plan"
+fi
+
+# An ignore rule cannot change Git's index. These checks are intentionally
+# advisory and run only after all fail-closed preflight, authority, backup, and
+# rehearsal work. This prevents Git platform caches from creating observable
+# temporary state for a request that should be rejected without side effects.
+if git -C "$PROJECT_ROOT" rev-parse --is-inside-work-tree >/dev/null 2>&1 \
+    && git -C "$PROJECT_ROOT" ls-files --error-unmatch -- .exocortex/SESSION_CONTEXT.md.backup >/dev/null 2>&1; then
+    TRACKED_PROTECTED_SIDECAR=true
+fi
+if git -C "$PROJECT_ROOT" rev-parse --is-inside-work-tree >/dev/null 2>&1 \
+    && git -C "$PROJECT_ROOT" ls-files -- '.exocortex/SESSION_CONTEXT_BACKUP_*.md' | grep -q .; then
+    TRACKED_LEGACY_SESSION_CONTEXT_BACKUP=true
 fi
 
 echo "Backup: $BACKUP_PATH"

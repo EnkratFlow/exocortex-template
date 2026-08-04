@@ -1,3 +1,24 @@
+# What's New in 3.2.7 — AI-first installation and updates
+
+- The public README now starts with two clear choices: install Exocortex in a
+  new repository or update an existing Exocortex repository.
+- Each path has a provider-neutral prompt that can be pasted into a coding AI
+  with local filesystem and terminal access.
+- Existing-repository updates now say explicitly that the current repository
+  remains the target and all memory, events, planning, decisions, recognized
+  Session Context backup sidecars, local state, and secrets remain protected
+  in place.
+- The CLI fallback remains available for independent verification and recovery.
+- Platform claims now match evidence: macOS is verified; Linux awaits final
+  candidate CI; WSL awaits bounded Human UAT; Git Bash and native Windows
+  shells remain unsupported.
+
+This document describes packaged 3.2.7 candidate behavior. It does not prove
+Git publication, a GitHub release, installation, deployment, or template
+promotion.
+
+---
+
 # What's New in 3.2.6 — Clearer entry and leaner CI
 
 - Project memory references now resolve explicitly from the project root,
