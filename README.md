@@ -6,42 +6,171 @@ are interchangeable workers.
 
 This template is public beta. Read `VERSION` for the packaged version.
 
-## Install in 60 seconds
+## Choose your path
 
-Works on macOS and Linux today; on Windows, run everything inside WSL.
+| Your repository | Use |
+|---|---|
+| Exocortex is not installed | **New installation** |
+| Any older Exocortex version is installed | **Existing-repository update** |
 
-**With a coding AI** (Cursor, Claude, Copilot, or any agent with local
-filesystem and terminal access): open the repository you want Exocortex
-installed into and paste this prompt:
+The recommended path is a coding AI with local filesystem and terminal access.
+The CLI fallback is documented below. A chat-only assistant can explain the
+process but cannot install or update local files.
 
-> Install Exocortex into this repository. Clone
-> `https://github.com/EnkratFlow/exocortex-template` at the exact `v3.2.6`
-> release tag into a sibling directory. Confirm the clone's HEAD equals the
-> peeled commit SHA published in that release's notes. Compute the SHA-256 of the clone's
-> `SHA256SUMS` file and confirm it equals the candidate digest published in
-> that release's notes; stop if it does not match. Then, from this
-> repository's root, run
-> `EXOCORTEX_LOCAL_SOURCE=<clone path> EXOCORTEX_CANDIDATE_DIGEST=<digest> bash <clone path>/install.sh <project-name>`
-> and show me the full result. Do not commit, push, publish, or configure
-> anything beyond that.
+## Install or update with a coding AI
 
-**By hand**, run these commands from the repository you are installing into:
+Open the repository you want to change in Codex, Claude, Cursor, Copilot, Zed,
+or another coding AI with local terminal access. Copy and paste the matching
+prompt.
 
-```bash
-git clone --depth 1 --branch v3.2.6 https://github.com/EnkratFlow/exocortex-template.git ../exocortex-template-v3.2.6
-git -C ../exocortex-template-v3.2.6 rev-parse HEAD # compare with the peeled commit in the release notes
-shasum -a 256 ../exocortex-template-v3.2.6/SHA256SUMS # compare with the digest in the release notes
-EXOCORTEX_LOCAL_SOURCE=../exocortex-template-v3.2.6 EXOCORTEX_CANDIDATE_DIGEST=<digest from release notes> bash ../exocortex-template-v3.2.6/install.sh my-project
+### New installation prompt
+
+```text
+Prepare a read-only Exocortex clean-install preflight for the repository I
+currently have open. Use only the official GitHub release v3.2.7 from
+https://github.com/EnkratFlow/exocortex-template.
+
+Clone that exact tag as a temporary source. Verify its HEAD against the peeled
+commit SHA in the release notes and verify the SHA-256 of its SHA256SUMS file
+against the published digest. Stop if either value differs.
+
+Show me the exact target, current Git state, expected installation paths,
+collisions, disposable rehearsal, verification, and rollback boundary before
+changing anything. Never read or display .env or credential values. Do not
+change application code, global editor settings, Git history, remotes,
+services, providers, deployments, or external systems. Ask me once before the
+disposable rehearsal and once before the named-target local installation.
 ```
 
-**Already running an older Exocortex?** Use the rehearsed updater instead of
-reinstalling: run `scripts/safe-update.sh --dry-run` with the same template
-path and digest to see the exact change list first, then follow the guarded
-update flow in
-[`.exocortex/docs/AI_INSTALLATION.md`](.exocortex/docs/AI_INSTALLATION.md).
-Your project data, customized files, and anything you have added to the
-repository are preserved; a verified rollback archive is created before any
-byte changes.
+### Existing-repository update prompt
+
+```text
+Prepare a read-only Exocortex safe-update preflight for the repository I
+currently have open. Update it from its installed version to the official
+GitHub release v3.2.7 from
+https://github.com/EnkratFlow/exocortex-template.
+
+This existing repository and its project-local data are the target. Do not
+treat a fresh template clone or a bare Git snapshot that omits local data as a
+replacement. A temporary clone of v3.2.7 is the update source only. An approved
+disposable rehearsal or isolated worktree is allowed, but it must preserve and
+verify the target's protected data. Verify the release clone's HEAD against the
+peeled commit SHA in the release notes and verify the SHA-256 of its SHA256SUMS
+file against the published digest.
+
+Preserve all project data byte-for-byte, including project memory, session
+context, TODOs, lessons, open decisions, events, archives, recognized Session
+Context backup sidecars, planning, work items, local state, control records,
+and .env. Never read or display secret values. Rehearse the update in disposable
+state, show me the complete changed-path list, protected-data result,
+collisions, tests, and rollback plan, then stop before applying it. Do not
+change application code, commit, push, merge, deploy, synchronize, or promote
+anything.
+```
+
+The AI should first show one understandable rehearsal decision. After the
+rehearsal passes, it should show one named-target local-apply decision. Internal
+work-item, reservation, capability, evidence, handoff, and writer-release
+mechanics are not separate human approvals. Git publication, merge,
+deployment, and external synchronization remain separate actions.
+
+For the complete prompts and deterministic safety contract, see the
+[AI installation and update guide](.exocortex/docs/AI_INSTALLATION.md).
+
+## CLI fallback
+
+Use this path when no capable coding AI is available or when independently
+checking what the AI did. Never pipe an unpinned remote script into a shell.
+
+### 1. Download and verify the exact release
+
+```bash
+git clone --depth 1 --branch v3.2.7 \
+  https://github.com/EnkratFlow/exocortex-template.git \
+  /tmp/exocortex-template-v3.2.7
+git -C /tmp/exocortex-template-v3.2.7 rev-parse HEAD
+```
+
+On macOS:
+
+```bash
+shasum -a 256 /tmp/exocortex-template-v3.2.7/SHA256SUMS
+```
+
+On Linux or inside WSL:
+
+```bash
+sha256sum /tmp/exocortex-template-v3.2.7/SHA256SUMS
+```
+
+Compare both outputs with the peeled commit and candidate digest in the
+v3.2.7 GitHub release notes. Stop if either differs. Do not substitute `main`,
+`latest`, or another checkout.
+
+### 2A. New installation
+
+Rehearse first and install only in an approved clean isolated Git worktree.
+The detailed guide explains how to choose the target. Create a new empty,
+owner-only disposable `HOME` for this run; do not reuse an existing one.
+The underlying installation command is:
+
+```bash
+cd /path/to/approved-isolated-worktree
+HOME=<new-empty-owner-only-disposable-home> \
+EXOCORTEX_LOCAL_SOURCE=/tmp/exocortex-template-v3.2.7 \
+EXOCORTEX_CANDIDATE_DIGEST=<digest-from-release-notes> \
+  bash /tmp/exocortex-template-v3.2.7/install.sh "project-name"
+```
+
+### 2B. Existing-repository update
+
+Run the read-only dry run from the existing repository. The update source is
+temporary; the repository containing your memory remains the target. Create a
+fresh owner-only backup directory outside both the target and template first.
+
+```bash
+cd /path/to/existing-project
+mkdir -m 700 /tmp/exocortex-restore
+bash /tmp/exocortex-template-v3.2.7/scripts/safe-update.sh \
+  --template /tmp/exocortex-template-v3.2.7 \
+  --candidate-digest <digest-from-release-notes> \
+  --backup-dir /tmp/exocortex-restore \
+  --dry-run
+```
+
+The full guarded `--apply` command requires the exact target-specific values
+produced by the accepted rehearsal. Copy it from the
+[AI installation and update guide](.exocortex/docs/AI_INSTALLATION.md); never
+remove or invent its safety arguments.
+
+## What an update preserves
+
+Project memory stays in the existing repository. The updater protects memory,
+session context, TODOs, lessons, decisions, events, archives, recognized
+Session Context backup sidecars, planning, work items, local protocol state,
+live control records, `.env`, and custom untracked extensions. It compares
+protected paths before and after rehearsal and apply, and stops if their bytes,
+path types, or modes change.
+
+An update changes the Exocortex code plane only. It never replaces the project,
+moves memory into a new worktree, commits, pushes, deploys, or synchronizes
+anything automatically. See the [upgrade manifest](.exocortex/docs/UPGRADE_MANIFEST.md)
+for collision handling and the [security policy](SECURITY.md) for the complete
+failure model.
+
+## Platform support
+
+| Environment | Status |
+|---|---|
+| macOS with the documented Bash/Unix tools | `verified` |
+| Linux | `compatible_pending_candidate_CI` |
+| Windows through WSL, using the WSL filesystem | `human_uat_pending` |
+| Git Bash or native Windows PowerShell/Command Prompt | `unsupported` |
+
+There is no supported native Windows command today. WSL uses the Linux commands
+above, but remains Human-UAT-pending until the exact Windows, WSL, distribution,
+filesystem, and coding-AI combination passes the documented rehearsal. Do not
+translate the Bash safety logic into PowerShell ad hoc.
 
 ## Core model
 
@@ -65,201 +194,6 @@ authority. Human-facing decisions use four business-level envelopes:
 `local_delivery`, `publication`, `integration_rollout`, and exact-target
 `production_egress`. Internal reservations, capabilities, evidence records,
 handoffs, and writer release are not separate human approvals.
-
-## Install with a coding AI
-
-You do not have to type the installation commands yourself. Open the intended
-repository in a coding AI that has local filesystem and terminal access, then
-paste the clean-install or existing-update prompt from
-[`.exocortex/docs/AI_INSTALLATION.md`](.exocortex/docs/AI_INSTALLATION.md).
-
-The provider-neutral prompt works by contract, not by provider identity. The AI
-must start read-only, identify the exact target, pin and verify the template,
-rehearse in disposable state, and show the complete scope. Installation uses
-two understandable local decisions: disposable rehearsal, then one
-named-target local apply. The second decision contains isolated-worktree
-setup, internal authority mechanics, installation/update, verification, local
-handoff, and writer release. It never bundles publication, merge,
-deployment, synchronization, or promotion.
-
-Chat-only assistants and provider menus without local repository and terminal
-access can explain the process but cannot perform it.
-
-Current platform truth:
-
-| Environment | Status |
-|---|---|
-| macOS with the documented Bash/Unix tools | `verified` |
-| Linux | `compatible_pending_candidate_CI` |
-| Windows through WSL | `human_uat_pending` |
-| Git Bash or native Windows PowerShell/Command Prompt | `unsupported` |
-
-Do not advertise native Windows support. WSL must pass the same bounded
-rehearsal before its status changes. See the AI installation guide for the
-copy-paste prompts, guarded update command, GitHub boundary, and Human UAT.
-
-## Safe installation
-
-Do not pipe an unpinned remote installer into a shell. Clone or otherwise
-obtain an exact reviewed template revision and verify `SHA256SUMS`. Rehearse in
-a sanitized disposable fixture first. After that evidence is accepted, a
-named-target local-delivery decision may create one clean isolated Git worktree
-from the exact approved target HEAD, run the installer, verify it,
-record the permitted local handoff, and release the writer. Preserve the
-SHA-256 of the reviewed `SHA256SUMS` as the accepted candidate digest; do not
-derive it from an unreviewed source at install time:
-
-`FILEMODES` is checksum-bound and records the only accepted source modes:
-`0644` or `0755` for every checksum-listed path. A byte-valid candidate with a
-changed executable bit fails before target mutation.
-
-```bash
-git clone https://github.com/EnkratFlow/exocortex-template.git /tmp/exocortex-template
-git -C /tmp/exocortex-template checkout <approved-exact-sha>
-git -C /path/to/project worktree add --detach \
-  /path/to/approved-isolated-worktree <approved-target-head>
-cd /path/to/approved-isolated-worktree
-HOME=<absolute-disposable-home> \
-EXOCORTEX_LOCAL_SOURCE=/tmp/exocortex-template \
-EXOCORTEX_CANDIDATE_DIGEST=<approved-sha256-of-SHA256SUMS> \
-  bash /tmp/exocortex-template/install.sh "project-name"
-```
-
-Worktree creation, installation, verification, local handoff, and writer
-release are internal steps inside that one local-delivery envelope. Exact
-technical capabilities still fail closed on any target, base, digest,
-path/plan, operation, risk, or expiry mismatch. The installer must run
-non-interactively with a fake `HOME`. Direct installation into a shared or primary checkout is unsupported because the current clean installer writes in
-place and has no restore archive. Project installation never grants global
-editor-home, launchd, provider, credential, hub, deployment, Git publication,
-or external-sync authority.
-
-New installs generate project-local defaults when absent:
-
-- `.exocortex/control/EXECUTOR_REGISTRY.json`: no registered writers or egress
-  executors; default role read-only.
-- `.exocortex/control/EXTERNAL_SYNC_POLICY.json`: deny by default; no
-  destinations.
-
-These files are protected data, not template payload or manifest content.
-
-## Safe update path
-
-Use a pinned local template and the safe updater. Rehearse only in a newly
-created disposable copy, hash every protected path, and keep the restore
-archive outside the target:
-
-To test the same public path as any other user, acquire only the exact GitHub
-release and verify both values published in its release notes before reading
-the update instructions from that clone:
-
-```bash
-git clone --depth 1 --branch v3.2.6 \
-  https://github.com/EnkratFlow/exocortex-template.git \
-  /tmp/exocortex-template-v3.2.6
-git -C /tmp/exocortex-template-v3.2.6 rev-parse HEAD
-shasum -a 256 /tmp/exocortex-template-v3.2.6/SHA256SUMS
-```
-
-The first output must equal the release's peeled commit SHA and the second
-must equal its published candidate digest. Do not substitute `main`, `latest`,
-or a different checkout.
-
-Older installations must first pass the metadata-only protected-default
-preflight in `.exocortex/docs/AI_INSTALLATION.md`. Missing generic scaffolding
-uses an internal guarded bootstrap under the accepted named-target local
-apply; the updater must not create it after consuming apply authority.
-
-```bash
-cd /path/to/existing-project
-bash /tmp/exocortex-template-v3.2.6/scripts/safe-update.sh \
-  --template /tmp/exocortex-template-v3.2.6 \
-  --candidate-digest <approved-sha256-of-SHA256SUMS> \
-  --backup-dir /tmp/exocortex-restore \
-  --dry-run
-```
-
-Apply to a real repository only after the rehearsal evidence is accepted and
-one exact named-target local-delivery decision is approved. Re-run with the
-same pinned template and candidate digest, `--apply`, the exact internally
-derived one-time capability, and the registered executor identity. The
-updater has no interactive or implicit approval prompt.
-
-The updater protects the full project data plane, including:
-
-- memory, TODO, lessons, decisions, generated session context, and `.env`;
-- events, archive, hub, local protocol state, planning, and work items;
-- interrupt/backlog/roadmap and live control records;
-- executor registry, external-sync policy, hub markers, and custom untracked
-  extensions.
-
-The optional `.exocortex/SESSION_CONTEXT.md.backup` and the direct legacy
-family `.exocortex/SESSION_CONTEXT_BACKUP_*.md` are protected too. This is
-deliberately narrow: it does not broadly exempt arbitrary backup files. If an
-older project already tracks either sidecar form in Git, the updater reports
-that fact and preserves the files. For a tracked sidecar, Git-ignore rules cannot untrack it.
-Any Git cleanup is a separate owner decision and is never part of an Exocortex update.
-
-User-modified manifest files are preserved. Missing, malformed, incomplete, or
-mismatched checksums and any candidate-source symlink fail before target
-mutation. Target symlinks and external hard-linked mutable files also fail
-before backup. Dry-run leaves the target unchanged and writes one
-collision-resistant `0600` code-plane-only restore archive beneath an
-owner-controlled, non-group/world-writable backup directory. The archive is
-streamed to its reserved inode, fsynced, integrity-checked, reconstructed, and
-compared with the exact prior code plane before durable publication or any
-capability consumption. Private staging remains beneath `${TMPDIR:-/tmp}` (or
-the platform's equivalent system temporary directory). Protected project data
-and local authority state are excluded from the archive because the updater
-never mutates them. Treat both locations as disposable evidence storage and
-verify their permissions.
-
-Every dry run prints the SHA-256, count, and complete sorted list of changed
-paths. The digest covers the full UTF-8 path list with one LF after every path,
-including the last. It is evidence for review, not approval by itself.
-
-Provider adapters are validated against the canonical command registry before
-target mutation. The migration inventory covers 80 known retired paths: prior
-Cursor/GitHub wrappers, 24 Claude command wrappers, four older Cursor rules,
-and the retired Windsurf surface. During an update, a superseded adapter is
-removed only when its current bytes still match its prior install-manifest
-hash, its mode is the reviewed legacy text mode `0644`, and its canonical
-replacement installed successfully. Customized bytes or modes and unknown
-wrappers are preserved with an `EXOCORTEX_ADAPTER_COLLISION_PRESERVED` warning.
-
-Root `.cursorrules` is project-owned and is not one of those automatic
-retirements. The updater safety-checks and includes it in the rollback archive,
-but ordinary updates never delete, rewrite, or manifest-track it. If it
-contains known obsolete command mechanics, it is retained and produces
-`EXOCORTEX_STALE_COMMAND_GUIDANCE_PRESERVED`, requiring a reviewed
-target-specific reconciliation before live apply.
-
-Customized command-authority files and generated command adapters are
-preserved with `EXOCORTEX_COMMAND_AUTHORITY_COLLISION_PRESERVED`. A preserved
-project instruction file containing known obsolete command mechanics produces
-`EXOCORTEX_STALE_COMMAND_GUIDANCE_PRESERVED`. Either finding makes the dry run
-report `EXOCORTEX_COMMAND_RECONCILIATION_REQUIRED` and blocks an ordinary live
-apply before capability consumption. Use the reviewed target-specific
-reconciliation path below; a version marker alone never proves those command
-surfaces converged.
-
-Target-specific collisions are not silently resolved by the ordinary updater.
-After its dry run, use the separately reviewed reconciliation workflow in
-`.exocortex/docs/AI_INSTALLATION.md`. A deterministic reconciliation plan
-binds the candidate digest, target surface, prior dry-run path set, exact final
-bytes, and complete effect-path set. Applying it requires the distinct
-one-time `apply_template_reconciliation` capability; ordinary
-`apply_template_update` authority cannot be reused. The same plan is rehearsed
-before capability consumption, and protected project data remains outside its
-effect set. After apply, the complete non-protected code plane—path type,
-presence, bytes, and mode—must exactly match the disposable rehearsal.
-
-Broad legacy and batch updaters fail closed. Update projects one at a time with
-fresh evidence; “all” never grants batch authority.
-
-The complete AI-operated dry-run and guarded-apply sequence, including every
-required executor and capability argument, is documented in
-`.exocortex/docs/AI_INSTALLATION.md`.
 
 ## Three planes
 

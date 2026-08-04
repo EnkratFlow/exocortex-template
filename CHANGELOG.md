@@ -6,7 +6,27 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 ## [Unreleased]
 
-No changes recorded after the 3.2.6 release candidate.
+No changes recorded after the 3.2.7 release candidate.
+
+## [3.2.7] - 2026-08-04
+
+### Changed
+- **AI-first public setup** — the README now starts with separate copy-paste
+  prompts for a new installation and an existing-repository update instead of
+  mixing those workflows with the advanced safety contract.
+- **Memory-preserving update guidance** — the existing-repository prompt says
+  explicitly that the current repository remains the target, a release clone
+  is source-only, and project memory and local data must remain byte-for-byte
+  unchanged.
+- **Manual fallback and platform truth** — concise macOS, Linux, and WSL
+  verification commands remain available, while Git Bash and native Windows
+  shells remain clearly unsupported rather than being advertised without
+  evidence.
+
+### Tests
+- Updated the active documentation contract to keep the public README concise
+  while retaining all detailed installer, updater, collision, rollback, and
+  platform invariants in the authoritative installation guide.
 
 ## [3.2.6] - 2026-08-03
 
@@ -254,6 +274,7 @@ exists.
   post-consumption race coverage.
 
 [3.2.2]: https://github.com/EnkratFlow/exocortex-template/releases/tag/v3.2.2
+[3.2.7]: https://github.com/EnkratFlow/exocortex-template/releases/tag/v3.2.7
 [3.2.6]: https://github.com/EnkratFlow/exocortex-template/releases/tag/v3.2.6
 [3.2.5]: https://github.com/EnkratFlow/exocortex-template/releases/tag/v3.2.5
 [3.2.4]: https://github.com/EnkratFlow/exocortex-template/releases/tag/v3.2.4
