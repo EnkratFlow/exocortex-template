@@ -1,17 +1,18 @@
 #!/bin/bash
 # Creates an event file with auto-detected metadata.
 # AI provides content body via stdin or --body-file.
-# Handles: timestamp, machine, editor, branch, git state, filename,
-#          generate_context.sh. External sync is always a separate action.
+# Handles: timestamp, machine, editor, branch, git state, and filename.
+# Context refresh and external sync are always separate explicit actions.
 #
 # Usage:
 #   echo "content" | bash .exocortex/scripts/create_event.sh
 #   bash .exocortex/scripts/create_event.sh --body-file /tmp/event_body.md
 #
 # Output: prints the created event file path to stdout (last line)
-# AI should write content body to a temp file, then call this script once.
+# Prefer stdin when no caller-owned body file is needed. This helper never
+# creates or leaves a preview/body file of its own.
 
-set -e
+set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 EXOCORTEX_DIR="$(dirname "$SCRIPT_DIR")"
@@ -21,7 +22,11 @@ EVENTS_DIR="$EXOCORTEX_DIR/events"
 BODY_FILE=""
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --body-file) BODY_FILE="$2"; shift 2 ;;
+    --body-file)
+      [ "$#" -ge 2 ] || { echo "Error: --body-file requires a path" >&2; exit 1; }
+      BODY_FILE="$2"
+      shift 2
+      ;;
     *) echo "Unknown arg: $1" >&2; exit 1 ;;
   esac
 done
@@ -52,9 +57,9 @@ else
 fi
 
 # Editor detection (best effort)
-if [ -n "$CURSOR_TRACE_ID" ] || [ -n "$CURSOR_SESSION" ]; then
+if [ -n "${CURSOR_TRACE_ID:-}" ] || [ -n "${CURSOR_SESSION:-}" ]; then
   EDITOR_NAME="cursor"
-elif [ -n "$VSCODE_PID" ] || [ -n "$TERM_PROGRAM" ] && [ "$TERM_PROGRAM" = "vscode" ]; then
+elif [ -n "${VSCODE_PID:-}" ] || { [ -n "${TERM_PROGRAM:-}" ] && [ "$TERM_PROGRAM" = "vscode" ]; }; then
   EDITOR_NAME="vscode"
 else
   EDITOR_NAME="cursor"  # default for this project
@@ -70,10 +75,17 @@ GIT_STATUS_SHORT=$(git status --short 2>/dev/null || echo "(no status)")
 GIT_DIFF_STAT=$(git diff --stat 2>/dev/null || echo "(no changes)")
 
 # ── Build event file ───────────────────────────────────────
-FILENAME="${FILE_TS}_${MACHINE}-${EDITOR_NAME}.md"
-EVENT_PATH="$EVENTS_DIR/$FILENAME"
-
 mkdir -p "$EVENTS_DIR"
+
+BASE_FILENAME="${FILE_TS}_${MACHINE}-${EDITOR_NAME}"
+FILENAME="${BASE_FILENAME}.md"
+EVENT_PATH="$EVENTS_DIR/$FILENAME"
+COLLISION_INDEX=0
+while ! (set -o noclobber; : > "$EVENT_PATH") 2>/dev/null; do
+  COLLISION_INDEX=$((COLLISION_INDEX + 1))
+  FILENAME="${BASE_FILENAME}_$(printf '%02d' "$COLLISION_INDEX").md"
+  EVENT_PATH="$EVENTS_DIR/$FILENAME"
+done
 
 cat > "$EVENT_PATH" << METADATA_EOF
 <!-- Event Metadata -->
@@ -110,11 +122,6 @@ $GIT_STATUS_SHORT
 $GIT_DIFF_STAT
 \`\`\`
 GIT_EOF
-
-# ── Post-event automation ──────────────────────────────────
-
-# Regenerate SESSION_CONTEXT
-bash "$SCRIPT_DIR/generate_context.sh" 2>/dev/null || true
 
 # ── Output ──────────────────────────────────────────────────
 echo "✅ Event saved: .exocortex/events/$FILENAME"

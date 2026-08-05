@@ -81,7 +81,7 @@ require(
     "record mechanics are internal",
     "Native Windows PowerShell or Command Prompt",
     "human_uat_pending",
-    "disposable-rehearsal decision",
+    "one local business decision",
     "inventories only the manifest-defined install surfaces",
     "controlled write failure",
     "shared or primary checkout",
@@ -186,11 +186,21 @@ require(
     "`production_egress`",
     "Human UAT is an observable accept/reject decision",
     "internal safety mechanics",
+    "Plain-English work contract",
+    "more than five minutes",
+    "one parent and no\n  delegate by default",
+    "exactly one concise project-local completion event",
+    "`/save` remains a manual command",
+    "does not regenerate `SESSION_CONTEXT.md`",
 )
 require(
     ".exocortex/control/DELIVERY_WORKFLOW.md",
     "Human-facing approval envelopes",
     "not each require a new human approval",
+    "Plain-English work contract",
+    "one accountable parent and no\ndelegate by default",
+    "expected to take more than five minutes",
+    "exactly one\n    concise project-local completion event",
 )
 require(
     ".exocortex/docs/user-guide.md",
@@ -221,6 +231,11 @@ require(
     "zero eligible models",
     "selected evaluation evidence digests",
     "discovery result binds the supplied normalized observation digests",
+    "one accountable parent and no delegate by default",
+    "at most one independent reviewer",
+    "Do not delegate `/save`",
+    "take more than five minutes",
+    "unchanged exact\n  candidate",
 )
 require(
     ".exocortex/docs/UPGRADE_MANIFEST.md",
@@ -317,14 +332,67 @@ require(
 )
 require(
     "CONTRIBUTING.md",
-    "Every deterministic group must pass",
+    "Every applicable deterministic group\nmust pass",
     "active documentation and AI-installation contract drift",
     "Preserve the documented runtime baseline",
-    "runs only `bash tests/run_tests.sh`",
-    "does not trigger for",
+    "Other code-plane changes get `bash tests/run_tests.sh`",
+    "never runs the complete\nExocortex safety suite",
     "scripts/check-release-state.sh",
     "peeled commit SHA",
     "published-digest",
+    "complete Exocortex safety suite",
+    "once for that exact candidate",
+    "disposable targets",
+)
+require(
+    ".exocortex/docs/EVENT_SYSTEM_USAGE.md",
+    "It remains manual for\nordinary chat",
+    "exactly one\nconcise completion event",
+    "never accepts context-refresh\nauthority",
+    "MEMORY_FRESHNESS_WARNING",
+    "separately authorized guarded writer operation",
+)
+require(
+    ".exocortex/docs/event-system.md",
+    "Read-only work, tests, elapsed time, failed attempts, branch changes, and Git\n  hooks do not create events automatically",
+    "does not accept context-refresh authority",
+    "bash .exocortex/scripts/generate_context.sh",
+    "freshness warning",
+)
+forbid(
+    ".exocortex/docs/event-system.md",
+    r"create_event\.sh[^\n]*--refresh-context",
+)
+require(
+    "README.md",
+    "one understandable local-install or local-update decision",
+    "Match checks to the change",
+    "complete Exocortex safety suite",
+    "more than five minutes",
+)
+
+full_workflow = read(".github/workflows/test.yml")
+for needle in (
+    "name: Complete Exocortex safety suite",
+    "pull_request:",
+    "paths-ignore:",
+    "workflow_dispatch:",
+    "name: Run complete Exocortex safety suite",
+):
+    if needle not in full_workflow:
+        FAILURES.append(f".github/workflows/test.yml: missing required text: {needle}")
+if re.search(r"^\s{2}push:\s*$", full_workflow, flags=re.MULTILINE):
+    FAILURES.append(
+        ".github/workflows/test.yml: complete safety suite must not rerun on main or tags"
+    )
+
+require(
+    ".github/workflows/checksums.yml",
+    "name: Quick Exocortex verification",
+    "Verify active documentation contract",
+    "Verify generated provider adapters",
+    "branches: [main]",
+    "tags: ['v*']",
 )
 require(
     "CHANGELOG.md",

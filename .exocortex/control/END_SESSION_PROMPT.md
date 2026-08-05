@@ -1,50 +1,21 @@
 # End Session Prompt Template
 
-**Copy and paste this into Cursor chat to trigger the complete end-of-day workflow:**
-
-```
-end session
-
-Please perform the complete end-of-day workflow:
-
-1. Read all memory files:
-   - .exocortex/SESSION_CONTEXT.md
-   - .exocortex/TODO.md
-   - .exocortex/PROJECT_MEMORY.md
-   - .exocortex/docs/LESSONS.md
-   - .exocortex/OPEN_DECISIONS.md (if exists)
-   - .exocortex/control/INTERRUPTS.md (if exists)
-
-2. Review today's work and identify:
-   - Completed TODO items
-   - New constraints/discoveries
-   - Execution slice changes
-   - New decisions needed
-   - Resolved decisions
-   - New lessons learned
-
-3. Propose updates to:
-   - SESSION_CONTEXT.md (if execution slice changed)
-   - TODO.md (check off completed, add discovered tasks - max 5)
-   - PROJECT_MEMORY.md (new constraints if any)
-   - LESSONS.md (new lessons if any)
-   - OPEN_DECISIONS.md (add new OR remove resolved)
-
-4. Focus on structural changes only, not routine progress updates.
-
-5. Wait for my approval before making changes.
-```
+Use the provider-native `/daily-end` command. Its sole behavior source is
+`.exocortex/commands/daily-end.json`; this page deliberately does not duplicate
+that flow.
 
 ## Quick Commands
 
-- **Full workflow:** Type `daily-end` or `end session` in chat
-- **Short form:** Just type `end session` or `/daily-end` and the AI follows the command protocol from `.exocortex/AI_BOOTSTRAP.md`
+- **Full workflow:** invoke `/daily-end` through the current provider's native
+  command/skill surface.
+- Ordinary language such as “end session” does not invoke the manual-only
+  command by itself.
 
 ## What Gets Updated
 
 ✅ Completed TODO items (check them off)
 ✅ New constraints discovered (add to PROJECT_MEMORY)
-✅ Execution slice changes (update SESSION_CONTEXT)
+✅ Execution slice changes (propose a Session Context refresh when useful)
 ✅ Resolved decisions (remove from OPEN_DECISIONS)
 ✅ New lessons learned (add to LESSONS)
 
@@ -55,3 +26,6 @@ Please perform the complete end-of-day workflow:
 ❌ Test additions
 ❌ Routine refactoring
 
+The command proposes structural memory changes for review. It does not
+silently regenerate Session Context, create preview files, or synchronize
+anything.

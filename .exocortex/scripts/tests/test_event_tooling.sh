@@ -10,6 +10,7 @@ CURL_LOG="$TMP/curl.log"
 mkdir -p "$PROJECT/.exocortex/scripts" "$PROJECT/.exocortex/control" "$PROJECT/.exocortex/events" "$FAKE_BIN"
 cp "$ROOT/.exocortex/scripts/create_event.sh" "$PROJECT/.exocortex/scripts/"
 cp "$ROOT/.exocortex/scripts/generate_context.sh" "$PROJECT/.exocortex/scripts/"
+cp "$ROOT/.exocortex/scripts/read_memory_stack.sh" "$PROJECT/.exocortex/scripts/"
 cp "$ROOT/.exocortex/scripts/capture_interrupt.sh" "$PROJECT/.exocortex/scripts/"
 cp "$ROOT/.exocortex/scripts/auto_snapshot.sh" "$PROJECT/.exocortex/scripts/"
 cp "$ROOT/.exocortex/scripts/sync_event_to_vault.sh" "$PROJECT/.exocortex/scripts/"
@@ -27,9 +28,32 @@ git -C "$PROJECT" init -q
 git -C "$PROJECT" -c user.email=test@example.invalid -c user.name=test add .
 git -C "$PROJECT" -c user.email=test@example.invalid -c user.name=test commit -qm fixture
 
+context_before="$(shasum -a 256 "$PROJECT/.exocortex/SESSION_CONTEXT.md" | awk '{print $1}')"
 (cd "$PROJECT" && PATH="$FAKE_BIN:$PATH" bash .exocortex/scripts/create_event.sh --body-file "$TMP/body.md") >/dev/null
 [ "$(find "$PROJECT/.exocortex/events" -type f -name '*.md' | wc -l | tr -d ' ')" = "1" ]
 [ ! -e "$CURL_LOG" ]
+context_after="$(shasum -a 256 "$PROJECT/.exocortex/SESSION_CONTEXT.md" | awk '{print $1}')"
+[ "$context_before" = "$context_after" ]
+[ ! -e "$PROJECT/.exocortex/SESSION_CONTEXT.regen.md" ]
+
+freshness_output="$(cd "$PROJECT" && bash .exocortex/scripts/read_memory_stack.sh 2>&1 >/dev/null)"
+grep -Fq 'MEMORY_FRESHNESS_WARNING:' <<< "$freshness_output"
+
+(cd "$PROJECT" && PATH="$FAKE_BIN:$PATH" bash .exocortex/scripts/create_event.sh --body-file "$TMP/body.md") >/dev/null
+[ "$(find "$PROJECT/.exocortex/events" -type f -name '*.md' | wc -l | tr -d ' ')" = "2" ]
+(cd "$PROJECT" && bash .exocortex/scripts/generate_context.sh) >/dev/null
+grep -Fq 'Narrative save fixture' "$PROJECT/.exocortex/SESSION_CONTEXT.md"
+freshness_output="$(cd "$PROJECT" && bash .exocortex/scripts/read_memory_stack.sh 2>&1 >/dev/null)"
+[ -z "$freshness_output" ]
+
+if (cd "$PROJECT" && bash .exocortex/scripts/create_event.sh --body-file) >/dev/null 2>&1; then
+    echo "missing --body-file value unexpectedly succeeded" >&2
+    exit 1
+fi
+if (cd "$PROJECT" && bash .exocortex/scripts/create_event.sh --body-file "$TMP/body.md" --refresh-context) >/dev/null 2>&1; then
+    echo "event helper unexpectedly accepted context-refresh authority" >&2
+    exit 1
+fi
 
 (cd "$PROJECT" && PATH="$FAKE_BIN:$PATH" bash .exocortex/scripts/capture_interrupt.sh "fictional fixture" IDEA) >/dev/null
 grep -Fq 'fictional fixture' "$PROJECT/.exocortex/control/INTERRUPTS.md"
@@ -46,4 +70,4 @@ if (cd "$PROJECT" && PATH="$FAKE_BIN:$PATH" bash .exocortex/scripts/sync_event_t
 fi
 [ ! -e "$CURL_LOG" ]
 
-echo "event tooling: local-only and reminder-only checks passed"
+echo "event tooling: local-only, separate-context, freshness, and reminder-only checks passed"

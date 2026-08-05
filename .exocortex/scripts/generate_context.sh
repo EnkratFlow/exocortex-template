@@ -1,6 +1,6 @@
 #!/bin/bash
-# Generates SESSION_CONTEXT.md from events/
-# Called automatically by /save and /work commands
+# Generates SESSION_CONTEXT.md from events/ as an explicit derived-view refresh.
+# Event creation, /save, /work, and handoff do not invoke it implicitly.
 
 set -e  # Exit on error
 

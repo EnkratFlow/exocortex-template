@@ -60,5 +60,5 @@ echo "$?" > "$EVIDENCE/orchestration.rc"
 echo "$?" > "$EVIDENCE/event-tooling.rc"
 PYTHONDONTWRITEBYTECODE=1 python3 "$ROOT/tests/phase-b/verify_evidence.py" "$EVIDENCE"
 rc=$?
-echo "Phase B evidence: $EVIDENCE"
+echo "Complete Exocortex safety evidence: $EVIDENCE"
 exit "$rc"

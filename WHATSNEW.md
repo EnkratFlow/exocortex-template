@@ -1,3 +1,29 @@
+# What's New in 3.2.8 — Leaner, clearer AI delivery
+
+- Every substantial phase now starts with a plain-English outcome, scope,
+  exclusions, estimate, test duration, and model-routing summary.
+- One accountable parent with no delegate is the default. Extra models and
+  independent reviewers are used only for a concrete bounded need.
+- AI-led installation and update now use one understandable local decision
+  when the target, candidate, scope, risk, and expected result remain exact.
+- Documentation and event changes use focused checks. The complete Exocortex
+  safety suite runs once for the unchanged release candidate rather than again
+  on merged main and the release tag.
+- File-changing tasks leave one local completion event, while ordinary `/save`
+  remains manual. Event creation no longer refreshes Session Context; newer
+  events produce a stale-context warning, and same-second events cannot
+  overwrite one another.
+- Active event documentation is shorter and removes obsolete timer, Git-hook,
+  provider-specific, and implicit-context behavior.
+
+This document describes packaged 3.2.8 candidate behavior. It does not prove
+Git publication, a GitHub release, installation, deployment, or template
+promotion.
+
+Everything below this line is preserved historical release documentation.
+
+---
+
 # What's New in 3.2.7 — AI-first installation and updates
 
 - The public README now starts with two clear choices: install Exocortex in a

@@ -1,7 +1,20 @@
 #!/bin/bash
-# Reads all memory files in order, outputs content + metadata JSON
+# Reads all memory files in order, outputs content + metadata JSON.
+# Warns when the derived Session Context is older than its event evidence.
+
+set -u
 
 EXOCORTEX=".exocortex"
+
+if [ -d "$EXOCORTEX/events" ]; then
+  if [ ! -f "$EXOCORTEX/SESSION_CONTEXT.md" ]; then
+    if [ -n "$(find "$EXOCORTEX/events" -maxdepth 1 -type f -name '*.md' -print -quit 2>/dev/null)" ]; then
+      echo "MEMORY_FRESHNESS_WARNING: Session Context is missing; use the events as current evidence and refresh context only if explicitly requested." >&2
+    fi
+  elif [ -n "$(find "$EXOCORTEX/events" -maxdepth 1 -type f -name '*.md' -newer "$EXOCORTEX/SESSION_CONTEXT.md" -print -quit 2>/dev/null)" ]; then
+    echo "MEMORY_FRESHNESS_WARNING: newer project events exist; Session Context is derived and stale. Prefer the events and live Git state, and refresh context only if explicitly requested." >&2
+  fi
+fi
 
 # Count files and lines
 FILE_COUNT=0

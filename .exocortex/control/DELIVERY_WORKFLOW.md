@@ -18,6 +18,25 @@ Classify every bounded item as one of:
 - documentation/process;
 - retrospective improvement.
 
+## Plain-English work contract
+
+Before a substantial phase, state one short contract containing the intended
+outcome, repository, scope and exclusions, estimate, planned checks with their
+expected duration, and model routing. Use one accountable parent and no
+delegate by default. Internal IDs may follow as evidence, but they are never
+the explanation the owner must understand.
+
+Pause and report before continuing if:
+
+- a newly discovered check is expected to take more than five minutes;
+- the elapsed-time estimate increases materially;
+- the target, base, path set, outcome, risk, or outward effect changes; or
+- the same unchanged candidate already has accepted equivalent evidence.
+
+The report explains what changed, why it matters, and the smallest useful next
+step. It does not manufacture a new approval when the work remains inside the
+accepted business envelope.
+
 ## Delivery loop
 
 1. Capture the observed problem and intended outcome.
@@ -40,7 +59,12 @@ Classify every bounded item as one of:
     `production_egress`.
 11. Observe bounded hypercare and rollback triggers.
 12. Mark Done only after required evidence and approvals exist.
-13. Produce a retrospective that may propose, but never authorize, the next captured item.
+13. For an approved local-delivery task that changed files, write exactly one
+    concise project-local completion event before releasing the writer. Do not
+    regenerate Session Context, create a preview, checkpoint, or sync as a
+    side effect.
+14. Produce a retrospective that may propose, but never authorize, the next
+    captured item or a permanent memory/lesson change.
 
 ## Human-facing approval envelopes
 
@@ -81,6 +105,10 @@ Evidence names the exact base/candidate, test case, tool version, result, artifa
 ## Human UAT
 
 Human UAT validates user-visible or operational outcomes that deterministic tests cannot establish alone. It is intentionally bounded: automation proves repeatable calculations and low-level cases; the human checks meaning, usability, and acceptance. A model may prepare evidence but cannot record acceptance without the human's explicit decision.
+
+Ordinary chat and `/save` are separate from task closeout. `/save` stays
+manual; read-only work, elapsed time, tests, and failed attempts never create a
+completion event automatically.
 
 ## Hypercare
 

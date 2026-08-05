@@ -165,7 +165,9 @@ plus fresh project-local availability for the exact current surface.
 3. Use deterministic tooling first for Git truth, schemas, searches,
    checksums, tests, and repeatable transformations.
 4. Select the least-cost verified capable parent.
-5. Split only independently useful bounded tasks.
+5. Keep one accountable parent and no delegate by default. Split only a
+   concrete, independently useful bounded task when doing so is expected to
+   improve time, cost, or review quality.
 6. Delegate each task to the least-cost verified role that can meet its
    acceptance criteria.
 7. Keep support lanes read-only unless exact approval grants a writer role.
@@ -197,8 +199,17 @@ as a protocol requirement.
 
 - Report parent/delegate routing and ETA before substantial phases.
 - Send compact evidence packets instead of full chat history when sufficient.
-- Use the minimum useful parallel lanes.
+- Use one accountable parent and no delegate by default; add only the minimum
+  useful parallel lanes.
+- Use at most one independent reviewer unless a separately identified risk
+  requires more than one discipline.
+- Do not delegate `/save`, weekly/monthly review, retrospective synthesis, or
+  pattern interpretation. The accountable parent owns those narratives.
+- Report before starting a newly discovered tool or model phase expected to
+  take more than five minutes.
 - Do not duplicate converged audits.
+- Do not repeat deterministic work already bound to the unchanged exact
+  candidate merely because it reached main, a tag, or another status label.
 - Use a record formatter only from parent-supplied facts.
 - Report material changes in routing, scope, capability, risk, or estimate.
 

@@ -7,18 +7,25 @@ Thanks for your interest in contributing to **exocortex-template**. This project
 ## Getting Started
 
 ```bash
-git clone https://github.com/EnkratFlow/exocortex-template.git
-cd exocortex-template
-bash tests/run_tests.sh
-bash .exocortex/scripts/tests/test_orchestration_protocol.sh
-bash .exocortex/scripts/tests/test_event_tooling.sh
-bash tests/phase-b/run.sh
+python3 tests/test_documentation_contract.py
 python3 .exocortex/scripts/generate_command_adapters.py --check
 ```
 
-Every deterministic group must pass. Do not hardcode an expected test count in
-documentation; the machine-readable evidence emitted by the current suite is
-authoritative.
+These are the quick checks appropriate to documentation-only changes. Match
+the rest of the evidence to the affected surface:
+
+| Change | Checks before review |
+|---|---|
+| Markdown documentation only | documentation contract, adapter check, checksum verification, and `git diff --check` |
+| Event or memory tooling | event-tooling suite plus the documentation-only checks |
+| Commands/adapters | adapter check, affected command-contract tests, orchestration when authority changes, and the quick checks |
+| Installer, updater, authority, orchestration, protocol, or release mechanics | focused affected checks, then the complete Exocortex safety suite once for the exact candidate |
+
+The complete Exocortex safety suite is `bash tests/phase-b/run.sh`. Report its
+expected duration before starting it. Every applicable deterministic group
+must pass, but do not repeat the complete suite for an unchanged candidate on
+merged `main` or a tag. Do not hardcode an expected test count in
+documentation; machine-readable evidence is authoritative.
 
 ## Install the Pre-Commit Hook (One-Time)
 
@@ -26,22 +33,19 @@ authoritative.
 bash tests/install-pre-commit-hook.sh
 ```
 
-The hook runs only `bash tests/run_tests.sh` before a commit that touches:
+The hook runs right-sized checks from staged paths:
 
-- `install.sh`
-- `tests/`
-- `.exocortex/`
-- `.cursor/`
-- `.claude/`
-- `.github/skills/`
+- Markdown-only work gets the documentation contract, adapter check, checksum
+  verification, and staged diff check.
+- Event/memory tooling gets its focused suite plus the quick checks.
+- Other code-plane changes get `bash tests/run_tests.sh`, adapter verification,
+  and the staged diff check.
 
 If tests fail, the commit is blocked.
 
-The hook does not run the orchestration, event-tooling, Phase B, or adapter
-generator checks listed under Getting Started. It also does not trigger for
-`.agents/`, the root `scripts/safe-update.sh`, root documentation and
-checksums, or root AI-entry files. Run every listed command manually before
-review whenever those paths or their contracts may be affected.
+The hook runs only focused or quick checks; it never runs the complete
+Exocortex safety suite. The complete suite remains the once-per-exact-candidate
+review/CI gate described above.
 
 ## What the suites cover
 
@@ -76,25 +80,37 @@ Keep each test focused on one behavior and ensure it is deterministic in CI.
 ## Release closeout
 
 Release work from an isolated branch does not update the original local
-`main` worktree automatically. After the reviewed PR is merged and before a
-release is advertised:
+`main` worktree automatically. Prepare and validate one exact candidate in
+this order:
 
-1. Stop if the primary `main` worktree is dirty. Preserve and reconcile those
+1. Finish the candidate and its checksums in an isolated worktree.
+2. Rehearse a clean installation and at least one representative
+   existing-repository update in disposable targets. Preserve project memory
+   and verify a second update is a zero-change result.
+3. Run focused checks, independent review when the risk matrix requires it,
+   and Human UAT on the disposable outcomes.
+4. Run the complete Exocortex safety suite once for that exact candidate. A
+   changed candidate invalidates the result; a status-label change does not.
+5. Review and merge the exact candidate.
+6. Stop if the primary `main` worktree is dirty. Preserve and reconcile those
    local files; never force-update, reset, or overwrite them.
-2. In a clean `main` worktree, run `git fetch --prune --tags origin` and
+7. In a clean `main` worktree, run `git fetch --prune --tags origin` and
    fast-forward only with `git merge --ff-only origin/main`.
-3. Tag the merged commit as `v<VERSION>` and publish a GitHub release that
+8. Run only the lightweight release-identity checks on unchanged merged main,
+   then tag the merged commit as `v<VERSION>` and publish a GitHub release that
    names the peeled commit SHA and SHA-256 of that tag's `SHA256SUMS`.
-4. Fetch the published tag, then run:
+9. Fetch the published tag, then run:
 
    ```bash
    bash scripts/check-release-state.sh \
      --published-digest <digest-from-the-GitHub-release-notes>
    ```
 
-5. Clone the exact tag into a new disposable directory and follow the public
-   README installation/update instructions. Do not validate a release from an
-   unpublished development worktree.
+10. Clone the exact tag into a new disposable directory and verify its peeled
+    commit and published digest. The public installation/update instructions
+    were already exercised against the candidate; repeat them only if the
+    published artifact differs. Do not substitute an unrelated development
+    worktree.
 
 The checker is read-only and uses already-fetched refs. It fails when local
 `main`, `origin/main`, the packaged version, tag ancestry, main-worktree
