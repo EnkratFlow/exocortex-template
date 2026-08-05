@@ -16,7 +16,8 @@ permissions:
   contents: read
 
 jobs:
-  complete-safety-suite:
+  # Keep this identifier stable: the main-branch rule requires `phase-b`.
+  phase-b:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
