@@ -6,7 +6,44 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 ## [Unreleased]
 
-No changes recorded after the 3.2.7 release candidate.
+No changes recorded after the 3.2.8 release candidate.
+
+## [3.2.8] - 2026-08-05
+
+### Changed
+
+- **Plain-English execution contract** — agents now state the outcome, scope,
+  exclusions, estimate, checks, and model routing before substantial work, and
+  pause when a new long test, material estimate increase, or scope/risk change
+  appears.
+- **Lean cost-aware orchestration** — one accountable parent with no delegate
+  is the default; delegation and independent review are added only for a
+  concrete bounded need.
+- **Right-sized verification** — documentation and event changes use focused
+  checks, while the complete Exocortex safety suite runs once for an unchanged
+  exact candidate instead of repeating on pull request, merged main, and tag.
+- **One-decision AI installation/update** — one plain-language local-delivery
+  decision can cover rehearsal, named-target apply, verification, completion
+  record, and rollback while the displayed target and scope remain unchanged.
+
+### Fixed
+
+- **Recursive local memory** — approved file-changing tasks require one local
+  completion event; `/save` remains manual for ordinary chat, newer events
+  produce an explicit stale-Session-Context warning, and event recording no
+  longer accepts or performs Session Context refresh authority. Refresh is a
+  separate guarded protected-memory operation.
+- **Append-only event collisions** — two events created in the same second now
+  receive distinct filenames instead of overwriting the first event.
+- **Stale event guidance** — removed obsolete automatic timers, Git-hook event
+  creation, provider-specific behavior duplication, and implicit context
+  regeneration from active documentation.
+
+### Tests
+
+- Added focused coverage for event uniqueness, event-helper context-refresh
+  denial, explicit separate context refresh, freshness warnings, right-sized CI triggers, and
+  the plain-English documentation contract.
 
 ## [3.2.7] - 2026-08-04
 
@@ -273,6 +310,7 @@ exists.
   mid-copy fault containment, private archive, exact rollback, and pre- and
   post-consumption race coverage.
 
+[3.2.8]: https://github.com/EnkratFlow/exocortex-template/releases/tag/v3.2.8
 [3.2.2]: https://github.com/EnkratFlow/exocortex-template/releases/tag/v3.2.2
 [3.2.7]: https://github.com/EnkratFlow/exocortex-template/releases/tag/v3.2.7
 [3.2.6]: https://github.com/EnkratFlow/exocortex-template/releases/tag/v3.2.6

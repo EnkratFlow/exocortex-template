@@ -22,6 +22,29 @@ specification but must not restate or override its flow. If an instruction
 file conflicts with the JSON, report the deviation in one line and follow the
 JSON without combining the conflicting instructions.
 
+### Plain-English work contract
+
+Before any substantial phase, tell the owner in plain English:
+
+- the outcome being worked toward;
+- the repository, exact scope, and important exclusions;
+- the expected elapsed time;
+- which checks will run and how long they normally take; and
+- the accountable parent plus any delegated lanes. Use one parent and no
+  delegate by default.
+
+Translate internal labels when they matter. For example, call
+`tests/phase-b/run.sh` the **complete Exocortex safety suite** and put the
+internal path second. Do not make the owner remember work-item revisions,
+capability names, or gate codes in order to understand progress.
+
+Stop and report before continuing when a newly discovered check is expected
+to take more than five minutes, the estimate increases materially, or the
+target, base, path scope, intended outcome, risk, or outward effect changes.
+Also stop duplicate validation when accepted evidence already covers the
+unchanged exact candidate. A disclosed, already-approved phase may continue
+to its stated milestone without another status-only approval.
+
 ## 2. Declare the role
 
 Choose exactly one role for the current bounded task:
@@ -85,6 +108,17 @@ mismatched evidence fails closed. Discovery never activates a model.
 - Retry and replay converge on the same checkpoint ID.
 - Rejected, invalid, unauthorized, stale, conflicting, read-only, support, test, ordinary-chat, and explicitly non-checkpointing activity creates no lifecycle checkpoint.
 - Handoffs are project-local by default.
+- Every approved `local_delivery` task that changes project files ends with
+  exactly one concise project-local completion event before the writer is
+  released. That record is included in the existing envelope and does not
+  need another human approval. It does not regenerate `SESSION_CONTEXT.md`,
+  create a preview file, create a checkpoint, or synchronize externally.
+- `/save` remains a manual command for ordinary conversation. Completion-event
+  recording does not turn chat, read-only work, routine tests, or elapsed time
+  into automatic saves.
+- A retrospective may propose a durable change to project memory or lessons,
+  but it cannot write that proposal into permanent memory without the
+  applicable local-delivery scope.
 
 ## 7. Fail closed on egress
 

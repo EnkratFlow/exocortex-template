@@ -1,20 +1,22 @@
-name: Exocortex deterministic verification
+name: Complete Exocortex safety suite
 
 on:
-  push:
-    branches: [main]
-    tags: ['v*']
   pull_request:
+    paths-ignore:
+      - '**/*.md'
+      - 'SHA256SUMS'
+      - 'FILEMODES'
+  workflow_dispatch:
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
 
 jobs:
-  phase-b:
+  complete-safety-suite:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -24,12 +26,12 @@ jobs:
         run: sudo apt-get update -qq && sudo apt-get install -y git rsync ripgrep
       - name: Verify generated provider adapters
         run: python3 .exocortex/scripts/generate_command_adapters.py --check
-      - name: Run Phase B evidence harness
+      - name: Run complete Exocortex safety suite
         run: bash tests/phase-b/run.sh /tmp/exo-phase-b-evidence.github
       - name: Upload evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: phase-b-evidence
+          name: complete-safety-suite-evidence
           path: /tmp/exo-phase-b-evidence.github
           retention-days: 14

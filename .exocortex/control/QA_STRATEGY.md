@@ -44,8 +44,24 @@ template installation does not infer application tests or release authority.
 
 ## Exocortex code-plane verification
 
-For a template/protocol slice, run in a clean isolated checkout with no real
-credentials, provider, network, target repository, or deployment access:
+Right-size evidence to the affected surface:
+
+| Exocortex change | Required local evidence |
+|---|---|
+| Markdown documentation only | documentation contract, generated-adapter check, checksum verification, and diff checks |
+| Event or memory tooling | event-tooling suite plus documentation contract, checksum verification, and diff checks |
+| Command specification or provider adapter | adapter generation check, affected command-contract tests, checksum verification, and diff checks |
+| Installer, updater, authority, orchestration, protocol, or release mechanics | focused affected checks first, then one complete Exocortex safety suite for the exact candidate |
+
+The **complete Exocortex safety suite** is the internal
+`tests/phase-b/run.sh` harness. It is a candidate-level test, not a routine
+status check. Report its expected duration before starting it, run it once for
+an unchanged exact candidate, and reuse the accepted evidence through merge
+and tag. A changed candidate needs new evidence.
+
+For a full template/protocol candidate, run in a clean isolated checkout with
+no real credentials, provider, network, target repository, or deployment
+access:
 
 ```bash
 bash tests/run_tests.sh
@@ -54,10 +70,10 @@ bash .exocortex/scripts/tests/test_event_tooling.sh
 bash tests/phase-b/run.sh
 ```
 
-The Phase B harness must use a newly created temporary evidence directory,
-fake `HOME`, deny-network shims, fictional fixtures, and fake in-process
-transport. A real clean install, existing-repository upgrade, release, or
-promotion remains a later Human UAT/downstream gate.
+The complete safety suite must use a newly created temporary evidence
+directory, fake `HOME`, deny-network shims, fictional fixtures, and fake
+in-process transport. A real clean install, existing-repository upgrade,
+release, or promotion remains a later Human UAT/downstream gate.
 
 ## Definition of done
 

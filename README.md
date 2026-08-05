@@ -27,7 +27,7 @@ prompt.
 
 ```text
 Prepare a read-only Exocortex clean-install preflight for the repository I
-currently have open. Use only the official GitHub release v3.2.7 from
+currently have open. Use only the official GitHub release v3.2.8 from
 https://github.com/EnkratFlow/exocortex-template.
 
 Clone that exact tag as a temporary source. Verify its HEAD against the peeled
@@ -35,11 +35,14 @@ commit SHA in the release notes and verify the SHA-256 of its SHA256SUMS file
 against the published digest. Stop if either value differs.
 
 Show me the exact target, current Git state, expected installation paths,
-collisions, disposable rehearsal, verification, and rollback boundary before
-changing anything. Never read or display .env or credential values. Do not
-change application code, global editor settings, Git history, remotes,
-services, providers, deployments, or external systems. Ask me once before the
-disposable rehearsal and once before the named-target local installation.
+collisions, disposable rehearsal, verification, rollback boundary, and total
+time estimate before changing anything. Never read or display .env or
+credential values. Ask me once for the complete local installation. If I
+approve it, rehearse first and continue to the named-target installation only
+when the target, release, scope, risk, and expected result still match the
+approved plan. Stop on any mismatch. Do not change application code, global
+editor settings, Git history, remotes, services, providers, deployments, or
+external systems.
 ```
 
 ### Existing-repository update prompt
@@ -47,12 +50,12 @@ disposable rehearsal and once before the named-target local installation.
 ```text
 Prepare a read-only Exocortex safe-update preflight for the repository I
 currently have open. Update it from its installed version to the official
-GitHub release v3.2.7 from
+GitHub release v3.2.8 from
 https://github.com/EnkratFlow/exocortex-template.
 
 This existing repository and its project-local data are the target. Do not
 treat a fresh template clone or a bare Git snapshot that omits local data as a
-replacement. A temporary clone of v3.2.7 is the update source only. An approved
+replacement. A temporary clone of v3.2.8 is the update source only. An approved
 disposable rehearsal or isolated worktree is allowed, but it must preserve and
 verify the target's protected data. Verify the release clone's HEAD against the
 peeled commit SHA in the release notes and verify the SHA-256 of its SHA256SUMS
@@ -61,18 +64,25 @@ file against the published digest.
 Preserve all project data byte-for-byte, including project memory, session
 context, TODOs, lessons, open decisions, events, archives, recognized Session
 Context backup sidecars, planning, work items, local state, control records,
-and .env. Never read or display secret values. Rehearse the update in disposable
-state, show me the complete changed-path list, protected-data result,
-collisions, tests, and rollback plan, then stop before applying it. Do not
-change application code, commit, push, merge, deploy, synchronize, or promote
-anything.
+and .env. Never read or display secret values. Plan the disposable rehearsal,
+then show me the expected changed paths, protected-data checks, collisions,
+tests, rollback plan, and total time estimate. Ask me once for the complete
+local update. If I approve it, run the disposable rehearsal and
+continue to the named-target update only when the target, release, scope,
+risk, and expected result still match the approved plan. Stop and report any
+mismatch. Do not change application code, commit, push, merge, deploy,
+synchronize, or promote anything.
 ```
 
-The AI should first show one understandable rehearsal decision. After the
-rehearsal passes, it should show one named-target local-apply decision. Internal
-work-item, reservation, capability, evidence, handoff, and writer-release
-mechanics are not separate human approvals. Git publication, merge,
-deployment, and external synchronization remain separate actions.
+The AI should show one understandable local-install or local-update decision.
+That decision may include the disposable rehearsal, named-target apply,
+verification, one local completion record, and rollback when the displayed
+target and scope remain unchanged. Internal work-item, reservation,
+capability, evidence, handoff, and writer-release mechanics stay hidden and
+are not separate human approvals. A collision, safety failure, or material
+change stops the work and returns one plain-English explanation. Git
+publication, merge, deployment, and external synchronization remain separate
+actions.
 
 For the complete prompts and deterministic safety contract, see the
 [AI installation and update guide](.exocortex/docs/AI_INSTALLATION.md).
@@ -85,26 +95,26 @@ checking what the AI did. Never pipe an unpinned remote script into a shell.
 ### 1. Download and verify the exact release
 
 ```bash
-git clone --depth 1 --branch v3.2.7 \
+git clone --depth 1 --branch v3.2.8 \
   https://github.com/EnkratFlow/exocortex-template.git \
-  /tmp/exocortex-template-v3.2.7
-git -C /tmp/exocortex-template-v3.2.7 rev-parse HEAD
+  /tmp/exocortex-template-v3.2.8
+git -C /tmp/exocortex-template-v3.2.8 rev-parse HEAD
 ```
 
 On macOS:
 
 ```bash
-shasum -a 256 /tmp/exocortex-template-v3.2.7/SHA256SUMS
+shasum -a 256 /tmp/exocortex-template-v3.2.8/SHA256SUMS
 ```
 
 On Linux or inside WSL:
 
 ```bash
-sha256sum /tmp/exocortex-template-v3.2.7/SHA256SUMS
+sha256sum /tmp/exocortex-template-v3.2.8/SHA256SUMS
 ```
 
 Compare both outputs with the peeled commit and candidate digest in the
-v3.2.7 GitHub release notes. Stop if either differs. Do not substitute `main`,
+v3.2.8 GitHub release notes. Stop if either differs. Do not substitute `main`,
 `latest`, or another checkout.
 
 ### 2A. New installation
@@ -117,9 +127,9 @@ The underlying installation command is:
 ```bash
 cd /path/to/approved-isolated-worktree
 HOME=<new-empty-owner-only-disposable-home> \
-EXOCORTEX_LOCAL_SOURCE=/tmp/exocortex-template-v3.2.7 \
+EXOCORTEX_LOCAL_SOURCE=/tmp/exocortex-template-v3.2.8 \
 EXOCORTEX_CANDIDATE_DIGEST=<digest-from-release-notes> \
-  bash /tmp/exocortex-template-v3.2.7/install.sh "project-name"
+  bash /tmp/exocortex-template-v3.2.8/install.sh "project-name"
 ```
 
 ### 2B. Existing-repository update
@@ -131,8 +141,8 @@ fresh owner-only backup directory outside both the target and template first.
 ```bash
 cd /path/to/existing-project
 mkdir -m 700 /tmp/exocortex-restore
-bash /tmp/exocortex-template-v3.2.7/scripts/safe-update.sh \
-  --template /tmp/exocortex-template-v3.2.7 \
+bash /tmp/exocortex-template-v3.2.8/scripts/safe-update.sh \
+  --template /tmp/exocortex-template-v3.2.8 \
   --candidate-digest <digest-from-release-notes> \
   --backup-dir /tmp/exocortex-restore \
   --dry-run
@@ -314,7 +324,23 @@ access. Any external provider call uses the same immutable egress protocol.
 
 ## Verification
 
-Run deterministic local tests from the template checkout:
+Match checks to the change instead of running everything repeatedly:
+
+- Documentation-only changes: documentation contract, generated-adapter check,
+  checksum verification, and diff checks.
+- Event or memory-tool changes: the event-tooling suite plus the documentation
+  contract and checksum verification.
+- Installer, updater, authority, orchestration, or protocol changes: focused
+  affected checks first, then the complete Exocortex safety suite once for the
+  exact release candidate.
+
+The complete Exocortex safety suite (internal path
+`tests/phase-b/run.sh`) normally takes more than five minutes and is
+deliberately long. Report its expected duration before starting it. Reuse a
+passing result for the unchanged exact candidate; do not repeat it merely
+because the same commit later becomes `main` or a tag.
+
+Available deterministic commands are:
 
 ```bash
 bash tests/run_tests.sh
@@ -324,10 +350,10 @@ bash tests/phase-b/run.sh
 python3 .exocortex/scripts/generate_command_adapters.py --check
 ```
 
-The Phase B harness uses only newly created disposable targets, fake `HOME`,
-fake transports, and deny-network shims. It emits hashes and machine-readable
-evidence. No test requires real credentials, providers, repositories, or
-deployment access.
+The complete safety suite uses only newly created disposable targets, fake
+`HOME`, fake transports, and deny-network shims. It emits hashes and
+machine-readable evidence. No test requires real credentials, providers,
+repositories, or deployment access.
 
 ## Limits
 

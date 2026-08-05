@@ -20,15 +20,15 @@ combining the conflicting instructions.
 ## Acquire an exact GitHub release
 
 The release notes must publish the exact tag, its peeled 40-character commit
-SHA, and the SHA-256 of that tag's `SHA256SUMS`. For version 3.2.7, acquire and
+SHA, and the SHA-256 of that tag's `SHA256SUMS`. For version 3.2.8, acquire and
 verify the public artifact like this:
 
 ```bash
-git clone --depth 1 --branch v3.2.7 \
+git clone --depth 1 --branch v3.2.8 \
   https://github.com/EnkratFlow/exocortex-template.git \
-  /tmp/exocortex-template-v3.2.7
-git -C /tmp/exocortex-template-v3.2.7 rev-parse HEAD
-shasum -a 256 /tmp/exocortex-template-v3.2.7/SHA256SUMS
+  /tmp/exocortex-template-v3.2.8
+git -C /tmp/exocortex-template-v3.2.8 rev-parse HEAD
+shasum -a 256 /tmp/exocortex-template-v3.2.8/SHA256SUMS
 ```
 
 Compare both outputs with the release notes. Stop on either mismatch. Never
@@ -90,13 +90,17 @@ read-only preflight and approval boundary applies to every provider.
 
 ## Human-facing installation decisions
 
-Installation and update use two local business decisions:
+Installation or update uses one local business decision after read-only
+preflight. The displayed `local_delivery` outcome binds one exact pinned
+candidate, target repository/worktree and base, expected paths or reviewed
+reconciliation plan, disposable rehearsal, failure containment, rollback,
+verification, one local completion record, and writer release.
 
-1. `disposable rehearsal`: one exact pinned candidate, sanitized fixture,
-   target snapshot, failure-containment plan, and verification matrix;
-2. `named-target local apply`: one exact target repository/worktree, accepted
-   base, candidate digest, changed paths or reviewed reconciliation plan,
-   rollback, tests, local handoff, and writer release.
+After acceptance, the AI rehearses first. It continues to the named target
+without another human prompt only when the target, base, candidate digest,
+path/plan set, operation class, risk, intended outcome, and verification still
+match. A collision, failed safety check, or material mismatch stops the work
+and returns one plain-English explanation and revised proposal.
 
 Work-item creation, missing-default bootstrap, executor registration, writer
 reservation/release, one-time technical capabilities, transaction records,
@@ -133,16 +137,17 @@ or display .env or credential values. Do not change the target, HOME, global
 editor state, services, providers, Git index, remotes, or external systems.
 
 Explain the disposable rehearsal and failure-containment plan, the exact files
-expected to change, the tests that will run, and the later business gates.
-Stop and ask once for my disposable-rehearsal decision. Do not install into
-the named target, commit, push, open a PR, merge, deploy, synchronize, or
-promote in the same step.
+expected to change, the tests that will run with their expected duration, and
+the later business gates. Stop and ask once for my complete local-install
+decision. If I accept, rehearse first and continue to the named target only
+while every displayed scope and safety fact still matches. Do not commit,
+push, open a PR, merge, deploy, synchronize, or promote.
 ```
 
-After the AI reports the exact preflight, the owner may approve the disposable
-rehearsal in plain language. A bare “yes” without the displayed candidate,
-target snapshot, and rehearsal scope is not approval for a named-target apply,
-Git, or outward action. The AI then:
+After the AI reports the exact preflight, the owner may approve the complete
+local installation in plain language. A bare “yes” without the displayed
+candidate, target snapshot, expected effect, and verification is not approval
+for installation, Git, or outward action. The AI then:
 
 1. inventories only the manifest-defined install surfaces and known collision
    paths. It may hash approved non-secret regular files on those surfaces, but
@@ -162,12 +167,11 @@ Git, or outward action. The AI then:
 6. runs the installer in a fresh disposable target twice;
 7. proves approved pre-existing files and fake/global state were preserved;
 8. reports exact changed paths and deterministic test evidence;
-9. presents one concise named-target local-apply envelope for a clean isolated
-   Git worktree from the approved target HEAD, with no untracked credential
-   files;
-10. after that single decision, internally creates the worktree authority,
-    installs and verifies only in the isolated worktree, records the permitted
-    local handoff, releases the writer, and stops; and
+9. confirms the named-target facts still match the accepted preflight; if they
+   do not, it stops with a revised proposal;
+10. internally creates the worktree authority, installs and verifies only in
+    the isolated worktree, records one completion event, releases the writer,
+    and stops; and
 11. leaves publication, integration/rollout, and production/egress as later
     business decisions.
 
@@ -178,7 +182,7 @@ worktree and recreating it from the approved clean Git base. Direct installation
 into a shared or primary checkout remains unsupported until the installer has a
 tested atomic commit or target-specific restore mechanism.
 
-After the named-target local-apply decision, the underlying local command on
+Inside the accepted local-install decision, the underlying local command on
 macOS or a verified Linux/WSL environment is:
 
 ```bash
@@ -219,8 +223,10 @@ and its digest, and leave the live repository untouched. State explicitly that
 one --dry-run does not apply the update, run application tests, prove a
 post-apply zero-change rerun, or restore the archive. Those are separate
 deterministic checks inside the rehearsal described below. Stop and ask once
-for my disposable-rehearsal decision. Do not apply to the named target,
-commit, push, open a PR, merge, deploy, synchronize, or promote.
+for my complete local-update decision. If I accept, rehearse first and continue
+to the named target only while every displayed scope and safety fact still
+matches. Do not commit, push, open a PR, merge, deploy, synchronize, or
+promote.
 ```
 
 The dry run also classifies command-contract drift. A preserved customized
@@ -297,13 +303,14 @@ sidecar from the Git index or history is a separate owner-approved cleanup
 decision; an installation or update must never
 perform it automatically.
 
-Inside the accepted disposable-rehearsal envelope, create only absent paths in
+Inside the accepted local-update envelope, create only absent paths in
 disposable state; never overwrite an existing path or read/copy real memory
 into the fixture. Recheck path types with non-following metadata, then start
-the dry run. The later named-target local-apply decision may internally repeat
-only the same reviewed bootstrap against the exact target.
+the dry run. The named-target apply may internally repeat only the same
+reviewed bootstrap against the exact target and only while the accepted scope
+still matches.
 
-The AI may run this dry run only after the disposable-rehearsal decision:
+The AI may run this dry run only after the local-update decision:
 
 ```bash
 cd <absolute-target-path>
@@ -319,9 +326,9 @@ The live target remains unchanged. The owner reviews:
 - the complete changed-path list and its digest;
 - protected-data before/after hashes;
 - adapter collision and managed-retirement results;
-- the named-target local-apply envelope proposed next. Executor,
-  reservation, and one-time capability details remain available as audit
-  evidence but are not separate human decisions.
+- whether the named-target facts still match the accepted local-update
+  decision. Executor, reservation, and one-time capability details remain
+  available as audit evidence but are not separate human decisions.
 
 ## Complete disposable update evidence
 
@@ -384,33 +391,22 @@ protected-default preflight above, an older installation can still have no
 public-v2 work item or registered writer. The AI cannot promote itself to
 writer. If the exact work item, registered writer, reservation, and apply
 capability do not already exist, the real apply remains blocked after dry-run
-until the named-target local-apply envelope is accepted. That one business
+unless the accepted local-update envelope covers them. That one business
 decision authorizes only the internal bootstrap required for its exact target,
 candidate digest, changed paths or reconciliation plan, verification, local
-handoff, and writer release.
+completion record, handoff, and writer release.
 
 The changed-path list is not final while the registry is absent. The earlier
 missing-default bootstrap creates a deny-by-default read-only registry but
-grants no writer. After the first dry run and the named-target decision,
+grants no writer. After the first dry run, and still inside the unchanged
+accepted local-update decision,
 internally create the next registry version with one time-bounded local writer,
 read-only and writer roles, no egress role, and the pinned guard digest. Rerun
 the dry run after that writer registry exists, and use only the stable
 post-registry path list and digest when materializing apply authority.
 
-The human-facing prompt is concise:
-
-```text
-Apply the accepted Exocortex candidate locally to <exact-named-target>.
-Bind the displayed target/base, candidate digest, exact changed paths or
-reviewed reconciliation plan, rollback, tests, and local-only handoff. Handle
-the work item, read-only registry upgrade, one writer reservation, one-time
-technical capabilities, verification records, handoff, and writer release as
-internal fail-closed mechanics. Stop on any target/base/digest/path/plan/risk
-change. Do not stage, commit, push, merge, deploy, synchronize, promote, or
-touch another repository.
-```
-
-After that decision, the coding AI may write only the bounded work item,
+Do not expose this internal section as another approval checklist. After the
+single local-update decision, the coding AI may write only the bounded work item,
 executor registry, reserve capability, and transaction state required by the
 envelope. It must validate
 `.exocortex/schemas/orchestration.schema.json`,
@@ -461,8 +457,9 @@ is unavailable, stop after dry-run.
 
 ## Guarded apply contract
 
-An existing-repository apply is the second local business decision after the
-disposable rehearsal. Before applying, the AI must:
+An existing-repository apply is the second technical stage inside the one
+accepted local-update decision; it is not a second human approval. Before
+applying, the AI must:
 
 1. confirm the named-target local-delivery envelope still matches;
 2. create or identify one public-v2 delivery work item bound to the exact
@@ -622,9 +619,9 @@ The owner should be able to confirm:
 5. rehearsal, retry, idempotency, rollback, and protected-data evidence are
    understandable;
 6. the installed AI reads `AI_START_HERE.md` and orients correctly;
-7. the human was asked only for the disposable rehearsal and named-target
-   local apply—not internal work-item, registry, reservation, capability,
-   handoff, or writer-release approvals; and
+7. the human was asked for one complete local-install or local-update
+   decision—not separate rehearsal, apply, work-item, registry, reservation,
+   capability, handoff, or writer-release approvals; and
 8. no publication, integration/rollout, or production/egress action occurred
    without its matching business decision.
 
