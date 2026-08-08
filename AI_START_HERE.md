@@ -115,8 +115,7 @@ exclusions remain routing constraints.
   approve that internal artifact separately. Otherwise ask once, in plain
   language, for a bounded local-delivery authorization to save the named
   summary.
-- An ordinary-language sentence that merely contains or begins with a
-  command-like verb does not invoke a command. A model may auto-load only a
+- An ordinary-language sentence that merely contains or begins with a command-like verb does not invoke a manual-only command. A model may auto-load only a
   command classified `model_invocable`, and only for its read-only flow. A
   `manual_only` command requires a recognized host-native trigger, selector,
   exact bare token, or explicitly framed command arguments. Neither class adds
