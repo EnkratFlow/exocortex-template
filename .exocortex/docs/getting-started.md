@@ -40,9 +40,11 @@ guarded apply command are in `.exocortex/docs/AI_INSTALLATION.md`.
 ## Platform boundary
 
 The current scripts are verified on macOS with the documented Bash/Unix tools.
-Linux is compatible pending the final candidate's Ubuntu CI. WSL requires
-separate Human UAT. Git Bash and native Windows PowerShell/Command Prompt are
-unsupported; do not translate the installer security logic ad hoc.
+Linux is compatible based on the complete Ubuntu safety-suite pass for the
+merged 3.2.9 hardening change; the operator environment still requires a
+bounded rehearsal. WSL requires separate Human UAT. Git Bash and native Windows
+PowerShell/Command Prompt are unsupported; do not translate the installer
+security logic ad hoc.
 
 ## First commands
 

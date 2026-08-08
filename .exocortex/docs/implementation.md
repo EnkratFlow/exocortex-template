@@ -192,8 +192,9 @@ before consuming authority. Update one repository at a time; a request for
 “all” never authorizes a batch rollout.
 
 The current implementation is verified on macOS with the documented Bash/Unix
-tools. Linux must pass final-candidate CI; WSL still requires Human UAT. Git
-Bash and native Windows shells are unsupported.
+tools. Linux is compatible based on the complete Ubuntu safety-suite pass for
+the merged 3.2.9 hardening change; the operator environment still requires a
+bounded rehearsal. WSL still requires Human UAT. Git Bash and native Windows shells are unsupported.
 
 ## Define a bounded work item
 

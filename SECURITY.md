@@ -46,8 +46,13 @@ We aim to acknowledge new vulnerability reports within **72 hours**.
   that pinned local source. A byte-valid source with altered executable bits
   fails closed. These checks prove byte consistency, not repository-owner
   authenticity. Public installation must also verify the owner-selected
-  signature or attestation against its documented trust identity; no release
-  should claim that step until its artifact and trust-root format are chosen.
+  signature or attestation against its documented trust identity. Version
+  3.2.9 selects GitHub's immutable-release attestation for
+  `github.com/EnkratFlow/exocortex-template` and an attested `SHA256SUMS`
+  release asset; both must pass GitHub CLI verification before candidate code
+  is executed. A suspected or confirmed compromised immutable release is
+  treated as revoked: stop using it, remove the release, permanently retire
+  that tag name, and publish a corrected higher patch version.
 - Installation does not require an API key and must not read, create, print, or
   modify credential values.
 - Rehearse in disposable state with a sanitized child-process environment and

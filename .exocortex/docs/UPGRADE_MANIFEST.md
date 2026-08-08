@@ -216,8 +216,9 @@ macOS, disable copyfile metadata when extracting the archive so AppleDouble
 sidecars are not materialized. A generic archive reader is not equivalent to a
 verified rollback.
 
-Current evidence supports macOS. Linux must pass the final candidate's Ubuntu
-CI before promotion. WSL remains Human-UAT-pending. Git Bash and native Windows
-PowerShell/Command Prompt are unsupported because their archive, hash, path,
-permission, and rollback behavior has not been verified. Do not infer native
-Windows support from provider availability.
+Current evidence verifies macOS. Linux is compatible based on the complete
+Ubuntu safety-suite pass for the merged 3.2.9 hardening change; the operator
+environment still requires a bounded rehearsal. WSL remains Human-UAT-pending.
+Git Bash and native Windows PowerShell/Command Prompt are unsupported because
+their archive, hash, path, permission, and rollback behavior has not been
+verified. Do not infer native Windows support from provider availability.

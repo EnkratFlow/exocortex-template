@@ -6,6 +6,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 ## [Unreleased]
 
+## [3.2.9] - 2026-08-08
+
 ### Changed
 
 - **Judgment-led model routing** — the accountable parent selects the correct
@@ -32,9 +34,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
   safety check, third-party Actions are pinned to immutable commits, and
   release closeout requires an annotated exact-main tag plus a reviewed
   baseline range.
-- **Trust-boundary correction** — documentation now distinguishes checksum byte
-  consistency from repository-owner authenticity and blocks a hardened public
-  install claim until signature or attestation evidence is selected.
+- **Verifiable release authenticity** — public installation now requires the
+  GitHub immutable-release attestation for the exact
+  `EnkratFlow/exocortex-template` release and an attested `SHA256SUMS` release
+  asset before any downloaded installer or updater is executed.
 
 ## [3.2.8] - 2026-08-05
 
@@ -338,6 +341,7 @@ exists.
   mid-copy fault containment, private archive, exact rollback, and pre- and
   post-consumption race coverage.
 
+[3.2.9]: https://github.com/EnkratFlow/exocortex-template/releases/tag/v3.2.9
 [3.2.8]: https://github.com/EnkratFlow/exocortex-template/releases/tag/v3.2.8
 [3.2.2]: https://github.com/EnkratFlow/exocortex-template/releases/tag/v3.2.2
 [3.2.7]: https://github.com/EnkratFlow/exocortex-template/releases/tag/v3.2.7
