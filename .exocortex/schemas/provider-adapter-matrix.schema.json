@@ -10,6 +10,7 @@
     "canonical_registry",
     "expected_command_count",
     "generator",
+    "command_invocation_policy",
     "adapter_families",
     "status_definitions",
     "providers",
@@ -35,6 +36,36 @@
     "generator": {
       "const": ".exocortex/scripts/generate_command_adapters.py"
     },
+    "command_invocation_policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "model_invocable",
+        "manual_only"
+      ],
+      "properties": {
+        "model_invocable": {
+          "type": "array",
+          "minItems": 11,
+          "maxItems": 11,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+          }
+        },
+        "manual_only": {
+          "type": "array",
+          "minItems": 13,
+          "maxItems": 13,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+          }
+        }
+      }
+    },
     "adapter_families": {
       "type": "array",
       "minItems": 3,
@@ -47,7 +78,6 @@
           "id",
           "path_template",
           "format",
-          "manual_only",
           "providers"
         ],
         "properties": {
@@ -65,9 +95,6 @@
               "claude_skill",
               "cursor_skill"
             ]
-          },
-          "manual_only": {
-            "const": true
           },
           "providers": {
             "type": "array",

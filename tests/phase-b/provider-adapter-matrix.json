@@ -27,6 +27,36 @@
     "weekly-review",
     "work"
   ],
+  "command_invocation_policy": {
+    "model_invocable": [
+      "ai-export",
+      "brief",
+      "drill",
+      "history",
+      "longterm",
+      "onboard",
+      "scrum",
+      "shortterm",
+      "subconscious",
+      "system-scan",
+      "work"
+    ],
+    "manual_only": [
+      "check-keys",
+      "daily-end",
+      "ecosystem",
+      "groom",
+      "handoff",
+      "init-exocortex",
+      "interrupt",
+      "monthly-review",
+      "pattern-review",
+      "prioritize",
+      "refine-backlog",
+      "save",
+      "weekly-review"
+    ]
+  },
   "generated_families": [
     {
       "id": "portable-agent-skills",
@@ -68,7 +98,7 @@
       "evidence_adapter_family": "claude-code-skills",
       "native_invocation": "/command",
       "literal_slash_claim": true,
-      "status": "verified",
+      "status": "compatible",
       "default_install": true,
       "revalidation_required": true
     },
@@ -78,7 +108,7 @@
       "evidence_adapter_family": "cursor-native-skills",
       "native_invocation": "/command",
       "literal_slash_claim": true,
-      "status": "verified",
+      "status": "compatible",
       "default_install": true,
       "revalidation_required": true
     },
@@ -98,7 +128,7 @@
       "evidence_adapter_family": "portable-agent-skills",
       "native_invocation": "/skill:{name}",
       "literal_slash_claim": true,
-      "status": "verified",
+      "status": "compatible",
       "default_install": true,
       "revalidation_required": true
     },
@@ -118,7 +148,7 @@
       "evidence_adapter_family": "portable-agent-skills",
       "native_invocation": "built-in Agent skills selector",
       "literal_slash_claim": false,
-      "status": "verified",
+      "status": "compatible",
       "default_install": true,
       "revalidation_required": true
     },

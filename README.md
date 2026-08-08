@@ -6,6 +6,15 @@ are interchangeable workers.
 
 This template is public beta. Read `VERSION` for the packaged version.
 
+> **Public installation is currently blocked.** The published tag, release
+> notes, peeled commit, and checksum digest all share the GitHub trust domain;
+> v3.2.8 does not carry an independently verifiable owner signature or
+> attestation. Do not execute the downloaded installer or updater against any
+> repository until a later release names the owner-selected artifact, trust
+> identity, and verification method. The flows below document the intended
+> post-authenticity process and may be inspected or rehearsed only from a
+> separately trusted local source in a disposable target.
+
 ## Choose your path
 
 | Your repository | Use |
@@ -21,7 +30,9 @@ process but cannot install or update local files.
 
 Open the repository you want to change in Codex, Claude, Cursor, Copilot, Zed,
 or another coding AI with local terminal access. Copy and paste the matching
-prompt.
+prompt only after the authenticity blocker above has been resolved for the
+named release. For v3.2.8, do not execute any candidate-owned script; an AI
+must report the blocker and stop.
 
 ### New installation prompt
 
@@ -32,7 +43,10 @@ https://github.com/EnkratFlow/exocortex-template.
 
 Clone that exact tag as a temporary source. Verify its HEAD against the peeled
 commit SHA in the release notes and verify the SHA-256 of its SHA256SUMS file
-against the published digest. Stop if either value differs.
+against the published digest. Also verify the release's owner-selected
+signature or attestation against its independently documented trust identity.
+Stop if any evidence is absent or differs. v3.2.8 has no such authenticity
+evidence, so do not execute its scripts or install it into a repository.
 
 Show me the exact target, current Git state, expected installation paths,
 collisions, disposable rehearsal, verification, rollback boundary, and total
@@ -59,7 +73,10 @@ replacement. A temporary clone of v3.2.8 is the update source only. An approved
 disposable rehearsal or isolated worktree is allowed, but it must preserve and
 verify the target's protected data. Verify the release clone's HEAD against the
 peeled commit SHA in the release notes and verify the SHA-256 of its SHA256SUMS
-file against the published digest.
+file against the published digest. Also verify the release's owner-selected
+signature or attestation against its independently documented trust identity.
+Stop if any evidence is absent or differs. v3.2.8 has no such authenticity
+evidence, so do not execute its scripts or update a repository.
 
 Preserve all project data byte-for-byte, including project memory, session
 context, TODOs, lessons, open decisions, events, archives, recognized Session
@@ -91,6 +108,9 @@ For the complete prompts and deterministic safety contract, see the
 
 Use this path when no capable coding AI is available or when independently
 checking what the AI did. Never pipe an unpinned remote script into a shell.
+The commands that execute `install.sh` or `safe-update.sh` are reference-only
+until the public authenticity blocker above is resolved. They must not be run
+for v3.2.8 against either a valued target or a host containing credentials.
 
 ### 1. Download and verify the exact release
 
@@ -115,9 +135,11 @@ sha256sum /tmp/exocortex-template-v3.2.8/SHA256SUMS
 
 Compare both outputs with the peeled commit and candidate digest in the
 v3.2.8 GitHub release notes. Stop if either differs. Do not substitute `main`,
-`latest`, or another checkout.
+`latest`, or another checkout. These checks establish consistency, not owner
+authenticity. v3.2.8 provides no independently verifiable owner signature or
+attestation, so stop here and do not execute any file from that checkout.
 
-### 2A. New installation
+### 2A. New installation (after authenticity evidence exists)
 
 Rehearse first and install only in an approved clean isolated Git worktree.
 The detailed guide explains how to choose the target. Create a new empty,
@@ -132,7 +154,7 @@ EXOCORTEX_CANDIDATE_DIGEST=<digest-from-release-notes> \
   bash /tmp/exocortex-template-v3.2.8/install.sh "project-name"
 ```
 
-### 2B. Existing-repository update
+### 2B. Existing-repository update (after authenticity evidence exists)
 
 Run the read-only dry run from the existing repository. The update source is
 temporary; the repository containing your memory remains the target. Create a
@@ -218,15 +240,19 @@ Nothing flows out automatically.
 
 ## Multi-AI orchestration
 
-The parent model owns integration and gate decisions. It selects the least
-expensive available model capable of the complete task and risk, then delegates
-bounded evidence work to cheaper capable models. One registered guarded writer
-holds the mutation lane; parallel workers are read-only unless separately
-approved. Deterministic tools precede model work. Routing changes and estimates
-are reported to the owner.
+The parent model owns integration and gate decisions. It selects the correct
+model for the complete task using the expected cost of a correct outcome, not
+advertised price alone, and applies the same judgment to every subagent. One
+registered guarded writer holds the mutation lane; parallel workers are
+read-only unless exact project authority says otherwise. Deterministic tools
+precede model work. The parent reports its route, reason, and ETA for
+visibility; routine model choice is not a human approval gate.
 
-No vendor or named model is required. A stronger model is used when the work's
-capability or risk requires it, not as a permanent starting rule.
+One parent and no delegate is the default. Add only independently useful lanes
+expected to improve time, total cost, context quality, or review quality. No
+vendor or named model is required. Escalate for risk, ambiguity, tool mismatch,
+weak verification, or repeated failure rather than permanently starting at
+either the cheapest or strongest tier.
 
 ### Source-backed model freshness
 
@@ -241,20 +267,21 @@ while retrieval timestamps and content digests may advance. Model, lifecycle,
 and pricing facts are accepted only from sources registered for those roles;
 cross-file duplicates or conflicting facts fail closed.
 
-Newly observed models are quarantined for review. They do not become routing
-choices merely because they are newer or advertise a lower price. Routing
-requires a current local availability observation and fresh, digest-bound,
-measured capability and cost-per-success evidence. Stale or mismatched
-evidence fails closed, and missing observations never silently deprecate a
-model. Production routing also rejects a caller timestamp more than 60 seconds
-behind or ahead of the runtime UTC clock; deterministic historical validation
-is a separate non-routing operation.
+Newly observed models are quarantined for formal-verifier use. They do not
+become empirical routing evidence merely because they are newer or advertise a
+lower price. The optional formal route requires a current local availability
+observation and fresh, digest-bound, measured capability and cost-per-success
+evidence. Stale or mismatched evidence disables that route, and missing
+observations never silently deprecate a model. The formal route also rejects a
+caller timestamp more than 60 seconds behind or ahead of runtime UTC;
+deterministic historical validation is a separate non-routing operation.
 
-The packaged 3.2.0 catalog is advisory and has zero route-eligible models or
-verified evaluation profiles. It cannot select a model as shipped. A model
-becomes eligible only through a separately reviewed guarded catalog update
-that binds measured evaluation evidence, followed by fresh availability
-evidence for the exact current surface.
+The packaged catalog is advisory and has zero route-eligible models or verified
+evaluation profiles. Therefore the optional verifier cannot select a model as
+shipped. Accountable parent judgment remains the default; an empty catalog is
+not a human approval gate. Formal eligibility requires a reviewed catalog
+update that binds measured evaluation evidence plus fresh availability for the
+exact current surface.
 
 See [the routing policy](.exocortex/control/MODEL_ROUTING.md) for the evidence
 planes, discovery command, admission rules, and deterministic selection
@@ -299,17 +326,18 @@ mean a command was executed or that mutation authority was granted.
 | Surface | Repository adapter | Native invocation | Recorded evidence |
 |---|---|---|---|
 | Codex | `.agents/skills/{command}/SKILL.md` | `$command` or the skills selector | `compatible`; repository catalog resolves 24/24, but desktop selector UAT remains pending |
-| Claude Desktop 1.24012.1 (0adcae) | `.claude/skills/{command}/SKILL.md` | `/command` | `verified`; all 24 Exocortex commands appeared exactly once |
-| Cursor Stable 3.12.30 | `.cursor/skills/{command}/SKILL.md` | `/command` | `verified`; all 24 Exocortex commands appeared exactly once among 72 unique skills |
+| Claude Desktop 1.24012.1 (0adcae) | `.claude/skills/{command}/SKILL.md` | `/command` | `compatible`; historical 24/24 visibility predates the invocation-policy change, so candidate UAT is required |
+| Cursor Stable 3.12.30 | `.cursor/skills/{command}/SKILL.md` | `/command` | `compatible`; historical 24/24 visibility predates the invocation-policy change, so candidate UAT is required |
 | GitHub Copilot | `.agents/skills/{command}/SKILL.md` | `/command` where repository skills are supported | `compatible`; 24/24 was observed, but the exact client version was not captured |
-| Kimi Code CLI 1.14.0 | `.agents/skills/{command}/SKILL.md` | `/skill:{name}` | `verified`; all 24 Exocortex entries appeared exactly once among 26 unique skills |
+| Kimi Code CLI 1.14.0 | `.agents/skills/{command}/SKILL.md` | `/skill:{name}` | `compatible`; historical 24/24 visibility predates the portable-adapter change, so candidate UAT is required |
 | Kimi Desktop Work 3.1.3 | No Desktop-specific adapter claim | Not advertised | `failed`; 0/24 appeared and exact `/skill:ai-export` produced no match |
-| Zed 1.12.0 stable.328 built-in Agent | `.agents/skills/{command}/SKILL.md` | Built-in Agent skills selector | `verified`; all 24 Exocortex skills appeared exactly once among 25 unique skills; ACP agents excluded |
+| Zed 1.12.0 stable.328 built-in Agent | `.agents/skills/{command}/SKILL.md` | Built-in Agent skills selector | `compatible`; historical 24/24 visibility predates the portable-adapter change, so candidate UAT is required |
 | Windsurf | None in active/default installation | Not advertised | `unavailable`; no installed version was available for Human UAT |
 | Generic or unidentified host | `AI_START_HERE.md` plus the matching JSON | Host-dependent | No native-menu claim |
 
 Kimi Desktop Work and Kimi Code CLI are different discovery surfaces. The
-Desktop 0/24 result does not invalidate the verified CLI result.
+Desktop 0/24 result does not invalidate the historical CLI result; the changed
+portable adapters still require candidate CLI UAT before that result is verified.
 
 Run `python3 .exocortex/scripts/generate_command_adapters.py --check` to prove
 repository parity. File generation does not certify provider-menu visibility.
@@ -350,10 +378,19 @@ bash tests/phase-b/run.sh
 python3 .exocortex/scripts/generate_command_adapters.py --check
 ```
 
-The complete safety suite uses only newly created disposable targets, fake
-`HOME`, fake transports, and deny-network shims. It emits hashes and
-machine-readable evidence. No test requires real credentials, providers,
-repositories, or deployment access.
+The complete safety suite uses only newly created disposable targets, a
+sanitized child-process environment, fake transports, and common-command
+denial shims. It emits hashes and machine-readable evidence. No test requires
+real credentials, providers, repositories, or deployment access. PATH shims
+prove that the exercised code did not call those command names; they are not a
+network sandbox and cannot contain malicious candidate code.
+
+`SHA256SUMS` and its published digest prove byte consistency only. They do not
+independently prove repository-owner authenticity when the repository, tag,
+release notes, and digest share one trust domain. Public installation must stop
+unless the release also carries the owner-selected signature or attestation
+evidence and the operator verifies it against its documented trust identity.
+The project has not yet selected that artifact and trust-root format.
 
 ## Limits
 

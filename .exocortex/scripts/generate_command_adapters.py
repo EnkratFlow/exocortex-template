@@ -32,6 +32,17 @@ EXPECTED_CANONICAL_COMMANDS = (
     "onboard", "pattern-review", "prioritize", "refine-backlog", "save", "scrum",
     "shortterm", "subconscious", "system-scan", "weekly-review", "work",
 )
+EXPECTED_COMMAND_INVOCATION_POLICY = {
+    "model_invocable": {
+        "ai-export", "brief", "drill", "history", "longterm", "onboard",
+        "scrum", "shortterm", "subconscious", "system-scan", "work",
+    },
+    "manual_only": {
+        "check-keys", "daily-end", "ecosystem", "groom", "handoff", "init-exocortex",
+        "interrupt", "monthly-review", "pattern-review", "prioritize", "refine-backlog",
+        "save", "weekly-review",
+    },
+}
 EXPECTED_LEGACY_COMMANDS = (
     "ai-export", "brief", "check-keys", "daily-end", "drill", "ecosystem", "groom",
     "handoff", "history", "init-exocortex", "interrupt", "longterm", "monthly-review",
@@ -186,8 +197,20 @@ def validate_matrix(matrix: dict[str, Any]) -> list[dict[str, Any]]:
         family = by_id[family_id]
         if family.get("path_template") != path_template or family.get("format") != format_name:
             raise AdapterError(f"provider matrix contract mismatch: {family_id}")
-        if family.get("manual_only") is not True:
-            raise AdapterError(f"adapter family is not manual-only: {family_id}")
+    invocation_policy = matrix.get("command_invocation_policy")
+    if not isinstance(invocation_policy, dict):
+        raise AdapterError("provider matrix command invocation policy is invalid")
+    actual_policy = {
+        policy: set(commands)
+        for policy, commands in invocation_policy.items()
+        if isinstance(commands, list) and all(isinstance(command, str) for command in commands)
+    }
+    if actual_policy != EXPECTED_COMMAND_INVOCATION_POLICY:
+        raise AdapterError("provider matrix command invocation policy mismatch")
+    if actual_policy["model_invocable"] & actual_policy["manual_only"]:
+        raise AdapterError("provider matrix command invocation policy overlaps")
+    if set().union(*actual_policy.values()) != set(EXPECTED_CANONICAL_COMMANDS):
+        raise AdapterError("provider matrix command invocation policy must classify exactly 24 commands")
 
     if matrix.get("status_definitions") != EXPECTED_STATUS_DEFINITIONS:
         raise AdapterError("provider matrix status definitions mismatch")
@@ -246,24 +269,24 @@ def validate_matrix(matrix: dict[str, Any]) -> list[dict[str, Any]]:
         or windsurf.get("default_install") is not False
     ):
         raise AdapterError("Windsurf must remain unavailable and absent from the default adapter set")
-    verified_families = {
+    revalidation_families = {
         "claude": ("claude-code-skills", "1.24012.1 (0adcae)"),
         "cursor": ("cursor-native-skills", "Stable 3.12.30"),
         "kimi-code": ("portable-agent-skills", "1.14.0"),
         "zed": ("portable-agent-skills", "1.12.0 stable.328"),
     }
-    for provider_id, (family_id, accepted_version) in verified_families.items():
+    for provider_id, (family_id, accepted_version) in revalidation_families.items():
         provider = by_provider[provider_id]
         if (
             provider.get("adapter_family") != family_id
-            or provider.get("status") != "verified"
+            or provider.get("status") != "compatible"
             or provider.get("evidence_adapter_family") != family_id
             or provider.get("visibility_evidence") != "provider_uat_required"
             or provider.get("version") != accepted_version
             or provider.get("default_install") is not True
             or provider.get("revalidation_required") is not True
         ):
-            raise AdapterError(f"verified provider evidence boundary mismatch: {provider_id}")
+            raise AdapterError(f"provider candidate revalidation boundary mismatch: {provider_id}")
     for provider_id in ("codex", "github-copilot"):
         if by_provider[provider_id].get("status") != "compatible":
             raise AdapterError(f"provider must remain compatible pending complete evidence: {provider_id}")
@@ -350,26 +373,36 @@ def yaml_string(value: str) -> str:
     return json.dumps(value, ensure_ascii=False)
 
 
-def skill_body(command: dict[str, Any], family_id: str) -> str:
+def skill_body(command: dict[str, Any], family_id: str, invocation_policy: dict[str, set[str]]) -> str:
     name = command["command_id"]
     description = command["description"]
+    manual_only = name in invocation_policy["manual_only"]
+    invocation_description = (
+        "Manual-only" if manual_only else "Model-invocable read-only"
+    )
+    invocation_note = (
+        "If it was loaded without an explicit user invocation, stop before command execution."
+        if manual_only
+        else "It remains read-only by default and must not infer mutation or egress authority."
+    )
     provider_frontmatter = ""
     if family_id == "claude-code-skills":
         if command.get("requires_argument") is True:
             hint = command.get("argument_name") or "arguments"
             provider_frontmatter += f"argument-hint: {yaml_string(f'[{hint}]')}\n"
-        provider_frontmatter += "disable-model-invocation: true\n"
-    elif family_id == "cursor-native-skills":
+        if manual_only:
+            provider_frontmatter += "disable-model-invocation: true\n"
+    elif family_id == "cursor-native-skills" and manual_only:
         provider_frontmatter += "disable-model-invocation: true\n"
     return (
         "---\n"
         f"name: {name}\n"
-        f"description: {yaml_string('Manual-only Exocortex command /' + name + ': ' + description)}\n"
+        f"description: {yaml_string(invocation_description + ' Exocortex command /' + name + ': ' + description)}\n"
         f"{provider_frontmatter}"
         "---\n\n"
         f"<!-- {GENERATED_MARKER}; family={family_id} -->\n\n"
         f"# /{name}\n\n"
-        "This is a manual-only thin adapter. If it was loaded without an explicit user invocation, stop before command execution.\n\n"
+        f"This is a {invocation_description.lower()} thin adapter. {invocation_note}\n\n"
         "1. Read `AI_START_HERE.md` and resolve the current project-local role and authority.\n"
         "2. Read `.exocortex/AI_BOOTSTRAP.md` for command discovery and step-execution rules.\n"
         f"3. Execute `.exocortex/commands/{name}.json` exactly as written, preserving its order and user choices.\n"
@@ -378,14 +411,18 @@ def skill_body(command: dict[str, Any], family_id: str) -> str:
         "This adapter grants no authority and contains no independent command behavior.\n"
     )
 
-def expected_outputs(families: list[dict[str, Any]], commands: list[dict[str, Any]]) -> dict[Path, bytes]:
+def expected_outputs(
+    families: list[dict[str, Any]],
+    commands: list[dict[str, Any]],
+    invocation_policy: dict[str, set[str]],
+) -> dict[Path, bytes]:
     outputs: dict[Path, bytes] = {}
     for family in families:
         family_id = family["id"]
         for command in commands:
             name = command["command_id"]
             rel = family["path_template"].format(command=name)
-            content = skill_body(command, family_id)
+            content = skill_body(command, family_id, invocation_policy)
             outputs[ROOT / rel] = content.encode("utf-8")
     return outputs
 
@@ -453,7 +490,11 @@ def main() -> int:
         matrix = load_json(MATRIX_PATH)
         families = validate_matrix(matrix)
         commands = load_commands(matrix["expected_command_count"])
-        outputs = expected_outputs(families, commands)
+        invocation_policy = {
+            policy: set(command_names)
+            for policy, command_names in matrix["command_invocation_policy"].items()
+        }
+        outputs = expected_outputs(families, commands, invocation_policy)
         if len(outputs) != 72:
             raise AdapterError("generated adapter path set must contain exactly 72 files")
         if args.write:

@@ -1,7 +1,5 @@
 .DS_Store
 node_modules/
-.env
-.env.local
 dist/
 build/
 .vscode/
@@ -9,16 +7,48 @@ build/
 __pycache__/
 *.py[cod]
 
-# Exocortex project-local runtime/evidence data (never template code plane)
+# Environment and credential files. The one public Exocortex example is data-free.
+.env
+.env.*
+.envrc
+**/.env
+**/.env.*
+**/.envrc
+!/.exocortex/.env.example
+
+# Exocortex project-local runtime/evidence data (never template code plane).
 .exocortex/local/
+.exocortex/work-items/
+.exocortex/planning/
+.exocortex/archive/
+.exocortex/hub/
+.exocortex/.project-name
+.exocortex/.install-manifest
+.exocortex/.hub_enabled
+.exocortex/.hub_disabled
 
-# Exocortex - Event System
-# Phase 1 (1-2 months): Track active events via git for cross-machine sync
-# Phase 2 (after RAG API): Switch to RAG-based sync, stop committing events
-# Only ignore backups (not needed in repo)
-.exocortex/SESSION_CONTEXT_BACKUP_*.md
+.exocortex/SESSION_CONTEXT.md
+.exocortex/SESSION_CONTEXT.local.md
 .exocortex/SESSION_CONTEXT.md.backup
+.exocortex/SESSION_CONTEXT_BACKUP_*.md
+.exocortex/TODO.md
+.exocortex/LESSONS.md
+.exocortex/PROJECT_MEMORY.md
+.exocortex/OPEN_DECISIONS.md
+.exocortex/subconscious_patterns.md
 
-# Note: Archive directory is tracked during Phase 1 for complete cross-machine sync
-# Will be ignored in Phase 2 when RAG API becomes primary sync mechanism
-.exocortex/events/*.synced
+.exocortex/control/ACTIVE_WORK.md
+.exocortex/control/BRANCH_POLICY.md
+.exocortex/control/REPO_STATE.md
+.exocortex/control/EXECUTOR_REGISTRY.json
+.exocortex/control/EXTERNAL_SYNC_POLICY.json
+.exocortex/control/INTERRUPTS.md
+.exocortex/control/BACKLOG.md
+.exocortex/control/ROADMAP.md
+.exocortex/control/ARCH_OVERVIEW.md
+.exocortex/control/REPO_ORGANIZATION_REPORT.md
+
+# Only the public fictional event and directory anchor belong in the template.
+.exocortex/events/*
+!/.exocortex/events/.gitkeep
+!/.exocortex/events/2000-01-01_00-00-00_example-event.md

@@ -28,6 +28,8 @@ models and providers are interchangeable workers.
 ### Development
 - [**Implementation Guide**](docs/implementation.md) — Installing and evolving
   the protocol
+- [**Current Status**](docs/status.md) — What is ready, in progress, blocked,
+  and next
 - [**Roadmap**](docs/roadmap.md) — Planned work and evidence status
 - [**Repository contributing guide**](../CONTRIBUTING.md) — Deterministic
   development and review expectations

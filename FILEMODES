@@ -140,6 +140,7 @@
 0644  .exocortex/docs/implementation.md
 0644  .exocortex/docs/memory-system.md
 0644  .exocortex/docs/roadmap.md
+0644  .exocortex/docs/status.md
 0644  .exocortex/docs/user-guide.md
 0644  .exocortex/docs/vision.md
 0644  .exocortex/examples/EXECUTOR_REGISTRY.read-only.json
@@ -152,6 +153,7 @@
 0644  .exocortex/reference/ESSENTIAL_FILES.md
 0644  .exocortex/reference/MEMORY.md
 0644  .exocortex/reference/QUICK_REFERENCE.md
+0644  .exocortex/release-baseline.json
 0644  .exocortex/schemas/authorization.schema.json
 0644  .exocortex/schemas/executor-registry.schema.json
 0644  .exocortex/schemas/external-sync-policy.schema.json
@@ -245,6 +247,7 @@
 0644  WHATSNEW.md
 0755  init-project.sh
 0755  install.sh
+0755  scripts/check-public-release.py
 0755  scripts/check-release-state.sh
 0755  scripts/install-cursor-skills.sh
 0755  scripts/safe-update.sh
@@ -262,4 +265,6 @@
 0644  tests/phase-b/verify_evidence.py
 0644  tests/run_tests.sh
 0644  tests/test_documentation_contract.py
+0644  tests/test_installer_security.py
+0644  tests/test_public_release.py
 0755  tests/test_release_state.py

@@ -2,10 +2,6 @@ name: Complete Exocortex safety suite
 
 on:
   pull_request:
-    paths-ignore:
-      - '**/*.md'
-      - 'SHA256SUMS'
-      - 'FILEMODES'
   workflow_dispatch:
 
 concurrency:
@@ -20,9 +16,19 @@ jobs:
   phase-b:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           fetch-depth: 0
+      - name: Enforce public release boundary
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          CANDIDATE_SHA: ${{ github.sha }}
+        run: |
+          python3 scripts/check-public-release.py --root .
+          if [ -n "$BASE_SHA" ]; then
+            python3 scripts/check-public-release.py --root . \
+              --baseline "$BASE_SHA" --candidate "$CANDIDATE_SHA"
+          fi
       - name: Install deterministic test dependencies
         run: sudo apt-get update -qq && sudo apt-get install -y git rsync ripgrep
       - name: Verify generated provider adapters
@@ -31,7 +37,7 @@ jobs:
         run: bash tests/phase-b/run.sh /tmp/exo-phase-b-evidence.github
       - name: Upload evidence
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: complete-safety-suite-evidence
           path: /tmp/exo-phase-b-evidence.github

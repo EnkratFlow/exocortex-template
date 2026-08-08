@@ -37,27 +37,85 @@ SOURCE_ROOT="$(cd "$SOURCE_INPUT" && pwd -P)"
 case "$SOURCE_ROOT/" in "$TARGET_ROOT/"*) fail "template source must not be inside the install target" ;; esac
 case "$TARGET_ROOT/" in "$SOURCE_ROOT/"*) fail "install target must not be inside the template source" ;; esac
 [[ "$CANDIDATE_DIGEST" =~ ^[0-9a-f]{64}$ ]] || fail "EXOCORTEX_CANDIDATE_DIGEST must be the separately approved SHA-256 of SHA256SUMS"
-[ -f "$SOURCE_ROOT/SHA256SUMS" ] || fail "local template source is missing SHA256SUMS"
-SOURCE_SUMS_DIGEST="$(sha256_file "$SOURCE_ROOT/SHA256SUMS")"
-[ "$SOURCE_SUMS_DIGEST" = "$CANDIDATE_DIGEST" ] || fail "local template candidate digest does not match the separately approved digest"
+[ -f "$SOURCE_ROOT/SHA256SUMS" ] && [ ! -L "$SOURCE_ROOT/SHA256SUMS" ] \
+    || fail "local template source is missing a regular non-symlink SHA256SUMS"
 
 TMP_ROOT="$(mktemp -d "${TMPDIR:-/tmp}/exocortex-install.XXXXXX")"
 SOURCE_COPY="$TMP_ROOT/source"
 MANIFEST_NEW="$TMP_ROOT/manifest-new"
 LISTED_SUMS="$TMP_ROOT/listed-sums"
+APPROVED_SUMS="$TMP_ROOT/SHA256SUMS.approved"
+APPROVED_PUBLIC_CHECKER="$TMP_ROOT/check-public-release.approved.py"
 trap 'rm -rf "$TMP_ROOT"' EXIT
-mkdir -p "$SOURCE_COPY"
+mkdir -p "$SOURCE_COPY" "$TMP_ROOT/home" "$TMP_ROOT/tmp"
+chmod 0700 "$TMP_ROOT"
 : > "$MANIFEST_NEW"
 : > "$LISTED_SUMS"
 
-# Copy without repository metadata or credential files. This is staging only;
+# Copy the approved manifest into the private installer directory before using
+# it as authority. Any concurrent source change can then only make later staged
+# validation fail; it cannot change which checker bytes are authorized.
+cp "$SOURCE_ROOT/SHA256SUMS" "$APPROVED_SUMS"
+chmod 0600 "$APPROVED_SUMS"
+SOURCE_SUMS_DIGEST="$(sha256_file "$APPROVED_SUMS")"
+[ "$SOURCE_SUMS_DIGEST" = "$CANDIDATE_DIGEST" ] || fail "local template candidate digest does not match the separately approved digest"
+
+command -v python3 >/dev/null 2>&1 || fail "python3 is required to validate the candidate"
+HOST_PYTHON="$(command -v python3)"
+case "$HOST_PYTHON" in /*) ;; *) fail "python3 must resolve to an absolute host path" ;; esac
+SANITIZED_PATH="$(dirname "$HOST_PYTHON"):/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/opt/homebrew/bin"
+run_candidate_python() {
+    (
+        cd "$TMP_ROOT"
+        env -i \
+            PATH="$SANITIZED_PATH" \
+            HOME="$TMP_ROOT/home" \
+            TMPDIR="$TMP_ROOT/tmp" \
+            LC_ALL=C LANG=C PYTHONDONTWRITEBYTECODE=1 \
+            "$HOST_PYTHON" -I "$@"
+    )
+}
+
+run_trusted_python() {
+    (
+        cd "$TMP_ROOT"
+        env -i \
+            PATH="$SANITIZED_PATH" \
+            HOME="$TMP_ROOT/home" \
+            TMPDIR="$TMP_ROOT/tmp" \
+            LC_ALL=C LANG=C PYTHONDONTWRITEBYTECODE=1 \
+            "$HOST_PYTHON" -I "$@"
+    )
+}
+
+# Bind the release-surface checker to the already approved manifest before
+# executing it, then reject forbidden tracked or untracked source data before
+# any source byte is staged. Output contains metadata only, never matches.
+PUBLIC_CHECKER_REL="scripts/check-public-release.py"
+PUBLIC_CHECKER="$SOURCE_ROOT/$PUBLIC_CHECKER_REL"
+[ -f "$PUBLIC_CHECKER" ] && [ ! -L "$PUBLIC_CHECKER" ] \
+    || fail "local template source is missing the public-release checker"
+EXPECTED_CHECKER_HASH="$(awk -v path="$PUBLIC_CHECKER_REL" 'substr($0,67)==path {print substr($0,1,64)}' "$APPROVED_SUMS")"
+[[ "$EXPECTED_CHECKER_HASH" =~ ^[0-9a-f]{64}$ ]] \
+    || fail "public-release checker is not uniquely bound by SHA256SUMS"
+cp "$PUBLIC_CHECKER" "$APPROVED_PUBLIC_CHECKER"
+chmod 0600 "$APPROVED_PUBLIC_CHECKER"
+[ "$(sha256_file "$APPROVED_PUBLIC_CHECKER")" = "$EXPECTED_CHECKER_HASH" ] \
+    || fail "public-release checker does not match the approved manifest"
+run_candidate_python "$APPROVED_PUBLIC_CHECKER" --root "$SOURCE_ROOT" --source-tree \
+    || fail "template source violates the public-release boundary"
+
+# Copy without repository metadata or credential files. Source validation above
+# makes exclusions defense in depth rather than silent omission. This is staging only;
 # target mutation starts after the complete integrity check.
 if command -v rsync >/dev/null 2>&1 && [ "${EXOCORTEX_FORCE_TAR_STAGE:-0}" != "1" ]; then
-    rsync -a --exclude='.git' --exclude='.env' --exclude='*/.env' \
+    rsync -a --exclude='.git' --exclude='.env' --exclude='.envrc' \
+        --exclude='*/.env' --exclude='*/.envrc' \
         --exclude='__pycache__' --exclude='*.pyc' --exclude='*.pyo' \
         "$SOURCE_ROOT/" "$SOURCE_COPY/"
 else
-    (cd "$SOURCE_ROOT" && tar cf - --exclude='.git' --exclude='.env' --exclude='*/.env' \
+    (cd "$SOURCE_ROOT" && tar cf - --exclude='.git' --exclude='.env' \
+        --exclude='.envrc' --exclude='*/.env' --exclude='*/.envrc' \
         --exclude='__pycache__' --exclude='*.pyc' --exclude='*.pyo' .) \
         | (cd "$SOURCE_COPY" && tar xpf -)
 fi
@@ -74,11 +132,11 @@ file_hash() {
 }
 
 file_mode() {
-    python3 -c 'import os,stat,sys; print(format(stat.S_IMODE(os.stat(sys.argv[1]).st_mode), "04o"))' "$1"
+    run_trusted_python -c 'import os,stat,sys; print(format(stat.S_IMODE(os.stat(sys.argv[1]).st_mode), "04o"))' "$TARGET_ROOT/$1"
 }
 
 file_link_count() {
-    python3 -c 'import os,sys; print(os.lstat(sys.argv[1]).st_nlink)' "$1"
+    run_trusted_python -c 'import os,sys; print(os.lstat(sys.argv[1]).st_nlink)' "$TARGET_ROOT/$1"
 }
 
 COPY_COUNT=0
@@ -108,8 +166,9 @@ is_legacy_session_context_backup_relpath() {
 
 is_data_relpath() {
     is_legacy_session_context_backup_relpath "$1" && return 0
+    [ "$1" = ".env.example" ] && return 1
     case "$1" in
-        SESSION_CONTEXT.md|SESSION_CONTEXT.md.backup|SESSION_CONTEXT.local.md|TODO.md|LESSONS.md|PROJECT_MEMORY.md|OPEN_DECISIONS.md|subconscious_patterns.md|.env|.project-name|.install-manifest|.hub_enabled|.hub_disabled)
+        SESSION_CONTEXT.md|SESSION_CONTEXT.md.backup|SESSION_CONTEXT.local.md|TODO.md|LESSONS.md|PROJECT_MEMORY.md|OPEN_DECISIONS.md|subconscious_patterns.md|.env|.env.*|.envrc|*/.env|*/.env.*|*/.envrc|.project-name|.install-manifest|.hub_enabled|.hub_disabled)
             return 0 ;;
         events/*|archive/*|hub/*|local/*|planning/*|work-items/*)
             return 0 ;;
@@ -121,8 +180,9 @@ is_data_relpath() {
 
 is_integrity_scope() {
     local rel="$1"
+    [ "$rel" = ".exocortex/.env.example" ] && return 0
     case "$rel" in
-        SHA256SUMS|.git|.git/*|.env|*/.env|__pycache__/*|*/__pycache__/*|*.pyc|*.pyo) return 1 ;;
+        SHA256SUMS|.git|.git/*|.env|.env.*|.envrc|*/.env|*/.env.*|*/.envrc|__pycache__/*|*/__pycache__/*|*.pyc|*.pyo) return 1 ;;
         .exocortex/*)
             local exo_rel="${rel#.exocortex/}"
             is_data_relpath "$exo_rel" && return 1
@@ -163,10 +223,9 @@ verify_integrity() {
 }
 
 verify_integrity
-command -v python3 >/dev/null 2>&1 || fail "python3 is required to validate the candidate"
 
 verify_file_modes() {
-    PYTHONDONTWRITEBYTECODE=1 python3 - "$SOURCE_COPY" <<'PY'
+    run_trusted_python - "$SOURCE_COPY" <<'PY'
 import re
 import stat
 import sys
@@ -223,20 +282,20 @@ ADAPTER_MATRIX="$SOURCE_COPY/.exocortex/provider-adapters.json"
 RETIREMENTS="$TMP_ROOT/legacy-retirements.tsv"
 [ -f "$ADAPTER_GENERATOR" ] || fail "template source is missing the provider-adapter generator"
 [ -f "$ADAPTER_MATRIX" ] || fail "template source is missing the provider-adapter matrix"
-python3 "$ADAPTER_GENERATOR" --check >/dev/null \
+run_candidate_python "$ADAPTER_GENERATOR" --check >/dev/null \
     || fail "generated provider adapters do not match the canonical 24-command registry"
 MODEL_REGISTRY_TOOL="$SOURCE_COPY/.exocortex/scripts/model_registry.py"
 [ -f "$MODEL_REGISTRY_TOOL" ] || fail "template source is missing the offline model-registry validator"
-PYTHONDONTWRITEBYTECODE=1 python3 "$MODEL_REGISTRY_TOOL" validate-sources \
+run_candidate_python "$MODEL_REGISTRY_TOOL" validate-sources \
     --project-root "$SOURCE_COPY" \
     --sources .exocortex/model-source-registry.json >/dev/null \
     || fail "model source registry failed structural validation"
-PYTHONDONTWRITEBYTECODE=1 python3 "$MODEL_REGISTRY_TOOL" validate-catalog \
+run_candidate_python "$MODEL_REGISTRY_TOOL" validate-catalog \
     --project-root "$SOURCE_COPY" \
     --sources .exocortex/model-source-registry.json \
     --catalog .exocortex/model-routing-catalog.json >/dev/null \
     || fail "model routing catalog failed structural validation"
-python3 - "$ADAPTER_MATRIX" > "$RETIREMENTS" <<'PY'
+run_trusted_python - "$ADAPTER_MATRIX" > "$RETIREMENTS" <<'PY'
 import json, re, sys
 from pathlib import PurePosixPath
 
@@ -666,6 +725,49 @@ if ! grep -Fq '# BEGIN EXOCORTEX' "$GITIGNORE" 2>/dev/null; then
         echo '!.exocortex/events/.gitkeep'
         echo '.exocortex/local/'
         echo '# END EXOCORTEX'
+    } >> "$GITIGNORE"
+fi
+# This separate versioned block upgrades existing installations whose original
+# managed block predates the complete project-data boundary. The entries are
+# intentionally duplicated by the nested .exocortex/.gitignore as defense in
+# depth if either ignore file is later customized.
+if ! grep -Fq '# BEGIN EXOCORTEX PROJECT DATA' "$GITIGNORE" 2>/dev/null; then
+    {
+        echo
+        echo '# BEGIN EXOCORTEX PROJECT DATA'
+        echo '.exocortex/.env'
+        echo '.exocortex/.env.*'
+        echo '.exocortex/.envrc'
+        echo '.exocortex/local/'
+        echo '.exocortex/work-items/'
+        echo '.exocortex/planning/'
+        echo '.exocortex/archive/'
+        echo '.exocortex/hub/'
+        echo '.exocortex/.project-name'
+        echo '.exocortex/.install-manifest'
+        echo '.exocortex/.hub_enabled'
+        echo '.exocortex/.hub_disabled'
+        echo '.exocortex/SESSION_CONTEXT.md'
+        echo '.exocortex/SESSION_CONTEXT.local.md'
+        echo '.exocortex/SESSION_CONTEXT.md.backup'
+        echo '.exocortex/SESSION_CONTEXT_BACKUP_*.md'
+        echo '.exocortex/TODO.md'
+        echo '.exocortex/LESSONS.md'
+        echo '.exocortex/PROJECT_MEMORY.md'
+        echo '.exocortex/OPEN_DECISIONS.md'
+        echo '.exocortex/subconscious_patterns.md'
+        echo '.exocortex/control/ACTIVE_WORK.md'
+        echo '.exocortex/control/BRANCH_POLICY.md'
+        echo '.exocortex/control/REPO_STATE.md'
+        echo '.exocortex/control/EXECUTOR_REGISTRY.json'
+        echo '.exocortex/control/EXTERNAL_SYNC_POLICY.json'
+        echo '.exocortex/control/INTERRUPTS.md'
+        echo '.exocortex/control/BACKLOG.md'
+        echo '.exocortex/control/ROADMAP.md'
+        echo '.exocortex/control/ARCH_OVERVIEW.md'
+        echo '.exocortex/control/REPO_ORGANIZATION_REPORT.md'
+        echo '.exocortex/events/'
+        echo '# END EXOCORTEX PROJECT DATA'
     } >> "$GITIGNORE"
 fi
 if [ "$gitignore_existed" = false ]; then

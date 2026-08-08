@@ -6,7 +6,35 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 ## [Unreleased]
 
-No changes recorded after the 3.2.8 release candidate.
+### Changed
+
+- **Judgment-led model routing** — the accountable parent selects the correct
+  model using expected cost through a verified result, applies the same rule to
+  every subagent, reports route and ETA without requesting routine approval,
+  and treats the formal catalog as optional empirical evidence.
+- **Command invocation policy** — 11 read-only orientation and analysis
+  commands are model-discoverable; 13 commands involving records, planning,
+  credential-adjacent checks, bootstrap, or cross-project boundaries remain
+  explicitly human-triggered. All 72 adapters remain thin and non-authorizing.
+- **Living project status** — added a linked current-status page separating the
+  published baseline, local candidate, verification state, blockers, and next
+  work.
+
+### Security
+
+- **Public release boundary** — a metadata-only checker denies protected
+  project data, environment files, secret-shaped material, and transient blobs
+  added then deleted within a candidate range without printing matched content.
+- **Installer/update environment reduction** — candidate-owned validation runs
+  with an explicit sanitized environment, and the installer rejects forbidden
+  tracked or untracked source data before target mutation.
+- **Release and CI hardening** — pull requests always produce the required
+  safety check, third-party Actions are pinned to immutable commits, and
+  release closeout requires an annotated exact-main tag plus a reviewed
+  baseline range.
+- **Trust-boundary correction** — documentation now distinguishes checksum byte
+  consistency from repository-owner authenticity and blocks a hardened public
+  install claim until signature or attestation evidence is selected.
 
 ## [3.2.8] - 2026-08-05
 
@@ -408,7 +436,9 @@ exists.
 
 ### Upgrade Notes
 - If you installed a version where `/ai-export` mentioned Trading Journal files, rerun the installer from your project root after this release:
-  `curl -sL https://raw.githubusercontent.com/EnkratFlow/exocortex-template/main/install.sh | bash`
+  use the exact pinned local release procedure documented in
+  `.exocortex/docs/AI_INSTALLATION.md`. The former remote pipe-to-shell command
+  is intentionally retired.
 - The update preserves user-modified files and never overwrites `.exocortex/events/`, `.exocortex/SESSION_CONTEXT.md`, `.exocortex/TODO.md`, `.exocortex/LESSONS.md`, or `.exocortex/PROJECT_MEMORY.md`.
 
 [3.1.2]: https://github.com/EnkratFlow/exocortex-template/releases/tag/v3.1.2

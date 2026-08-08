@@ -75,26 +75,76 @@ if [ -n "$ARCHIVE_TEST_FAULT" ]; then
 fi
 
 PROJECT_ROOT="$(pwd -P)"
-TEMPLATE_ROOT="$(cd "$TEMPLATE_SOURCE" && pwd -P)"
+TEMPLATE_SOURCE_ROOT="$(cd "$TEMPLATE_SOURCE" && pwd -P)"
 [ -d "$PROJECT_ROOT/.exocortex" ] || fail "run from an existing Exocortex project"
 [ "$PROJECT_ROOT" != "/" ] || fail "refusing filesystem root"
 [ "$PROJECT_ROOT" != "${HOME:-/__no_home__}" ] || fail "refusing user home"
-[ "$PROJECT_ROOT" != "$TEMPLATE_ROOT" ] || fail "template and target must differ"
-case "$TEMPLATE_ROOT/" in "$PROJECT_ROOT/"*) fail "template must not be inside the target" ;; esac
-case "$PROJECT_ROOT/" in "$TEMPLATE_ROOT/"*) fail "target must not be inside the template" ;; esac
+[ "$PROJECT_ROOT" != "$TEMPLATE_SOURCE_ROOT" ] || fail "template and target must differ"
+case "$TEMPLATE_SOURCE_ROOT/" in "$PROJECT_ROOT/"*) fail "template must not be inside the target" ;; esac
+case "$PROJECT_ROOT/" in "$TEMPLATE_SOURCE_ROOT/"*) fail "target must not be inside the template" ;; esac
 TRACKED_PROTECTED_SIDECAR=false
 TRACKED_LEGACY_SESSION_CONTEXT_BACKUP=false
 
-[ -f "$TEMPLATE_ROOT/SHA256SUMS" ] && [ ! -L "$TEMPLATE_ROOT/SHA256SUMS" ] \
+[ -f "$TEMPLATE_SOURCE_ROOT/SHA256SUMS" ] && [ ! -L "$TEMPLATE_SOURCE_ROOT/SHA256SUMS" ] \
     || fail "template SHA256SUMS must be a regular non-symlink file"
-SOURCE_LINK="$(find "$TEMPLATE_ROOT" -path "$TEMPLATE_ROOT/.git" -prune -o -type l -print -quit 2>/dev/null)" \
-    || fail "template source topology could not be inspected safely"
-[ -z "$SOURCE_LINK" ] || fail "template source contains a symlink: ${SOURCE_LINK#"$TEMPLATE_ROOT/"}"
+command -v python3 >/dev/null 2>&1 || fail "python3 is required to validate the candidate"
+HOST_PYTHON="$(command -v python3)"
+HOST_BASH="$(command -v bash)"
+case "$HOST_PYTHON" in /*) ;; *) fail "python3 must resolve to an absolute host path" ;; esac
+case "$HOST_BASH" in /*) ;; *) fail "bash must resolve to an absolute host path" ;; esac
+SANITIZED_PATH="$(dirname "$HOST_PYTHON"):$(dirname "$HOST_BASH"):/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/opt/homebrew/bin"
+SANITIZED_ENV_ROOT="$(mktemp -d "${TMPDIR:-/tmp}/exocortex-update-env.XXXXXX")"
+TEMPLATE_ROOT="$SANITIZED_ENV_ROOT/candidate"
+mkdir -p "$SANITIZED_ENV_ROOT/home" "$SANITIZED_ENV_ROOT/tmp" "$TEMPLATE_ROOT"
+chmod 0700 "$SANITIZED_ENV_ROOT"
+trap 'rm -rf "$SANITIZED_ENV_ROOT"' EXIT
+
+# Candidate-owned Python receives only explicit non-secret process state. This
+# reduces accidental inherited-token access; it is not an OS or network sandbox.
+run_candidate_python() {
+    (
+        cd "$SANITIZED_ENV_ROOT"
+        env -i \
+            PATH="$SANITIZED_PATH" \
+            HOME="$SANITIZED_ENV_ROOT/home" \
+            TMPDIR="$SANITIZED_ENV_ROOT/tmp" \
+            LC_ALL=C LANG=C PYTHONDONTWRITEBYTECODE=1 \
+            "$HOST_PYTHON" -I "$@"
+    )
+}
+
+run_trusted_python() {
+    (
+        cd "$SANITIZED_ENV_ROOT"
+        env -i \
+            PATH="$SANITIZED_PATH" \
+            HOME="$SANITIZED_ENV_ROOT/home" \
+            TMPDIR="$SANITIZED_ENV_ROOT/tmp" \
+            LC_ALL=C LANG=C PYTHONDONTWRITEBYTECODE=1 \
+            "$HOST_PYTHON" -I "$@"
+    )
+}
+
+# Snapshot the complete candidate into a private directory before reading its
+# manifest or executing any candidate-owned helper. A concurrent writer can
+# make this snapshot fail validation, but cannot change bytes after approval.
+if command -v rsync >/dev/null 2>&1 && [ "${EXOCORTEX_FORCE_TAR_STAGE:-0}" != "1" ]; then
+    rsync -a --exclude='.git' --exclude='__pycache__' --exclude='*.pyc' --exclude='*.pyo' \
+        "$TEMPLATE_SOURCE_ROOT/" "$TEMPLATE_ROOT/"
+else
+    (cd "$TEMPLATE_SOURCE_ROOT" && tar cf - --exclude='.git' \
+        --exclude='__pycache__' --exclude='*.pyc' --exclude='*.pyo' .) \
+        | (cd "$TEMPLATE_ROOT" && tar xpf -)
+fi
+SNAPSHOT_LINK="$(find "$TEMPLATE_ROOT" -type l -print -quit 2>/dev/null)" \
+    || fail "candidate snapshot topology could not be inspected safely"
+[ -z "$SNAPSHOT_LINK" ] || fail "candidate snapshot contains a symlink: ${SNAPSHOT_LINK#"$TEMPLATE_ROOT/"}"
+[ -f "$TEMPLATE_ROOT/SHA256SUMS" ] && [ ! -L "$TEMPLATE_ROOT/SHA256SUMS" ] \
+    || fail "candidate snapshot is missing a regular non-symlink SHA256SUMS"
 ACTUAL_CANDIDATE_DIGEST="$(sha256_file "$TEMPLATE_ROOT/SHA256SUMS")"
 [ "$ACTUAL_CANDIDATE_DIGEST" = "$CANDIDATE_DIGEST" ] || fail "template does not match the separately approved candidate digest"
-command -v python3 >/dev/null 2>&1 || fail "python3 is required to validate the candidate"
 
-PYTHONDONTWRITEBYTECODE=1 python3 - "$TEMPLATE_ROOT" <<'PY' \
+run_candidate_python - "$TEMPLATE_ROOT" <<'PY' \
     || fail "template byte or file-mode inventory does not match the approved candidate"
 import hashlib
 import re
@@ -111,6 +161,33 @@ if modes.is_symlink() or not modes.is_file():
     raise SystemExit("FILEMODES must be a regular non-symlink file")
 
 checksum_paths = []
+def environment_file(relative):
+    if relative == ".exocortex/.env.example":
+        return False
+    name = relative.rsplit("/", 1)[-1]
+    return name == ".env" or name.startswith(".env.") or name == ".envrc"
+
+def protected_data(relative):
+    if environment_file(relative):
+        return True
+    if not relative.startswith(".exocortex/"):
+        return False
+    value = relative[len(".exocortex/"):]
+    if value.startswith("SESSION_CONTEXT_BACKUP_") and value.endswith(".md") and "/" not in value:
+        return True
+    if value in {
+        "SESSION_CONTEXT.md", "SESSION_CONTEXT.md.backup", "SESSION_CONTEXT.local.md",
+        "TODO.md", "LESSONS.md", "PROJECT_MEMORY.md", "OPEN_DECISIONS.md",
+        "subconscious_patterns.md", ".project-name", ".install-manifest",
+        ".hub_enabled", ".hub_disabled",
+        "control/ACTIVE_WORK.md", "control/BRANCH_POLICY.md", "control/REPO_STATE.md",
+        "control/EXECUTOR_REGISTRY.json", "control/EXTERNAL_SYNC_POLICY.json",
+        "control/INTERRUPTS.md", "control/BACKLOG.md", "control/ROADMAP.md",
+        "control/ARCH_OVERVIEW.md", "control/REPO_ORGANIZATION_REPORT.md",
+    }:
+        return True
+    return value.startswith(("events/", "archive/", "hub/", "local/", "planning/", "work-items/"))
+
 for line in sums.read_text(encoding="utf-8").splitlines():
     match = re.fullmatch(r"([0-9a-f]{64})  ([^/].*)", line)
     if match is None:
@@ -122,6 +199,7 @@ for line in sums.read_text(encoding="utf-8").splitlines():
         relative in checksum_paths
         or ".." in path.parts
         or "." in path.parts
+        or protected_data(relative)
         or candidate.is_symlink()
         or not candidate.is_file()
     ):
@@ -154,7 +232,37 @@ for relative in sorted(expected_mode_paths):
     candidate = root / relative
     if stat.S_IMODE(candidate.stat().st_mode) != mode_records[relative]:
         raise SystemExit(f"FILEMODES mismatch: {relative}")
+
+actual_code_plane = set()
+for candidate in root.rglob("*"):
+    relative = candidate.relative_to(root).as_posix()
+    value = candidate.lstat()
+    if stat.S_ISDIR(value.st_mode):
+        continue
+    if not stat.S_ISREG(value.st_mode) or value.st_nlink != 1:
+        raise SystemExit("candidate snapshot contains a special or hard-linked file")
+    if relative == "SHA256SUMS" or protected_data(relative):
+        continue
+    actual_code_plane.add(relative)
+if actual_code_plane != set(checksum_paths):
+    raise SystemExit("candidate code-plane path inventory differs from SHA256SUMS")
 PY
+
+PUBLIC_RELEASE_CHECKER_SOURCE="$TEMPLATE_ROOT/scripts/check-public-release.py"
+PUBLIC_RELEASE_CHECKER_DIR="$SANITIZED_ENV_ROOT/public-checker"
+PUBLIC_RELEASE_CHECKER="$PUBLIC_RELEASE_CHECKER_DIR/check-public-release.py"
+[ -f "$PUBLIC_RELEASE_CHECKER_SOURCE" ] && [ ! -L "$PUBLIC_RELEASE_CHECKER_SOURCE" ] \
+    || fail "template is missing the public-release checker"
+mkdir -p "$PUBLIC_RELEASE_CHECKER_DIR"
+EXPECTED_PUBLIC_CHECKER_HASH="$(awk 'substr($0,67)=="scripts/check-public-release.py" {print substr($0,1,64)}' "$TEMPLATE_ROOT/SHA256SUMS")"
+[[ "$EXPECTED_PUBLIC_CHECKER_HASH" =~ ^[0-9a-f]{64}$ ]] \
+    || fail "public-release checker is not uniquely bound by SHA256SUMS"
+cp "$PUBLIC_RELEASE_CHECKER_SOURCE" "$PUBLIC_RELEASE_CHECKER"
+chmod 0600 "$PUBLIC_RELEASE_CHECKER"
+[ "$(sha256_file "$PUBLIC_RELEASE_CHECKER")" = "$EXPECTED_PUBLIC_CHECKER_HASH" ] \
+    || fail "private public-release checker copy differs from SHA256SUMS"
+run_candidate_python "$PUBLIC_RELEASE_CHECKER" --root "$TEMPLATE_ROOT" --source-tree \
+    || fail "template source violates the public-release boundary"
 
 # Retired provider paths and project-owned root Cursor rules remain update
 # surfaces so rehearsals, authorization, backups, changed-path evidence, and
@@ -192,7 +300,9 @@ protected_paths=(
 )
 # This is the documented direct legacy filename family only. It deliberately
 # does not broadly exempt arbitrary backup files from the update code plane.
-protected_globs=(".exocortex/SESSION_CONTEXT_BACKUP_*.md")
+protected_globs=(
+    ".exocortex/SESSION_CONTEXT_BACKUP_*.md"
+)
 
 preflight_surface_paths() {
     local rel cursor link hardlink
@@ -233,7 +343,7 @@ if [ -n "$RECONCILIATION_PLAN" ]; then
     [ -f "$RECONCILIATION_HELPER" ] || fail "template is missing the reconciliation validator"
     [ -f "$RECONCILIATION_PLAN" ] && [ ! -L "$RECONCILIATION_PLAN" ] \
         || fail "reconciliation plan must be a regular non-symlink file"
-    PLAN_DIGEST="$(PYTHONDONTWRITEBYTECODE=1 python3 "$RECONCILIATION_HELPER" validate \
+    PLAN_DIGEST="$(run_candidate_python "$RECONCILIATION_HELPER" validate \
         --target "$PROJECT_ROOT" --template "$TEMPLATE_ROOT" \
         --candidate-digest "$CANDIDATE_DIGEST" --plan "$RECONCILIATION_PLAN" \
         --emit plan-digest)" || fail "reconciliation plan failed closed before backup or rehearsal"
@@ -241,7 +351,7 @@ if [ -n "$RECONCILIATION_PLAN" ]; then
     GUARD_OPERATION="apply_template_reconciliation"
 fi
 
-BACKUP_NORMALIZED="$(python3 - "$BACKUP_INPUT" <<'PY'
+BACKUP_NORMALIZED="$(run_trusted_python - "$BACKUP_INPUT" <<'PY'
 import os, sys
 from pathlib import Path
 
@@ -265,7 +375,7 @@ PY
 HOME_CANONICAL=""
 if [ -d "${HOME:-}" ]; then HOME_CANONICAL="$(cd "$HOME" && pwd -P)"; fi
 [ -z "$HOME_CANONICAL" ] || [ "$BACKUP_NORMALIZED" != "$HOME_CANONICAL" ] || fail "refusing user home as backup directory"
-case "$BACKUP_NORMALIZED/" in "$PROJECT_ROOT/"*|"$TEMPLATE_ROOT/"*) fail "backup directory must be outside target and template" ;; esac
+case "$BACKUP_NORMALIZED/" in "$PROJECT_ROOT/"*|"$TEMPLATE_SOURCE_ROOT/"*|"$TEMPLATE_ROOT/"*) fail "backup directory must be outside target and template" ;; esac
 if [ -n "$ARCHIVE_TEST_FAULT" ]; then
     TEST_TEMP_ROOT="$(cd "${TMPDIR:-/tmp}" && pwd -P)"
     case "$BACKUP_NORMALIZED" in
@@ -285,9 +395,9 @@ if [ "$APPLY" = true ]; then
         [ -n "$value" ] || fail "--apply requires complete guarded-executor identity and capability arguments"
     done
     GUARD="$TEMPLATE_ROOT/.exocortex/scripts/authority_guard.py"
-    GUARD_DIGEST="$(python3 "$GUARD" guard-digest)"
+    GUARD_DIGEST="$(run_candidate_python "$GUARD" guard-digest)"
     if [ -n "$RECONCILIATION_PLAN" ]; then
-        PYTHONDONTWRITEBYTECODE=1 python3 "$RECONCILIATION_HELPER" validate \
+        run_candidate_python "$RECONCILIATION_HELPER" validate \
             --target "$PROJECT_ROOT" --template "$TEMPLATE_ROOT" \
             --candidate-digest "$CANDIDATE_DIGEST" --plan "$RECONCILIATION_PLAN" \
             --expected-work-item-id "$WORK_ITEM_ID" \
@@ -306,7 +416,7 @@ if [ "$APPLY" = true ]; then
     if [ -n "$RECONCILIATION_PLAN" ]; then
         pre_guard_args+=(--payload-digest "$PLAN_DIGEST" --require-exact-path-set)
         while IFS= read -r rel; do pre_guard_args+=(--target-path "$rel"); done < <(
-            PYTHONDONTWRITEBYTECODE=1 python3 "$RECONCILIATION_HELPER" validate \
+            run_candidate_python "$RECONCILIATION_HELPER" validate \
                 --target "$PROJECT_ROOT" --template "$TEMPLATE_ROOT" \
                 --candidate-digest "$CANDIDATE_DIGEST" --plan "$RECONCILIATION_PLAN" \
                 --expected-work-item-id "$WORK_ITEM_ID" \
@@ -315,12 +425,12 @@ if [ "$APPLY" = true ]; then
         )
     fi
     # Deny an invalid/revoked apply before backup creation or target rehearsal.
-    python3 "$GUARD" "${pre_guard_args[@]}" >/dev/null
+    run_candidate_python "$GUARD" "${pre_guard_args[@]}" >/dev/null
 fi
 
 inventory_digest() {
     local root="$1" mode="$2" skip="${3:-}"
-    python3 - "$root" "$mode" "$skip" <<'PY'
+    run_trusted_python - "$root" "$mode" "$skip" <<'PY'
 import hashlib, os, stat, sys
 from pathlib import Path
 
@@ -352,6 +462,11 @@ def legacy_session_context_backup(relative):
         and relative.endswith('.md')
         and '/' not in relative[len(legacy_backup_prefix):]
     )
+def environment_file(relative):
+    if relative == '.exocortex/.env.example':
+        return False
+    name = relative.rsplit('/', 1)[-1]
+    return name == '.env' or name.startswith('.env.') or name == '.envrc'
 if mode == 'protected':
     legacy_root = root / '.exocortex'
     if legacy_root.is_dir() and not legacy_root.is_symlink():
@@ -360,6 +475,21 @@ if mode == 'protected':
             for path in legacy_root.iterdir()
             if legacy_session_context_backup(path.relative_to(root).as_posix())
         )
+        selected = selected + sorted(
+            (Path(dirpath) / name).relative_to(root).as_posix()
+            for dirpath, dirnames, filenames in os.walk(legacy_root, followlinks=False)
+            for name in filenames
+            if environment_file((Path(dirpath) / name).relative_to(root).as_posix())
+        )
+    selected = selected + sorted(
+        (Path(dirpath) / name).relative_to(root).as_posix()
+        for surface_path in surface
+        for base in [root / surface_path]
+        if base.is_dir() and not base.is_symlink()
+        for dirpath, dirnames, filenames in os.walk(base, followlinks=False)
+        for name in filenames
+        if environment_file((Path(dirpath) / name).relative_to(root).as_posix())
+    )
 skip_argument = sys.argv[3] if len(sys.argv) > 3 else ''
 skip = (
     [entry for entry in skip_argument.splitlines() if entry]
@@ -383,6 +513,7 @@ def excluded(relative):
         return True
     return mode in ('surface', 'code_plane') and (
         legacy_session_context_backup(relative)
+        or environment_file(relative)
         or any(relative == item or relative.startswith(item + '/') for item in protected)
     )
 def directory_record(path, relative):
@@ -465,8 +596,8 @@ mkdir -p "$BACKUP_NORMALIZED"
 BACKUP_DIR="$(cd "$BACKUP_NORMALIZED" && pwd -P)"
 [ "$BACKUP_DIR" != "/" ] || fail "refusing filesystem root as backup directory"
 [ "$BACKUP_DIR" != "${HOME:-/__no_home__}" ] || fail "refusing user home as backup directory"
-case "$BACKUP_DIR/" in "$PROJECT_ROOT/"*|"$TEMPLATE_ROOT/"*) fail "backup directory must be outside target and template" ;; esac
-PYTHONDONTWRITEBYTECODE=1 python3 - "$BACKUP_DIR" <<'PY' \
+case "$BACKUP_DIR/" in "$PROJECT_ROOT/"*|"$TEMPLATE_SOURCE_ROOT/"*|"$TEMPLATE_ROOT/"*) fail "backup directory must be outside target and template" ;; esac
+run_trusted_python - "$BACKUP_DIR" <<'PY' \
     || fail "backup directory permissions or ancestry are unsafe"
 import os
 from pathlib import Path
@@ -499,10 +630,10 @@ PLANNED_EFFECTS="$WORK_DIR/planned-effect-paths.txt"
 BACKUP_VERIFY="$WORK_DIR/backup-verify"
 REHEARSAL_INSTALL_LOG="$WORK_DIR/rehearsal-install.log"
 RECONCILED_INSTALL_LOG="$WORK_DIR/reconciled-install.log"
-trap 'rm -rf "$WORK_DIR"' EXIT
+trap 'rm -rf "$WORK_DIR" "$SANITIZED_ENV_ROOT"' EXIT
 mkdir -p "$REHEARSAL" "$FAKE_HOME" "$BACKUP_VERIFY"
 if [ -n "$RECONCILIATION_PLAN" ]; then
-    PYTHONDONTWRITEBYTECODE=1 python3 "$RECONCILIATION_HELPER" validate \
+    run_candidate_python "$RECONCILIATION_HELPER" validate \
         --target "$PROJECT_ROOT" --template "$TEMPLATE_ROOT" \
         --candidate-digest "$CANDIDATE_DIGEST" --plan "$RECONCILIATION_PLAN" \
         --emit effect-paths > "$PLANNED_EFFECTS" \
@@ -533,10 +664,10 @@ BACKUP_PATH="$BACKUP_DIR/$BACKUP_PREFIX.tar.gz.$BACKUP_SUFFIX"
 [ -f "$BACKUP_PARTIAL" ] && [ ! -L "$BACKUP_PARTIAL" ] \
     || fail "rollback archive reservation is not a regular file"
 IFS=: read -r BACKUP_DEV BACKUP_INO < <(
-    python3 -c 'import os,sys; value=os.lstat(sys.argv[1]); print(f"{value.st_dev}:{value.st_ino}")' "$BACKUP_PARTIAL"
+    run_trusted_python -c 'import os,sys; value=os.lstat(sys.argv[1]); print(f"{value.st_dev}:{value.st_ino}")' "$BACKUP_PARTIAL"
 )
 if [ "$ARCHIVE_TEST_FAULT" = "substitute" ]; then
-    PYTHONDONTWRITEBYTECODE=1 python3 - "$BACKUP_PARTIAL" <<'PY' \
+    run_trusted_python - "$BACKUP_PARTIAL" <<'PY' \
         || { rm -f -- "$BACKUP_PARTIAL"; fail "test-only rollback archive substitution failed"; }
 import os
 from pathlib import Path
@@ -573,12 +704,26 @@ for rel in "${surface_paths[@]}"; do [ -e "$PROJECT_ROOT/$rel" ] && backup_items
 [ "${#backup_items[@]}" -gt 0 ] || fail "nothing to back up"
 backup_excludes=()
 for rel in "${protected_paths[@]}" "${protected_globs[@]}"; do backup_excludes+=("--exclude=$rel"); done
+backup_environment_roots=()
+for rel in "${surface_paths[@]}"; do
+    [ -d "$PROJECT_ROOT/$rel" ] && backup_environment_roots+=("$PROJECT_ROOT/$rel")
+done
+if [ "${#backup_environment_roots[@]}" -gt 0 ]; then
+    while IFS= read -r -d '' environment_path; do
+        environment_rel="${environment_path#"$PROJECT_ROOT/"}"
+        [ "$environment_rel" = ".exocortex/.env.example" ] && continue
+        backup_excludes+=("--exclude=$environment_rel")
+    done < <(
+        find "${backup_environment_roots[@]}" -type f \
+            \( -name '.env' -o -name '.env.*' -o -name '.envrc' \) -print0
+    )
+fi
 # Editor session worktrees are runtime state: excluded from the rollback
 # archive exactly as they are excluded from every inventory digest, so the
 # archive reconstruction comparison stays exact.
 backup_excludes+=("--exclude=.claude/worktrees")
 if (cd "$PROJECT_ROOT" && COPYFILE_DISABLE=1 tar "${backup_excludes[@]}" -czf - "${backup_items[@]}") \
-    | PYTHONDONTWRITEBYTECODE=1 python3 -c '
+    | run_trusted_python -c '
 import os
 import stat
 import sys
@@ -620,7 +765,7 @@ finally:
     :
 else
     if [ "$ARCHIVE_TEST_FAULT" = "substitute" ]; then
-        if PYTHONDONTWRITEBYTECODE=1 python3 - "$BACKUP_PARTIAL" <<'PY'
+        if run_trusted_python - "$BACKUP_PARTIAL" <<'PY'
 import os
 import stat
 import sys
@@ -654,7 +799,7 @@ PY
 fi
 BACKUP_DIGEST="$(sha256_file "$BACKUP_PARTIAL")"
 if [ "$ARCHIVE_TEST_FAULT" = "corrupt" ]; then
-    PYTHONDONTWRITEBYTECODE=1 python3 - "$BACKUP_PARTIAL" "$BACKUP_DEV" "$BACKUP_INO" <<'PY' \
+    run_trusted_python - "$BACKUP_PARTIAL" "$BACKUP_DEV" "$BACKUP_INO" <<'PY' \
         || { rm -f -- "$BACKUP_PARTIAL"; fail "test-only rollback archive corruption failed"; }
 import os
 import stat
@@ -686,7 +831,7 @@ finally:
     os.close(fd)
 PY
 fi
-PYTHONDONTWRITEBYTECODE=1 python3 - "$BACKUP_PARTIAL" "$BACKUP_DEV" "$BACKUP_INO" "$BACKUP_DIGEST" <<'PY' \
+run_trusted_python - "$BACKUP_PARTIAL" "$BACKUP_DEV" "$BACKUP_INO" "$BACKUP_DIGEST" <<'PY' \
     || { rm -f -- "$BACKUP_PARTIAL"; fail "rollback archive failed identity, privacy, or integrity verification"; }
 import hashlib
 import os
@@ -735,6 +880,11 @@ def legacy_session_context_backup(name):
         and name.endswith(".md")
         and "/" not in name[len(legacy_backup_prefix):]
     )
+def environment_file(name):
+    if name == ".exocortex/.env.example":
+        return False
+    leaf = name.rsplit("/", 1)[-1]
+    return leaf == ".env" or leaf.startswith(".env.") or leaf == ".envrc"
 def runtime_state(name):
     parts = name.split("/")
     return any(
@@ -757,6 +907,7 @@ with tarfile.open(path, "r:gz") as archive:
             or not (member.isfile() or member.isdir())
             or runtime_state(name)
             or legacy_session_context_backup(name)
+            or environment_file(name)
             or any(name == item or name.startswith(item + "/") for item in protected)
         ):
             raise SystemExit(f"unsafe or protected rollback archive member: {name}")
@@ -765,7 +916,7 @@ COPYFILE_DISABLE=1 tar -xzpf "$BACKUP_PARTIAL" -C "$BACKUP_VERIFY" \
     || { rm -f -- "$BACKUP_PARTIAL"; fail "rollback archive could not be reconstructed"; }
 [ "$(inventory_digest "$BACKUP_VERIFY" code_plane)" = "$BASE_CODE_PLANE_DIGEST" ] \
     || { rm -f -- "$BACKUP_PARTIAL"; fail "rollback archive does not reconstruct the exact prior code plane"; }
-PYTHONDONTWRITEBYTECODE=1 python3 - "$BACKUP_PARTIAL" "$BACKUP_PATH" "$ARCHIVE_TEST_FAULT" <<'PY' \
+run_trusted_python - "$BACKUP_PARTIAL" "$BACKUP_PATH" "$ARCHIVE_TEST_FAULT" <<'PY' \
     || { rm -f -- "$BACKUP_PARTIAL" "$BACKUP_PATH"; fail "rollback archive publication failed"; }
 import os
 from pathlib import Path
@@ -786,7 +937,7 @@ PY
 verify_backup_archive() {
     [ -f "$BACKUP_PATH" ] && [ ! -L "$BACKUP_PATH" ] \
         && [ "$(sha256_file "$BACKUP_PATH")" = "$BACKUP_DIGEST" ] \
-        && python3 - "$BACKUP_PATH" "$BACKUP_DEV" "$BACKUP_INO" <<'PY'
+        && run_trusted_python - "$BACKUP_PATH" "$BACKUP_DEV" "$BACKUP_INO" <<'PY'
 import os
 import stat
 import sys
@@ -804,11 +955,28 @@ PY
 }
 verify_backup_archive || fail "rollback archive changed after durable publication"
 
+run_candidate_installer() {
+    local destination="$1"
+    local install_fault="${2:-${EXOCORTEX_TEST_INSTALL_FAULT_AFTER_COPIES:-0}}"
+    (
+        cd "$destination"
+        env -i \
+            PATH="$SANITIZED_PATH" \
+            HOME="$FAKE_HOME" \
+            TMPDIR="$SANITIZED_ENV_ROOT/tmp" \
+            LC_ALL=C LANG=C \
+            EXOCORTEX_LOCAL_SOURCE="$TEMPLATE_ROOT" \
+            EXOCORTEX_CANDIDATE_DIGEST="$CANDIDATE_DIGEST" \
+            EXOCORTEX_FORCE_TAR_STAGE="${EXOCORTEX_FORCE_TAR_STAGE:-0}" \
+            EXOCORTEX_TEST_MODE="${EXOCORTEX_TEST_MODE:-0}" \
+            EXOCORTEX_TEST_INSTALL_FAULT_AFTER_COPIES="$install_fault" \
+            "$HOST_BASH" "$TEMPLATE_ROOT/install.sh" "$(basename "$PROJECT_ROOT")"
+    )
+}
+
 run_installer_logged() {
     local destination="$1" log_file="$2" status
-    if (cd "$destination" && HOME="$FAKE_HOME" EXOCORTEX_TEST_INSTALL_FAULT_AFTER_COPIES=0 \
-        EXOCORTEX_LOCAL_SOURCE="$TEMPLATE_ROOT" EXOCORTEX_CANDIDATE_DIGEST="$CANDIDATE_DIGEST" \
-        bash "$TEMPLATE_ROOT/install.sh" "$(basename "$PROJECT_ROOT")") > "$log_file" 2>&1; then
+    if run_candidate_installer "$destination" 0 > "$log_file" 2>&1; then
         cat "$log_file"
     else
         status=$?
@@ -832,7 +1000,7 @@ fi
 materialize_reconciliation() {
     local destination="$1"
     [ -n "$RECONCILIATION_PLAN" ] || return 0
-    PYTHONDONTWRITEBYTECODE=1 python3 - \
+    run_candidate_python - \
         "$RECONCILIATION_HELPER" "$RECONCILIATION_PLAN" "$destination" \
         "$TEMPLATE_ROOT" "$PROJECT_ROOT" "$PLAN_DIGEST" <<'PY'
 import importlib.util
@@ -908,14 +1076,14 @@ allowed_generated() {
         .exocortex/control/BACKLOG.md) grep -Fq '_No backlog items yet._' "$path" ;;
         .exocortex/control/ROADMAP.md) grep -Fq '_No roadmap defined yet._' "$path" ;;
         .exocortex/control/EXECUTOR_REGISTRY.json)
-            python3 - "$path" <<'PY'
+            run_trusted_python - "$path" <<'PY'
 import json, sys
 d=json.load(open(sys.argv[1], encoding='utf-8'))
 raise SystemExit(0 if d == {"schema_version":"public-v2","kind":"executor_registry","registry_version":1,"default_role":"read_only","executors":[]} else 1)
 PY
             ;;
         .exocortex/control/EXTERNAL_SYNC_POLICY.json)
-            python3 - "$path" <<'PY'
+            run_trusted_python - "$path" <<'PY'
 import json, sys
 d=json.load(open(sys.argv[1], encoding='utf-8'))
 raise SystemExit(0 if d == {"schema_version":"public-v2","kind":"external_sync_policy","default":"deny","policy_version":1,"destinations":[]} else 1)
@@ -936,7 +1104,7 @@ for rel in "${protected_paths[@]}"; do
             # directories are not protected content. Compare records exactly
             # so a legacy target adopting new scaffolding still updates while
             # any real record difference fails closed.
-            PYTHONDONTWRITEBYTECODE=1 python3 - "$left" "$right" >> "$PROTECTED_DIFF" 2>&1 <<'PY' \
+            run_trusted_python - "$left" "$right" >> "$PROTECTED_DIFF" 2>&1 <<'PY' \
                 || fail "protected runtime records could not be compared"
 import hashlib, os, sys
 from pathlib import Path
@@ -984,7 +1152,7 @@ done
 [ "$(inventory_digest "$REHEARSAL" protected "$ALLOWED_NEW_PROTECTED")" = "$BASE_PROTECTED_DIGEST" ] \
     || fail "protected data modes changed in rehearsal"
 
-python3 - "$PROJECT_ROOT" "$REHEARSAL" "$CHANGES" <<'PY'
+run_trusted_python - "$PROJECT_ROOT" "$REHEARSAL" "$CHANGES" <<'PY'
 import hashlib, os, stat, sys
 from pathlib import Path
 
@@ -1009,6 +1177,14 @@ legacy_backup_prefix = '.exocortex/SESSION_CONTEXT_BACKUP_'
 def protected_path(rel):
     return (
         (rel.startswith(legacy_backup_prefix) and rel.endswith('.md') and '/' not in rel[len(legacy_backup_prefix):])
+        or (
+            rel != '.exocortex/.env.example'
+            and (
+                rel.rsplit('/', 1)[-1] == '.env'
+                or rel.rsplit('/', 1)[-1].startswith('.env.')
+                or rel.rsplit('/', 1)[-1] == '.envrc'
+            )
+        )
         or any(rel == item or rel.startswith(item + '/') for item in protected)
     )
 def runtime(rel):
@@ -1097,7 +1273,7 @@ if [ "${EXOCORTEX_TEST_MODE:-0}" = "1" ] && [ -n "${EXOCORTEX_TEST_APPLY_BARRIER
     barrier_parent="$(dirname "$barrier")"
     [ -d "$barrier_parent" ] || fail "test apply barrier parent must exist"
     barrier_parent_real="$(cd "$barrier_parent" && pwd -P)"
-    case "$barrier_parent_real/" in "$PROJECT_ROOT/"*|"$TEMPLATE_ROOT/"*) fail "test apply barrier must be outside target and template" ;; esac
+    case "$barrier_parent_real/" in "$PROJECT_ROOT/"*|"$TEMPLATE_SOURCE_ROOT/"*|"$TEMPLATE_ROOT/"*) fail "test apply barrier must be outside target and template" ;; esac
     : > "$barrier.ready"
     barrier_wait=0
     while [ ! -e "$barrier.continue" ] && [ "$barrier_wait" -lt 100 ]; do
@@ -1111,7 +1287,7 @@ preflight_surface_paths
 [ "$(inventory_digest "$PROJECT_ROOT" surface)" = "$BASE_SURFACE_DIGEST" ] || fail "live target changed after rehearsal; capability was not consumed"
 [ "$(inventory_digest "$PROJECT_ROOT" protected)" = "$BASE_PROTECTED_DIGEST" ] || fail "protected target data changed after rehearsal; capability was not consumed"
 if [ -n "$RECONCILIATION_PLAN" ]; then
-    PYTHONDONTWRITEBYTECODE=1 python3 "$RECONCILIATION_HELPER" validate \
+    run_candidate_python "$RECONCILIATION_HELPER" validate \
         --target "$PROJECT_ROOT" --template "$TEMPLATE_ROOT" \
         --candidate-digest "$CANDIDATE_DIGEST" --plan "$RECONCILIATION_PLAN" \
         --expected-work-item-id "$WORK_ITEM_ID" \
@@ -1132,7 +1308,7 @@ if [ -n "$RECONCILIATION_PLAN" ]; then
     guard_args+=(--payload-digest "$PLAN_DIGEST")
 fi
 while IFS= read -r rel; do guard_args+=(--target-path "$rel"); done < "$CHANGES"
-python3 "$GUARD" "${guard_args[@]}" >/dev/null
+run_candidate_python "$GUARD" "${guard_args[@]}" >/dev/null
 verify_backup_archive || fail "rollback archive changed before capability consumption"
 preflight_surface_paths
 [ "$(inventory_digest "$PROJECT_ROOT" surface)" = "$BASE_SURFACE_DIGEST" ] \
@@ -1140,17 +1316,15 @@ preflight_surface_paths
 [ "$(inventory_digest "$PROJECT_ROOT" protected)" = "$BASE_PROTECTED_DIGEST" ] \
     || fail "protected target data changed immediately before capability consumption"
 guard_args[0]=consume
-python3 "$GUARD" "${guard_args[@]}" >/dev/null
+run_candidate_python "$GUARD" "${guard_args[@]}" >/dev/null
 
 POST_AUTH_PROTECTED_DIGEST="$(inventory_digest "$PROJECT_ROOT" protected)"
 
-(cd "$PROJECT_ROOT" && HOME="$FAKE_HOME" EXOCORTEX_LOCAL_SOURCE="$TEMPLATE_ROOT" EXOCORTEX_CANDIDATE_DIGEST="$CANDIDATE_DIGEST" bash "$TEMPLATE_ROOT/install.sh" "$(basename "$PROJECT_ROOT")")
+run_candidate_installer "$PROJECT_ROOT"
 materialize_reconciliation "$PROJECT_ROOT" \
     || fail "reconciliation failed after capability consumption; restore from the recorded archive with fresh authority"
 if [ -n "$RECONCILIATION_PLAN" ]; then
-    (cd "$PROJECT_ROOT" && HOME="$FAKE_HOME" EXOCORTEX_LOCAL_SOURCE="$TEMPLATE_ROOT" \
-        EXOCORTEX_CANDIDATE_DIGEST="$CANDIDATE_DIGEST" \
-        bash "$TEMPLATE_ROOT/install.sh" "$(basename "$PROJECT_ROOT")")
+    run_candidate_installer "$PROJECT_ROOT"
 fi
 
 if [ "${EXOCORTEX_TEST_MODE:-0}" = "1" ] && [ -n "${EXOCORTEX_TEST_POST_APPLY_BARRIER:-}" ]; then
@@ -1159,7 +1333,7 @@ if [ "${EXOCORTEX_TEST_MODE:-0}" = "1" ] && [ -n "${EXOCORTEX_TEST_POST_APPLY_BA
     post_barrier_parent="$(dirname "$post_barrier")"
     [ -d "$post_barrier_parent" ] || fail "test post-apply barrier parent must exist"
     post_barrier_parent_real="$(cd "$post_barrier_parent" && pwd -P)"
-    case "$post_barrier_parent_real/" in "$PROJECT_ROOT/"*|"$TEMPLATE_ROOT/"*) fail "test post-apply barrier must be outside target and template" ;; esac
+    case "$post_barrier_parent_real/" in "$PROJECT_ROOT/"*|"$TEMPLATE_SOURCE_ROOT/"*|"$TEMPLATE_ROOT/"*) fail "test post-apply barrier must be outside target and template" ;; esac
     : > "$post_barrier.ready"
     post_barrier_wait=0
     while [ ! -e "$post_barrier.continue" ] && [ "$post_barrier_wait" -lt 100 ]; do
@@ -1180,7 +1354,7 @@ done <<< "$ALLOWED_NEW_PROTECTED"
 [ "$(inventory_digest "$PROJECT_ROOT" code_plane)" = "$REHEARSAL_CODE_PLANE_DIGEST" ] \
     || fail "applied code plane does not exactly match the disposable rehearsal"
 
-python3 - "$PROJECT_ROOT" "$REHEARSAL" "$CHANGES" "$CAPABILITY" <<'PY'
+run_trusted_python - "$PROJECT_ROOT" "$REHEARSAL" "$CHANGES" "$CAPABILITY" <<'PY'
 import hashlib, stat, sys
 from pathlib import Path
 
