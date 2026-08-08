@@ -1,16 +1,48 @@
-# Exocortex .gitignore — protect sensitive and transient files
-# This lives inside .exocortex/ as a safety layer
+# Exocortex project-local safety layer. These paths are data, not template code.
 
-# API keys — NEVER commit
+# Environment and credential files. Keep only the intentionally data-free example.
 .env
+.env.*
+.envrc
+!.env.example
 
-# Python cache
-__pycache__/
-*.pyc
-
-# Backup files from upgrades
-archive/pre-upgrade-*/
-
-# Session context backups
-SESSION_CONTEXT_BACKUP_*.md
+# Session and runtime state
+SESSION_CONTEXT.md
+SESSION_CONTEXT.local.md
 SESSION_CONTEXT.md.backup
+SESSION_CONTEXT_BACKUP_*.md
+TODO.md
+LESSONS.md
+PROJECT_MEMORY.md
+OPEN_DECISIONS.md
+subconscious_patterns.md
+.project-name
+.install-manifest
+.hub_enabled
+.hub_disabled
+local/
+work-items/
+planning/
+archive/
+hub/
+
+# Runtime control and authority records
+control/ACTIVE_WORK.md
+control/BRANCH_POLICY.md
+control/REPO_STATE.md
+control/EXECUTOR_REGISTRY.json
+control/EXTERNAL_SYNC_POLICY.json
+control/INTERRUPTS.md
+control/BACKLOG.md
+control/ROADMAP.md
+control/ARCH_OVERVIEW.md
+control/REPO_ORGANIZATION_REPORT.md
+
+# Events are local data. Preserve only the public fictional fixture and anchor.
+events/*
+!events/.gitkeep
+!events/2000-01-01_00-00-00_example-event.md
+
+# Generated caches
+__pycache__/
+*.py[cod]

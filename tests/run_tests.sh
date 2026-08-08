@@ -2098,43 +2098,62 @@ cp "$privacy_fingerprint" "$source_copy/.exocortex/planning/private-fixture.txt"
 install_target="$(new_target)"
 fake_home="$(mktemp -d "${TMPDIR:-/tmp}/exo-test-home.XXXXXX")"
 if privacy_scan "$source_copy" checksums "$privacy_fingerprint" \
-    && run_install "$install_target" "$source_copy" "$fake_home" >/dev/null \
-    && [ ! -e "$install_target/.exocortex/planning/private-fixture.txt" ]; then
-    ok "protected planning fingerprint is excluded from public install"
+    && ! run_install "$install_target" "$source_copy" "$fake_home" >/dev/null 2>&1 \
+    && [ ! -e "$install_target/.exocortex" ]; then
+    ok "protected planning source data is denied before public install"
 else
-    bad "protected planning fingerprint is excluded from public install"
+    bad "protected planning source data is denied before public install"
 fi
 rm -rf "$source_copy" "$install_target" "$fake_home"
 
 source_copy="$(mktemp -d "${TMPDIR:-/tmp}/exo-test-source.XXXXXX")"
 cp -Rp "$TEMPLATE_DIR/." "$source_copy/"
-printf 'SOURCE_CONTEXT_BACKUP\n' > "$source_copy/.exocortex/SESSION_CONTEXT.md.backup"
-printf 'SOURCE_LEGACY_CONTEXT_BACKUP\n' > "$source_copy/.exocortex/SESSION_CONTEXT_BACKUP_CANARY.md"
-mkdir -p "$source_copy/.exocortex/SESSION_CONTEXT_BACKUP_folder"
-printf 'MANAGED_NESTED_FIXTURE\n' > "$source_copy/.exocortex/SESSION_CONTEXT_BACKUP_folder/nested.md"
-chmod 0644 "$source_copy/.exocortex/SESSION_CONTEXT_BACKUP_folder/nested.md"
+printf 'FICTIONAL_ENV_CANARY\n' > "$source_copy/.exocortex/.env.production"
+printf 'FICTIONAL_CONTEXT_CANARY\n' > "$source_copy/.exocortex/SESSION_CONTEXT.md.backup"
+for staging_mode in rsync tar; do
+    install_target="$(new_target)"
+    fake_home="$(mktemp -d "${TMPDIR:-/tmp}/exo-test-home.XXXXXX")"
+    force_tar=0
+    [ "$staging_mode" = tar ] && force_tar=1
+    if (cd "$install_target" && \
+        HOME="$fake_home" \
+        EXOCORTEX_FORCE_TAR_STAGE="$force_tar" \
+        EXOCORTEX_LOCAL_SOURCE="$source_copy" \
+        EXOCORTEX_CANDIDATE_DIGEST="$(hash_file "$source_copy/SHA256SUMS")" \
+        bash "$source_copy/install.sh" test-project) >/dev/null 2>&1; then
+        bad "public source boundary denies environment and session data before $staging_mode staging"
+    elif [ -e "$install_target/.exocortex" ]; then
+        bad "public source boundary leaves $staging_mode target untouched"
+    else
+        ok "public source boundary denies environment and session data before $staging_mode staging"
+    fi
+    rm -rf "$install_target" "$fake_home"
+done
+rm -rf "$source_copy"
+
+source_copy="$(mktemp -d "${TMPDIR:-/tmp}/exo-test-source.XXXXXX")"
+cp -Rp "$TEMPLATE_DIR/." "$source_copy/"
 python3 - "$source_copy" <<'PY'
 import hashlib
 from pathlib import Path
 import sys
 
 root = Path(sys.argv[1])
-nested = ".exocortex/SESSION_CONTEXT_BACKUP_folder/nested.md"
-modes = {
-    line[6:]: line[:4]
-    for line in (root / "FILEMODES").read_text(encoding="utf-8").splitlines()
-}
-modes[nested] = "0644"
-(root / "FILEMODES").write_text(
-    "".join(f"{modes[path]}  {path}\n" for path in sorted(modes)),
-    encoding="utf-8",
+checker = root / "scripts/check-public-release.py"
+text = checker.read_text(encoding="utf-8")
+needle = "from __future__ import annotations\n"
+probe = (
+    needle
+    + "\nimport os as _ambient_os\n"
+    + "if _ambient_os.environ.get('EXOCORTEX_AMBIENT_CANARY'):\n"
+    + "    raise SystemExit('ambient environment reached candidate child')\n"
 )
+checker.write_text(text.replace(needle, probe, 1), encoding="utf-8")
 sums = {
     line[66:]: line[:64]
     for line in (root / "SHA256SUMS").read_text(encoding="utf-8").splitlines()
 }
-for relative in (nested, "FILEMODES"):
-    sums[relative] = hashlib.sha256((root / relative).read_bytes()).hexdigest()
+sums["scripts/check-public-release.py"] = hashlib.sha256(checker.read_bytes()).hexdigest()
 (root / "SHA256SUMS").write_text(
     "".join(f"{sums[path]}  {path}\n" for path in sorted(sums)),
     encoding="utf-8",
@@ -2142,32 +2161,13 @@ for relative in (nested, "FILEMODES"):
 PY
 install_target="$(new_target)"
 fake_home="$(mktemp -d "${TMPDIR:-/tmp}/exo-test-home.XXXXXX")"
-mkdir -p "$install_target/.exocortex"
-printf 'TARGET_CONTEXT_BACKUP\n' > "$install_target/.exocortex/SESSION_CONTEXT.md.backup"
-printf 'TARGET_LEGACY_CONTEXT_BACKUP\n' > "$install_target/.exocortex/SESSION_CONTEXT_BACKUP_CANARY.md"
-if run_install "$install_target" "$source_copy" "$fake_home" >/dev/null \
-    && grep -Fqx 'TARGET_CONTEXT_BACKUP' "$install_target/.exocortex/SESSION_CONTEXT.md.backup" \
-    && grep -Fqx 'TARGET_LEGACY_CONTEXT_BACKUP' "$install_target/.exocortex/SESSION_CONTEXT_BACKUP_CANARY.md" \
-    && grep -Fqx 'MANAGED_NESTED_FIXTURE' "$install_target/.exocortex/SESSION_CONTEXT_BACKUP_folder/nested.md" \
-    && ! grep -Fq '.exocortex/SESSION_CONTEXT.md.backup' "$install_target/.exocortex/.install-manifest" \
-    && ! grep -Fq '.exocortex/SESSION_CONTEXT_BACKUP_CANARY.md' "$install_target/.exocortex/.install-manifest" \
-    && grep -Fq '.exocortex/SESSION_CONTEXT_BACKUP_folder/nested.md' "$install_target/.exocortex/.install-manifest" \
-    && git -C "$install_target" check-ignore -q -- .exocortex/SESSION_CONTEXT.md.backup \
-    && git -C "$install_target" check-ignore -q -- .exocortex/SESSION_CONTEXT_BACKUP_CANARY.md; then
-    ok "session-context backup sidecars are preserved, unmanifested, and ignored"
+if EXOCORTEX_AMBIENT_CANARY='fictional-test-only' \
+    run_install "$install_target" "$source_copy" "$fake_home" >/dev/null; then
+    ok "candidate child validation receives no ambient environment canary"
 else
-    bad "session-context backup sidecars are preserved, unmanifested, and ignored"
+    bad "candidate child validation receives no ambient environment canary"
 fi
-empty_target="$(new_target)"
-empty_home="$(mktemp -d "${TMPDIR:-/tmp}/exo-test-home.XXXXXX")"
-if run_install "$empty_target" "$source_copy" "$empty_home" >/dev/null \
-    && [ ! -e "$empty_target/.exocortex/SESSION_CONTEXT_BACKUP_CANARY.md" ] \
-    && [ -f "$empty_target/.exocortex/SESSION_CONTEXT_BACKUP_folder/nested.md" ]; then
-    ok "source legacy backup sidecar is never installed while nested managed paths remain installable"
-else
-    bad "source legacy backup sidecar is never installed while nested managed paths remain installable"
-fi
-rm -rf "$source_copy" "$install_target" "$fake_home" "$empty_target" "$empty_home"
+rm -rf "$source_copy" "$install_target" "$fake_home"
 
 if [ "$privacy_fingerprint_owned" = true ]; then
     rm -f "$privacy_fingerprint"
@@ -2183,6 +2183,18 @@ if PYTHONDONTWRITEBYTECODE=1 python3 "$TEMPLATE_DIR/tests/test_release_state.py"
     ok "read-only release-state closeout contract"
 else
     bad "read-only release-state closeout contract"
+fi
+
+if PYTHONDONTWRITEBYTECODE=1 python3 "$TEMPLATE_DIR/tests/test_public_release.py" "$TEMPLATE_DIR"; then
+    ok "public release tree/range and redaction contract"
+else
+    bad "public release tree/range and redaction contract"
+fi
+
+if PYTHONDONTWRITEBYTECODE=1 python3 "$TEMPLATE_DIR/tests/test_installer_security.py" "$TEMPLATE_DIR"; then
+    ok "installer public-boundary and ambient-environment contract"
+else
+    bad "installer public-boundary and ambient-environment contract"
 fi
 
 docs_negative_base="$(mktemp -d "${TMPDIR:-/tmp}/exo-doc-contract-base.XXXXXX")"

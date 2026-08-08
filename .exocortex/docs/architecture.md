@@ -121,7 +121,8 @@ retry of an accepted transition converges on its existing checkpoint.
 `.exocortex/control/MODEL_ROUTING.md` defines capability- and cost-aware
 routing. The accountable parent must be capable of interpreting authority,
 decomposing the task, integrating results, making risk decisions, and
-validating final evidence.
+validating final evidence. Parent judgment is the default; route reporting is
+for visibility and routine model choice is not a human approval gate.
 
 The routing sequence is:
 
@@ -129,8 +130,10 @@ The routing sequence is:
 2. Classify privacy, security, data, financial, migration, destructive, and
    deployment risk.
 3. Use deterministic tooling first.
-4. Select the least-cost model capable of owning the complete bounded task.
-5. Delegate only independently useful evidence or review slices.
+4. Select the model with the best expected cost of a correct outcome for the
+   complete bounded task.
+5. Apply the same judgment to each subagent and delegate only independently
+   useful evidence, implementation, or review slices.
 6. Keep one registered guarded writer; keep other lanes read-only.
 7. Escalate when risk, ambiguity, repeated failure, or material design judgment
    exceeds the selected role.
@@ -144,12 +147,12 @@ of the protocol.
 The public source registry defines configured official-source coverage and
 freshness limits. The reviewed catalog normalizes public lifecycle and price
 facts, while protected `.exocortex/local/model-routing/**` evidence records
-current-surface availability and measured evaluation results. Discovery is
-offline and proposal-only: new models enter quarantine, missing observations
-do not imply deprecation, and only fresh digest-bound eligible evidence can
-route. A production route additionally binds its explicit timestamp to the
-runtime's current UTC clock within 60 seconds, so the deterministic historical
-validator cannot be reused to replay a stale or future live route.
+current-surface availability and measured evaluation results. This machinery
+is an optional empirical verifier, not an authority or prerequisite. Discovery
+is offline and proposal-only: new models enter quarantine and missing
+observations do not imply deprecation. A formal route requires fresh eligible
+evidence and binds its timestamp to runtime UTC within 60 seconds, so the
+historical validator cannot replay a stale or future live route.
 
 ## Agile delivery lifecycle
 

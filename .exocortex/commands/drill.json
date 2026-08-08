@@ -13,7 +13,9 @@
   "steps": [
     {
       "type": "shell",
-      "command": "python3 .exocortex/scripts/drill_memory.py \"{topic}\"",
+      "command": "python3 .exocortex/scripts/drill_memory.py --topic-stdin",
+      "stdin": "{topic}\n",
+      "stdin_description": "Pass the topic as literal standard input; never interpolate it into the command string.",
       "description": "Search ALL events for topic-relevant content, then do 2-pass AI reconstruction for deep detail",
       "outputs": {
         "detailed_memory": "Full detailed reconstruction of the topic across all time periods"

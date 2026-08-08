@@ -2808,10 +2808,21 @@ class EntryAndPrivacyTests(unittest.TestCase):
         command_names = sorted(path.stem for path in (TEMPLATE / ".exocortex/commands").glob("*.json"))
         self.assertEqual(command_names, golden["canonical_commands"])
         self.assertEqual(production["expected_command_count"], len(command_names))
+        invocation_policy = production["command_invocation_policy"]
+        self.assertEqual(invocation_policy, golden["command_invocation_policy"])
+        self.assertEqual(set(invocation_policy), {"model_invocable", "manual_only"})
+        self.assertEqual(len(invocation_policy["model_invocable"]), 11)
+        self.assertEqual(len(invocation_policy["manual_only"]), 13)
+        self.assertFalse(set(invocation_policy["model_invocable"]) & set(invocation_policy["manual_only"]))
+        self.assertEqual(
+            set(invocation_policy["model_invocable"]) | set(invocation_policy["manual_only"]),
+            set(command_names),
+        )
 
         production_families = {
             item["id"]: item["path_template"] for item in production["adapter_families"]
         }
+        self.assertTrue(all("manual_only" not in item for item in production["adapter_families"]))
         golden_families = {
             item["id"]: item["path_template"] for item in golden["generated_families"]
         }
@@ -2863,12 +2874,19 @@ class EntryAndPrivacyTests(unittest.TestCase):
             self.assertIn(".exocortex/AI_BOOTSTRAP.md", text)
             self.assertEqual(text.count(f".exocortex/commands/{name}.json"), 1)
             self.assertIn("grants no authority", text)
-            self.assertIn("manual-only", text)
+            manual_only = name in invocation_policy["manual_only"]
+            self.assertIn("manual-only" if manual_only else "model-invocable read-only", text)
             if rel.startswith(".claude/skills/"):
-                self.assertIn("disable-model-invocation: true", text)
+                self.assertEqual(
+                    "disable-model-invocation: true" in text,
+                    manual_only,
+                )
             elif rel.startswith(".cursor/skills/"):
                 frontmatter = text.split("---", 2)[1]
-                self.assertIn("disable-model-invocation: true", frontmatter)
+                self.assertEqual(
+                    "disable-model-invocation: true" in frontmatter,
+                    manual_only,
+                )
                 self.assertNotIn("argument-hint", frontmatter)
             elif rel.startswith(".agents/skills/"):
                 frontmatter = text.split("---", 2)[1]
@@ -2992,6 +3010,13 @@ class EntryAndPrivacyTests(unittest.TestCase):
             self.assertNotEqual(rejected.returncode, 0)
             self.assertIn("schema enum mismatch", rejected.stderr)
 
+            wrong_invocation_policy = json.loads(ADAPTER_MATRIX.read_text(encoding="utf-8"))
+            wrong_invocation_policy["command_invocation_policy"]["manual_only"][0] = "work"
+            write_json(matrix_path, wrong_invocation_policy)
+            rejected = run(["python3", str(writer), "--check"])
+            self.assertNotEqual(rejected.returncode, 0)
+            self.assertIn("command invocation policy mismatch", rejected.stderr)
+
             stale_windsurf_family = json.loads(ADAPTER_MATRIX.read_text(encoding="utf-8"))
             windsurf = next(item for item in stale_windsurf_family["providers"] if item["id"] == "windsurf")
             windsurf["default_install"] = True
@@ -3011,6 +3036,11 @@ class EntryAndPrivacyTests(unittest.TestCase):
         schema = json.loads((TEMPLATE / ".exocortex/schemas/provider-adapter-matrix.schema.json").read_text(encoding="utf-8"))
         production = json.loads(ADAPTER_MATRIX.read_text(encoding="utf-8"))
         self.assertEqual(schema["properties"]["expected_command_count"]["const"], 24)
+        policy_schema = schema["properties"]["command_invocation_policy"]["properties"]
+        self.assertEqual(policy_schema["model_invocable"]["minItems"], 11)
+        self.assertEqual(policy_schema["model_invocable"]["maxItems"], 11)
+        self.assertEqual(policy_schema["manual_only"]["minItems"], 13)
+        self.assertEqual(policy_schema["manual_only"]["maxItems"], 13)
         self.assertEqual(schema["properties"]["legacy_retirements"]["minItems"], 55)
         self.assertEqual(schema["properties"]["legacy_retirements"]["maxItems"], 55)
         self.assertEqual(schema["properties"]["windsurf_retirements"]["minItems"], 25)
@@ -3022,12 +3052,40 @@ class EntryAndPrivacyTests(unittest.TestCase):
         self.assertEqual(production["migration"]["collision_code"], "EXOCORTEX_ADAPTER_COLLISION_PRESERVED")
         self.assertEqual(production["migration"]["reactivated_paths"], [".cursor/skills/onboard/SKILL.md"])
 
-    def test_normative_routing_has_no_named_model_pin(self) -> None:
+    def test_drill_topic_stdin_contract_treats_substitution_canary_literally(self) -> None:
+        drill = json.loads((TEMPLATE / ".exocortex/commands/drill.json").read_text(encoding="utf-8"))
+        shell_step = drill["steps"][0]
+        self.assertEqual(
+            shell_step["command"],
+            "python3 .exocortex/scripts/drill_memory.py --topic-stdin",
+        )
+        self.assertEqual(shell_step["stdin"], "{topic}\n")
+        self.assertNotIn("{topic}", shell_step["command"])
+
+        with tempfile.TemporaryDirectory(prefix="exo-drill-canary-") as temp:
+            canary = Path(temp) / "substitution-ran"
+            topic = f"canary $(touch {canary})"
+            result = subprocess.run(
+                ["python3", str(TEMPLATE / ".exocortex/scripts/drill_memory.py"), "--topic-stdin"],
+                input=topic + "\n",
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            self.assertFalse(canary.exists())
+            self.assertIn(f"DRILL - project-local matches for: {topic.lower()}", result.stdout)
+
+    def test_normative_routing_has_no_versioned_model_pin(self) -> None:
         text = "\n".join((TEMPLATE / rel).read_text(encoding="utf-8") for rel in [
             ".exocortex/control/MODEL_ROUTING.md", ".cursor/rules/plan-orchestrate.mdc", "AI_START_HERE.md"
         ]).lower()
-        for token in ("gpt-", "claude-", "opus", "sonnet", "haiku"):
+        compact = " ".join(text.split())
+        for token in ("gpt-", "claude-"):
             self.assertNotIn(token, text)
+        self.assertIn("illustrative current adapter mappings", compact)
+        self.assertIn("these are examples only", compact)
+        self.assertIn("open-source and future models map by demonstrated equivalent capability", compact)
 
     def test_default_drafts_and_external_reminder_are_non_mutating(self) -> None:
         for name in ("save", "daily-end", "ai-export"):

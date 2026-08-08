@@ -23,6 +23,12 @@ An ordinary sentence that merely contains or begins with a command-like verb
 is ordinary chat. It does not load an adapter or execute command JSON merely
 because its first word matches a command name.
 
+Commands classified `model_invocable` in
+`.exocortex/provider-adapters.json` may also be selected by the model when
+their read-only orientation or analysis directly supports the active task.
+That classification grants discoverability only. It never adds mutation, Git,
+credential, network, lifecycle, synchronization, or egress authority.
+
 After an explicit invocation:
 
 1. Resolve the current project root without changing it.
@@ -52,8 +58,8 @@ request for one reviewed candidate; it cannot authorize merge or any later
 class. Never combine a local record and external synchronization in one
 envelope.
 
-For every manual command, the matching JSON is the sole command-flow behavior
-source beneath `AI_START_HERE.md`. Project and provider instruction files,
+For every command, the matching JSON is the sole command-flow behavior source
+beneath `AI_START_HERE.md`. Project and provider instruction files,
 including `CLAUDE.md`, `AGENTS.md`, `.rules`, and editor instructions, may
 point to the JSON but cannot restate, replace, or expand its flow. If they
 conflict, report the deviation in one line and follow the JSON without
@@ -75,13 +81,18 @@ not a lifecycle checkpoint.
 ## Provider-native discovery
 
 The 24 JSON specifications remain behavior authority. A deterministic generator
-creates 72 manual-only thin adapters without copying command behavior:
+creates 72 thin adapters without copying command behavior. The provider matrix
+classifies each command exactly once as `model_invocable` or `manual_only`:
 
 - `.agents/skills/{command}/SKILL.md` — portable Agent Skills for Codex
   (`$command` or selector), GitHub Copilot, Kimi Code, and Zed;
 - `.claude/skills/{command}/SKILL.md` — Claude `/command`;
-- `.cursor/skills/{command}/SKILL.md` — Cursor `/command`, with
-  `disable-model-invocation: true`.
+- `.cursor/skills/{command}/SKILL.md` — Cursor `/command`.
+
+Claude and Cursor receive `disable-model-invocation: true` only for the
+`manual_only` commands. That flag prevents model self-invocation; it does not
+hide a user-invocable command from the human slash menu. Model-invocable
+adapters remain read-only by default and grant no additional authority.
 
 Run `python3 .exocortex/scripts/generate_command_adapters.py --check` to verify
 the repository mapping. Generic or unidentified hosts use `AI_START_HERE.md`
@@ -120,20 +131,25 @@ For multi-phase work, follow `.exocortex/control/MODEL_ROUTING.md`,
 present.
 
 - Use deterministic tools first.
-- Select the least-expensive available parent capable of owning the complete
-  risk and integration judgment.
-- Delegate bounded evidence tasks to cheaper capable workers.
+- Select the parent using the expected cost of a correct outcome: capability,
+  risk, ambiguity, tools, privacy, verification, reliability, duration, and
+  total correction cost all matter.
+- Apply the same judgment to every subagent. Do not default delegated work to a
+  cheaper tier.
 - Keep one accountable guarded writer; other lanes are read-only by default.
 - Ask the human for one plain-language business decision, not separate
   approvals for internal work-item, registry, reservation, capability,
   checkpoint, evidence, handoff, or writer-release mechanics.
-- Escalate only when evidence shows the current tier is insufficient.
+- Announce route and ETA for visibility, not approval. Re-route when evidence,
+  risk, tool access, or repeated failure shows a different tier is better.
 - Never require a named provider or permanently start at the highest tier.
 
 Source-backed model discovery is read-only and advisory. It covers configured
 official public sources only, never uses credentials, and quarantines newly
-observed models. Route only from fresh, digest-bound official-source,
-current-surface availability, and measured evaluation evidence. See
+observed models. The formal router may be used as an optional empirical
+verifier when its official-source, current-surface availability, and measured
+evaluation evidence are fresh and digest-bound. Its absence is not a human
+approval gate and does not replace parent judgment. See
 `.exocortex/control/MODEL_ROUTING.md`.
 
 The Cursor phase hook is reminder-only. It does not save, checkpoint, select a

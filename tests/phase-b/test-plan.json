@@ -8,7 +8,7 @@
   "groups": [
     "canonical multi-AI entry parity",
     "exact 24-command provider matrix and deterministic 72-adapter generation",
-    "provider-specific invocation truth and manual-only command behavior",
+    "provider-specific invocation truth, explicit model-invocable read-only commands, and manual-only command behavior",
     "capability and executor admission negative matrix",
     "32-writer reservation race",
     "transition checkpoint idempotency and crash recovery",
@@ -23,8 +23,9 @@
     "manifest-owned legacy retirement and customized-adapter collision preservation",
     "complete sorted changed-path evidence and digest above 120 paths",
     "checksum completeness, generated-artifact exclusion, and pre-write failure",
+    "public candidate tree and baseline-range protected-path, environment-file, and redacted secret-shape denial",
     "candidate-inventory and installed-output privacy fingerprint scan",
-    "read-only release-state, exact-tag, version, and published-digest alignment",
+    "read-only release-state, annotated exact-main tag, reviewed baseline range, version, and published-digest alignment",
     "local-only event tooling"
   ]
 }

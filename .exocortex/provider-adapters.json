@@ -4,12 +4,41 @@
   "canonical_registry": ".exocortex/commands",
   "expected_command_count": 24,
   "generator": ".exocortex/scripts/generate_command_adapters.py",
+  "command_invocation_policy": {
+    "model_invocable": [
+      "ai-export",
+      "brief",
+      "drill",
+      "history",
+      "longterm",
+      "onboard",
+      "scrum",
+      "shortterm",
+      "subconscious",
+      "system-scan",
+      "work"
+    ],
+    "manual_only": [
+      "check-keys",
+      "daily-end",
+      "ecosystem",
+      "groom",
+      "handoff",
+      "init-exocortex",
+      "interrupt",
+      "monthly-review",
+      "pattern-review",
+      "prioritize",
+      "refine-backlog",
+      "save",
+      "weekly-review"
+    ]
+  },
   "adapter_families": [
     {
       "id": "portable-agent-skills",
       "path_template": ".agents/skills/{command}/SKILL.md",
       "format": "agent_skill",
-      "manual_only": true,
       "providers": [
         "codex",
         "github-copilot",
@@ -21,7 +50,6 @@
       "id": "claude-code-skills",
       "path_template": ".claude/skills/{command}/SKILL.md",
       "format": "claude_skill",
-      "manual_only": true,
       "providers": [
         "claude"
       ]
@@ -30,7 +58,6 @@
       "id": "cursor-native-skills",
       "path_template": ".cursor/skills/{command}/SKILL.md",
       "format": "cursor_skill",
-      "manual_only": true,
       "providers": [
         "cursor"
       ]
@@ -67,12 +94,12 @@
       "literal_slash_claim": true,
       "visibility_evidence": "provider_uat_required",
       "version": "1.24012.1 (0adcae)",
-      "status": "verified",
+      "status": "compatible",
       "evidence_adapter_family": "claude-code-skills",
       "default_install": true,
       "revalidation_required": true,
-      "evidence": "Claude Desktop displayed all 24 Exocortex native slash commands exactly once; no command or message was executed and the observation caused zero changes.",
-      "limitation": "Evidence is limited to Claude Desktop 1.24012.1 (0adcae) and does not transfer to Claude Code or another client version."
+      "evidence": "Historical pre-classification UAT showed all 24 Exocortex native slash commands exactly once; the new per-command invocation policy has not been revalidated.",
+      "limitation": "Candidate UAT is required. The historical Claude Desktop 1.24012.1 result does not transfer to the changed adapters, Claude Code, the VS Code extension, or another client version."
     },
     {
       "id": "cursor",
@@ -82,12 +109,12 @@
       "literal_slash_claim": true,
       "visibility_evidence": "provider_uat_required",
       "version": "Stable 3.12.30",
-      "status": "verified",
+      "status": "compatible",
       "evidence_adapter_family": "cursor-native-skills",
       "default_install": true,
       "revalidation_required": true,
-      "evidence": "The native skills menu displayed 72 unique names containing all 24 Exocortex commands exactly once; no skill, command, or message was executed and Cursor showed zero changes.",
-      "limitation": "Evidence is limited to Cursor Stable 3.12.30 with the dedicated Cursor adapter family; the earlier 3.6.21 portable-family failure remains historical."
+      "evidence": "Historical pre-classification UAT showed 72 unique names containing all 24 Exocortex commands exactly once; the new per-command invocation policy has not been revalidated.",
+      "limitation": "Candidate UAT is required. The historical Cursor Stable 3.12.30 result and earlier 3.6.21 portable-family failure remain version-scoped evidence only."
     },
     {
       "id": "github-copilot",
@@ -112,12 +139,12 @@
       "literal_slash_claim": true,
       "visibility_evidence": "provider_uat_required",
       "version": "1.14.0",
-      "status": "verified",
+      "status": "compatible",
       "evidence_adapter_family": "portable-agent-skills",
       "default_install": true,
       "revalidation_required": true,
-      "evidence": "The isolated native /help surface displayed 26 unique skills, including all 24 Exocortex /skill:{name} entries exactly once; no skill, prompt, authentication, or model request was used and disposable state was removed.",
-      "limitation": "Evidence is limited to Kimi Code CLI 1.14.0 and does not transfer to Kimi Desktop Work or another Kimi surface."
+      "evidence": "Historical pre-classification UAT showed all 24 Exocortex /skill:{name} entries exactly once; the changed portable adapter bodies have not been revalidated.",
+      "limitation": "Candidate UAT is required. The historical Kimi Code CLI 1.14.0 result does not transfer to changed adapters, Kimi Desktop Work, or another Kimi surface."
     },
     {
       "id": "kimi-desktop",
@@ -142,12 +169,12 @@
       "literal_slash_claim": false,
       "visibility_evidence": "provider_uat_required",
       "version": "1.12.0 stable.328",
-      "status": "verified",
+      "status": "compatible",
       "evidence_adapter_family": "portable-agent-skills",
       "default_install": true,
       "revalidation_required": true,
-      "evidence": "The built-in Agent displayed 25 unique skills, including all 24 Exocortex skills exactly once plus create-skill; no skill or message was executed.",
-      "limitation": "Evidence is limited to Zed 1.12.0 stable.328 built-in Agent; ACP-hosted agents and other versions are separate surfaces."
+      "evidence": "Historical pre-classification UAT showed all 24 Exocortex skills exactly once; the changed portable adapter bodies have not been revalidated.",
+      "limitation": "Candidate UAT is required. The historical Zed 1.12.0 stable.328 result is version-scoped and does not transfer to changed adapters or ACP-hosted agents."
     },
     {
       "id": "windsurf",

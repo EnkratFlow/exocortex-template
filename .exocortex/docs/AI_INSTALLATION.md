@@ -20,8 +20,17 @@ combining the conflicting instructions.
 ## Acquire an exact GitHub release
 
 The release notes must publish the exact tag, its peeled 40-character commit
-SHA, and the SHA-256 of that tag's `SHA256SUMS`. For version 3.2.8, acquire and
-verify the public artifact like this:
+SHA, the SHA-256 of that tag's `SHA256SUMS`, and the owner-selected signature or
+attestation evidence with its documented trust identity. The SHA and digest
+prove byte consistency but do not independently prove owner authenticity when
+the repository, tag, release notes, and digest share one trust domain.
+
+No signature or attestation artifact and trust-root format is selected for the
+current public release. Therefore treat public installation as blocked under
+this hardened contract until that owner decision is implemented. A locally
+reviewed source already under the operator's trusted control may still be used
+for disposable development rehearsal. For version 3.2.8, the consistency
+checks are:
 
 ```bash
 git clone --depth 1 --branch v3.2.8 \
@@ -31,10 +40,12 @@ git -C /tmp/exocortex-template-v3.2.8 rev-parse HEAD
 shasum -a 256 /tmp/exocortex-template-v3.2.8/SHA256SUMS
 ```
 
-Compare both outputs with the release notes. Stop on either mismatch. Never
-replace the exact tag with `main`, `latest`, or another mutable reference.
-After verification, use that clone as `<absolute-pinned-template-path>` and
-its published digest in the prompts below.
+Compare both outputs with the release notes and stop on either mismatch. Then
+verify the separate owner authenticity evidence; if it is absent, unknown, or
+does not match its trust identity, stop before executing repository code.
+Never replace the exact tag with `main`, `latest`, or another mutable reference.
+Only after all checks pass may that clone become
+`<absolute-pinned-template-path>` in the prompts below.
 
 ## Local prerequisites
 
@@ -340,10 +351,11 @@ the archive's reserved inode, single-link state, mode, digest, safe contents,
 fsync durability, and exact reconstruction of the prior code plane. Protected
 project data, local authority state, and editor session worktrees
 (`.claude/worktrees` at any depth, which are runtime state outside the update
-surface) are excluded from the archive and from every update-evidence digest. The
-command does not run the target application's test suite, apply the update,
-rerun after apply, or perform a restore. An AI must not claim those results
-from the dry-run command alone.
+surface) are excluded from the archive and from code-plane or changed-path
+evidence. Protected files are compared separately through non-revealing
+protected-plane digests. The command does not run the target application's
+test suite, apply the update, rerun after apply, or perform a restore. An AI
+must not claim those results from the dry-run command alone.
 
 Before proposing a real-target apply, use a newly created disposable snapshot
 of the exact repository revision and perform these separately observable steps:

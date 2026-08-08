@@ -1,12 +1,20 @@
 #!/usr/bin/env python3
-"""Search all project-local events for a topic; no provider or network."""
+"""Search all project-local events for a literal topic; no provider or network."""
 from pathlib import Path
 import sys
 
-if len(sys.argv) < 2 or not " ".join(sys.argv[1:]).strip():
-    print("Usage: drill_memory.py TOPIC")
+arguments = sys.argv[1:]
+if arguments == ["--topic-stdin"]:
+    topic_input = sys.stdin.read()
+elif arguments and arguments[0] != "--topic-stdin":
+    topic_input = " ".join(arguments)
+else:
+    topic_input = ""
+
+if not topic_input.strip():
+    print("Usage: drill_memory.py --topic-stdin | TOPIC")
     raise SystemExit(2)
-topic = " ".join(sys.argv[1:]).strip().lower()
+topic = topic_input.strip().lower()
 events_dir = Path(__file__).resolve().parent.parent / "events"
 matches = []
 for path in sorted(events_dir.glob("*.md"), reverse=True) if events_dir.exists() else []:
