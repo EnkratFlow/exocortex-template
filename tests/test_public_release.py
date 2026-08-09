@@ -78,7 +78,9 @@ def annotated_tag_workflow_arguments(
     """Exercise the tag-resolution shell used by CI with fictional local Git."""
 
     script = r'''
-TAG_OBJECT="$(git rev-parse --verify "refs/tags/$REF_NAME")"
+CANDIDATE_TAG_REF="refs/exocortex-release-tags/$REF_NAME"
+git fetch --no-tags --force origin "refs/tags/$REF_NAME:$CANDIDATE_TAG_REF"
+TAG_OBJECT="$(git rev-parse --verify "$CANDIDATE_TAG_REF")"
 [ "$(git cat-file -t "$TAG_OBJECT")" = tag ]
 PEELED_CANDIDATE="$(git rev-parse --verify "$TAG_OBJECT^{commit}")"
 EVENT_CANDIDATE_COMMIT="$(git rev-parse --verify "$CANDIDATE_SHA^{commit}")"
@@ -131,7 +133,9 @@ PY
 [ -n "$BASELINE_RECORD_VALUES" ]
 IFS=$'\t' read -r RECORDED_BASELINE_TAG RECORDED_BASELINE <<< "$BASELINE_RECORD_VALUES"
 [ -n "$RECORDED_BASELINE_TAG" ] && [ -n "$RECORDED_BASELINE" ]
-RECORDED_BASELINE_TAG_OBJECT="$(git rev-parse --verify "refs/tags/$RECORDED_BASELINE_TAG")"
+RECORDED_BASELINE_TAG_REF="refs/exocortex-release-tags/$RECORDED_BASELINE_TAG"
+git fetch --no-tags --force origin "refs/tags/$RECORDED_BASELINE_TAG:$RECORDED_BASELINE_TAG_REF"
+RECORDED_BASELINE_TAG_OBJECT="$(git rev-parse --verify "$RECORDED_BASELINE_TAG_REF")"
 [ "$(git cat-file -t "$RECORDED_BASELINE_TAG_OBJECT")" = tag ]
 RECORDED_BASELINE_TARGET="$(git cat-file -p "$RECORDED_BASELINE_TAG_OBJECT" | sed -n 's/^object //p' | head -n 1)"
 RECORDED_BASELINE_TARGET_TYPE="$(git cat-file -p "$RECORDED_BASELINE_TAG_OBJECT" | sed -n 's/^type //p' | head -n 1)"
@@ -144,7 +148,13 @@ git merge-base --is-ancestor "$RECORDED_BASELINE" "$PEELED_CANDIDATE"
 printf '%s\n%s\n' "$PEELED_CANDIDATE" "$TAG_OBJECT"
 '''
     environment = os.environ.copy()
-    environment.update({"REF_NAME": ref_name, "CANDIDATE_SHA": event_candidate_sha})
+    environment.update(
+        {
+            "REF_NAME": ref_name,
+            "CANDIDATE_SHA": event_candidate_sha,
+            "GIT_NO_REPLACE_OBJECTS": "1",
+        }
+    )
     return subprocess.run(
         ("bash", "-ceu", script),
         cwd=root,
@@ -164,8 +174,12 @@ def main() -> None:
     for expected in (
         "REF_NAME: ${{ github.ref_name }}",
         "REF_TYPE: ${{ github.ref_type }}",
+        'GIT_NO_REPLACE_OBJECTS: "1"',
         'elif [ "$REF_TYPE" = tag ] && [[ "$REF_NAME" == v* ]]; then',
-        'git rev-parse --verify "refs/tags/$REF_NAME"',
+        'CANDIDATE_TAG_REF="refs/exocortex-release-tags/$REF_NAME"',
+        'git fetch --no-tags --force origin',
+        '"refs/tags/$REF_NAME:$CANDIDATE_TAG_REF"',
+        'git rev-parse --verify "$CANDIDATE_TAG_REF"',
         '[ "$(git cat-file -t "$TAG_OBJECT")" = tag ]',
         'git rev-parse --verify "$TAG_OBJECT^{commit}"',
         'git rev-parse --verify "$CANDIDATE_SHA^{commit}"',
@@ -174,6 +188,8 @@ def main() -> None:
         "'kind',",
         "'previous_published_tag',",
         "'previous_published_commit',",
+        'RECORDED_BASELINE_TAG_REF="refs/exocortex-release-tags/$RECORDED_BASELINE_TAG"',
+        '"refs/tags/$RECORDED_BASELINE_TAG:$RECORDED_BASELINE_TAG_REF"',
         "TAG_BASELINE_DIRECT_TARGET_INVALID",
         "TAG_BASELINE_COMMIT_MISMATCH",
         "TAG_BASELINE_EQUALS_CANDIDATE",
@@ -657,6 +673,9 @@ def main() -> None:
             "git", "tag", "-a", "v1.2.2", "-m", "fictional baseline release",
             baseline, cwd=root,
         )
+        baseline_tag_object = run(
+            "git", "rev-parse", "v1.2.2", cwd=root
+        ).stdout.strip()
         write(root, "cleanup.txt")
         cleanup_commit = commit(root, "fictional cleanup after baseline tag")
         write(
@@ -676,9 +695,44 @@ def main() -> None:
             release_commit, cwd=root,
         )
         tag_object = run("git", "rev-parse", "v1.2.3", cwd=root).stdout.strip()
-        resolved = annotated_tag_workflow_arguments(root, "v1.2.3", tag_object)
+        remote = Path(temp.name) / "remote.git"
+        run("git", "init", "--bare", str(remote), cwd=root)
+        run("git", "remote", "add", "origin", str(remote), cwd=root)
+        run(
+            "git", "push", "origin", "main", "refs/tags/v1.2.2",
+            "refs/tags/v1.2.3", cwd=root,
+        )
+        run("git", "update-ref", "refs/tags/v1.2.3", release_commit, cwd=root)
+        assert run("git", "cat-file", "-t", "refs/tags/v1.2.3", cwd=root).stdout.strip() == "commit"
+
+        resolved = annotated_tag_workflow_arguments(root, "v1.2.3", release_commit)
         assert resolved.returncode == 0, resolved.stderr
         assert resolved.stdout.splitlines() == [release_commit, tag_object]
+
+        run(
+            "git", "tag", "-a", "rewritten-baseline", "-m",
+            "fictional rewritten baseline", cleanup_commit, cwd=root,
+        )
+        rewritten_baseline_tag_object = run(
+            "git", "rev-parse", "rewritten-baseline", cwd=root
+        ).stdout.strip()
+        run(
+            "git", "push", "--force", "origin",
+            f"{rewritten_baseline_tag_object}:refs/tags/v1.2.2", cwd=root,
+        )
+        run(
+            "git", "replace", rewritten_baseline_tag_object,
+            baseline_tag_object, cwd=root,
+        )
+        replacement_bypass = annotated_tag_workflow_arguments(
+            root, "v1.2.3", release_commit
+        )
+        assert replacement_bypass.returncode != 0
+        run("git", "replace", "-d", rewritten_baseline_tag_object, cwd=root)
+        run(
+            "git", "push", "--force", "origin",
+            f"{baseline_tag_object}:refs/tags/v1.2.2", cwd=root,
+        )
 
         mismatched = annotated_tag_workflow_arguments(root, "v1.2.3", baseline)
         assert mismatched.returncode != 0

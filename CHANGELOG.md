@@ -38,6 +38,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
   GitHub immutable-release attestation for the exact
   `EnkratFlow/exocortex-template` release and an attested `SHA256SUMS` release
   asset before any downloaded installer or updater is executed.
+- **Real tag-event verification** — the quick GitHub workflow now fetches the
+  exact remote annotated tag object into an isolated ref namespace before
+  validating it, covering GitHub checkout's peeled-tag event shape without
+  weakening the direct-tag or baseline checks.
 
 ## [3.2.8] - 2026-08-05
 
