@@ -102,16 +102,35 @@ this order:
 7. In a clean `main` worktree, run `git fetch --prune --tags origin` and
    fast-forward only with `git merge --ff-only origin/main`.
 8. Run only the lightweight release-identity checks on unchanged merged main,
-   then create an annotated tag `v<VERSION>` on that exact commit. Publish a
-   GitHub release that names the peeled commit SHA and SHA-256 of that tag's
-   `SHA256SUMS`, plus the owner-selected signature or attestation evidence and
-   trust identity. A checksum in the same trust domain is consistency evidence,
-   not independent owner authenticity.
-9. Fetch the published tag, then run:
+   then create an annotated tag `v<VERSION>` on that exact commit. Before
+   publication, require GitHub immutable releases to be enabled. Create the
+   GitHub release as a draft, attach the exact tag's `SHA256SUMS` as a release
+   asset, and only then publish it. The release notes name the peeled commit SHA,
+   SHA-256 of `SHA256SUMS`, owner-selected attestation, and trust identity.
+   A checksum in the same trust domain is consistency evidence, not independent
+   owner authenticity.
+9. Verify the immutable release and its downloaded manifest asset before using
+   the asset's digest for closeout:
+
+   ```bash
+   (
+   set -eu
+   gh release verify v<VERSION> -R github.com/EnkratFlow/exocortex-template
+   gh release download v<VERSION> -R github.com/EnkratFlow/exocortex-template \
+     --pattern SHA256SUMS --dir <private-empty-directory>
+   gh release verify-asset v<VERSION> \
+     <private-empty-directory>/SHA256SUMS \
+     -R github.com/EnkratFlow/exocortex-template
+   cmp -s <private-empty-directory>/SHA256SUMS SHA256SUMS
+   )
+   ```
+
+   The fail-fast comparison requires the downloaded asset to be byte-for-byte
+   identical to the exact tag's `SHA256SUMS`. Fetch the published tag, then run:
 
    ```bash
    bash scripts/check-release-state.sh \
-     --published-digest <digest-from-the-GitHub-release-notes> \
+     --published-digest <sha256-computed-from-verified-release-asset> \
      --baseline-tag <tag-recorded-in-.exocortex/release-baseline.json>
    ```
 
@@ -127,7 +146,8 @@ candidate-bound previous-release record, baseline-to-release public boundary,
 main-worktree cleanliness, or the published digest disagree. It extracts and
 hash-verifies the public-boundary checker from the exact tag rather than
 executing the mutable worktree copy. It does not itself validate the
-still-to-be-selected signature or attestation format.
+release attestation; the preceding `gh release verify` and
+`gh release verify-asset` steps provide that evidence.
 
 The quick GitHub workflow fails closed when a nonzero push base is unavailable.
 For a new tag push, it derives the range start from the checksum-bound

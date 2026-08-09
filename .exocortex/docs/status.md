@@ -8,11 +8,11 @@ preference, approval record, release claim, or replacement for test evidence.
 
 ## Published baseline
 
-- The latest published baseline is `v3.2.8` at commit
+- The previous reviewed published baseline is `v3.2.8` at commit
   `cd577ab633ac3c8edff52cc2128e986f1ad2785d`.
-- The `3.2.9` hardening work described below is an unreleased candidate. This
-  page does not claim that it has been merged, published, installed into a
-  downstream repository, or used to rewrite public history.
+- The packaged version is `3.2.9`. Live GitHub tag, release, immutability, and
+  attestation evidence remains authoritative; this tracked page does not turn
+  a candidate into a published release.
 
 ## Candidate state
 
@@ -24,6 +24,7 @@ preference, approval record, release claim, or replacement for test evidence.
 | Public-release safety | Focused checks and independent review pass | The checker rejects protected data, unsafe topology, redacted secret-shaped paths/content/commit/tag metadata, replacement-object history, modified public fixtures, and transient candidate data. |
 | CI and integrity | Focused checks and inventories pass | Every pull request produces the required check, push/tag ranges fail closed, the public boundary runs in CI, third-party Actions are pinned, and the exact code-plane checksum and mode inventories are verified. |
 | Upgrade/install path | Focused security rehearsal passes | Clean install plus guarded dry-run upgrade passed in disposable fixtures, including source races, import-shadow denial, rsync/tar denial, protected environment preservation, rollback exclusion, and ambient-variable isolation. |
+| Release authenticity | Selected and enabled; publication verification required | Version 3.2.9 uses GitHub's immutable-release attestation for `github.com/EnkratFlow/exocortex-template` and an attested `SHA256SUMS` release asset. The repository setting was verified enabled on 2026-08-08; live GitHub state remains authoritative. |
 
 ## Operating decisions
 
@@ -40,14 +41,16 @@ preference, approval record, release claim, or replacement for test evidence.
   or downstream owner preferences.
 - A second reviewer is added only for a genuinely separate risk discipline.
 
-## Known release blockers
+## Publication gates and residual limitations
 
-The candidate cannot by itself settle these maintainer- or GitHub-controlled
-decisions:
+Before version 3.2.9 may be used as a public installation or update source,
+GitHub immutable releases must be enabled, the exact annotated tag and
+`SHA256SUMS` asset must be published together, and both the release and asset
+verification operations must pass.
 
-- choose and provision release authenticity evidence, such as signed tags or
-  GitHub artifact attestations, including the trust identity and revocation
-  procedure;
+The following maintainer- or platform-controlled limitations remain visible
+without silently weakening that release gate:
+
 - decide whether to enable GitHub secret scanning, push protection, private
   vulnerability reporting, restricted Actions, and stronger branch rules;
 - decide how to handle protected project data already present in old public
@@ -74,18 +77,23 @@ prove repository-owner authenticity.
 - Clean disposable install and guarded dry-run upgrade security test: pass.
 - Complete integrity inventory: 269 code-plane checksums and 270 file-mode
   records verify for the exact candidate.
+- PR 14's complete GitHub safety suite passed on the reviewed hardening head,
+  which was merged as `efb6bbb4ad7cc1ff1da85787fe3a64203fe8e91c`.
 
-The complete safety suite has not been run locally, and no CI or provider-menu
-Human UAT evidence exists for this candidate yet. Historical provider-menu
-results were downgraded to `compatible` because the adapter bytes changed.
+The complete safety suite is intentionally not run locally on krato. Every
+changed release candidate must pass the required GitHub checks on its exact
+head. Provider-menu Human UAT has not yet been recorded; historical results
+were downgraded to `compatible` because the adapter bytes changed.
 
 ## Next verification sequence
 
-1. Let CI run the complete safety suite for an exact branch candidate.
-2. Prepare provider-menu and operator Human UAT.
-3. Resolve the maintainer- and GitHub-controlled release blockers above.
-4. Do not publish or
-   roll out to downstream repositories without a new explicit delivery scope.
+1. Require the exact release-only candidate to pass GitHub's `phase-b` and
+   `checksums` checks before merge.
+2. Publish the annotated `v3.2.9` tag and attested manifest asset, then verify
+   the release and asset.
+3. Run the read-only release closeout and fresh-tag verification.
+4. Use the published README prompt for one bounded downstream operator update;
+   do not treat release publication as authority to mutate every repository.
 
 ## Start here
 

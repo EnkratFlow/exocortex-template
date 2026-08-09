@@ -88,6 +88,7 @@ require(
     "rollback boundary is therefore isolation",
     "not separate human decisions",
     "changed-path list is not final",
+    "set -eu",
     "mandatory post-bootstrap dry",
     "Never edit the lane",
     "The orchestrator alone",
@@ -129,7 +130,7 @@ require(
     "Platform support",
     ".exocortex/docs/AI_INSTALLATION.md",
     ".exocortex/docs/UPGRADE_MANIFEST.md",
-    "compatible_pending_candidate_CI",
+    "| Linux | `compatible` |",
     "human_uat_pending",
     "Git Bash or native Windows PowerShell/Command Prompt",
     "clean isolated Git worktree",
@@ -146,11 +147,15 @@ require(
     "There is no supported native Windows command today",
     "prove byte consistency only",
     "not a\nnetwork sandbox",
-    "Public installation is currently blocked",
-    "v3.2.8 does not carry an independently verifiable owner signature",
-    "do not execute any candidate-owned script",
-    "reference-only",
-    "stop here and do not execute any file from that checkout",
+    "Public releases are authenticity-gated",
+    f"gh release verify v{PACKAGED_VERSION} -R github.com/EnkratFlow/exocortex-template",
+    f"gh release verify-asset v{PACKAGED_VERSION}",
+    "github.com/EnkratFlow/exocortex-template",
+    "Stop without executing candidate code",
+    "attested release asset",
+    "permanently retire that tag name",
+    "do not rely on an earlier preflight",
+    "sha256-computed-from-verified-release-asset",
 )
 require_compact(
     "README.md",
@@ -170,12 +175,27 @@ require(
     "EXOCORTEX_STALE_COMMAND_GUIDANCE_PRESERVED",
     "EXOCORTEX_COMMAND_RECONCILIATION_REQUIRED",
     "do not independently prove owner authenticity",
-    "public installation as blocked",
+    f"gh release verify v{PACKAGED_VERSION} -R github.com/EnkratFlow/exocortex-template",
+    f"gh release verify-asset v{PACKAGED_VERSION}",
+    "Public installation remains blocked unless",
+    "permanently retire that tag name",
+    "do not rely on an earlier preflight",
+    "sha256-computed-from-verified-release-asset",
+    "set -eu",
 )
 require_compact(
     ".exocortex/docs/AI_INSTALLATION.md",
     "peeled 40-character commit SHA",
 )
+
+for platform_doc in (
+    ".exocortex/docs/getting-started.md",
+    ".exocortex/docs/implementation.md",
+    ".exocortex/docs/UPGRADE_MANIFEST.md",
+):
+    require(platform_doc, "Linux is compatible", "bounded rehearsal")
+    forbid(platform_doc, r"Linux .*pending .*candidate.*CI")
+
 for command_authority_doc in (
     "AI_START_HERE.md",
     ".exocortex/AI_BOOTSTRAP.md",

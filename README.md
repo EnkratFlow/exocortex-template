@@ -6,14 +6,19 @@ are interchangeable workers.
 
 This template is public beta. Read `VERSION` for the packaged version.
 
-> **Public installation is currently blocked.** The published tag, release
-> notes, peeled commit, and checksum digest all share the GitHub trust domain;
-> v3.2.8 does not carry an independently verifiable owner signature or
-> attestation. Do not execute the downloaded installer or updater against any
-> repository until a later release names the owner-selected artifact, trust
-> identity, and verification method. The flows below document the intended
-> post-authenticity process and may be inspected or rehearsed only from a
-> separately trusted local source in a disposable target.
+> **Public releases are authenticity-gated.** Version 3.2.9 selects GitHub's
+> immutable-release attestation for the trust identity
+> `github.com/EnkratFlow/exocortex-template`. Before executing downloaded code,
+> require `gh release verify v3.2.9 -R github.com/EnkratFlow/exocortex-template`
+> to pass and
+> verify the downloaded `SHA256SUMS` release asset with
+> `gh release verify-asset`. Stop if the release is not immutable, either
+> verification fails, or the attested asset differs from the exact tag.
+
+If an immutable release is suspected or confirmed to be compromised, treat it
+as revoked and stop using it. The repository owner must remove the compromised
+release, permanently retire that tag name, and publish a corrected higher patch
+version. Never reuse the compromised version or tag.
 
 ## Choose your path
 
@@ -30,23 +35,27 @@ process but cannot install or update local files.
 
 Open the repository you want to change in Codex, Claude, Cursor, Copilot, Zed,
 or another coding AI with local terminal access. Copy and paste the matching
-prompt only after the authenticity blocker above has been resolved for the
-named release. For v3.2.8, do not execute any candidate-owned script; an AI
-must report the blocker and stop.
+prompt. The AI must complete the immutable-release and attested-manifest checks
+before it executes any candidate-owned script.
 
 ### New installation prompt
 
 ```text
 Prepare a read-only Exocortex clean-install preflight for the repository I
-currently have open. Use only the official GitHub release v3.2.8 from
+currently have open. Use only the official GitHub release v3.2.9 from
 https://github.com/EnkratFlow/exocortex-template.
 
-Clone that exact tag as a temporary source. Verify its HEAD against the peeled
-commit SHA in the release notes and verify the SHA-256 of its SHA256SUMS file
-against the published digest. Also verify the release's owner-selected
-signature or attestation against its independently documented trust identity.
-Stop if any evidence is absent or differs. v3.2.8 has no such authenticity
-evidence, so do not execute its scripts or install it into a repository.
+Require GitHub CLI verification of the immutable release for the exact trust
+identity github.com/EnkratFlow/exocortex-template. Download the release's
+SHA256SUMS asset and verify it with the release attestation. Clone that exact
+tag as a temporary source, require its SHA256SUMS to be byte-for-byte identical
+to the attested asset, verify its HEAD against the peeled commit SHA in the
+release notes, and verify the SHA-256 of SHA256SUMS against the published
+digest. Stop without executing candidate code if any evidence is absent or
+differs. Immediately before the first candidate-owned script runs, repeat the
+live release verification, downloaded-asset verification, and byte comparison;
+do not rely on an earlier preflight. Use the SHA-256 computed from the verified
+asset as the candidate digest; release-note text is only a cross-check.
 
 Show me the exact target, current Git state, expected installation paths,
 collisions, disposable rehearsal, verification, rollback boundary, and total
@@ -64,19 +73,24 @@ external systems.
 ```text
 Prepare a read-only Exocortex safe-update preflight for the repository I
 currently have open. Update it from its installed version to the official
-GitHub release v3.2.8 from
+GitHub release v3.2.9 from
 https://github.com/EnkratFlow/exocortex-template.
 
 This existing repository and its project-local data are the target. Do not
 treat a fresh template clone or a bare Git snapshot that omits local data as a
-replacement. A temporary clone of v3.2.8 is the update source only. An approved
+replacement. A temporary clone of v3.2.9 is the update source only. An approved
 disposable rehearsal or isolated worktree is allowed, but it must preserve and
-verify the target's protected data. Verify the release clone's HEAD against the
-peeled commit SHA in the release notes and verify the SHA-256 of its SHA256SUMS
-file against the published digest. Also verify the release's owner-selected
-signature or attestation against its independently documented trust identity.
-Stop if any evidence is absent or differs. v3.2.8 has no such authenticity
-evidence, so do not execute its scripts or update a repository.
+verify the target's protected data. Require GitHub CLI verification of the
+immutable release for the exact trust identity
+github.com/EnkratFlow/exocortex-template. Download and attest-verify the
+release's SHA256SUMS asset, require the release clone's SHA256SUMS to be
+byte-for-byte identical, verify the clone HEAD against the peeled commit SHA in
+the release notes, and verify the SHA-256 of SHA256SUMS against the published
+digest. Stop without executing candidate code if any evidence is absent or
+differs. Immediately before the first candidate-owned script runs, repeat the
+live release verification, downloaded-asset verification, and byte comparison;
+do not rely on an earlier preflight. Use the SHA-256 computed from the verified
+asset as the candidate digest; release-note text is only a cross-check.
 
 Preserve all project data byte-for-byte, including project memory, session
 context, TODOs, lessons, open decisions, events, archives, recognized Session
@@ -108,38 +122,73 @@ For the complete prompts and deterministic safety contract, see the
 
 Use this path when no capable coding AI is available or when independently
 checking what the AI did. Never pipe an unpinned remote script into a shell.
-The commands that execute `install.sh` or `safe-update.sh` are reference-only
-until the public authenticity blocker above is resolved. They must not be run
-for v3.2.8 against either a valued target or a host containing credentials.
+The commands that execute `install.sh` or `safe-update.sh` must not be run until
+the exact immutable release and downloaded manifest asset pass the checks
+below.
 
 ### 1. Download and verify the exact release
 
 ```bash
-git clone --depth 1 --branch v3.2.8 \
+(
+set -eu
+gh release verify v3.2.9 -R github.com/EnkratFlow/exocortex-template
+mkdir -m 700 /tmp/exocortex-release-verify-v3.2.9
+gh release download v3.2.9 -R github.com/EnkratFlow/exocortex-template \
+  --pattern SHA256SUMS --dir /tmp/exocortex-release-verify-v3.2.9
+gh release verify-asset v3.2.9 \
+  /tmp/exocortex-release-verify-v3.2.9/SHA256SUMS \
+  -R github.com/EnkratFlow/exocortex-template
+git clone --depth 1 --branch v3.2.9 \
   https://github.com/EnkratFlow/exocortex-template.git \
-  /tmp/exocortex-template-v3.2.8
-git -C /tmp/exocortex-template-v3.2.8 rev-parse HEAD
+  /tmp/exocortex-template-v3.2.9
+cmp -s /tmp/exocortex-release-verify-v3.2.9/SHA256SUMS \
+  /tmp/exocortex-template-v3.2.9/SHA256SUMS
+git -C /tmp/exocortex-template-v3.2.9 rev-parse HEAD
+)
 ```
 
 On macOS:
 
 ```bash
-shasum -a 256 /tmp/exocortex-template-v3.2.8/SHA256SUMS
+shasum -a 256 /tmp/exocortex-template-v3.2.9/SHA256SUMS
 ```
 
 On Linux or inside WSL:
 
 ```bash
-sha256sum /tmp/exocortex-template-v3.2.8/SHA256SUMS
+sha256sum /tmp/exocortex-template-v3.2.9/SHA256SUMS
 ```
 
 Compare both outputs with the peeled commit and candidate digest in the
-v3.2.8 GitHub release notes. Stop if either differs. Do not substitute `main`,
-`latest`, or another checkout. These checks establish consistency, not owner
-authenticity. v3.2.8 provides no independently verifiable owner signature or
-attestation, so stop here and do not execute any file from that checkout.
+v3.2.9 GitHub release notes. Stop if either differs. Do not substitute `main`,
+`latest`, another checkout, or an unattested manifest. The immutable-release
+attestation and verified asset establish the selected repository identity; the
+peeled commit and digest checks establish exact byte consistency. Use the
+SHA-256 computed from the verified asset—not mutable release-note text—as the
+candidate digest passed below.
 
-### 2A. New installation (after authenticity evidence exists)
+### Revalidate immediately before execution
+
+An immutable release can be removed after an earlier preflight. Immediately
+before running either candidate-owned command below, repeat these checks against
+the retained asset and exact tag clone:
+
+```bash
+(
+set -eu
+gh release verify v3.2.9 -R github.com/EnkratFlow/exocortex-template
+gh release verify-asset v3.2.9 \
+  /tmp/exocortex-release-verify-v3.2.9/SHA256SUMS \
+  -R github.com/EnkratFlow/exocortex-template
+cmp -s /tmp/exocortex-release-verify-v3.2.9/SHA256SUMS \
+  /tmp/exocortex-template-v3.2.9/SHA256SUMS
+)
+```
+
+Failure means the release is unavailable, revoked, or mismatched. Stop without
+executing `install.sh` or `safe-update.sh`.
+
+### 2A. New installation
 
 Rehearse first and install only in an approved clean isolated Git worktree.
 The detailed guide explains how to choose the target. Create a new empty,
@@ -149,12 +198,12 @@ The underlying installation command is:
 ```bash
 cd /path/to/approved-isolated-worktree
 HOME=<new-empty-owner-only-disposable-home> \
-EXOCORTEX_LOCAL_SOURCE=/tmp/exocortex-template-v3.2.8 \
-EXOCORTEX_CANDIDATE_DIGEST=<digest-from-release-notes> \
-  bash /tmp/exocortex-template-v3.2.8/install.sh "project-name"
+EXOCORTEX_LOCAL_SOURCE=/tmp/exocortex-template-v3.2.9 \
+EXOCORTEX_CANDIDATE_DIGEST=<sha256-computed-from-verified-release-asset> \
+  bash /tmp/exocortex-template-v3.2.9/install.sh "project-name"
 ```
 
-### 2B. Existing-repository update (after authenticity evidence exists)
+### 2B. Existing-repository update
 
 Run the read-only dry run from the existing repository. The update source is
 temporary; the repository containing your memory remains the target. Create a
@@ -163,9 +212,9 @@ fresh owner-only backup directory outside both the target and template first.
 ```bash
 cd /path/to/existing-project
 mkdir -m 700 /tmp/exocortex-restore
-bash /tmp/exocortex-template-v3.2.8/scripts/safe-update.sh \
-  --template /tmp/exocortex-template-v3.2.8 \
-  --candidate-digest <digest-from-release-notes> \
+bash /tmp/exocortex-template-v3.2.9/scripts/safe-update.sh \
+  --template /tmp/exocortex-template-v3.2.9 \
+  --candidate-digest <sha256-computed-from-verified-release-asset> \
   --backup-dir /tmp/exocortex-restore \
   --dry-run
 ```
@@ -195,7 +244,7 @@ failure model.
 | Environment | Status |
 |---|---|
 | macOS with the documented Bash/Unix tools | `verified` |
-| Linux | `compatible_pending_candidate_CI` |
+| Linux | `compatible` |
 | Windows through WSL, using the WSL filesystem | `human_uat_pending` |
 | Git Bash or native Windows PowerShell/Command Prompt | `unsupported` |
 
@@ -390,7 +439,11 @@ independently prove repository-owner authenticity when the repository, tag,
 release notes, and digest share one trust domain. Public installation must stop
 unless the release also carries the owner-selected signature or attestation
 evidence and the operator verifies it against its documented trust identity.
-The project has not yet selected that artifact and trust-root format.
+Version 3.2.9 selects GitHub's immutable-release attestation for
+`github.com/EnkratFlow/exocortex-template` and publishes `SHA256SUMS` as an
+attested release asset. Verify both with `gh release verify` and
+`gh release verify-asset`; an absent, mutable, mismatched, or unverifiable
+release remains blocked.
 
 ## Limits
 
