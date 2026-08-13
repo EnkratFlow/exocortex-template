@@ -22,7 +22,7 @@ preference, approval record, release claim, or replacement for test evidence.
 | Subagents | Implemented; focused checks pass | The same correct-model-for-the-job and cost-of-correct-outcome judgment applies to every delegate. |
 | Command adapters | Focused checks pass | 11 bounded read-only commands are model-discoverable and 13 human-controlled commands remain manual-only; all authority boundaries remain. |
 | Public-release safety | Focused checks and independent review pass | The checker rejects protected data, unsafe topology, redacted secret-shaped paths/content/commit/tag metadata, replacement-object history, modified public fixtures, and transient candidate data. |
-| CI and integrity | Focused checks and inventories pass | Every pull request produces the required check, push/tag ranges fail closed, the public boundary runs in CI, third-party Actions are pinned, and the exact code-plane checksum and mode inventories are verified. |
+| CI and integrity | Tag-event hotfix in verification | Every pull request produces the required check, push/tag ranges fail closed, the public boundary runs in CI, third-party Actions are pinned, and the exact code-plane checksum and mode inventories are verified. The first live v3.2.9 tag-event verification exposed GitHub checkout's peeled-tag shape; the bounded hotfix fetches the exact remote annotated object before validation. |
 | Upgrade/install path | Focused security rehearsal passes | Clean install plus guarded dry-run upgrade passed in disposable fixtures, including source races, import-shadow denial, rsync/tar denial, protected environment preservation, rollback exclusion, and ambient-variable isolation. |
 | Release authenticity | Selected and enabled; publication verification required | Version 3.2.9 uses GitHub's immutable-release attestation for `github.com/EnkratFlow/exocortex-template` and an attested `SHA256SUMS` release asset. The repository setting was verified enabled on 2026-08-08; live GitHub state remains authoritative. |
 
@@ -79,6 +79,11 @@ prove repository-owner authenticity.
   records verify for the exact candidate.
 - PR 14's complete GitHub safety suite passed on the reviewed hardening head,
   which was merged as `efb6bbb4ad7cc1ff1da85787fe3a64203fe8e91c`.
+- PR 15's complete GitHub safety suite and checksum check passed on exact head
+  `9a09c04b99dd2a3fc70d6cf815441be2bc1d5a05`, merged as
+  `0cdd18222ec35d918d8ec0589b286b1a265a6a32`. The subsequent tag event correctly
+  stopped publication when checkout exposed the peeled commit instead of the
+  annotated tag object; the hotfix regression reproduces that live shape.
 
 The complete safety suite is intentionally not run locally on krato. Every
 changed release candidate must pass the required GitHub checks on its exact
@@ -87,10 +92,11 @@ were downgraded to `compatible` because the adapter bytes changed.
 
 ## Next verification sequence
 
-1. Require the exact release-only candidate to pass GitHub's `phase-b` and
+1. Require the exact tag-CI hotfix candidate to pass GitHub's `phase-b` and
    `checksums` checks before merge.
-2. Publish the annotated `v3.2.9` tag and attested manifest asset, then verify
-   the release and asset.
+2. Replace the unpublished provisional `v3.2.9` tag on the exact hotfix merge,
+   require the corrected tag quick check to pass, then publish the tag and
+   attested manifest asset and verify the release and asset.
 3. Run the read-only release closeout and fresh-tag verification.
 4. Use the published README prompt for one bounded downstream operator update;
    do not treat release publication as authority to mutate every repository.
