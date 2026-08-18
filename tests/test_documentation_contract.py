@@ -88,6 +88,7 @@ require(
     "rollback boundary is therefore isolation",
     "not separate human decisions",
     "changed-path list is not final",
+    "set -eu",
     "mandatory post-bootstrap dry",
     "Never edit the lane",
     "The orchestrator alone",
@@ -129,12 +130,14 @@ require(
     "Platform support",
     ".exocortex/docs/AI_INSTALLATION.md",
     ".exocortex/docs/UPGRADE_MANIFEST.md",
-    "compatible_pending_candidate_CI",
+    "| Linux | `compatible` |",
     "human_uat_pending",
     "Git Bash or native Windows PowerShell/Command Prompt",
     "clean isolated Git worktree",
     "Source-backed model freshness",
     "zero route-eligible models",
+    "historical CLI result",
+    "candidate CLI UAT",
     "four business-level envelopes",
     "not separate human approvals",
     f"--branch v{PACKAGED_VERSION}",
@@ -142,6 +145,17 @@ require(
     "safe-update.sh",
     "--dry-run",
     "There is no supported native Windows command today",
+    "prove byte consistency only",
+    "not a\nnetwork sandbox",
+    "Public releases are authenticity-gated",
+    f"gh release verify v{PACKAGED_VERSION} -R github.com/EnkratFlow/exocortex-template",
+    f"gh release verify-asset v{PACKAGED_VERSION}",
+    "github.com/EnkratFlow/exocortex-template",
+    "Stop without executing candidate code",
+    "attested release asset",
+    "permanently retire that tag name",
+    "do not rely on an earlier preflight",
+    "sha256-computed-from-verified-release-asset",
 )
 require_compact(
     "README.md",
@@ -160,11 +174,28 @@ require(
     "EXOCORTEX_COMMAND_AUTHORITY_COLLISION_PRESERVED",
     "EXOCORTEX_STALE_COMMAND_GUIDANCE_PRESERVED",
     "EXOCORTEX_COMMAND_RECONCILIATION_REQUIRED",
+    "do not independently prove owner authenticity",
+    f"gh release verify v{PACKAGED_VERSION} -R github.com/EnkratFlow/exocortex-template",
+    f"gh release verify-asset v{PACKAGED_VERSION}",
+    "Public installation remains blocked unless",
+    "permanently retire that tag name",
+    "do not rely on an earlier preflight",
+    "sha256-computed-from-verified-release-asset",
+    "set -eu",
 )
 require_compact(
     ".exocortex/docs/AI_INSTALLATION.md",
     "peeled 40-character commit SHA",
 )
+
+for platform_doc in (
+    ".exocortex/docs/getting-started.md",
+    ".exocortex/docs/implementation.md",
+    ".exocortex/docs/UPGRADE_MANIFEST.md",
+):
+    require(platform_doc, "Linux is compatible", "bounded rehearsal")
+    forbid(platform_doc, r"Linux .*pending .*candidate.*CI")
+
 for command_authority_doc in (
     "AI_START_HERE.md",
     ".exocortex/AI_BOOTSTRAP.md",
@@ -188,7 +219,7 @@ require(
     "internal safety mechanics",
     "Plain-English work contract",
     "more than five minutes",
-    "one parent and no\n  delegate by default",
+    "one parent and no delegate by\n  default",
     "exactly one concise project-local completion event",
     "`/save` remains a manual command",
     "does not regenerate `SESSION_CONTEXT.md`",
@@ -216,6 +247,18 @@ forbid(
 )
 require(
     ".exocortex/control/MODEL_ROUTING.md",
+    "Use the correct model for the job",
+    "expected cost of a correct\noutcome",
+    "Routine model selection is not a human approval gate",
+    "same full routing judgment\nto each subagent",
+    "one accountable parent and no delegate by default",
+    "second only for a genuinely separate named discipline",
+    "Luna-class",
+    "Terra- or Sonnet-class",
+    "Sol- or\nOpus-class",
+    "Fable-class",
+    "optional empirical verifier",
+    "formal verifier unavailable",
     "configured_official_sources_only",
     "explicit_external_read",
     "auto_activation=false",
@@ -225,16 +268,10 @@ require(
     "current_surface_session",
     "--current-surface-session-id",
     "at most 15",
-    "independently of the availability file",
-    "not a deterministic routing\ncriterion",
     "normative_model_pin=false",
     "zero eligible models",
-    "selected evaluation evidence digests",
     "discovery result binds the supplied normalized observation digests",
-    "one accountable parent and no delegate by default",
-    "at most one independent reviewer",
     "Do not delegate `/save`",
-    "take more than five minutes",
     "unchanged exact\n  candidate",
 )
 require(
@@ -375,15 +412,20 @@ full_workflow = read(".github/workflows/test.yml")
 for needle in (
     "name: Complete Exocortex safety suite",
     "pull_request:",
-    "paths-ignore:",
     "workflow_dispatch:",
     "name: Run complete Exocortex safety suite",
+    "actions/checkout@11d5960a326750d5838078e36cf38b85af677262",
+    "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
 ):
     if needle not in full_workflow:
         FAILURES.append(f".github/workflows/test.yml: missing required text: {needle}")
 if re.search(r"^\s{2}push:\s*$", full_workflow, flags=re.MULTILINE):
     FAILURES.append(
         ".github/workflows/test.yml: complete safety suite must not rerun on main or tags"
+    )
+if "paths-ignore:" in full_workflow:
+    FAILURES.append(
+        ".github/workflows/test.yml: every pull request must produce the required phase-b check"
     )
 
 require(
@@ -393,6 +435,23 @@ require(
     "Verify generated provider adapters",
     "branches: [main]",
     "tags: ['v*']",
+    "fetch-depth: 0",
+    "actions/checkout@11d5960a326750d5838078e36cf38b85af677262",
+    "Enforce public release boundary",
+    "scripts/check-public-release.py",
+    "PUSH_BASE_UNAVAILABLE",
+    "TAG_BASELINE_TAG_UNAVAILABLE",
+    "TAG_BASELINE_DIRECT_TARGET_INVALID",
+    "TAG_BASELINE_COMMIT_MISMATCH",
+    "TAG_BASELINE_NOT_ANCESTOR",
+    ".exocortex/release-baseline.json",
+)
+
+require(
+    "SECURITY.md",
+    "GitHub private vulnerability\nreporting is not currently enabled",
+    "prove byte consistency, not repository-owner\n  authenticity",
+    "do not prevent filesystem\n  or network access",
 )
 require(
     "CHANGELOG.md",
@@ -529,6 +588,7 @@ for linked_doc in (
     ".exocortex/docs/UPGRADE_MANIFEST.md",
     ".exocortex/docs/getting-started.md",
     ".exocortex/docs/implementation.md",
+    ".exocortex/docs/status.md",
     ".exocortex/docs/user-guide.md",
 ):
     check_local_links(linked_doc)
@@ -566,6 +626,9 @@ for required_integrity_path in (
     ".exocortex/schemas/update-reconciliation-plan.schema.json",
     ".exocortex/scripts/model_registry.py",
     ".exocortex/scripts/prepare_update_reconciliation.py",
+    "scripts/check-public-release.py",
+    "scripts/check-release-state.sh",
+    "scripts/safe-update.sh",
 ):
     if not re.search(
         rf"^[0-9a-f]{{64}}  {re.escape(required_integrity_path)}$",

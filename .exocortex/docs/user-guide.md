@@ -50,18 +50,16 @@ automatically.
 
 Any capable AI can enter through the same contract. One parent owns integration
 and one registered writer mutates. Other models gather bounded evidence or
-review read-only. Routing favors the least-expensive capable model, then
-escalates when risk or evidence requires stronger capability.
+review read-only. The parent chooses the best expected cost of a correct
+outcome and applies the same judgment to every subagent. It reports route and
+ETA for visibility without turning routine model selection into an approval
+gate.
 
-Capability is proven from fresh source, exact-surface availability, and
-measured evaluation evidence—not from a model's advertised newness or price.
-For production routing, the supplied UTC timestamp must also be within 60
-seconds of the runtime clock; stale or future timestamps cannot replay an old
-availability window. Historical evidence remains inspectable through the
-separate deterministic validator, which makes no routing selection.
-The packaged catalog is advisory and cannot route until a separately reviewed
-admission supplies verified evidence. Discovery quarantines new entries and
-never activates them.
+When maintained, fresh source, exact-surface availability, and measured
+evaluation evidence can support an optional formal route; advertised newness
+or price cannot. The packaged catalog is advisory and cannot formally route as
+shipped, but that does not block parent judgment. Discovery quarantines new
+entries and never activates them.
 
 `/handoff` prepares strict local evidence for another provider. It does not
 transfer the writer lane or authorize continuation by itself.

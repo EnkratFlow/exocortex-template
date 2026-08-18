@@ -20,25 +20,70 @@ combining the conflicting instructions.
 ## Acquire an exact GitHub release
 
 The release notes must publish the exact tag, its peeled 40-character commit
-SHA, and the SHA-256 of that tag's `SHA256SUMS`. For version 3.2.8, acquire and
-verify the public artifact like this:
+SHA, the SHA-256 of that tag's `SHA256SUMS`, and the owner-selected signature or
+attestation evidence with its documented trust identity. The SHA and digest
+prove byte consistency but do not independently prove owner authenticity when
+the repository, tag, release notes, and digest share one trust domain.
+
+Version 3.2.9 selects GitHub's immutable-release attestation for the exact
+trust identity `github.com/EnkratFlow/exocortex-template`. The release publishes
+`SHA256SUMS` as an attested asset. Public installation remains blocked unless
+both `gh release verify` and `gh release verify-asset` succeed and the attested
+asset is byte-for-byte identical to the exact tag's manifest. The acquisition
+and consistency checks are:
 
 ```bash
-git clone --depth 1 --branch v3.2.8 \
+(
+set -eu
+gh release verify v3.2.9 -R github.com/EnkratFlow/exocortex-template
+mkdir -m 700 /tmp/exocortex-release-verify-v3.2.9
+gh release download v3.2.9 -R github.com/EnkratFlow/exocortex-template \
+  --pattern SHA256SUMS --dir /tmp/exocortex-release-verify-v3.2.9
+gh release verify-asset v3.2.9 \
+  /tmp/exocortex-release-verify-v3.2.9/SHA256SUMS \
+  -R github.com/EnkratFlow/exocortex-template
+git clone --depth 1 --branch v3.2.9 \
   https://github.com/EnkratFlow/exocortex-template.git \
-  /tmp/exocortex-template-v3.2.8
-git -C /tmp/exocortex-template-v3.2.8 rev-parse HEAD
-shasum -a 256 /tmp/exocortex-template-v3.2.8/SHA256SUMS
+  /tmp/exocortex-template-v3.2.9
+cmp -s /tmp/exocortex-release-verify-v3.2.9/SHA256SUMS \
+  /tmp/exocortex-template-v3.2.9/SHA256SUMS
+git -C /tmp/exocortex-template-v3.2.9 rev-parse HEAD
+if command -v shasum >/dev/null 2>&1; then
+  shasum -a 256 /tmp/exocortex-template-v3.2.9/SHA256SUMS
+else
+  sha256sum /tmp/exocortex-template-v3.2.9/SHA256SUMS
+fi
+)
 ```
 
-Compare both outputs with the release notes. Stop on either mismatch. Never
-replace the exact tag with `main`, `latest`, or another mutable reference.
-After verification, use that clone as `<absolute-pinned-template-path>` and
-its published digest in the prompts below.
+Compare both outputs with the release notes and stop on either mismatch. Require
+`gh release verify` to succeed; that successful verification proves the release
+exists and is immutable. If either verification is absent, fails, or does not
+match the documented trust identity, stop before executing repository code.
+Never replace the exact tag with `main`, `latest`, another mutable reference, or
+an unattested manifest. Only after all checks pass may that clone become
+`<absolute-pinned-template-path>` in the prompts below.
+
+Use the SHA-256 computed from the verified downloaded asset—not mutable
+release-note text—as the approved candidate digest. The release-note value is
+only an additional cross-check.
+
+If an immutable release is suspected or confirmed to be compromised, treat it
+as revoked and stop using it. The repository owner must remove the compromised
+release, permanently retire that tag name, and publish a corrected higher patch
+version. Never reuse the compromised version or tag.
+
+An immutable release can be removed after an earlier preflight. Immediately
+before the first candidate-owned script runs, repeat `gh release verify`,
+`gh release verify-asset` against the retained downloaded manifest, and the
+byte-for-byte comparison with the exact tag. Failure means the release is
+unavailable, revoked, or mismatched; stop without executing candidate code.
 
 ## Local prerequisites
 
-The current installer and updater require Bash 3.2+, Python 3.9+, `shasum` or
+Public release acquisition requires a GitHub CLI version that supports
+`gh release verify` and `gh release verify-asset`. The current installer and
+updater require Bash 3.2+, Python 3.9+, `shasum` or
 `sha256sum`, `awk`,
 `tar`, `find`, `grep`, `sed`, `sort`, `mktemp`, `diff`, `cp`, `mv`, `chmod`,
 `mkdir`, `rm`, `basename`, `dirname`, `cat`, `date`, `tr`, and `wc`. Git is
@@ -60,7 +105,7 @@ the AI to install packages or substitute an untested tool.
 | Environment | Status | Boundary |
 |---|---|---|
 | macOS with Bash and the documented Unix tools | `verified` | Current local deterministic and disposable-target evidence |
-| Linux | `compatible_pending_candidate_CI` | The repository CI is configured for Ubuntu; the final candidate must pass before promotion |
+| Linux | `compatible` | The complete GitHub safety suite passed on Ubuntu for the merged 3.2.9 hardening change; operator-environment rehearsal is still required |
 | Windows through WSL | `human_uat_pending` | Use only after the exact WSL environment passes the same bounded rehearsal |
 | Windows through Git Bash | `unsupported` | Required tools and path behavior have not been verified |
 | Native Windows PowerShell or Command Prompt | `unsupported` | No native shared installer exists; do not translate the security logic ad hoc |
@@ -127,7 +172,7 @@ Prepare a read-only Exocortex clean-install preflight for this repository.
 Target repository: <absolute-target-path>
 Pinned template source: <absolute-local-template-path>
 Approved template Git SHA: <40-character-sha>
-Approved SHA-256 of SHA256SUMS: <64-character-digest>
+Approved SHA-256 of verified SHA256SUMS asset: <64-character-digest>
 
 Read the pinned template's .exocortex/docs/AI_INSTALLATION.md and
 AI_START_HERE.md. Confirm the exact target, target Git branch and HEAD, dirty
@@ -135,6 +180,9 @@ state, platform, template SHA, manifest digest, expected code-plane paths,
 pre-existing path collisions, and disposable rehearsal location. Do not read
 or display .env or credential values. Do not change the target, HOME, global
 editor state, services, providers, Git index, remotes, or external systems.
+Immediately before the first candidate-owned script runs, repeat the live
+release verification, downloaded-asset verification, and byte comparison from
+this guide; do not rely on an earlier preflight.
 
 Explain the disposable rehearsal and failure-containment plan, the exact files
 expected to change, the tests that will run with their expected duration, and
@@ -189,7 +237,7 @@ macOS or a verified Linux/WSL environment is:
 cd <absolute-approved-isolated-worktree-path>
 HOME=<absolute-disposable-home> \
 EXOCORTEX_LOCAL_SOURCE=<absolute-pinned-template-path> \
-EXOCORTEX_CANDIDATE_DIGEST=<approved-sha256-of-SHA256SUMS> \
+EXOCORTEX_CANDIDATE_DIGEST=<sha256-computed-from-verified-release-asset> \
   bash <absolute-pinned-template-path>/install.sh "<project-name>"
 ```
 
@@ -204,7 +252,7 @@ Prepare a read-only Exocortex safe-update preflight for this repository.
 Target repository: <absolute-target-path>
 Pinned template source: <absolute-local-template-path>
 Approved template Git SHA: <40-character-sha>
-Approved SHA-256 of SHA256SUMS: <64-character-digest>
+Approved SHA-256 of verified SHA256SUMS asset: <64-character-digest>
 Disposable backup root: <absolute-path-outside-target-and-template>
 
 Read the pinned template's .exocortex/docs/AI_INSTALLATION.md,
@@ -212,6 +260,9 @@ AI_START_HERE.md, and .exocortex/docs/UPGRADE_MANIFEST.md. Confirm the target
 Git state, installed Exocortex version and manifest, platform, template SHA and
 digest, full protected-data inventory, expected migration paths, collision
 behavior, and rollback method. Never read or display .env or credential values.
+Immediately before the first candidate-owned script runs, repeat the live
+release verification, downloaded-asset verification, and byte comparison from
+this guide; do not rely on an earlier preflight.
 Report presence and path type only for the required legacy protected defaults
 listed below. If any is absent or the wrong path type, stop before dry run and
 include the exact missing-default bootstrap in the disposable-rehearsal
@@ -316,7 +367,7 @@ The AI may run this dry run only after the local-update decision:
 cd <absolute-target-path>
 bash <absolute-pinned-template-path>/scripts/safe-update.sh \
   --template <absolute-pinned-template-path> \
-  --candidate-digest <approved-sha256-of-SHA256SUMS> \
+  --candidate-digest <sha256-computed-from-verified-release-asset> \
   --backup-dir <absolute-disposable-backup-root> \
   --dry-run
 ```
@@ -340,10 +391,11 @@ the archive's reserved inode, single-link state, mode, digest, safe contents,
 fsync durability, and exact reconstruction of the prior code plane. Protected
 project data, local authority state, and editor session worktrees
 (`.claude/worktrees` at any depth, which are runtime state outside the update
-surface) are excluded from the archive and from every update-evidence digest. The
-command does not run the target application's test suite, apply the update,
-rerun after apply, or perform a restore. An AI must not claim those results
-from the dry-run command alone.
+surface) are excluded from the archive and from code-plane or changed-path
+evidence. Protected files are compared separately through non-revealing
+protected-plane digests. The command does not run the target application's
+test suite, apply the update, rerun after apply, or perform a restore. An AI
+must not claim those results from the dry-run command alone.
 
 Before proposing a real-target apply, use a newly created disposable snapshot
 of the exact repository revision and perform these separately observable steps:
@@ -482,7 +534,7 @@ The guarded command is:
 cd <absolute-target-path>
 bash <absolute-pinned-template-path>/scripts/safe-update.sh \
   --template <absolute-pinned-template-path> \
-  --candidate-digest <approved-sha256-of-SHA256SUMS> \
+  --candidate-digest <sha256-computed-from-verified-release-asset> \
   --backup-dir <absolute-disposable-backup-root> \
   --apply \
   --capability <project-relative-capability-path> \
@@ -551,7 +603,7 @@ safe-update command:
 cd <absolute-target-path>
 bash <absolute-pinned-template-path>/scripts/safe-update.sh \
   --template <absolute-pinned-template-path> \
-  --candidate-digest <approved-sha256-of-SHA256SUMS> \
+  --candidate-digest <sha256-computed-from-verified-release-asset> \
   --backup-dir <absolute-disposable-backup-root> \
   --reconciliation-plan <absolute-reviewed-plan-path> \
   --apply \

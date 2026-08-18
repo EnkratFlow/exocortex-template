@@ -2,56 +2,132 @@
 
 ## Normative policy
 
-Choose the least-expensive available model that can reliably own the complete
-bounded task as the accountable parent. Do not automatically choose either the
-largest model, the newest model, or the cheapest advertised model.
+Use the correct model for the job while keeping the expected cost of a correct
+outcome in mind. The accountable parent makes that judgment for itself and for
+every subagent. Routine model selection is not a human approval gate.
 
-The parent must be able to interpret authority, decompose scope, make risk
-decisions, integrate delegated results, and validate final evidence. If no
-verified available model can do that, stop and request a stronger model, new
-evidence, or a narrower task.
+Choose a parent that can reliably understand authority, frame the complete
+bounded outcome, make risk decisions, integrate delegated results, and verify
+the final evidence. The cheapest advertised model is not cost-effective if it
+needs repeated steering or produces weak verification; the strongest model is
+not cost-effective when a lower-cost model can close the same evidence loop.
 
-Model identifiers and provider mappings are advisory data. They are never
-normative protocol pins.
+Before a substantial phase, announce the parent, any delegated lanes, the
+reason for the route, and an ETA. This is a visibility report, not a request
+for permission to use the selected model. Re-route autonomously when risk,
+ambiguity, tool access, evidence, or repeated failure changes the judgment,
+then report the material change.
 
-## Evidence planes
+Provider names and model identifiers are illustrative adapter data, never
+permanent protocol pins. Explicit owner exclusions and privacy constraints are
+hard routing inputs; price alone is not.
 
-Routing uses three separately validated evidence planes:
+## Parent judgment
 
-1. `.exocortex/model-source-registry.json` identifies configured public,
-   official sources and their freshness limits. Its coverage claim is
-   `configured_official_sources_only`; it does not claim every provider or
-   model worldwide.
-2. `.exocortex/model-routing-catalog.json` stores reviewed normalized public
-   lifecycle and price facts plus measured evaluation profiles. A catalog
-   entry alone does not make a model eligible.
-3. `.exocortex/local/model-routing/**` stores project-local observations,
-   availability, and evaluation evidence. Installation and update never
-   create, copy, checksum, or overwrite this protected data plane.
+Evaluate the whole task before selecting a route:
 
-Availability is scoped to `current_surface_session` and binds a non-sensitive
-surface ID, version, and freshly generated session ID. Its observation window
-is at most 15 minutes. Every route request supplies the exact current tuple
-from the active surface independently of the availability file; a different
-surface, client version, session, or overlong window fails closed. A session ID
-must never be a provider cookie, token, credential, or account identifier.
-Production routing also requires the explicit `as_of` timestamp to be within
-60 seconds of the runtime's current UTC clock. The tolerance absorbs only
-bounded clock and process-launch skew; stale or future timestamps cannot replay
-a route. `model_registry.py validate-availability` remains the separate,
-deterministic historical evidence validator and does not select a model.
+1. complexity, novelty, ambiguity, context size, and expected duration;
+2. tool access and whether the model can observe the result it must verify;
+3. security, privacy, financial, data, migration, destructive, deployment,
+   and external-action risk;
+4. the quality and independence of the required verification loop;
+5. current availability, demonstrated reliability, latency when it matters,
+   and expected total cost through a correct result; and
+6. explicit owner or project constraints, including excluded models or data
+   boundaries.
+
+Use deterministic tools first for Git truth, schemas, searches, checksums,
+tests, and repeatable transformations. Give the selected model a clear goal,
+boundaries, observable exit criteria, and the evidence it needs. Do not turn
+the routing guide into a step-by-step script that prevents useful model
+judgment.
+
+Escalate capability when any of these is true:
+
+- the work is novel, ambiguous, long-horizon, or architecture-heavy;
+- it touches secrets, privacy, security, financial calculations, migrations,
+  destructive behavior, or outward effects;
+- the current model cannot use the necessary tools or close the verification
+  loop;
+- two materially similar attempts fail or require substantial parent repair;
+  or
+- the expected cost of correction now exceeds the cost of a stronger model.
+
+De-escalate when the remaining slice is bounded, independently checkable, and
+lower risk. Never lower the verification standard merely to use a cheaper
+model.
+
+## Delegation and review
+
+Keep one accountable parent and no delegate by default. Spawn a subagent only
+for a concrete bounded outcome that can improve elapsed time, expected cost,
+context quality, or independent review. Apply the same full routing judgment
+to each subagent; a worker is not automatically assigned the cheapest tier.
+
+- The parent owns decomposition, authority interpretation, integration,
+  verification, and the final answer.
+- Keep one registered guarded writer. Support and review lanes remain read-only
+  unless exact project authority grants otherwise.
+- Send compact evidence packets and explicit acceptance criteria rather than
+  an entire conversation when sufficient.
+- Use one independent reviewer by default when risk requires review. Add a
+  second only for a genuinely separate named discipline, such as security plus
+  numerical-model validation.
+- Stop duplicate lanes when evidence converges.
+- Do not delegate `/save`, weekly or monthly review, retrospective synthesis,
+  or pattern interpretation; the accountable parent owns those narratives.
+
+## Advisory capability bands
+
+These bands describe work, not vendors. Current adapters may map product
+families to them using observed capability, tool access, privacy, reliability,
+and cost.
+
+| Band | Appropriate use |
+|---|---|
+| Bounded utility | Deterministic, low-risk inventory or formatting with complete inputs and exact checks; use only when allowed by owner policy. |
+| General engineering | Normal implementation, diagnosis, reproduction, and verification with established patterns. |
+| Frontier reasoning | Novel architecture, difficult debugging, security/privacy work, financial or numerical correctness, migrations, and high-cost failure modes. |
+| Long-horizon | Work that must sustain a verified loop over an unusually long task and has evidence that the specialized runtime improves the outcome. |
+
+Illustrative current adapter mappings may place Luna-class models in bounded
+utility, Terra- or Sonnet-class models in general engineering, Sol- or
+Opus-class models in frontier reasoning, and Fable-class runtimes in
+long-horizon work. These are examples only. A named model may move bands as the
+surface, tools, evaluations, price, or owner policy changes. Open-source and
+future models map by demonstrated equivalent capability, never by brand or
+parameter count alone.
+
+## Optional empirical routing verifier
+
+The parent-judgment policy above is the default and remains usable when no
+formal catalog entry is eligible. The repository's deterministic routing
+machinery is an optional empirical verifier for environments that maintain the
+required evidence; it is not a prerequisite, authority source, or human
+approval gate.
+
+The evidence planes are:
+
+1. `.exocortex/model-source-registry.json`, covering configured official
+   sources only (`configured_official_sources_only`), not every model
+   worldwide;
+2. `.exocortex/model-routing-catalog.json`, containing reviewed normalized
+   lifecycle, price, and evaluation records; and
+3. protected `.exocortex/local/model-routing/**` observations, availability,
+   and local evaluation evidence, which installation and update never copy or
+   overwrite.
 
 Public-source acquisition is a separately authorized
 `explicit_external_read`. Credentials are forbidden. The registry tooling
-does not fetch sources, read environment variables, access provider sessions,
-or write files. Normalized observations must not retain raw source text,
-headers, cookies, authentication material, account identifiers, or free-form
-notes.
+validates already-acquired normalized evidence; it does not fetch sources,
+read environment variables, use provider sessions, or write files.
 
-## Discovery and admission
+The packaged catalog intentionally has zero eligible models and no verified
+evaluation profiles. Therefore the formal `route` command cannot select a
+model as shipped. That result means "formal verifier unavailable," not "the
+parent may not exercise judgment." Discovery never activates a model.
 
-Use `.exocortex/scripts/model_registry.py` to validate already-acquired,
-normalized evidence:
+### Discovery and admission
 
 ```bash
 python3 .exocortex/scripts/model_registry.py validate-sources \
@@ -70,18 +146,11 @@ python3 .exocortex/scripts/model_registry.py plan-refresh \
   --as-of <explicit-UTC-timestamp>
 ```
 
-`discover` compares normalized observations and returns findings plus
-quarantine candidates. The catalog stays bound to the reviewed baseline source
-registry; `--candidate-sources` supplies a refreshed acquisition snapshot with
-the exact same source IDs, providers, URLs, roles, and refresh policies.
-Only retrieval metadata and registry snapshot metadata may advance. This
-breaks the refresh/rebind cycle without allowing discovery to redefine an
-official source. It performs no network access or mutation and always reports
-`auto_activation=false`. A newly observed model is quarantined until a
-human-reviewed catalog change and measured evaluation evidence admit it.
+`discover` compares normalized observations with the reviewed catalog and
+returns quarantine proposals with `auto_activation=false`. A newly observed
+model requires a reviewed catalog change and measured evaluation evidence.
 Absence from a complete listing means `not_observed`. A partial observation
-produces no missing-model finding. Neither case silently means deprecated or
-retired.
+produces no missing-model finding. Neither result silently means deprecated.
 
 ```bash
 python3 .exocortex/scripts/model_registry.py discover \
@@ -93,26 +162,22 @@ python3 .exocortex/scripts/model_registry.py discover \
   --as-of <explicit-UTC-timestamp>
 ```
 
-The discovery result binds the supplied normalized observation digests. It
-also binds the baseline registry and refreshed candidate registry.
-Observation fields are role-scoped: model listings and names come only from
-`models` sources, lifecycle facts from `lifecycle` sources, and prices from
-`pricing` sources. Conflicting facts or duplicate source observations across
-input files fail closed. The result is still a proposal and never changes
-catalog admission.
+The discovery result binds the supplied normalized observation digests and the
+baseline plus candidate registry snapshots. Conflicting facts, duplicate
+source observations, and role-mismatched facts fail closed.
 
-Only `eligible` models can route. A route also requires:
+### Formal route command
 
-- an exact current-surface availability observation;
-- fresh official-source evidence and an active lifecycle;
-- capability and risk support for the task;
-- a matching, unexpired evaluation profile with at least one success; and
-- compliance with any cost-per-success ceiling.
+Only `eligible` models can route through the optional verifier. It additionally
+requires an exact current-surface observation, fresh source and lifecycle
+evidence, matching capability and risk, an unexpired evaluation profile with a
+success, and compliance with any cost-per-success ceiling.
 
-Future-dated, stale, expired, unavailable, incomplete, or digest-mismatched
-evidence fails closed.
-
-## Routing command and selection
+Availability is scoped to `current_surface_session`, binds a non-sensitive
+surface ID, version, and freshly generated session ID, and lasts at most 15
+minutes. The caller supplies the exact current tuple independently of the
+availability file. The explicit `as_of` timestamp must be within 60 seconds of
+the runtime's UTC clock.
 
 ```bash
 python3 .exocortex/scripts/orchestrate_work_item.py route \
@@ -127,91 +192,23 @@ python3 .exocortex/scripts/orchestrate_work_item.py route \
   --current-surface-session-id <non-sensitive-session-id>
 ```
 
-Selection is deterministic:
+The optional verifier ranks eligible candidates by exact availability, fresh
+admission evidence, capability/risk fit, evaluation match, budget, and lowest
+measured cost per successful completion. Cost per success is measured total
+cost divided by successful attempts, rounded up in integer micro-units. The
+result binds its evidence digests and reports `normative_model_pin=false`.
+`model_registry.py validate-availability` remains a separate deterministic
+historical validator and makes no selection.
 
-1. exact availability;
-2. eligible admission state;
-3. fresh source and lifecycle evidence;
-4. required capability and risk level;
-5. fresh matching evaluation profile;
-6. task budget ceiling;
-7. lowest measured cost per successful completion; and
-8. stable identifier as the tie-break.
+## Cost and communication controls
 
-Cost per success uses integer micro-units and is calculated from measured total
-cost divided by successful attempts, rounded up. Advertised token or request
-price is catalog evidence, not a substitute for successful task evidence.
-
-The route result binds the accepted live `as_of` value and the exact
-source-registry, catalog, availability, and selected evaluation evidence digests.
-It also binds the availability surface ID, version, session ID, and scope, and
-reports `normative_model_pin=false`. Re-running with the same bytes and
-timestamp while that timestamp remains inside the live clock-skew boundary
-converges on the same result; later replay fails closed. Use the separate
-deterministic validator for historical evidence inspection.
-
-The packaged catalog is intentionally advisory: version 3.2.0 contains zero eligible models
-and no verified evaluation profiles. It therefore cannot route a model as
-shipped. Admission requires a separately reviewed,
-guarded catalog update with a verified evaluation summary and evidence digest,
-plus fresh project-local availability for the exact current surface.
-
-## Routing sequence
-
-1. Classify task complexity, novelty, ambiguity, context size, tool needs, and
-   outward effects.
-2. Classify privacy, security, data, financial, migration, destructive,
-   deployment, and external-action risk.
-3. Use deterministic tooling first for Git truth, schemas, searches,
-   checksums, tests, and repeatable transformations.
-4. Select the least-cost verified capable parent.
-5. Keep one accountable parent and no delegate by default. Split only a
-   concrete, independently useful bounded task when doing so is expected to
-   improve time, cost, or review quality.
-6. Delegate each task to the least-cost verified role that can meet its
-   acceptance criteria.
-7. Keep support lanes read-only unless exact approval grants a writer role.
-8. Escalate ambiguity, repeated failure, sensitive data, scope drift, material
-   design decisions, or outward action.
-9. Return evidence and proposed changes to the parent for integration and
-   deterministic verification.
-10. Stop duplicate reviews when evidence converges.
-
-## Capability roles
-
-| Role | Use |
-|---|---|
-| Deterministic tooling | Git truth, validation, hashes, schemas, tests, idempotency |
-| Bounded evidence lane | Read-only inventory, comparison, and test mapping |
-| Accountable parent | Authority interpretation, planning, integration, risk and gate decisions |
-| Guarded writer | One exact approved implementation lane |
-| Independent reviewer | Security, privacy, data, migration, architecture, or gate-required review |
-| Record formatter | Low-risk narrative formatting from a complete evidence packet |
-
-Provider adapters may map current models to these roles using versioned
-availability, capability, reliability, and cost evidence. Latency may be
-reported as advisory provider metadata, but it is not a deterministic routing
-criterion unless a future reviewed schema binds a measured rule. A provider
-name, product, model slug, or permanent highest-model-first rule must not appear
-as a protocol requirement.
-
-## Cost controls
-
-- Report parent/delegate routing and ETA before substantial phases.
-- Send compact evidence packets instead of full chat history when sufficient.
-- Use one accountable parent and no delegate by default; add only the minimum
-  useful parallel lanes.
-- Use at most one independent reviewer unless a separately identified risk
-  requires more than one discipline.
-- Do not delegate `/save`, weekly/monthly review, retrospective synthesis, or
-  pattern interpretation. The accountable parent owns those narratives.
-- Report before starting a newly discovered tool or model phase expected to
-  take more than five minutes.
-- Do not duplicate converged audits.
+- Report route and ETA before substantial phases; do not ask for routine model
+  approval.
+- Report a material change in route, scope, risk, tools, or estimate.
+- Use the minimum useful number of parallel lanes, not a fixed agent count.
 - Do not repeat deterministic work already bound to the unchanged exact
-  candidate merely because it reached main, a tag, or another status label.
-- Use a record formatter only from parent-supplied facts.
-- Report material changes in routing, scope, capability, risk, or estimate.
-
-Cost never overrides authority, correctness, security, privacy, or required
-independent review.
+  candidate.
+- Treat advertised price as input evidence, never as proof of task-level
+  economy.
+- Cost never overrides authority, correctness, security, privacy, owner model
+  exclusions, or required independent review.

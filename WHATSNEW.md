@@ -1,3 +1,29 @@
+# What's New in 3.2.9 — Safer releases and smarter model routing
+
+- The accountable parent now chooses the correct model using the expected cost
+  of a verified result and applies the same judgment to every subagent without
+  turning routine model selection into an approval gate.
+- Eleven bounded read-only commands are model-discoverable, while thirteen
+  record-changing, bootstrap, credential-adjacent, or cross-project commands
+  remain explicitly human-triggered.
+- Public-release checks now reject protected data, unsafe file topology,
+  secret-shaped content and metadata, modified public fixtures, and transient
+  candidate leaks without printing matched values.
+- Installer and updater preflight now snapshot and verify candidate code before
+  execution, reduce inherited environment exposure, and protect environment
+  files across every update surface.
+- Version 3.2.9 selects GitHub's immutable-release attestation as its public
+  trust mechanism. Operators verify the exact repository release and its
+  attested `SHA256SUMS` asset before executing downloaded code.
+
+This document describes packaged 3.2.9 behavior. It does not prove by itself
+Git publication, an immutable GitHub release, installation, deployment, or
+template promotion; verify the live release attestation before use.
+
+Everything below this line is preserved historical release documentation.
+
+---
+
 # What's New in 3.2.8 — Leaner, clearer AI delivery
 
 - Every substantial phase now starts with a plain-English outcome, scope,

@@ -6,10 +6,11 @@
 
 Do **not** report security issues in public issues or discussions.
 
-Use one of these private channels:
-
-1. GitHub private vulnerability reporting for this repository (`Security` → `Report a vulnerability`)
-2. Email via the EnkratFlow organization contact
+Use the EnkratFlow organization contact and confirm that the destination is
+private before including sensitive details. GitHub private vulnerability
+reporting is not currently enabled for this repository; do not assume the
+public issue tracker is private. If that GitHub feature is enabled later, this
+page must be updated only after a live settings check.
 
 Include reproduction steps, impact, and any suggested fix.
 
@@ -43,10 +44,19 @@ We aim to acknowledge new vulnerability reports within **72 hours**.
   revision, verify its `SHA256SUMS`, preserve the separately approved manifest
   digest, verify the checksum-bound `FILEMODES` inventory, and execute only
   that pinned local source. A byte-valid source with altered executable bits
-  fails closed.
+  fails closed. These checks prove byte consistency, not repository-owner
+  authenticity. Public installation must also verify the owner-selected
+  signature or attestation against its documented trust identity. Version
+  3.2.9 selects GitHub's immutable-release attestation for
+  `github.com/EnkratFlow/exocortex-template` and an attested `SHA256SUMS`
+  release asset; both must pass GitHub CLI verification before candidate code
+  is executed. A suspected or confirmed compromised immutable release is
+  treated as revoked: stop using it, remove the release, permanently retire
+  that tag name, and publish a corrected higher patch version.
 - Installation does not require an API key and must not read, create, print, or
   modify credential values.
-- Rehearse in disposable state with a fake `HOME`. Existing repositories use
+- Rehearse in disposable state with a sanitized child-process environment and
+  a fake `HOME`. Existing repositories use
   the guarded safe updater, a unique private `0600` code-plane-only restore
   archive that excludes protected data and authority state, is identity- and
   digest-verified, fsynced, and proven to reconstruct the exact prior code
@@ -85,6 +95,10 @@ We aim to acknowledge new vulnerability reports within **72 hours**.
   invoking user's permissions; a privileged user or unrestricted editor can
   bypass project-local files. Strong host enforcement requires an OS sandbox
   or privileged broker and a trusted signing/attestation root.
+- Sanitized environments and PATH shims reduce accidental inherited-token use
+  and detect calls to common network commands. They do not prevent filesystem
+  or network access by malicious candidate code and must not be described as a
+  sandbox.
 - Native Windows is unsupported. WSL remains Human-UAT-pending; do not
   translate the Bash security logic into an unreviewed PowerShell procedure.
 

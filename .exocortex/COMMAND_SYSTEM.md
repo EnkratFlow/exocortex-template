@@ -55,9 +55,11 @@ All 24 JSON commands generate into each of three repository adapter families:
 
 `.exocortex/provider-adapters.json` records provider-specific invocation truth,
 and `.exocortex/scripts/generate_command_adapters.py --check` proves the exact
-24-name/72-file repository mapping. Generated adapters are manual-only thin
+24-name/72-file repository mapping. The matrix classifies every command exactly
+once as `model_invocable` or `manual_only`. Generated adapters are thin
 delegates to `AI_START_HERE.md`, this bootstrap, and exactly one matching JSON.
-They cannot add command behavior or authority.
+Invocation policy changes discoverability only; adapters cannot add command
+behavior or authority.
 
 Codex uses `$command` or its skills selector, so the template does not make a
 false literal-slash claim for Codex. Generic or unidentified hosts enter through

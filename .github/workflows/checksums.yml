@@ -17,7 +17,123 @@ jobs:
   checksums:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          fetch-depth: 0
+      - name: Enforce public release boundary
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PUSH_BEFORE_SHA: ${{ github.event.before }}
+          CANDIDATE_SHA: ${{ github.sha }}
+          REF_NAME: ${{ github.ref_name }}
+          REF_TYPE: ${{ github.ref_type }}
+          GIT_NO_REPLACE_OBJECTS: "1"
+        run: |
+          python3 scripts/check-public-release.py --root .
+          if [ "$EVENT_NAME" = "pull_request" ]; then
+            python3 scripts/check-public-release.py --root . \
+              --baseline "$PR_BASE_SHA" --candidate "$CANDIDATE_SHA"
+          elif [ "$REF_TYPE" = tag ] && [[ "$REF_NAME" == v* ]]; then
+            CANDIDATE_TAG_REF="refs/exocortex-release-tags/$REF_NAME"
+            git fetch --no-tags --force origin \
+              "refs/tags/$REF_NAME:$CANDIDATE_TAG_REF" \
+              || { echo 'TAG_OBJECT_FETCH_FAILED' >&2; exit 1; }
+            TAG_OBJECT="$(git rev-parse --verify "$CANDIDATE_TAG_REF")" \
+              || { echo 'TAG_OBJECT_UNAVAILABLE' >&2; exit 1; }
+            [ "$(git cat-file -t "$TAG_OBJECT")" = tag ] \
+              || { echo 'TAG_OBJECT_TYPE_INVALID: annotated tag required' >&2; exit 1; }
+            PEELED_CANDIDATE="$(git rev-parse --verify "$TAG_OBJECT^{commit}")" \
+              || { echo 'TAG_PEELED_COMMIT_UNAVAILABLE' >&2; exit 1; }
+            EVENT_CANDIDATE_COMMIT="$(git rev-parse --verify "$CANDIDATE_SHA^{commit}")" \
+              || { echo 'TAG_EVENT_CANDIDATE_UNAVAILABLE' >&2; exit 1; }
+            [ "$EVENT_CANDIDATE_COMMIT" = "$PEELED_CANDIDATE" ] \
+              || { echo 'TAG_EVENT_CANDIDATE_MISMATCH' >&2; exit 1; }
+            BASELINE_RECORD_VALUES="$(python3 -I - "$REF_NAME" <<'PY'
+          import json
+          import re
+          import sys
+          from pathlib import Path
+
+          def no_duplicates(pairs):
+              value = {}
+              for key, item in pairs:
+                  if key in value:
+                      raise ValueError("duplicate key")
+                  value[key] = item
+              return value
+
+          try:
+              value = json.loads(
+                  Path('.exocortex/release-baseline.json').read_text(encoding='utf-8'),
+                  object_pairs_hook=no_duplicates,
+              )
+          except (OSError, TypeError, ValueError):
+              raise SystemExit(1)
+          expected = {
+              'schema_version',
+              'kind',
+              'previous_published_tag',
+              'previous_published_commit',
+          }
+          if not isinstance(value, dict) or set(value) != expected \
+              or value['schema_version'] != 'public-v1' \
+              or value['kind'] != 'exocortex_release_baseline':
+              raise SystemExit(1)
+          tag = value['previous_published_tag']
+          commit = value['previous_published_commit']
+          if not isinstance(tag, str) or not isinstance(commit, str):
+              raise SystemExit(1)
+          baseline = re.fullmatch(r'v([0-9]+)\.([0-9]+)\.([0-9]+)', tag)
+          candidate = re.fullmatch(r'v([0-9]+)\.([0-9]+)\.([0-9]+)', sys.argv[1])
+          if baseline is None or candidate is None \
+              or re.fullmatch(r'[0-9a-f]{40,64}', commit) is None:
+              raise SystemExit(1)
+          if tuple(map(int, baseline.groups())) >= tuple(map(int, candidate.groups())):
+              raise SystemExit(1)
+          print(f'{tag}\t{commit}')
+          PY
+            )" || { echo 'TAG_BASELINE_RECORD_INVALID' >&2; exit 1; }
+            [ -n "$BASELINE_RECORD_VALUES" ] \
+              || { echo 'TAG_BASELINE_RECORD_INVALID' >&2; exit 1; }
+            IFS=$'\t' read -r RECORDED_BASELINE_TAG RECORDED_BASELINE <<< "$BASELINE_RECORD_VALUES"
+            [ -n "$RECORDED_BASELINE_TAG" ] && [ -n "$RECORDED_BASELINE" ] \
+              || { echo 'TAG_BASELINE_RECORD_INVALID' >&2; exit 1; }
+            RECORDED_BASELINE_TAG_REF="refs/exocortex-release-tags/$RECORDED_BASELINE_TAG"
+            git fetch --no-tags --force origin \
+              "refs/tags/$RECORDED_BASELINE_TAG:$RECORDED_BASELINE_TAG_REF" \
+              || { echo 'TAG_BASELINE_TAG_FETCH_FAILED' >&2; exit 1; }
+            RECORDED_BASELINE_TAG_OBJECT="$(git rev-parse --verify "$RECORDED_BASELINE_TAG_REF")" \
+              || { echo 'TAG_BASELINE_TAG_UNAVAILABLE' >&2; exit 1; }
+            [ "$(git cat-file -t "$RECORDED_BASELINE_TAG_OBJECT")" = tag ] \
+              || { echo 'TAG_BASELINE_TAG_TYPE_INVALID: annotated tag required' >&2; exit 1; }
+            RECORDED_BASELINE_TARGET="$(git cat-file -p "$RECORDED_BASELINE_TAG_OBJECT" \
+              | sed -n 's/^object //p' | head -n 1)"
+            RECORDED_BASELINE_TARGET_TYPE="$(git cat-file -p "$RECORDED_BASELINE_TAG_OBJECT" \
+              | sed -n 's/^type //p' | head -n 1)"
+            [ "$RECORDED_BASELINE_TARGET_TYPE" = commit ] \
+              && [[ "$RECORDED_BASELINE_TARGET" =~ ^[0-9a-f]{40,64}$ ]] \
+              && [ "$(git cat-file -t "$RECORDED_BASELINE_TARGET" 2>/dev/null)" = commit ] \
+              || { echo 'TAG_BASELINE_DIRECT_TARGET_INVALID' >&2; exit 1; }
+            [ "$RECORDED_BASELINE_TARGET" = "$RECORDED_BASELINE" ] \
+              || { echo 'TAG_BASELINE_COMMIT_MISMATCH' >&2; exit 1; }
+            [ "$RECORDED_BASELINE" != "$PEELED_CANDIDATE" ] \
+              || { echo 'TAG_BASELINE_EQUALS_CANDIDATE' >&2; exit 1; }
+            git merge-base --is-ancestor "$RECORDED_BASELINE" "$PEELED_CANDIDATE" \
+              || { echo 'TAG_BASELINE_NOT_ANCESTOR' >&2; exit 1; }
+            python3 scripts/check-public-release.py --root . \
+              --baseline "$RECORDED_BASELINE" --candidate "$PEELED_CANDIDATE" \
+              --tag-object "$TAG_OBJECT"
+          elif [ -n "$PUSH_BEFORE_SHA" ] \
+            && [ "$PUSH_BEFORE_SHA" != "0000000000000000000000000000000000000000" ]; then
+            git cat-file -e "$PUSH_BEFORE_SHA^{commit}" 2>/dev/null \
+              || { echo 'PUSH_BASE_UNAVAILABLE: refusing current-tree-only success' >&2; exit 1; }
+            python3 scripts/check-public-release.py --root . \
+              --baseline "$PUSH_BEFORE_SHA" --candidate "$CANDIDATE_SHA"
+          else
+            echo 'PUSH_BASE_ZERO: refusing branch-history coverage gap' >&2
+            exit 1
+          fi
       - name: Verify complete committed code-plane checksums
         run: |
           python3 - <<'PY'

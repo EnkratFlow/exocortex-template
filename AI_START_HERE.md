@@ -30,8 +30,9 @@ Before any substantial phase, tell the owner in plain English:
 - the repository, exact scope, and important exclusions;
 - the expected elapsed time;
 - which checks will run and how long they normally take; and
-- the accountable parent plus any delegated lanes. Use one parent and no
-  delegate by default.
+- the accountable parent plus any delegated lanes, why that route fits, and
+  any owner model constraint applied. Use one parent and no delegate by
+  default.
 
 Translate internal labels when they matter. For example, call
 `tests/phase-b/run.sh` the **complete Exocortex safety suite** and put the
@@ -86,12 +87,24 @@ Use the lifecycle and acceptance gates in `.exocortex/control/DELIVERY_WORKFLOW.
 
 Follow `.exocortex/control/MODEL_ROUTING.md`.
 
-Choose the least-expensive model capable of owning the whole task as parent. Delegate bounded work to the least-cost capable role, escalate when evidence or risk requires it, and return all results to the parent for integration and verification. No provider or named model is mandatory.
+Use parent judgment to choose the correct model for the complete job while
+keeping the expected cost of a correct outcome in mind. Make the same judgment
+for every subagent; never assign a cheaper tier merely because a task was
+delegated. Routine model selection needs no human approval. Announce the route,
+reason, and ETA, then work within the accepted delivery scope.
 
-Treat model freshness as evidence, not authority. Use only fresh, digest-bound
-official-source, local-availability, and measured evaluation evidence described
-by the routing policy. New models are quarantined; stale, unavailable, or
-mismatched evidence fails closed. Discovery never activates a model.
+Keep one accountable parent and no delegate by default. Delegate only a
+bounded, independently useful outcome expected to improve time, total cost,
+context quality, or review quality. Escalate on risk, ambiguity, tool mismatch,
+weak verification, or repeated failure, and return all results to the parent
+for integration and deterministic verification.
+
+Formal source, catalog, availability, and evaluation routing is optional
+empirical evidence. When maintained, it must be fresh and digest-bound; new
+models remain quarantined and discovery never activates one. An empty or stale
+formal catalog disables that verifier but does not prevent accountable parent
+judgment. No provider or named model is mandatory, and explicit owner model
+exclusions remain routing constraints.
 
 ## 6. Separate saves, checkpoints, and handoffs
 
@@ -102,7 +115,11 @@ mismatched evidence fails closed. Discovery never activates a model.
   approve that internal artifact separately. Otherwise ask once, in plain
   language, for a bounded local-delivery authorization to save the named
   summary.
-- An ordinary-language sentence that merely contains or begins with a command-like verb does not invoke a manual-only command. Explain the relevant safety contract, but do not load an adapter or execute command JSON unless the user uses a recognized host-native trigger, selects the command, or supplies an exact bare command token.
+- An ordinary-language sentence that merely contains or begins with a command-like verb does not invoke a manual-only command. A model may auto-load only a
+  command classified `model_invocable`, and only for its read-only flow. A
+  `manual_only` command requires a recognized host-native trigger, selector,
+  exact bare token, or explicitly framed command arguments. Neither class adds
+  mutation, credential, network, Git, lifecycle, or egress authority.
 - A broad request such as “Save everything and sync it everywhere now” authorizes nothing. `Everything`, `everywhere`, and similar wildcards grant no path, batch, destination, or egress authority. Do not say there is nothing to save merely because no code changed; a chat-only narrative may still summarize read-only work.
 - A lifecycle checkpoint is emitted only by an accepted durable transition explicitly marked checkpoint-eligible.
 - Retry and replay converge on the same checkpoint ID.

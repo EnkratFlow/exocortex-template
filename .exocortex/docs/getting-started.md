@@ -40,9 +40,11 @@ guarded apply command are in `.exocortex/docs/AI_INSTALLATION.md`.
 ## Platform boundary
 
 The current scripts are verified on macOS with the documented Bash/Unix tools.
-Linux is compatible pending the final candidate's Ubuntu CI. WSL requires
-separate Human UAT. Git Bash and native Windows PowerShell/Command Prompt are
-unsupported; do not translate the installer security logic ad hoc.
+Linux is compatible based on the complete Ubuntu safety-suite pass for the
+merged 3.2.9 hardening change; the operator environment still requires a
+bounded rehearsal. WSL requires separate Human UAT. Git Bash and native Windows
+PowerShell/Command Prompt are unsupported; do not translate the installer
+security logic ad hoc.
 
 ## First commands
 
@@ -56,9 +58,10 @@ Memory commands summarize local evidence with the active conversation model.
 They do not discover credentials or call providers directly.
 
 For multi-model delegation, read `.exocortex/control/MODEL_ROUTING.md`.
-The packaged catalog is advisory and has no eligible models. New source
-observations produce quarantine proposals only; routing requires fresh,
-separately reviewed evaluation and current-surface availability evidence.
+Parent judgment is the default and applies equally to subagents. The packaged
+catalog is advisory and has no eligible models, so the optional formal verifier
+cannot route as shipped. New source observations produce quarantine proposals
+only; they never activate a model or become an approval gate.
 
 ## Safety expectations
 
