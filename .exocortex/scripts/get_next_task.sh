@@ -13,16 +13,26 @@ IN_PROGRESS=$(sed -n '/## 🟧 In Progress/,/^## /p' "$TODO_FILE" | grep "^- " |
 
 if [ -n "$IN_PROGRESS" ]; then
   # Extract title and description (format: "- [ ] Title — Description" or "- Title — Description")
-  TASK=$(echo "$IN_PROGRESS" | sed 's/^- \[\?\w\?\] \?//')
-  TITLE=$(echo "$TASK" | cut -d'—' -f1 | xargs)
-  DESC=$(echo "$TASK" | cut -d'—' -f2- | xargs)
+  TASK=$(echo "$IN_PROGRESS" | sed 's/^- \[[^]]*\] *//; s/^- *//')
+  # cut(1) only accepts single-byte delimiters; the em dash is multibyte,
+  # so split with parameter expansion instead.
+  TITLE=$(printf '%s' "${TASK%%—*}" | xargs)
+  case "$TASK" in
+    *—*) DESC=$(printf '%s' "${TASK#*—}" | xargs) ;;
+    *)   DESC="" ;;
+  esac
   SECTION="In Progress"
 else
   # Fall back to Ready
   READY=$(sed -n '/## 🟨 Ready/,/^## /p' "$TODO_FILE" | grep "^- " | grep -v "empty" | head -1)
-  TASK=$(echo "$READY" | sed 's/^- \[\?\w\?\] \?//')
-  TITLE=$(echo "$TASK" | cut -d'—' -f1 | xargs)
-  DESC=$(echo "$TASK" | cut -d'—' -f2- | xargs)
+  TASK=$(echo "$READY" | sed 's/^- \[[^]]*\] *//; s/^- *//')
+  # cut(1) only accepts single-byte delimiters; the em dash is multibyte,
+  # so split with parameter expansion instead.
+  TITLE=$(printf '%s' "${TASK%%—*}" | xargs)
+  case "$TASK" in
+    *—*) DESC=$(printf '%s' "${TASK#*—}" | xargs) ;;
+    *)   DESC="" ;;
+  esac
   SECTION="Ready"
 fi
 
