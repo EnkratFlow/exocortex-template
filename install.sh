@@ -55,14 +55,54 @@ fi
 TMP_ROOT="$(mktemp -d "${TMPDIR:-/tmp}/exocortex-install.XXXXXX")"
 SOURCE_COPY="$TMP_ROOT/source"
 MANIFEST_NEW="$TMP_ROOT/manifest-new"
-LISTED_SUMS="$TMP_ROOT/listed-sums"
 APPROVED_SUMS="$TMP_ROOT/SHA256SUMS.approved"
 APPROVED_PUBLIC_CHECKER="$TMP_ROOT/check-public-release.approved.py"
+SUMS_BATCH_LIST="$TMP_ROOT/sums-batch-list"
+COPYDIR_BATCH_LIST="$TMP_ROOT/copydir-batch-list"
+COPY_VERIFY_QUEUE="$TMP_ROOT/copy-verify-queue"
 trap 'rm -rf "$TMP_ROOT"' EXIT
 mkdir -p "$SOURCE_COPY" "$TMP_ROOT/home" "$TMP_ROOT/tmp"
 chmod 0700 "$TMP_ROOT"
 : > "$MANIFEST_NEW"
-: > "$LISTED_SUMS"
+: > "$COPY_VERIFY_QUEUE"
+
+# Per-file validation used to start a fresh python (or shasum/awk/grep)
+# process for every single file - hundreds of them on a ~250-file install.
+# Each process start is cheap on a bare Linux box, but on a Windows host with
+# AV/EDR hooking process creation, every new process can cost the better part
+# of a second regardless of how little work it does. The caches below let the
+# same checks run against a batch of files inside ONE interpreter start
+# instead of one interpreter start per file. Nothing here changes which
+# bytes/modes/paths get checked or what a mismatch does - only how many times
+# a new process is spawned to do the checking.
+declare -A _SRC_HASH_CACHE=()
+declare -A _FILEMODES_BY_PATH=()
+declare -A _VERIFIED_PARENTS=()
+declare -A _MANIFEST_ENTRIES=()
+
+# MSYS/MinGW/Cygwin bash - the usual way this script runs on Windows - can run
+# a python3 that is a native Windows build. MSYS rewrites a POSIX-looking path
+# (such as this script's own /tmp-rooted SOURCE_COPY/TARGET_ROOT) into a
+# Windows path automatically, but only when that path is passed live as an
+# argv element to a newly-exec'd Windows binary - never when the same string
+# merely appears inside a file or heredoc the program reads on its own. Batch
+# validation below needs python to open many files named in a list it reads
+# itself, so translate just the two roots those names are built from, once
+# each, up front: a Windows-style root concatenated with the existing
+# forward-slash relative suffix opens correctly on every platform this
+# installer supports, so every per-file path can still be plain string
+# concatenation - no per-file, and no per-batch, translation.
+case "$(uname -s)" in
+    MINGW*|MSYS*|CYGWIN*) NON_POSIX_MODES=1 ;;
+    *) NON_POSIX_MODES=0 ;;
+esac
+if [ "$NON_POSIX_MODES" = "1" ] && command -v cygpath >/dev/null 2>&1; then
+    SOURCE_COPY_OPENABLE="$(cygpath -w "$SOURCE_COPY")"
+    TARGET_ROOT_OPENABLE="$(cygpath -w "$TARGET_ROOT")"
+else
+    SOURCE_COPY_OPENABLE="$SOURCE_COPY"
+    TARGET_ROOT_OPENABLE="$TARGET_ROOT"
+fi
 
 # Copy the approved manifest into the private installer directory before using
 # it as authority. Any concurrent source change can then only make later staged
@@ -151,6 +191,108 @@ file_link_count() {
     run_trusted_python -c 'import os,sys; print(os.lstat(sys.argv[1]).st_nlink)' "$TARGET_ROOT/$1"
 }
 
+# Hashes every file named in list_file (one "posix_path<TAB>openable_path"
+# pair per line, as written by safe_copy_dir() below) inside a single
+# interpreter start and loads the results into _SRC_HASH_CACHE, keyed by
+# posix_path. safe_copy_file() below consults this cache before falling back
+# to a live file_hash() call, so a directory of N files costs one python
+# start instead of N. Every file that would have been hashed on its own is
+# still hashed here, byte for byte; only the process count changes.
+batch_hash_sources() {
+    local list_file="$1"
+    _SRC_HASH_CACHE=()
+    [ -s "$list_file" ] || return 0
+    local hash path
+    while IFS=$'\t' read -r hash path; do
+        _SRC_HASH_CACHE["$path"]="$hash"
+    done < <(run_trusted_python - "$list_file" <<'PY'
+import hashlib
+import sys
+
+def sha256_of(path):
+    digest = hashlib.sha256()
+    with open(path, "rb") as handle:
+        for chunk in iter(lambda: handle.read(1048576), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+with open(sys.argv[1], "r", encoding="utf-8") as handle:
+    for line in handle:
+        line = line.rstrip("\n")
+        if not line:
+            continue
+        posix_path, openable_path = line.split("\t", 1)
+        print(f"{sha256_of(openable_path)}\t{posix_path}")
+PY
+    )
+}
+
+# Queues a just-copied (source, target, expected_mode) triple for later
+# batched verification instead of re-invoking python once per file right
+# after its own copy. verify_queued_copies() below hashes and compares every
+# queued pair - and, on POSIX filesystems, checks the copied mode - inside a
+# single interpreter start. The same byte-for-byte comparison and the same
+# mode check still run for every copied file before the caller relies on the
+# copy; only the number of interpreter starts used to run them changes.
+queue_copy_verification() {
+    local source_file="$1" target_file="$2" expected_mode="$3"
+    local source_openable target_openable
+    source_openable="$SOURCE_COPY_OPENABLE${source_file#$SOURCE_COPY}"
+    target_openable="$TARGET_ROOT_OPENABLE/$target_file"
+    printf '%s\t%s\t%s\t%s\n' "$target_file" "$expected_mode" "$source_openable" "$target_openable" >> "$COPY_VERIFY_QUEUE"
+}
+
+verify_queued_copies() {
+    [ -s "$COPY_VERIFY_QUEUE" ] || return 0
+    local result
+    result="$(run_trusted_python - "$COPY_VERIFY_QUEUE" "$NON_POSIX_MODES" <<'PY'
+import hashlib
+import os
+import stat
+import sys
+
+queue_path = sys.argv[1]
+non_posix = sys.argv[2] == "1"
+
+
+def sha256_of(path):
+    digest = hashlib.sha256()
+    with open(path, "rb") as handle:
+        for chunk in iter(lambda: handle.read(1048576), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+with open(queue_path, "r", encoding="utf-8") as handle:
+    for line in handle:
+        line = line.rstrip("\n")
+        if not line:
+            continue
+        target_file, expected_mode, source_openable, target_openable = line.split("\t")
+        target_hash = sha256_of(target_openable)
+        source_hash = sha256_of(source_openable)
+        if target_hash != source_hash:
+            print(f"HASH_MISMATCH\t{target_file}")
+            raise SystemExit(0)
+        if not non_posix:
+            actual_mode = format(stat.S_IMODE(os.stat(target_openable).st_mode), "04o")
+            if actual_mode != expected_mode:
+                print(f"MODE_MISMATCH\t{target_file}")
+                raise SystemExit(0)
+print("OK")
+PY
+    )"
+    : > "$COPY_VERIFY_QUEUE"
+    case "$result" in
+        OK) return 0 ;;
+        HASH_MISMATCH$'\t'*)
+            fail "copied target bytes do not match the reviewed source: ${result#*$'\t'}" ;;
+        MODE_MISMATCH$'\t'*)
+            fail "copied target mode does not match the reviewed source: ${result#*$'\t'}" ;;
+        *) fail "copy verification produced an unexpected result" ;;
+    esac
+}
+
 COPY_COUNT=0
 INSTALL_FAULT_AFTER="${EXOCORTEX_TEST_INSTALL_FAULT_AFTER_COPIES:-0}"
 if ! [[ "$INSTALL_FAULT_AFTER" =~ ^[0-9]+$ ]]; then
@@ -208,7 +350,13 @@ verify_integrity() {
     [ -f "$sums" ] || fail "SHA256SUMS is required"
     [ -s "$sums" ] || fail "SHA256SUMS is empty"
 
-    local line hash rel actual
+    # Pass 1: validate every SHA256SUMS entry's shape, scope and uniqueness,
+    # and collect the paths that need hashing. This is string handling and
+    # set-membership testing against an in-shell associative array - no
+    # process (grep included) needs to start once per line to do it.
+    local -A seen=()
+    local line hash rel
+    : > "$SUMS_BATCH_LIST"
     while IFS= read -r line || [ -n "$line" ]; do
         [ -z "$line" ] && continue
         case "$line" in \#*) continue ;; esac
@@ -218,19 +366,58 @@ verify_integrity() {
         case "/$rel/" in */../*|*/./*) fail "unsafe SHA256SUMS path" ;; esac
         [ "$rel" != "SHA256SUMS" ] || fail "SHA256SUMS cannot checksum itself"
         is_integrity_scope "$rel" || fail "checksum entry is outside the public code-plane scope: $rel"
-        if grep -Fqx "$rel" "$LISTED_SUMS"; then
-            fail "duplicate SHA256SUMS path: $rel"
-        fi
-        echo "$rel" >> "$LISTED_SUMS"
+        [ -z "${seen[$rel]+x}" ] || fail "duplicate SHA256SUMS path: $rel"
+        seen[$rel]=1
         [ -f "$SOURCE_COPY/$rel" ] || fail "checksum-listed file is missing: $rel"
-        actual="$(file_hash "$SOURCE_COPY/$rel")"
-        [ "$actual" = "$hash" ] || fail "checksum mismatch: $rel"
+        printf '%s\t%s\t%s\n' "$hash" "$rel" "$SOURCE_COPY_OPENABLE/$rel" >> "$SUMS_BATCH_LIST"
     done < "$sums"
+
+    # Pass 2: hash every listed file and compare it against the digest
+    # recorded for it above - inside one interpreter start instead of one
+    # shasum/sha256sum-plus-awk pipeline per file. python reports only the
+    # first mismatch (or OK); bash still raises the exact same "checksum
+    # mismatch: <path>" failure that the old per-file loop raised, for the
+    # exact same underlying comparison.
+    if [ -s "$SUMS_BATCH_LIST" ]; then
+        local batch_result
+        batch_result="$(run_trusted_python - "$SUMS_BATCH_LIST" <<'PY'
+import hashlib
+import sys
+
+
+def sha256_of(path):
+    digest = hashlib.sha256()
+    with open(path, "rb") as handle:
+        for chunk in iter(lambda: handle.read(1048576), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+with open(sys.argv[1], "r", encoding="utf-8") as handle:
+    for entry in handle:
+        entry = entry.rstrip("\n")
+        if not entry:
+            continue
+        expected, rel, openable_path = entry.split("\t")
+        if sha256_of(openable_path) != expected:
+            print(f"MISMATCH\t{rel}")
+            raise SystemExit(0)
+print("OK")
+PY
+        )"
+        case "$batch_result" in
+            OK) ;;
+            MISMATCH$'\t'*)
+                fail "checksum mismatch: ${batch_result#MISMATCH$'\t'}"
+                ;;
+            *) fail "checksum verification produced an unexpected result" ;;
+        esac
+    fi
 
     while IFS= read -r file; do
         rel="${file#$SOURCE_COPY/}"
         is_integrity_scope "$rel" || continue
-        grep -Fqx "$rel" "$LISTED_SUMS" || fail "code-plane file missing from SHA256SUMS: $rel"
+        [ -n "${seen[$rel]+x}" ] || fail "code-plane file missing from SHA256SUMS: $rel"
     done < <(find "$SOURCE_COPY" -type f | sort)
 }
 
@@ -299,6 +486,15 @@ PY
 }
 
 verify_file_modes || fail "candidate file-mode inventory failed validation"
+
+# verify_file_modes just confirmed FILEMODES is exactly 4-char-mode + two
+# spaces + path per line, sorted, one entry per checksummed file. Load it into
+# a lookup once here (plain bash, no subprocess) instead of running awk to
+# re-scan the whole file for every single file copy_with_bound_mode() later
+# performs.
+while IFS= read -r _filemodes_line; do
+    _FILEMODES_BY_PATH["${_filemodes_line:6}"]="${_filemodes_line:0:4}"
+done < "$SOURCE_COPY/FILEMODES"
 
 ADAPTER_GENERATOR="$SOURCE_COPY/.exocortex/scripts/generate_command_adapters.py"
 ADAPTER_MATRIX="$SOURCE_COPY/.exocortex/provider-adapters.json"
@@ -374,10 +570,15 @@ manifest_get() {
 }
 
 record_manifest() {
-    local path="$1" digest="$2" next="$TMP_ROOT/manifest-next"
-    awk -v k="$path " 'index($0,k)!=1' "$MANIFEST_NEW" > "$next"
-    printf '%s %s\n' "$path" "$digest" >> "$next"
-    mv "$next" "$MANIFEST_NEW"
+    # record_manifest() is called once per installed file (essentially every
+    # file, on a fresh install), so it used to cost an awk-rewrite-plus-mv of
+    # the whole in-progress manifest PER FILE just to upsert one entry. A
+    # bash associative array gives the identical "last write for this path
+    # wins, no duplicate path" upsert semantics in memory, with zero process
+    # spawns; _MANIFEST_ENTRIES is flushed to MANIFEST_NEW's on-disk format
+    # once, at the end of the install, below.
+    local path="$1" digest="$2"
+    _MANIFEST_ENTRIES["$path"]="$digest"
 }
 
 retire_legacy_adapters() {
@@ -470,12 +671,29 @@ assert_safe_target_dir_path() {
 ensure_target_parent() {
     local rel="$1" parent parent_real
     assert_safe_target_path "$rel"
-    parent="$(dirname "$rel")"
+    # dirname(1) forks a whole new process just to trim one path component;
+    # the shortest-suffix removal below does the identical, POSIX-defined
+    # string operation for a plain relative path with no forking at all.
+    case "$rel" in
+        */*) parent="${rel%/*}" ;;
+        *) parent="." ;;
+    esac
     if [ "$parent" != "." ]; then
-        mkdir -p -- "$parent"
+        # assert_safe_target_path still walks and re-checks every component
+        # of $rel for a symlink on every call, exactly as before. Only the
+        # mkdir and the realpath-containment check immediately below are
+        # skipped once for a parent directory this run has already created
+        # and confirmed resolves inside TARGET_ROOT: re-running mkdir -p on a
+        # directory that already exists is a no-op, and nothing in this
+        # single-threaded install can move that directory out from under
+        # TARGET_ROOT between one file in it and the next.
+        if [ -z "${_VERIFIED_PARENTS[$parent]+x}" ]; then
+            mkdir -p -- "$parent"
+            parent_real="$(cd "$parent" && pwd -P)"
+            case "$parent_real/" in "$TARGET_ROOT/"*) ;; *) fail "target parent escapes the install target: $rel" ;; esac
+            _VERIFIED_PARENTS[$parent]=1
+        fi
         assert_safe_target_path "$rel"
-        parent_real="$(cd "$parent" && pwd -P)"
-        case "$parent_real/" in "$TARGET_ROOT/"*) ;; *) fail "target parent escapes the install target: $rel" ;; esac
     fi
 }
 
@@ -496,28 +714,26 @@ ensure_target_dir() {
 # Path binding (the awk lookup, still required to succeed) and byte integrity
 # (the hash check, still enforced) carry the security intent; only the
 # after-the-fact numeric mode check is unenforceable on such platforms.
-case "$(uname -s)" in
-    MINGW*|MSYS*|CYGWIN*) NON_POSIX_MODES=1 ;;
-    *) NON_POSIX_MODES=0 ;;
-esac
+# (NON_POSIX_MODES itself is computed near the top of this script, alongside
+# SOURCE_COPY_OPENABLE/TARGET_ROOT_OPENABLE, since the batched hashing below
+# needs it too.)
 
 copy_with_bound_mode() {
     local source_file="$1"
     local target_file="$2"
     local source_rel expected_mode
     source_rel="${source_file#"$SOURCE_COPY/"}"
-    expected_mode="$(awk -v p="$source_rel" 'substr($0,7)==p{print substr($0,1,4); exit}' "$SOURCE_COPY/FILEMODES")"
+    expected_mode="${_FILEMODES_BY_PATH[$source_rel]:-}"
     [[ "$expected_mode" =~ ^0(644|755)$ ]] || fail "source file lacks a bound mode: $source_rel"
     cp -p "$source_file" "$target_file"
     chmod "$expected_mode" "$target_file"
     [ -f "$target_file" ] && [ ! -L "$target_file" ] \
         || fail "copied target is not a regular non-symlink file: $target_file"
-    [ "$(file_hash "$target_file")" = "$(file_hash "$source_file")" ] \
-        || fail "copied target bytes do not match the reviewed source: $target_file"
-    if [ "$NON_POSIX_MODES" != "1" ]; then
-        [ "$(file_mode "$target_file")" = "$expected_mode" ] \
-            || fail "copied target mode does not match the reviewed source: $target_file"
-    fi
+    # The hash (and, on POSIX, mode) comparison against the reviewed source is
+    # still mandatory for every copy - queue_copy_verification() defers only
+    # WHEN it runs (batched via verify_queued_copies(), started by the caller
+    # once its files are copied) rather than skipping or weakening it.
+    queue_copy_verification "$source_file" "$target_file" "$expected_mode"
     record_copy_and_maybe_fault
 }
 
@@ -591,7 +807,13 @@ safe_copy_file() {
     ensure_target_parent "$target_file"
     assert_safe_target_file_path "$target_file"
     local source_hash current_hash installed_hash
-    source_hash="$(file_hash "$source_file")"
+    # safe_copy_dir() pre-populates _SRC_HASH_CACHE for every file in the
+    # directory it is about to process (one interpreter start for the whole
+    # directory instead of one per file). Callers outside safe_copy_dir don't
+    # populate the cache, so this still falls back to hashing the file
+    # directly - the same single-file computation this line always did.
+    source_hash="${_SRC_HASH_CACHE[$source_file]:-}"
+    [ -n "$source_hash" ] || source_hash="$(file_hash "$source_file")"
     if [ ! -e "$target_file" ]; then
         copy_with_bound_mode "$source_file" "$target_file"
         record_manifest "$target_file" "$source_hash"
@@ -617,14 +839,24 @@ safe_copy_dir() {
     local source_dir="$1"
     local target_dir="$2"
     [ -d "$source_dir" ] || return 0
-    local source_file rel
+    local source_file rel openable
+    : > "$COPYDIR_BATCH_LIST"
     while IFS= read -r source_file; do
         rel="${source_file#$source_dir/}"
         if [ "$target_dir" = ".exocortex" ] && is_data_relpath "$rel"; then
             continue
         fi
-        safe_copy_file "$source_file" "$target_dir/$rel"
+        openable="$SOURCE_COPY_OPENABLE${source_file#$SOURCE_COPY}"
+        printf '%s\t%s\n' "$source_file" "$openable" >> "$COPYDIR_BATCH_LIST"
     done < <(find "$source_dir" -type f | sort)
+    # One interpreter start hashes every file safe_copy_file() below is about
+    # to need the source hash for, instead of one interpreter start per file.
+    batch_hash_sources "$COPYDIR_BATCH_LIST"
+    while IFS=$'\t' read -r source_file _; do
+        rel="${source_file#$source_dir/}"
+        safe_copy_file "$source_file" "$target_dir/$rel"
+    done < "$COPYDIR_BATCH_LIST"
+    verify_queued_copies
 }
 
 write_if_missing() {
@@ -745,6 +977,14 @@ if [ -f "$SOURCE_COPY/VERSION" ]; then
     safe_copy_file "$SOURCE_COPY/VERSION" .exocortex/.version
 fi
 
+# Final catch-all flush: safe_copy_dir() already drains the verification queue
+# after each directory it processes, but the standalone safe_copy_file calls
+# above (AI_START_HERE.md and friends, copilot-instructions.md, VERSION) can
+# leave freshly-queued entries with no later safe_copy_dir call to drain them.
+# Every queued copy must be verified before the install is allowed to report
+# success, so flush unconditionally here regardless of what ran before it.
+verify_queued_copies
+
 # safe_copy_file preserves each reviewed source file's executable bits. Do not
 # blanket-chmod helpers: that creates unreported mode-only target mutations and
 # turns intentionally non-executable compatibility helpers into executables.
@@ -815,6 +1055,16 @@ fi
 ensure_target_dir .exocortex
 ensure_target_parent "$MANIFEST"
 ensure_target_parent "$MANIFEST.tmp"
+# Flush the in-memory upserts record_manifest() collected into MANIFEST_NEW's
+# on-disk "path digest" format exactly once, instead of rewriting that file
+# with awk on every single recorded path. _MANIFEST_ENTRIES cannot itself
+# contain a duplicate path (a second record_manifest() call for the same
+# path simply overwrites the map entry), so the duplicate check right below
+# is now unreachable in practice - it is kept as a belt-and-suspenders check
+# rather than removed.
+for _manifest_path in "${!_MANIFEST_ENTRIES[@]}"; do
+    printf '%s %s\n' "$_manifest_path" "${_MANIFEST_ENTRIES[$_manifest_path]}"
+done > "$MANIFEST_NEW"
 if awk 'NF >= 2 && seen[$1]++ { found=1 } END { exit !found }' "$MANIFEST_NEW"; then
     fail "duplicate install-manifest path"
 fi
