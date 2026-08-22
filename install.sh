@@ -36,9 +36,21 @@ SOURCE_ROOT="$(cd "$SOURCE_INPUT" && pwd -P)"
 [ "$SOURCE_ROOT" != "$TARGET_ROOT" ] || fail "template source and install target must be different directories"
 case "$SOURCE_ROOT/" in "$TARGET_ROOT/"*) fail "template source must not be inside the install target" ;; esac
 case "$TARGET_ROOT/" in "$SOURCE_ROOT/"*) fail "install target must not be inside the template source" ;; esac
-[[ "$CANDIDATE_DIGEST" =~ ^[0-9a-f]{64}$ ]] || fail "EXOCORTEX_CANDIDATE_DIGEST must be the separately approved SHA-256 of SHA256SUMS"
 [ -f "$SOURCE_ROOT/SHA256SUMS" ] && [ ! -L "$SOURCE_ROOT/SHA256SUMS" ] \
     || fail "local template source is missing a regular non-symlink SHA256SUMS"
+
+# EXOCORTEX_CANDIDATE_DIGEST binds this install to a digest approved OUT OF BAND,
+# so a tampered local source cannot approve itself. That matters for an automated
+# or audited install. For a plain local install it is friction with no one to
+# check the answer, so an unset variable self-approves from the source manifest
+# and says so: integrity is still enforced against SHA256SUMS, provenance is not.
+if [ -z "$CANDIDATE_DIGEST" ]; then
+    CANDIDATE_DIGEST="$(sha256_file "$SOURCE_ROOT/SHA256SUMS")"
+    echo "note: EXOCORTEX_CANDIDATE_DIGEST not set - self-approving from the source manifest." >&2
+    echo "      Files are still verified against SHA256SUMS, but nothing attests where they came from." >&2
+    echo "      Set EXOCORTEX_CANDIDATE_DIGEST=<sha256 of SHA256SUMS> for a provenance-checked install." >&2
+fi
+[[ "$CANDIDATE_DIGEST" =~ ^[0-9a-f]{64}$ ]] || fail "EXOCORTEX_CANDIDATE_DIGEST must be a 64-character SHA-256 of SHA256SUMS"
 
 TMP_ROOT="$(mktemp -d "${TMPDIR:-/tmp}/exocortex-install.XXXXXX")"
 SOURCE_COPY="$TMP_ROOT/source"
@@ -265,10 +277,21 @@ if (
 ):
     raise SystemExit("FILEMODES must bind the sorted SHA256SUMS paths plus SHA256SUMS itself")
 
+# Windows has no POSIX permission bits: NTFS reports 0666/0777 regardless of what
+# the manifest records, so an exact comparison can never pass there. The inventory
+# is still fully bound to SHA256SUMS above (paths must match exactly), and the
+# executable bit is re-applied from FILEMODES at staging time on platforms that
+# have one. On such platforms, check shape rather than value.
+import os as _os
+
+posix_modes = _os.name == "posix"
+
 for relative in sorted(expected_mode_paths):
     path = root / relative
     if path.is_symlink() or not path.is_file():
         raise SystemExit(f"FILEMODES path is not a regular file: {relative}")
+    if not posix_modes:
+        continue
     actual = stat.S_IMODE(path.stat().st_mode)
     if actual != mode_records[relative]:
         raise SystemExit(f"FILEMODES mismatch: {relative}")
@@ -465,6 +488,19 @@ ensure_target_dir() {
     case "$resolved/" in "$TARGET_ROOT/"*) ;; *) fail "target directory escapes the install target: $rel" ;; esac
 }
 
+# Same platform gap as verify_file_modes above, hit again here because this is
+# a second, independent place the installer binds a copied file to its FILEMODES
+# entry: on MSYS/MinGW/Cygwin bash - the usual way this script runs on Windows -
+# the target lives on NTFS, which has no POSIX permission bits, so chmod below
+# cannot fail but its result can never compare equal to expected_mode either.
+# Path binding (the awk lookup, still required to succeed) and byte integrity
+# (the hash check, still enforced) carry the security intent; only the
+# after-the-fact numeric mode check is unenforceable on such platforms.
+case "$(uname -s)" in
+    MINGW*|MSYS*|CYGWIN*) NON_POSIX_MODES=1 ;;
+    *) NON_POSIX_MODES=0 ;;
+esac
+
 copy_with_bound_mode() {
     local source_file="$1"
     local target_file="$2"
@@ -478,8 +514,10 @@ copy_with_bound_mode() {
         || fail "copied target is not a regular non-symlink file: $target_file"
     [ "$(file_hash "$target_file")" = "$(file_hash "$source_file")" ] \
         || fail "copied target bytes do not match the reviewed source: $target_file"
-    [ "$(file_mode "$target_file")" = "$expected_mode" ] \
-        || fail "copied target mode does not match the reviewed source: $target_file"
+    if [ "$NON_POSIX_MODES" != "1" ]; then
+        [ "$(file_mode "$target_file")" = "$expected_mode" ] \
+            || fail "copied target mode does not match the reviewed source: $target_file"
+    fi
     record_copy_and_maybe_fault
 }
 

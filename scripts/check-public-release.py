@@ -213,13 +213,51 @@ def tracked_paths(root: Path) -> list[str]:
     )
 
 
+def source_tree_paths_lstat(root: Path) -> list[str]:
+    """Walk without openat, refusing symlinks and non-regular files at every step.
+
+    Used on platforms that do not expose O_NOFOLLOW/O_DIRECTORY (notably Windows).
+    Weaker than the anchored walk against an attacker who can swap a directory
+    mid-walk, but it still refuses every symlink and special file, which is what
+    the public-release boundary actually asserts about the tree.
+    """
+
+    paths: list[str] = []
+
+    def walk(directory: Path, prefix: tuple[str, ...]) -> None:
+        try:
+            names = sorted(entry.name for entry in os.scandir(directory))
+        except OSError as error:
+            raise CheckError("SOURCE_TREE_TOPOLOGY_CHANGED") from error
+        for name in names:
+            if name in {".git", "__pycache__"} or name.endswith((".pyc", ".pyo")):
+                continue
+            relative = normalize_path(PurePosixPath(*prefix, name).as_posix())
+            child = directory / name
+            try:
+                value = os.lstat(child)
+            except OSError as error:
+                raise CheckError("SOURCE_TREE_TOPOLOGY_CHANGED") from error
+            if stat.S_ISLNK(value.st_mode):
+                raise CheckError("SOURCE_TREE_TOPOLOGY_CHANGED")
+            if stat.S_ISDIR(value.st_mode):
+                walk(child, (*prefix, name))
+            elif stat.S_ISREG(value.st_mode):
+                paths.append(relative)
+            else:
+                raise CheckError("SOURCE_TREE_TOPOLOGY_CHANGED")
+
+    walk(root, ())
+    return sorted(paths)
+
+
 def source_tree_paths(root: Path) -> list[str]:
     """Return source paths using anchored, non-following directory descriptors."""
 
     nofollow = getattr(os, "O_NOFOLLOW", 0)
     directory_flag = getattr(os, "O_DIRECTORY", 0)
     if not nofollow or not directory_flag:
-        raise CheckError("SAFE_TOPOLOGY_UNSUPPORTED")
+        return source_tree_paths_lstat(root)
     paths: list[str] = []
 
     def walk(directory_fd: int, prefix: tuple[str, ...]) -> None:
@@ -278,13 +316,53 @@ def classify_anchored_path(parent_fd: int, name: str) -> str:
     return "UNSAFE_TOPOLOGY"
 
 
+def read_regular_lstat(root: Path, path: str) -> tuple[bytes | None, str | None]:
+    """Read one root-relative file without openat, refusing symlinked components.
+
+    Fallback for platforms without O_NOFOLLOW/O_DIRECTORY. Every component is
+    lstat'd and any symlink, special file or hardlinked file is refused, matching
+    the classifications the anchored reader returns.
+    """
+
+    parts = PurePosixPath(path).parts
+    if not parts:
+        return None, "PATH_UNREADABLE"
+    current = root
+    for component in parts[:-1]:
+        current = current / component
+        try:
+            value = os.lstat(current)
+        except OSError:
+            return None, "PATH_UNREADABLE"
+        if stat.S_ISLNK(value.st_mode):
+            return None, "SYMLINK"
+        if not stat.S_ISDIR(value.st_mode):
+            return None, "SPECIAL_PATH"
+    target = current / parts[-1]
+    try:
+        value = os.lstat(target)
+    except OSError:
+        return None, "PATH_UNREADABLE"
+    if stat.S_ISLNK(value.st_mode):
+        return None, "SYMLINK"
+    if not stat.S_ISREG(value.st_mode):
+        return None, "SPECIAL_PATH"
+    if value.st_nlink != 1:
+        return None, "HARDLINK"
+    try:
+        with open(target, "rb") as handle:
+            return handle.read(), None
+    except OSError:
+        return None, "PATH_UNREADABLE"
+
+
 def secure_read_regular(root: Path, path: str) -> tuple[bytes | None, str | None]:
     """Read one root-relative file through an openat/O_NOFOLLOW fd chain."""
 
     nofollow = getattr(os, "O_NOFOLLOW", 0)
     directory_flag = getattr(os, "O_DIRECTORY", 0)
     if not nofollow or not directory_flag:
-        return None, "SAFE_TOPOLOGY_UNSUPPORTED"
+        return read_regular_lstat(root, path)
     parts = PurePosixPath(path).parts
     if not parts:
         return None, "PATH_UNREADABLE"
