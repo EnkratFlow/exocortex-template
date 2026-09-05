@@ -6,6 +6,47 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 ## [Unreleased]
 
+## [3.3.0] - 2026-09-04
+
+### Security
+
+- **Public-template privacy boundary** — current source, immutable candidate
+  trees, introduced commits, transient blobs and paths, and annotated tag
+  objects now reject high-confidence personal host, home-path, private-network,
+  tailnet-hostname, non-public-email, and personal Git-identity disclosures
+  in common UTF-8 and UTF-16 text forms without rendering matched values.
+  Generic credential-registry metadata is exact-digest locked so local
+  customization cannot silently enter a public candidate.
+- **Provider adapter cleanup** — replaced private machine capacity and workload
+  notes with a generic resource-aware verification policy.
+
+### Added
+
+- **Guarded local-delivery envelopes** — a single bounded local business
+  decision can bind the exact repository, base, worktree, path set, writer,
+  reviewer, verification plan, expiry, rollback, and exclusions without
+  turning internal reservations or one-time capabilities into repeated human
+  prompts.
+
+### Changed
+
+- **Evidence-bound delivery lifecycle** — developer verification, independent
+  review, QA/SIT, and Human UAT now carry exact transition provenance. Human
+  UAT records the owner decision against the sealed candidate, and guarded
+  completion creates one local event and handoff before releasing the writer.
+- **Credential-blind source handling** — local protocol inputs and public
+  candidate materialization reject credential-shaped paths before content
+  access while still accounting for ordinary untracked source and ignored
+  non-sensitive source dirt.
+
+### Fixed
+
+- **Tamper-resistant recovery and replay** — duplicate-key JSON, wrong-root
+  envelopes, altered transition or completion journals, forged gate evidence,
+  missing completion records, and mismatched capabilities now fail closed.
+  Exact interrupted operations remain recoverable and exact completed requests
+  remain idempotent without rewriting durable state.
+
 ## [3.2.9] - 2026-08-08
 
 ### Changed
@@ -181,8 +222,8 @@ disposable existing-repository upgrade rehearsal.
 - Added source-sidecar, target-preservation, manifest, Git-ignore,
   reconciliation-rejection, and restore-archive regression coverage.
 - Re-ran the full installer/update suite, Phase B protocol tests, and a
-  disposable Trading Journal reconciliation rehearsal with protected-data and
-  archive checks.
+  disposable downstream-project reconciliation rehearsal with protected-data
+  and archive checks.
 
 ## [3.2.2] - 2026-07-31
 
@@ -345,6 +386,7 @@ exists.
   mid-copy fault containment, private archive, exact rollback, and pre- and
   post-consumption race coverage.
 
+[3.3.0]: https://github.com/EnkratFlow/exocortex-template/releases/tag/v3.3.0
 [3.2.9]: https://github.com/EnkratFlow/exocortex-template/releases/tag/v3.2.9
 [3.2.8]: https://github.com/EnkratFlow/exocortex-template/releases/tag/v3.2.8
 [3.2.2]: https://github.com/EnkratFlow/exocortex-template/releases/tag/v3.2.2
@@ -434,7 +476,7 @@ exists.
 ## [3.1.2] — 2026-04-30
 
 ### Fixed
-- **`/ai-export` is now project-generic** — removed Trading Journal-specific file names from `.exocortex/commands/ai-export.json`. The command now discovers the current project structure and exports evidence-backed architecture from files that actually exist in the installed repo.
+- **`/ai-export` is now project-generic** — removed downstream-project-specific file names from `.exocortex/commands/ai-export.json`. The command now discovers the current project structure and exports evidence-backed architecture from files that actually exist in the installed repo.
 - **Installer data-plane boundary hardened** — `install.sh` no longer copies or manifest-tracks project memory/state files from the public template. Existing user data remains untouched, and fresh installs receive blank local stubs where needed.
 - **Public template data cleaned** — removed live template session context and release checkpoint events from the public install surface; only the example event remains.
 
@@ -443,7 +485,7 @@ exists.
 - **Template privacy guard added** — added coverage that prevents live session context or real event markdown files from shipping in the public template.
 
 ### Upgrade Notes
-- If you installed a version where `/ai-export` mentioned Trading Journal files, rerun the installer from your project root after this release:
+- If you installed a version where `/ai-export` mentioned project-specific files, rerun the installer from your project root after this release:
   use the exact pinned local release procedure documented in
   `.exocortex/docs/AI_INSTALLATION.md`. The former remote pipe-to-shell command
   is intentionally retired.

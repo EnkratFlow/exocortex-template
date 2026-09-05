@@ -8,7 +8,7 @@ import os
 import subprocess
 import sys
 import tempfile
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 
 TEMPLATE = Path(sys.argv[1] if len(sys.argv) > 1 else ".").resolve()
@@ -16,6 +16,50 @@ CHECKER = TEMPLATE / "scripts/check-public-release.py"
 FIXTURE_EMAIL = "fixture@example.invalid"
 CANARY = "gh" + "p_" + "0123456789ABCDEFGHIJKL"
 FINE_GRAINED_CANARY = "github" + "_pat_" + "0123456789ABCDEFGHIJKL_mnopqrstuvwxyz"
+MAC_HOME_CANARY = "/" + "Users" + "/" + "fictional-private-user" + "/workspace"
+DELIMITED_HOME_CANARY = "location:" + MAC_HOME_CANARY
+WINDOWS_HOME_CANARY = "C:" + "\\" + "Users" + "\\" + "fictional-private-user"
+WINDOWS_FORWARD_HOME_CANARY = "D:" + "/" + "Users" + "/" + "fictional-private-user"
+WINDOWS_UNC_HOME_CANARY = (
+    "\\\\" + "fictional-server" + "\\" + "Users" + "\\" + "fictional-private-user"
+)
+WINDOWS_UNC_FORWARD_HOME_CANARY = (
+    "//" + "fictional-server" + "/" + "Users" + "/" + "fictional-private-user"
+)
+PRIVATE_IPV4_CANARY = ".".join(("192", "168", "44", "21"))
+CGNAT_IPV4_CANARY = ".".join(("100", "95", "12", "8"))
+PRIVATE_IPV6_CANARY = ":".join(("fd71", "2222", "3333", "", "9"))
+LINK_LOCAL_IPV6_CANARY = ":".join(("fe80", "", "9"))
+SITE_LOCAL_IPV6_CANARY = ":".join(("fec0", "", "9"))
+TAILNET_CANARY = ".".join(("fictional-node", "fictional-tailnet", "ts", "net"))
+SHORT_TAILNET_CANARY = ".".join(("fictional-node", "ts", "net"))
+PERSONAL_EMAIL_CANARY = "private-person" + "@" + "mail-provider" + ".com"
+NOREPLY_EMAIL_CANARY = "123+fictional" + "@" + "users.noreply.github.com"
+INVALID_NOREPLY_EMAIL_CANARY = "0+fictional" + "@" + "users.noreply.github.com"
+PRIVATE_GIT_EMAIL_CANARY = "fixture" + "@" + "privatehost"
+PERSONAL_NAME_CANARY = "Fictional" + " Private Person"
+HOST_POLICY_CANARY = "Do not run full test suites on " + "fictional-node"
+ALPHA_HOST_POLICY_CANARY = "Do not run full test suites on " + "fictionalalpha"
+HOST_HARDWARE_CANARY = (
+    "fictional-node" + " is a base M4 Mac mini: 12 cores, 48GB RAM."
+)
+ALPHA_HOST_HARDWARE_CANARY = (
+    "fictionalalpha" + " is a base M4 Mac mini: 12 cores, 48GB RAM."
+)
+WORKLOAD_CANARY = "fictional-node" + " serves the " + "pipeline."
+ALPHA_HOST_WORKLOAD_CANARY = (
+    "fictionalalpha" + " serves the " + "pipeline and agent sessions."
+)
+DIGIT_HOST_WORKLOAD_CANARY = "7" + "fictional-node" + " runs the " + "journal."
+LABELED_HOST_WORKLOAD_CANARY = (
+    "host " + "fictionalalpha" + " runs the " + "application."
+)
+GENERIC_ASSIGNMENT_CANARY = "z9" * 24
+BEARER_CANARY = "r8" * 24
+CREDENTIAL_ADJACENT_FIXTURES = {
+    ".exocortex/.env.example",
+    ".exocortex/key-registry.json",
+}
 
 
 def run(
@@ -36,6 +80,68 @@ def write(root: Path, relative: str, content: str = "fictional fixture\n") -> No
     target = root / relative
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text(content, encoding="utf-8")
+
+
+def write_bytes(root: Path, relative: str, content: bytes) -> None:
+    target = root / relative
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_bytes(content)
+
+
+def credential_adjacent_path(relative: str) -> bool:
+    for part in PurePosixPath(relative).parts:
+        name = part.lower()
+        if (
+            name == ".env"
+            or name.startswith(".env.")
+            or name == ".envrc"
+            or name == "key-registry.json"
+        ):
+            return True
+    return False
+
+
+def materialize_credential_blind_candidate(source: Path, target: Path) -> set[str]:
+    """Copy tracked and ordinary untracked source without opening credentials."""
+
+    result = subprocess.run(
+        (
+            "git",
+            "-C",
+            os.fspath(source),
+            "ls-files",
+            "-z",
+            "--cached",
+            "--others",
+            "--exclude-standard",
+        ),
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        check=False,
+    )
+    if result.returncode:
+        raise AssertionError("candidate source inventory failed")
+    copied: set[str] = set()
+    for encoded in result.stdout.split(b"\0"):
+        if not encoded:
+            continue
+        relative = encoded.decode("utf-8", errors="surrogateescape")
+        path = PurePosixPath(relative)
+        if path.is_absolute() or ".." in path.parts:
+            raise AssertionError("unsafe candidate source path")
+        if credential_adjacent_path(relative):
+            continue
+        source_path = source / relative
+        target_path = target / relative
+        target_path.parent.mkdir(parents=True, exist_ok=True)
+        if source_path.is_symlink():
+            os.symlink(os.readlink(source_path), target_path)
+        elif source_path.is_file():
+            target_path.write_bytes(source_path.read_bytes())
+        else:
+            raise AssertionError("candidate source entry is not a regular file")
+        copied.add(relative)
+    return copied
 
 
 def commit(root: Path, message: str) -> str:
@@ -231,6 +337,73 @@ def main() -> None:
         assert_rule(result, "GITHUB_TOKEN")
         assert CANARY not in result.stdout + result.stderr
 
+    for relative in (
+        "credentials.json",
+        "config/secrets.json",
+        "keys/private.pem",
+        ".ssh/config",
+    ):
+        with tempfile.TemporaryDirectory(prefix="exo-public-credential-path-") as raw:
+            source_root = Path(raw)
+            write(source_root, relative, "fictional opaque value\n")
+            result = run(
+                "python3", str(CHECKER), "--root", str(source_root), "--source-tree",
+                cwd=source_root, check=False,
+            )
+            assert_rule(result, "CREDENTIAL_PATH")
+            assert relative not in result.stdout + result.stderr
+            assert path_digest(relative) in result.stdout
+            assert '"path_class": "credential"' in result.stdout
+
+    temp, root, baseline = fixture()
+    try:
+        relative = "config/credentials.json"
+        write(root, relative, CANARY + "\n")
+        candidate = commit(root, "credential path content remains unread")
+        result = run(
+            "python3", str(CHECKER), "--root", str(root), "--baseline", baseline,
+            "--candidate", candidate, cwd=root, check=False,
+        )
+        assert_rule(result, "CREDENTIAL_PATH")
+        assert '"rule": "GITHUB_TOKEN"' not in result.stdout
+        assert CANARY not in result.stdout + result.stderr
+    finally:
+        temp.cleanup()
+
+    with tempfile.TemporaryDirectory(prefix="exo-public-generic-secret-") as raw:
+        source_root = Path(raw)
+        relative = "ordinary-config.txt"
+        write(source_root, relative, f"service_api_key={GENERIC_ASSIGNMENT_CANARY}\n")
+        result = run(
+            "python3", str(CHECKER), "--root", str(source_root), "--source-tree",
+            cwd=source_root, check=False,
+        )
+        assert_redacted_rule(
+            result, "GENERIC_CREDENTIAL_ASSIGNMENT", GENERIC_ASSIGNMENT_CANARY
+        )
+
+    with tempfile.TemporaryDirectory(prefix="exo-public-bearer-secret-") as raw:
+        source_root = Path(raw)
+        relative = "request-example.txt"
+        write(source_root, relative, f"Authorization: Bearer {BEARER_CANARY}\n")
+        result = run(
+            "python3", str(CHECKER), "--root", str(source_root), "--source-tree",
+            cwd=source_root, check=False,
+        )
+        assert_redacted_rule(result, "BEARER_CREDENTIAL", BEARER_CANARY)
+
+    with tempfile.TemporaryDirectory(prefix="exo-public-git-digest-") as raw:
+        source_root = Path(raw)
+        write(source_root, "README.md")
+        result = run(
+            "python3", str(CHECKER), "--root", str(source_root), "--source-tree",
+            "--git-executable", "/usr/bin/git",
+            "--git-executable-sha256", "0" * 64,
+            cwd=source_root, check=False,
+        )
+        assert result.returncode == 2
+        assert "GIT_COMMAND_DIGEST_MISMATCH" in result.stderr
+
     with tempfile.TemporaryDirectory(prefix="exo-public-source-fine-grained-") as raw:
         source_root = Path(raw)
         relative = "fine-grained-source.txt"
@@ -243,6 +416,202 @@ def main() -> None:
         assert path_digest(relative) in result.stdout
         assert '"path_class": "repository"' in result.stdout
 
+    for rule, canary in (
+        ("ABSOLUTE_HOME_PATH", MAC_HOME_CANARY),
+        ("ABSOLUTE_HOME_PATH", DELIMITED_HOME_CANARY),
+        ("WINDOWS_HOME_PATH", WINDOWS_HOME_CANARY),
+        ("WINDOWS_HOME_PATH", WINDOWS_UNC_HOME_CANARY),
+        ("WINDOWS_HOME_PATH", WINDOWS_UNC_FORWARD_HOME_CANARY),
+        ("PRIVATE_NETWORK_IPV4", PRIVATE_IPV4_CANARY),
+        ("CGNAT_NETWORK_IPV4", CGNAT_IPV4_CANARY),
+        ("PRIVATE_NETWORK_IPV6", PRIVATE_IPV6_CANARY),
+        ("PRIVATE_NETWORK_IPV6", LINK_LOCAL_IPV6_CANARY),
+        ("PRIVATE_NETWORK_IPV6", SITE_LOCAL_IPV6_CANARY),
+        ("TAILNET_HOSTNAME", TAILNET_CANARY),
+        ("TAILNET_HOSTNAME", SHORT_TAILNET_CANARY),
+        ("NON_PUBLIC_EMAIL", PERSONAL_EMAIL_CANARY),
+        ("HOST_BOUND_TEST_POLICY", HOST_POLICY_CANARY),
+        ("HOST_BOUND_TEST_POLICY", ALPHA_HOST_POLICY_CANARY),
+        ("HOST_HARDWARE_DISCLOSURE", HOST_HARDWARE_CANARY),
+        ("HOST_HARDWARE_DISCLOSURE", ALPHA_HOST_HARDWARE_CANARY),
+        ("LOCAL_WORKLOAD_DISCLOSURE", WORKLOAD_CANARY),
+        ("LOCAL_WORKLOAD_DISCLOSURE", ALPHA_HOST_WORKLOAD_CANARY),
+        ("LOCAL_WORKLOAD_DISCLOSURE", DIGIT_HOST_WORKLOAD_CANARY),
+        ("LOCAL_WORKLOAD_DISCLOSURE", LABELED_HOST_WORKLOAD_CANARY),
+    ):
+        with tempfile.TemporaryDirectory(prefix="exo-public-source-privacy-") as raw:
+            source_root = Path(raw)
+            write(source_root, "README.md", f"fictional fixture: {canary}\n")
+            result = run(
+                "python3", str(CHECKER), "--root", str(source_root), "--source-tree",
+                cwd=source_root, check=False,
+            )
+            assert_redacted_rule(result, rule, canary)
+
+    with tempfile.TemporaryDirectory(prefix="exo-public-source-windows-forward-") as raw:
+        source_root = Path(raw)
+        write(source_root, "README.md", f"fictional fixture: {WINDOWS_FORWARD_HOME_CANARY}\n")
+        result = run(
+            "python3", str(CHECKER), "--root", str(source_root), "--source-tree",
+            cwd=source_root, check=False,
+        )
+        assert_redacted_rule(result, "WINDOWS_HOME_PATH", WINDOWS_FORWARD_HOME_CANARY)
+        assert '"rule": "ABSOLUTE_HOME_PATH"' not in result.stdout
+
+    for encoding, prefix, rule, canary in (
+        ("utf-16-le", b"", "PRIVATE_NETWORK_IPV4", PRIVATE_IPV4_CANARY),
+        ("utf-16-be", b"\xfe\xff", "NON_PUBLIC_EMAIL", PERSONAL_EMAIL_CANARY),
+    ):
+        with tempfile.TemporaryDirectory(prefix="exo-public-utf16-") as raw:
+            source_root = Path(raw)
+            write_bytes(
+                source_root,
+                "windows-text.txt",
+                prefix + f"fictional fixture: {canary}\n".encode(encoding),
+            )
+            result = run(
+                "python3", str(CHECKER), "--root", str(source_root), "--source-tree",
+                cwd=source_root, check=False,
+            )
+            assert_redacted_rule(result, rule, canary)
+
+    for private_address in (
+        ".".join(("10", "0", "0", "0")),
+        ".".join(("10", "255", "255", "255")),
+        ".".join(("172", "16", "0", "0")),
+        ".".join(("172", "31", "255", "255")),
+        ".".join(("192", "168", "0", "0")),
+        ".".join(("192", "168", "255", "255")),
+    ):
+        with tempfile.TemporaryDirectory(prefix="exo-public-private-boundary-") as raw:
+            source_root = Path(raw)
+            write(source_root, "README.md", f"fictional endpoint: {private_address}\n")
+            result = run(
+                "python3", str(CHECKER), "--root", str(source_root), "--source-tree",
+                cwd=source_root, check=False,
+            )
+            assert_redacted_rule(result, "PRIVATE_NETWORK_IPV4", private_address)
+
+    for cgnat_address in (
+        ".".join(("100", "64", "0", "0")),
+        ".".join(("100", "127", "255", "255")),
+    ):
+        with tempfile.TemporaryDirectory(prefix="exo-public-cgnat-boundary-") as raw:
+            source_root = Path(raw)
+            write(source_root, "README.md", f"fictional endpoint: {cgnat_address}\n")
+            result = run(
+                "python3", str(CHECKER), "--root", str(source_root), "--source-tree",
+                cwd=source_root, check=False,
+            )
+            assert_redacted_rule(result, "CGNAT_NETWORK_IPV4", cgnat_address)
+
+    with tempfile.TemporaryDirectory(prefix="exo-public-allowed-privacy-") as raw:
+        source_root = Path(raw)
+        allowed_examples = "\n".join(
+            (
+                "/Users/<username>/project",
+                "%USERPROFILE%\\project",
+                "$HOME/project",
+                "/path/to/project",
+                "/home/runner/work/project",
+                "127.0.0.1",
+                "192.0.2.1",
+                "198.51.100.1",
+                "203.0.113.1",
+                "2001:db8::1",
+                "2001:20::1",
+                ".ts.net",
+                "fixture@example.com",
+                "fixture@example.invalid",
+                "fixture@example.net",
+                "fixture@example.org",
+                "support@docs.example.invalid",
+                "support@docs.example.com",
+                "support@nested.example",
+                "123+bot@users.noreply.github.com",
+                "noreply@github.com",
+                "security@project.example",
+                "Do not run full test suites on Windows.",
+                "runner is an M2 Mac mini used for a public fixture.",
+                "runner also runs the release pipeline.",
+                "This machine runs the release pipeline.",
+                "The application runs the release pipeline and service checks.",
+                "Do not run full test suites on pull requests.",
+                "Do not run complete test suites on server.",
+                "The architecture runs the service.",
+                "The device hosts an application.",
+                "The server runs the release pipeline.",
+                "The laptop is an M3 MacBook used for a public fixture.",
+                "It runs the application.",
+                "This runs the service.",
+                "Python runs the application.",
+                "This is an M3 MacBook used for a public fixture.",
+                ".".join(("9", "255", "255", "255")),
+                ".".join(("11", "0", "0", "0")),
+                ".".join(("172", "15", "255", "255")),
+                ".".join(("172", "32", "0", "0")),
+                ".".join(("100", "63", "255", "255")),
+                ".".join(("100", "128", "0", "0")),
+            )
+        )
+        write(source_root, "README.md", allowed_examples + "\n")
+        result = run(
+            "python3", str(CHECKER), "--root", str(source_root), "--source-tree",
+            cwd=source_root,
+        )
+        assert result.stdout == "public_release=pass\n"
+
+    temp, source_root, _ = fixture()
+    try:
+        write(
+            source_root,
+            ".gitignore",
+            ".exocortex/local/\n.env*\nkey-registry.json\n",
+        )
+        commit(source_root, "ignore fictional local runtime")
+        unreadable_paths = {
+            ".exocortex/.env.example",
+            ".exocortex/.env/private.txt",
+            ".exocortex/key-registry.json",
+            "nested/.envrc",
+            "nested/config/key-registry.json",
+        }
+        for relative in unreadable_paths:
+            write(source_root, relative, "synthetic credential-adjacent fixture\n")
+        run("git", "add", "-f", *sorted(unreadable_paths), cwd=source_root)
+        run("git", "commit", "-m", "track synthetic credential path shapes", cwd=source_root)
+        for relative in unreadable_paths:
+            (source_root / relative).chmod(0)
+        write(source_root, "ordinary-untracked.txt", "ordinary public source\n")
+        write(
+            source_root,
+            ".exocortex/local/protocol/runtime.json",
+            "fictional ignored runtime\n",
+        )
+        candidate_root = Path(temp.name) / "candidate"
+        copied = materialize_credential_blind_candidate(source_root, candidate_root)
+        assert "ordinary-untracked.txt" in copied
+        assert (candidate_root / "ordinary-untracked.txt").read_text(
+            encoding="utf-8"
+        ) == "ordinary public source\n"
+        assert ".exocortex/local/protocol/runtime.json" not in copied
+        assert unreadable_paths.isdisjoint(copied)
+        assert not any((candidate_root / relative).exists() for relative in unreadable_paths)
+    finally:
+        temp.cleanup()
+
+    with tempfile.TemporaryDirectory(prefix="exo-public-self-scan-") as raw:
+        source_root = Path(raw)
+        copied = materialize_credential_blind_candidate(TEMPLATE, source_root)
+        assert "scripts/check-public-release.py" in copied
+        assert "tests/test_public_release.py" in copied
+        assert CREDENTIAL_ADJACENT_FIXTURES.isdisjoint(copied)
+        self_scan = run(
+            "python3", str(CHECKER), "--root", str(source_root), "--source-tree",
+            cwd=source_root,
+        )
+        assert self_scan.stdout == "public_release=pass\n"
+
     temp, root, baseline = fixture()
     try:
         clean = run("python3", str(CHECKER), "--root", str(root), cwd=root)
@@ -251,13 +620,93 @@ def main() -> None:
         for relative in (
             ".exocortex/events/.gitkeep",
             ".exocortex/events/2000-01-01_00-00-00_example-event.md",
-            ".exocortex/.env.example",
         ):
             write(root, relative, (TEMPLATE / relative).read_text(encoding="utf-8"))
         commit(root, "exact public examples")
         allowed = run("python3", str(CHECKER), "--root", str(root), cwd=root)
         assert allowed.stdout == "public_release=pass\n"
         assert baseline
+    finally:
+        temp.cleanup()
+
+    temp, root, baseline = fixture()
+    try:
+        run("git", "config", "user.name", PERSONAL_NAME_CANARY, cwd=root)
+        run("git", "config", "user.email", NOREPLY_EMAIL_CANARY, cwd=root)
+        write(root, "identity-only.txt")
+        candidate = commit(root, "fictional public identity check")
+        result = run(
+            "python3", str(CHECKER), "--root", str(root), "--baseline", baseline,
+            "--candidate", candidate, cwd=root, check=False,
+        )
+        assert_redacted_rule(result, "NON_PUBLIC_GIT_IDENTITY", PERSONAL_NAME_CANARY)
+        assert '"rule": "NON_PUBLIC_EMAIL"' not in result.stdout
+        assert '"path_class": "git-object"' in result.stdout
+    finally:
+        temp.cleanup()
+
+    for name, email in (
+        (PERSONAL_NAME_CANARY, "fixture@example.org"),
+        ("Fixture", PRIVATE_GIT_EMAIL_CANARY),
+        ("Fixture", INVALID_NOREPLY_EMAIL_CANARY),
+        ("Fixture", NOREPLY_EMAIL_CANARY),
+    ):
+        temp, root, baseline = fixture()
+        try:
+            run("git", "config", "user.name", name, cwd=root)
+            run("git", "config", "user.email", email, cwd=root)
+            write(root, "identity-boundary.txt")
+            candidate = commit(root, "fictional rejected identity")
+            result = run(
+                "python3", str(CHECKER), "--root", str(root), "--baseline", baseline,
+                "--candidate", candidate, cwd=root, check=False,
+            )
+            assert_redacted_rule(result, "NON_PUBLIC_GIT_IDENTITY", name)
+            assert '"path_class": "git-object"' in result.stdout
+        finally:
+            temp.cleanup()
+
+    temp, root, baseline = fixture()
+    try:
+        run("git", "config", "user.name", "EnkratFlow Automation", cwd=root)
+        run("git", "config", "user.email", "noreply@github.com", cwd=root)
+        write(root, "automation-identity.txt")
+        candidate = commit(root, "fictional automation identity")
+        result = run(
+            "python3", str(CHECKER), "--root", str(root), "--baseline", baseline,
+            "--candidate", candidate, cwd=root,
+        )
+        assert result.stdout == "public_release=pass\n"
+    finally:
+        temp.cleanup()
+
+    temp, root, baseline = fixture()
+    try:
+        run("git", "config", "user.name", "github-actions[bot]", cwd=root)
+        run(
+            "git", "config", "user.email",
+            "41898282+github-actions[bot]@users.noreply.github.com", cwd=root,
+        )
+        write(root, "github-automation-identity.txt")
+        candidate = commit(root, "fictional GitHub automation identity")
+        result = run(
+            "python3", str(CHECKER), "--root", str(root), "--baseline", baseline,
+            "--candidate", candidate, cwd=root,
+        )
+        assert result.stdout == "public_release=pass\n"
+    finally:
+        temp.cleanup()
+
+    temp, root, baseline = fixture()
+    try:
+        write(root, "message-only.txt")
+        candidate = commit(root, f"fictional contact {PERSONAL_EMAIL_CANARY}")
+        result = run(
+            "python3", str(CHECKER), "--root", str(root), "--baseline", baseline,
+            "--candidate", candidate, cwd=root, check=False,
+        )
+        assert_redacted_rule(result, "NON_PUBLIC_EMAIL", PERSONAL_EMAIL_CANARY)
+        assert '"path_class": "git-object"' in result.stdout
     finally:
         temp.cleanup()
 
@@ -272,6 +721,21 @@ def main() -> None:
         assert_rule(result, "GITHUB_TOKEN")
         assert '"path_class": "git-object"' in result.stdout
         assert CANARY not in result.stdout + result.stderr
+    finally:
+        temp.cleanup()
+
+    temp, root, _ = fixture()
+    try:
+        run(
+            "git", "tag", "-a", "v1.0.1", "-m",
+            f"fictional build host {TAILNET_CANARY}", cwd=root,
+        )
+        result = run(
+            "python3", str(CHECKER), "--root", str(root),
+            "--tag-object", "v1.0.1", cwd=root, check=False,
+        )
+        assert_redacted_rule(result, "TAILNET_HOSTNAME", TAILNET_CANARY)
+        assert '"path_class": "git-object"' in result.stdout
     finally:
         temp.cleanup()
 
@@ -338,13 +802,27 @@ def main() -> None:
     for relative in (
         ".exocortex/events/.gitkeep",
         ".exocortex/events/2000-01-01_00-00-00_example-event.md",
-        ".exocortex/.env.example",
     ):
         temp, root, _ = fixture()
         try:
             public_fixture = (TEMPLATE / relative).read_text(encoding="utf-8")
             write(root, relative, public_fixture + "\nPersonalized fictional detail.\n")
             commit(root, "modified data-adjacent public fixture")
+            assert_rule(
+                run(
+                    "python3", str(CHECKER), "--root", str(root), cwd=root,
+                    check=False,
+                ),
+                "DATA_FIXTURE_MODIFIED",
+            )
+        finally:
+            temp.cleanup()
+
+    for relative in sorted(CREDENTIAL_ADJACENT_FIXTURES):
+        temp, root, _ = fixture()
+        try:
+            write(root, relative, "fictional modified metadata fixture\n")
+            commit(root, "modified credential-adjacent public fixture")
             assert_rule(
                 run(
                     "python3", str(CHECKER), "--root", str(root), cwd=root,
@@ -394,6 +872,50 @@ def main() -> None:
         assert path_digest("nested/.env.production") in source_tree.stdout
         tracked_only = run("python3", str(CHECKER), "--root", str(root), cwd=root)
         assert tracked_only.stdout == "public_release=pass\n"
+    finally:
+        temp.cleanup()
+
+    temp, root, baseline = fixture()
+    try:
+        relative = "transient-private-location.txt"
+        write(root, relative, f"fictional location={MAC_HOME_CANARY}\n")
+        commit(root, "add transient fictional private location")
+        (root / relative).unlink()
+        candidate = commit(root, "remove transient fictional private location")
+        result = run(
+            "python3", str(CHECKER), "--root", str(root), "--baseline", baseline,
+            "--candidate", candidate, cwd=root, check=False,
+        )
+        assert_redacted_rule(result, "ABSOLUTE_HOME_PATH", MAC_HOME_CANARY)
+        assert path_digest(relative) in result.stdout
+    finally:
+        temp.cleanup()
+
+    temp, root, _ = fixture()
+    try:
+        relative = f"artifact-{PERSONAL_EMAIL_CANARY}.txt"
+        write(root, relative)
+        candidate = commit(root, "fictional private-address path")
+        result = run(
+            "python3", str(CHECKER), "--root", str(root), "--tree", candidate,
+            cwd=root, check=False,
+        )
+        assert_redacted_rule(result, "NON_PUBLIC_EMAIL", PERSONAL_EMAIL_CANARY)
+        assert path_digest(relative) in result.stdout
+    finally:
+        temp.cleanup()
+
+    temp, root, _ = fixture()
+    try:
+        relative = "immutable-private-network.txt"
+        write(root, relative, f"fictional endpoint={PRIVATE_IPV4_CANARY}\n")
+        candidate = commit(root, "fictional immutable privacy fixture")
+        result = run(
+            "python3", str(CHECKER), "--root", str(root), "--tree", candidate,
+            cwd=root, check=False,
+        )
+        assert_redacted_rule(result, "PRIVATE_NETWORK_IPV4", PRIVATE_IPV4_CANARY)
+        assert path_digest(relative) in result.stdout
     finally:
         temp.cleanup()
 

@@ -33,6 +33,33 @@ effect requires one replacement decision. A broad “yes,” “everything,” o
 “everywhere” grants no scope. Business-gate classes never carry authority
 forward.
 
+For a file-changing local task, the system first uses
+`bootstrap-local-delivery` to check the approved clean isolated worktree, exact
+base, branch, and allowed paths, then atomically creates/reserves/activates the
+item in `developing`; that is not a normal transition or checkpoint. It then
+uses `seal-local-edit` to record the actual changed set. Developer verification,
+independent review, QA/SIT, UAT-ready, and an explicit Human-UAT transition
+still occur. Only then can `complete-local-delivery` record
+`local_state=complete`, create one local completion event and handoff, and
+release the writer while lifecycle remains `human_uat`; `release_ready` and
+publication are separate. This does not approve a commit, push, release,
+deployment, synchronization, credential access, or network action.
+
+The bootstrap `--envelope-source` and completion `--body-file` must be
+project-relative regular files under `.exocortex/local/protocol/inbox/`.
+Credential-shaped names (`.env`, `.env.*`, private-key formats, `credentials`,
+or `secrets`) are rejected before opening. You should see non-empty evidence
+at developer verification, independent review, QA/SIT, UAT-ready, and Human
+UAT; each transition capability binds its full transition intent. The Human-UAT
+record names an attestor matching the envelope approver. This is cooperative
+local evidence, not cryptographic proof of that person's identity. Acceptance
+criteria remain pending through `uat_ready`; the accepted Human-UAT transition
+refuses failed or blocked criteria, records the remaining criteria as passed
+with its evidence, and closeout rechecks that every criterion still carries
+the exact Human-UAT transition marker and evidence. Closeout also verifies the
+transition against its consumed one-time capability and finalized guarded
+transaction.
+
 ## Saves and checkpoints
 
 `/save` first drafts useful local narrative memory in chat. Choose either
@@ -45,6 +72,9 @@ checkpoint-eligible.
 
 Nothing is sent to RAG, a vault, hub, provider, or another repository
 automatically.
+
+`create_event.sh` remains the manual `/save` helper for narrative events. It
+does not perform local-delivery closeout, accept UAT, or release a writer.
 
 ## Multi-AI work
 

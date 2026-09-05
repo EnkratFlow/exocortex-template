@@ -1,0 +1,261 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/exocortex/schemas/publication-envelope.schema.json",
+  "title": "Exocortex reviewed-candidate publication envelope",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "kind",
+    "envelope_id",
+    "source_work_item",
+    "source_work_item_id",
+    "source_work_item_revision",
+    "source_work_item_digest",
+    "source_completion_digest",
+    "project_root",
+    "base_sha",
+    "source_seal_digest",
+    "candidate_digest",
+    "path_set_digest",
+    "allowed_paths",
+    "manifest",
+    "trusted_runtime",
+    "branch",
+    "writer",
+    "approval",
+    "lease_expires_at",
+    "remote",
+    "commit",
+    "pull_request",
+    "effects",
+    "outcome",
+    "risk",
+    "rollback",
+    "verification",
+    "exclusions"
+  ],
+  "properties": {
+    "schema_version": { "const": "public-v2" },
+    "kind": { "const": "publication_envelope" },
+    "envelope_id": { "$ref": "#/$defs/id" },
+    "source_work_item": { "$ref": "#/$defs/relative_path" },
+    "source_work_item_id": { "$ref": "#/$defs/id" },
+    "source_work_item_revision": { "type": "integer", "minimum": 0 },
+    "source_work_item_digest": { "$ref": "#/$defs/digest" },
+    "source_completion_digest": { "$ref": "#/$defs/digest" },
+    "project_root": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1000,
+      "pattern": "^(?:/|[A-Za-z]:[\\\\/]|\\\\\\\\)"
+    },
+    "base_sha": { "$ref": "#/$defs/git_sha" },
+    "source_seal_digest": { "$ref": "#/$defs/digest" },
+    "candidate_digest": { "$ref": "#/$defs/digest" },
+    "path_set_digest": { "$ref": "#/$defs/digest" },
+    "allowed_paths": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/source_path" }
+    },
+    "manifest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256"],
+      "properties": {
+        "path": { "const": "SHA256SUMS" },
+        "sha256": { "$ref": "#/$defs/digest" }
+      }
+    },
+    "trusted_runtime": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "executor_closure_digest",
+        "public_checker_digest",
+        "python_executable_digest",
+        "git_executable_digest",
+        "gh_executable_digest"
+      ],
+      "properties": {
+        "executor_closure_digest": { "$ref": "#/$defs/digest" },
+        "public_checker_digest": { "$ref": "#/$defs/digest" },
+        "python_executable_digest": { "$ref": "#/$defs/digest" },
+        "git_executable_digest": { "$ref": "#/$defs/digest" },
+        "gh_executable_digest": { "$ref": "#/$defs/digest" }
+      }
+    },
+    "branch": { "$ref": "#/$defs/branch" },
+    "writer": { "$ref": "#/$defs/actor" },
+    "approval": { "$ref": "#/$defs/approval" },
+    "lease_expires_at": { "$ref": "#/$defs/timestamp" },
+    "remote": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "provider",
+        "remote_name",
+        "repository",
+        "repository_id",
+        "base_branch",
+        "base_sha",
+        "head_branch",
+        "force",
+        "required_checks"
+      ],
+      "properties": {
+        "provider": { "const": "github" },
+        "remote_name": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,99}$" },
+        "repository": { "type": "string", "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$", "maxLength": 200 },
+        "repository_id": {
+          "type": "string",
+          "pattern": "^[1-9][0-9]{0,39}$",
+          "description": "Exact GitHub REST repository .id rendered as a canonical decimal string."
+        },
+        "base_branch": { "$ref": "#/$defs/branch" },
+        "base_sha": { "$ref": "#/$defs/git_sha" },
+        "head_branch": { "$ref": "#/$defs/branch" },
+        "force": { "const": false },
+        "required_checks": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._ /-]{0,199}$" }
+        }
+      }
+    },
+    "commit": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["subject", "body", "trailers", "identity"],
+      "properties": {
+        "subject": { "type": "string", "minLength": 1, "maxLength": 200, "pattern": "^[^\\r\\n\\u0000]+$" },
+        "body": { "type": "string", "maxLength": 4000, "pattern": "^[^\\r\\u0000]*$" },
+        "trailers": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "contains": { "const": "Agent: codex" },
+          "items": { "type": "string", "minLength": 1, "maxLength": 200, "pattern": "^[^\\r\\n\\u0000]+$" }
+        },
+        "identity": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["name", "email"],
+          "properties": {
+            "name": { "const": "EnkratFlow Release" },
+            "email": { "const": "noreply@github.com" }
+          }
+        }
+      }
+    },
+    "pull_request": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["draft", "maintainer_edits", "title", "body"],
+      "properties": {
+        "draft": { "const": true },
+        "maintainer_edits": { "const": false },
+        "title": { "type": "string", "minLength": 1, "maxLength": 256, "pattern": "^[^\\r\\n\\u0000]+$" },
+        "body": { "type": "string", "minLength": 1, "maxLength": 20000, "pattern": "^[^\\r\\u0000]*$" }
+      }
+    },
+    "effects": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "stage_exact_paths",
+        "one_local_commit",
+        "create_only_named_branch_push",
+        "draft_pr_create",
+        "merge",
+        "mark_ready",
+        "tag",
+        "release",
+        "deploy",
+        "promote",
+        "downstream_rollout"
+      ],
+      "properties": {
+        "stage_exact_paths": { "const": true },
+        "one_local_commit": { "const": true },
+        "create_only_named_branch_push": { "const": true },
+        "draft_pr_create": { "const": true },
+        "merge": { "const": false },
+        "mark_ready": { "const": false },
+        "tag": { "const": false },
+        "release": { "const": false },
+        "deploy": { "const": false },
+        "promote": { "const": false },
+        "downstream_rollout": { "const": false }
+      }
+    },
+    "outcome": { "type": "string", "minLength": 1, "maxLength": 2000 },
+    "risk": { "type": "string", "enum": ["low", "medium", "high", "critical"] },
+    "rollback": { "type": "string", "minLength": 1, "maxLength": 2000 },
+    "verification": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1, "maxLength": 1000, "pattern": "^[^\\r\\n\\u0000]+$" }
+    },
+    "exclusions": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1, "maxLength": 1000, "pattern": "^[^\\r\\n\\u0000]+$" }
+    }
+  },
+  "$defs": {
+    "id": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,199}$" },
+    "digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "git_sha": { "type": "string", "pattern": "^[a-f0-9]{40}$" },
+    "relative_path": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 500,
+      "not": { "pattern": "(^/|(^|/)\\.\\.(/|$)|[\\*?\\[\\]\\u0000])" }
+    },
+    "source_path": {
+      "allOf": [
+        { "$ref": "#/$defs/relative_path" },
+        {
+          "not": {
+            "pattern": "(^|/)(?:\\.[Ee][Nn][Vv](?:\\.[^/]*)?|\\.[Ee][Nn][Vv][Rr][Cc]|[Cc][Rr][Ee][Dd][Ee][Nn][Tt][Ii][Aa][Ll][Ss]\\.[Jj][Ss][Oo][Nn]|[Ss][Ee][Cc][Rr][Ee][Tt][Ss]\\.[Jj][Ss][Oo][Nn]|[Ii][Dd]_(?:[Dd][Ss][Aa]|[Ee][Cc][Dd][Ss][Aa]|[Ee][Dd]25519|[Rr][Ss][Aa])|[Kk][Ee][Yy]-[Rr][Ee][Gg][Ii][Ss][Tt][Rr][Yy]\\.[Jj][Ss][Oo][Nn]|[^/]+\\.(?:[Jj][Kk][Ss]|[Kk][Ee][Yy]|[Kk][Ee][Yy][Ss][Tt][Oo][Rr][Ee]|[Pp]12|[Pp][Ee][Mm]|[Pp][Ff][Xx]))$|(^|/)(?:\\.[Aa][Ww][Ss]|\\.[Ss][Ss][Hh]|[Cc][Rr][Ee][Dd][Ee][Nn][Tt][Ii][Aa][Ll][Ss]|[Ss][Ee][Cc][Rr][Ee][Tt][Ss])(?:/|$)"
+          }
+        }
+      ]
+    },
+    "branch": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200,
+      "not": { "pattern": "(^-|[\\s~^:?*\\[\\]\\\\]|\\.\\.|@\\{|//|/$|\\.lock$)" }
+    },
+    "timestamp": { "type": "string", "format": "date-time" },
+    "actor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["actor", "surface_id", "executor_id", "adapter_version"],
+      "properties": {
+        "actor": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "surface_id": { "$ref": "#/$defs/id" },
+        "executor_id": { "$ref": "#/$defs/id" },
+        "adapter_version": { "type": "string", "minLength": 1, "maxLength": 100 }
+      }
+    },
+    "approval": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["approved_by", "accepted_at", "expires_at", "summary"],
+      "properties": {
+        "approved_by": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "accepted_at": { "$ref": "#/$defs/timestamp" },
+        "expires_at": { "$ref": "#/$defs/timestamp" },
+        "summary": { "type": "string", "minLength": 1, "maxLength": 2000 }
+      }
+    }
+  }
+}

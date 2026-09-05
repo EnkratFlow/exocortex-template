@@ -109,8 +109,20 @@
           "id": { "$ref": "#/$defs/id" },
           "text": { "type": "string", "minLength": 1 },
           "status": { "type": "string", "enum": ["pending", "passed", "failed", "blocked"] },
-          "evidence": { "type": "array", "items": { "type": "string" } }
-        }
+          "evidence": { "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 1 } }
+        },
+        "allOf": [
+          {
+            "if": {
+              "properties": { "status": { "enum": ["passed", "failed", "blocked"] } },
+              "required": ["status"]
+            },
+            "then": {
+              "required": ["evidence"],
+              "properties": { "evidence": { "minItems": 1 } }
+            }
+          }
+        ]
       }
     },
     "transitions": { "type": "array", "items": { "$ref": "#/$defs/transition" } },
@@ -130,6 +142,63 @@
         }
       }
     },
+    "local_delivery": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "envelope_path",
+        "envelope_digest",
+        "registry_digest",
+        "worktree_identity_digest",
+        "seal",
+        "completion"
+      ],
+      "properties": {
+        "envelope_path": { "$ref": "#/$defs/relative_path" },
+        "envelope_digest": { "$ref": "#/$defs/sha256" },
+        "registry_digest": { "$ref": "#/$defs/sha256" },
+        "worktree_identity_digest": { "$ref": "#/$defs/sha256" },
+        "seal": {
+          "oneOf": [
+            { "type": "null" },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["request_id", "sealed_at", "changed_paths", "path_set_digest", "candidate_digest"],
+              "properties": {
+                "request_id": { "$ref": "#/$defs/id" },
+                "sealed_at": { "$ref": "#/$defs/timestamp" },
+                "changed_paths": {
+                  "type": "array",
+                  "uniqueItems": true,
+                  "items": { "$ref": "#/$defs/relative_path" }
+                },
+                "path_set_digest": { "$ref": "#/$defs/sha256" },
+                "candidate_digest": { "$ref": "#/$defs/sha256" }
+              }
+            }
+          ]
+        },
+        "completion": {
+          "oneOf": [
+            { "type": "null" },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["request_id", "completed_at", "local_state", "event_path", "body_digest", "event_digest"],
+              "properties": {
+                "request_id": { "$ref": "#/$defs/id" },
+                "completed_at": { "$ref": "#/$defs/timestamp" },
+                "local_state": { "const": "complete" },
+                "event_path": { "$ref": "#/$defs/relative_path" },
+                "body_digest": { "$ref": "#/$defs/sha256" },
+                "event_digest": { "$ref": "#/$defs/sha256" }
+              }
+            }
+          ]
+        }
+      }
+    },
     "retrospectives": {
       "type": "array",
       "items": {
@@ -145,6 +214,48 @@
       }
     }
   },
+  "allOf": [
+    {
+      "if": { "required": ["local_delivery"] },
+      "then": {
+        "properties": {
+          "transitions": {
+            "items": {
+              "allOf": [
+                {
+                  "required": ["capability_path", "capability_digest", "intent_digest"]
+                },
+                {
+                  "if": { "properties": { "to": { "const": "human_uat" } }, "required": ["to"] },
+                  "then": {
+                    "required": ["human_uat_attestor"],
+                    "properties": { "evidence": { "minItems": 1 } }
+                  },
+                  "else": { "not": { "required": ["human_uat_attestor"] } }
+                }
+              ]
+            }
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "transitions": {
+            "items": {
+              "not": {
+                "anyOf": [
+                  { "required": ["capability_path"] },
+                  { "required": ["capability_digest"] },
+                  { "required": ["intent_digest"] },
+                  { "required": ["human_uat_attestor"] }
+                ]
+              }
+            }
+          }
+        }
+      }
+    }
+  ],
   "$defs": {
     "id": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,199}$" },
     "timestamp": { "type": "string", "format": "date-time" },
@@ -155,6 +266,7 @@
       "not": { "pattern": "(^/|(^|/)\\.\\.(/|$))" }
     },
     "sha256_or_git": { "type": "string", "pattern": "^[a-f0-9]{40}$|^[a-f0-9]{64}$" },
+    "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
     "state": {
       "type": "string",
       "enum": [
@@ -194,7 +306,11 @@
         "reviewer_surface_id": { "$ref": "#/$defs/id" },
         "reviewer_executor_id": { "$ref": "#/$defs/id" },
         "review_evidence_hash": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
-        "review_transition_id": { "$ref": "#/$defs/id" }
+        "review_transition_id": { "$ref": "#/$defs/id" },
+        "human_uat_attestor": { "type": "string", "minLength": 1 },
+        "capability_path": { "$ref": "#/$defs/relative_path" },
+        "capability_digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "intent_digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
       },
       "allOf": [
         {

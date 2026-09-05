@@ -47,7 +47,7 @@ We aim to acknowledge new vulnerability reports within **72 hours**.
   fails closed. These checks prove byte consistency, not repository-owner
   authenticity. Public installation must also verify the owner-selected
   signature or attestation against its documented trust identity. Version
-  3.2.9 selects GitHub's immutable-release attestation for
+  3.2.9 and later select GitHub's immutable-release attestation for
   `github.com/EnkratFlow/exocortex-template` and an attested `SHA256SUMS`
   release asset; both must pass GitHub CLI verification before candidate code
   is executed. A suspected or confirmed compromised immutable release is
@@ -91,6 +91,36 @@ We aim to acknowledge new vulnerability reports within **72 hours**.
 - A coding AI follows the same rules. Provider identity, a slash-command menu,
   repository access, or a conversational “yes” does not grant mutation, Git,
   deployment, external-sync, or template-promotion authority.
+- Guarded publication trusts only a separately installed executor whose
+  implementation root is outside the candidate tree. The publication envelope
+  binds SHA-256 digests for that executor closure, its public-release checker,
+  and the exact Python, Git, and GitHub CLI executables. Version 3.3.0 must use
+  an independently reviewed external installation because a first candidate
+  cannot bootstrap trust from its own publisher or checker. A later candidate
+  may use only the exact verified runtime from a prior immutable release. The
+  trusted checker receives that pinned Git path and digest explicitly and
+  revalidates it rather than selecting another Git executable.
+- GitHub publication binds both the canonical `OWNER/REPO` and the immutable
+  REST repository `.id` as a decimal string. Both are re-read and compared
+  before every remote observation or effect through a bounded, unauthenticated
+  public REST request that does not follow redirects and accepts only HTTP 200;
+  redirects, transfers, renames, mismatches, or indeterminate responses stop
+  the operation.
+- The public checker rejects unapproved credential-shaped paths before opening
+  them and detects both known provider token formats and high-risk generic
+  credential assignments or bearer credentials without rendering their values.
+- Publication retirement is a separate, fresh one-time authority. It can
+  release an expired local reservation only after exact no-effect or
+  preserved-branch evidence. It never deletes or modifies remote state and
+  cannot retire a verified draft pull request or completed publication.
+- Publication input and output are bounded to a 128 KiB envelope, 64 MiB per
+  candidate source file, and 64 KiB of combined derived public metadata, with
+  smaller field limits enforced by the publication schema.
+- A passing privacy check means only that the bound checker and declared rules
+  accepted the exact bytes examined at that time. Its sanitized rule/count/
+  class/digest evidence exposes neither matched values nor raw paths, but it
+  cannot prove the absence of undiscovered disclosure patterns, attest a human
+  or host, or provide operating-system containment.
 - The local guards provide cooperative enforcement. Shell scripts run with the
   invoking user's permissions; a privileged user or unrestricted editor can
   bypass project-local files. Strong host enforcement requires an OS sandbox
