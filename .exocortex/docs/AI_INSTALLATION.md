@@ -25,7 +25,7 @@ attestation evidence with its documented trust identity. The SHA and digest
 prove byte consistency but do not independently prove owner authenticity when
 the repository, tag, release notes, and digest share one trust domain.
 
-Version 3.2.9 selects GitHub's immutable-release attestation for the exact
+Version 3.3.0 selects GitHub's immutable-release attestation for the exact
 trust identity `github.com/EnkratFlow/exocortex-template`. The release publishes
 `SHA256SUMS` as an attested asset. Public installation remains blocked unless
 both `gh release verify` and `gh release verify-asset` succeed and the attested
@@ -35,23 +35,23 @@ and consistency checks are:
 ```bash
 (
 set -eu
-gh release verify v3.2.9 -R github.com/EnkratFlow/exocortex-template
-mkdir -m 700 /tmp/exocortex-release-verify-v3.2.9
-gh release download v3.2.9 -R github.com/EnkratFlow/exocortex-template \
-  --pattern SHA256SUMS --dir /tmp/exocortex-release-verify-v3.2.9
-gh release verify-asset v3.2.9 \
-  /tmp/exocortex-release-verify-v3.2.9/SHA256SUMS \
+gh release verify v3.3.0 -R github.com/EnkratFlow/exocortex-template
+mkdir -m 700 /tmp/exocortex-release-verify-v3.3.0
+gh release download v3.3.0 -R github.com/EnkratFlow/exocortex-template \
+  --pattern SHA256SUMS --dir /tmp/exocortex-release-verify-v3.3.0
+gh release verify-asset v3.3.0 \
+  /tmp/exocortex-release-verify-v3.3.0/SHA256SUMS \
   -R github.com/EnkratFlow/exocortex-template
-git clone --depth 1 --branch v3.2.9 \
+git clone --depth 1 --branch v3.3.0 \
   https://github.com/EnkratFlow/exocortex-template.git \
-  /tmp/exocortex-template-v3.2.9
-cmp -s /tmp/exocortex-release-verify-v3.2.9/SHA256SUMS \
-  /tmp/exocortex-template-v3.2.9/SHA256SUMS
-git -C /tmp/exocortex-template-v3.2.9 rev-parse HEAD
+  /tmp/exocortex-template-v3.3.0
+cmp -s /tmp/exocortex-release-verify-v3.3.0/SHA256SUMS \
+  /tmp/exocortex-template-v3.3.0/SHA256SUMS
+git -C /tmp/exocortex-template-v3.3.0 rev-parse HEAD
 if command -v shasum >/dev/null 2>&1; then
-  shasum -a 256 /tmp/exocortex-template-v3.2.9/SHA256SUMS
+  shasum -a 256 /tmp/exocortex-template-v3.3.0/SHA256SUMS
 else
-  sha256sum /tmp/exocortex-template-v3.2.9/SHA256SUMS
+  sha256sum /tmp/exocortex-template-v3.3.0/SHA256SUMS
 fi
 )
 ```
@@ -437,6 +437,37 @@ recursive deletion command. A platform without a verified restore procedure
 cannot pass this evidence gate.
 
 ## Internal cooperative authority mechanics
+
+For any approved local-delivery change, the runtime uses three distinct
+orchestrator operations: `bootstrap-local-delivery` verifies a clean isolated
+worktree plus its exact base, branch, expiry, and approved paths;
+it atomically creates/reserves/activates the item in `developing` without a
+normal transition or checkpoint; `seal-local-edit` binds the actual changed
+set; and ordinary developer verification, independent review, QA/SIT,
+UAT-ready, and explicit `human_uat` still follow. Then
+`complete-local-delivery` records `local_state=complete`, creates one local
+completion event and handoff, and releases the writer while lifecycle remains
+`human_uat`; `release_ready` and publication are separate gates. They are
+local-only cooperative enforcement, not authority to commit, push, release,
+deploy, synchronize, access credentials, or make a network call.
+`create_event.sh` continues to serve manual `/save` narrative recording rather
+than task closeout.
+
+Both `bootstrap-local-delivery --envelope-source` and
+`complete-local-delivery --body-file` require project-relative regular files
+under `.exocortex/local/protocol/inbox/`; credential-shaped names (`.env`,
+`.env.*`, private-key formats, `credentials`, or `secrets`) are rejected before
+opening. Developer verification, independent review, QA/SIT, UAT-ready, and
+Human UAT each require non-empty evidence. Local transition capabilities bind
+the full transition intent, and Human UAT records an attestor matching the
+envelope approver. Acceptance criteria remain pending through `uat_ready`;
+that Human-UAT transition refuses failed or blocked criteria and atomically
+records the remaining criteria as passed with its evidence. Completion
+rechecks that every criterion passed and still contains the exact Human-UAT
+transition marker and evidence. This is cooperative local evidence, not
+cryptographic proof of a person's identity. Completion also verifies the
+Human-UAT transition against its consumed one-time capability and finalized
+guarded transaction.
 
 A fresh installation creates a read-only executor registry. After the legacy
 protected-default preflight above, an older installation can still have no

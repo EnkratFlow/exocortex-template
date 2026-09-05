@@ -1,105 +1,107 @@
 # Exocortex release status
 
-Last updated: 2026-08-08
+Last updated: 2026-09-04
 
-This is the living, human-readable maintainer view of where the public template
-stands. It is release-scoped, not a downstream project's status page, owner
-preference, approval record, release claim, or replacement for test evidence.
+This is the living, human-readable maintainer view of the public template. It
+is release-scoped, not a downstream project's status page, approval record,
+release attestation, or replacement for exact test and Git evidence.
 
 ## Published baseline
 
-- The previous reviewed published baseline is `v3.2.8` at commit
-  `cd577ab633ac3c8edff52cc2128e986f1ad2785d`.
-- The packaged version is `3.2.9`. Live GitHub tag, release, immutability, and
-  attestation evidence remains authoritative; this tracked page does not turn
-  a candidate into a published release.
+- The previous reviewed published baseline is `v3.2.9` at peeled commit
+  `8559add4edb35182cd655a62c59fe451425667a9`.
+- The packaged candidate version is `3.3.0`. This tracked file does not prove a
+  branch push, merge, annotated tag, immutable GitHub release, attested asset,
+  installation, deployment, or template promotion.
 
 ## Candidate state
 
 | Area | State | Current objective |
 | --- | --- | --- |
-| Model routing | Implemented; focused checks pass | Accountable-parent judgment is the default, with formal routing retained as optional evidence rather than an approval gate. |
-| Subagents | Implemented; focused checks pass | The same correct-model-for-the-job and cost-of-correct-outcome judgment applies to every delegate. |
-| Command adapters | Focused checks pass | 11 bounded read-only commands are model-discoverable and 13 human-controlled commands remain manual-only; all authority boundaries remain. |
-| Public-release safety | Focused checks and independent review pass | The checker rejects protected data, unsafe topology, redacted secret-shaped paths/content/commit/tag metadata, replacement-object history, modified public fixtures, and transient candidate data. |
-| CI and integrity | Tag-event hotfix in verification | Every pull request produces the required check, push/tag ranges fail closed, the public boundary runs in CI, third-party Actions are pinned, and the exact code-plane checksum and mode inventories are verified. The first live v3.2.9 tag-event verification exposed GitHub checkout's peeled-tag shape; the bounded hotfix fetches the exact remote annotated object before validation. |
-| Upgrade/install path | Focused security rehearsal passes | Clean install plus guarded dry-run upgrade passed in disposable fixtures, including source races, import-shadow denial, rsync/tar denial, protected environment preservation, rollback exclusion, and ambient-variable isolation. |
-| Release authenticity | Selected and enabled; publication verification required | Version 3.2.9 uses GitHub's immutable-release attestation for `github.com/EnkratFlow/exocortex-template` and an attested `SHA256SUMS` release asset. The repository setting was verified enabled on 2026-08-08; live GitHub state remains authoritative. |
+| Local delivery | Implemented; exact-candidate verification required | Bind one understandable local decision to the exact repository, base, worktree, paths, writer, reviewer, verification, expiry, rollback, and exclusions. |
+| Lifecycle evidence | Implemented; exact-candidate verification required | Link developer verification, independent review, QA/SIT, and Human UAT; create one local completion event and handoff before releasing the writer. |
+| Recovery and replay | Implemented; exact-candidate verification required | Reject altered or missing transition and completion records while preserving exact interrupted recovery and idempotent replay. |
+| Public-template privacy | Implemented; focused and complete verification required | Apply the bound checker and declared rules to exact candidate and metadata bytes without displaying matched values; this scoped evidence is not proof that no undiscovered disclosure pattern exists. |
+| Credential-blind handling | Implemented; focused and complete verification required | Reject credential-shaped paths before content access while accounting for ordinary untracked source and safe ignored dirt. |
+| Model routing | Retained | Use provider-neutral, capability-, risk-, and cost-aware parent judgment; the formal catalog remains optional evidence and activates nothing by default. |
+| Install and update | Compatibility verification required | Preserve project memory, events, decisions, customizations, protected local state, credentials, and rollback boundaries during future named-target rehearsals. |
+| Release authenticity | Selected; publication verification required | Bind canonical GitHub `OWNER/REPO`, immutable REST repository ID, an external trusted executor closure, its checker, and exact Python/Git/GitHub CLI executable digests before using immutable-release verification plus an attested `SHA256SUMS` asset. |
 
 ## Operating decisions
 
-- One accountable parent owns synthesis and delivery. Delegation is optional,
-  not a quota.
-- The parent selects models without asking for routine approval, announces the
-  route and expected timing before substantial work, and changes route when
-  evidence warrants it.
-- Selection is provider-neutral and based on the expected cost of a correct
-  outcome: capability, task risk, ambiguity, tool access, privacy, duration,
-  verification strength, and prior failures all matter. The same rule applies
-  to subagents.
-- Named model products are advisory examples, not permanent normative mappings
-  or downstream owner preferences.
-- A second reviewer is added only for a genuinely separate risk discipline.
+- One accountable parent owns integration and final evidence. Add a distinct
+  read-only reviewer for security-sensitive work, not as a delegate quota.
+- Human-facing local approval covers the bounded outcome. Internal work items,
+  reservations, one-time capabilities, checkpoints, evidence, handoffs, and
+  writer release remain exact protocol mechanics rather than repeated prompts.
+- Publication, merge/release, project rollout, and production egress are
+  separate business gates. No earlier gate implies a later one.
+- Private project events, memories, identities, host details, network details,
+  and runtime records are data plane and never public-template payload.
 
 ## Publication gates and residual limitations
 
-Before version 3.2.9 may be used as a public installation or update source,
-GitHub immutable releases must be enabled, the exact annotated tag and
-`SHA256SUMS` asset must be published together, and both the release and asset
-verification operations must pass.
+Before version 3.3.0 may be used as a public installation or update source:
 
-The following maintainer- or platform-controlled limitations remain visible
-without silently weakening that release gate:
+1. Provision a separately installed, independently reviewed publication
+   runtime outside the candidate root. Bind its executor-closure, checker,
+   Python, Git, and GitHub CLI SHA-256 digests; 3.3.0 cannot bootstrap trust
+   from its own new publisher or checker.
+2. Freeze one exact candidate and run the focused checks plus the complete
+   Exocortex safety suite once.
+3. Obtain independent review and Human UAT for that exact sealed candidate.
+4. Under a separate publication decision, bind GitHub's canonical
+   `OWNER/REPO` and immutable REST repository ID, then stage only reviewed paths, commit,
+   push the named branch, and open a draft pull request.
+5. Require exact-commit CI before any separately authorized merge.
+6. Under a later integration/release decision, create the exact annotated tag,
+   publish the immutable release and `SHA256SUMS` asset together, then verify
+   both with the GitHub CLI before any installation or update.
+
+The following limitations remain visible without weakening those gates:
 
 - decide whether to enable GitHub secret scanning, push protection, private
   vulnerability reporting, restricted Actions, and stronger branch rules;
 - decide how to handle protected project data already present in old public
-  commits and tags; no history rewrite is authorized;
+  history; no history rewrite is implied or authorized;
 - provide genuine operating-system or broker-enforced network/filesystem
-  containment for rehearsal of an untrusted candidate.
+  containment when executing an untrusted candidate.
 
-Published checksums establish byte consistency only; they do not independently
-prove repository-owner authenticity.
+Checksums establish byte consistency only; they do not independently prove
+repository-owner authenticity.
 
-## Candidate evidence recorded
+The guarded publisher also rejects an envelope over 128 KiB, a candidate
+source file over 64 MiB, or combined derived public metadata over 64 KiB.
+These bounds and a sanitized privacy-check result are fail-closed runtime
+evidence, not host attestation, cryptographic human identity, or proof that no
+unknown disclosure pattern exists.
 
-- Provider adapter generation: 24 commands and 72 adapters match.
-- Focused invocation-policy schema and adapter tests: pass.
-- Public-release fictional tree/range, topology, fixture, replacement-object,
-  commit/tag metadata, and redaction tests: pass.
-- Read-only release-state tests, including annotated-tag and transient-range
-  denial: pass.
-- Independent security review of routing, authority, release, install, update,
-  protected-data, topology, and changed-path boundaries: clean, subject to the
-  owner-controlled blockers listed above.
-- Active documentation contract: pass.
-- Changed shell syntax and Python compilation checks: pass.
-- Clean disposable install and guarded dry-run upgrade security test: pass.
-- Complete integrity inventory: 269 code-plane checksums and 270 file-mode
-  records verify for the exact candidate.
-- PR 14's complete GitHub safety suite passed on the reviewed hardening head,
-  which was merged as `efb6bbb4ad7cc1ff1da85787fe3a64203fe8e91c`.
-- PR 15's complete GitHub safety suite and checksum check passed on exact head
-  `9a09c04b99dd2a3fc70d6cf815441be2bc1d5a05`, merged as
-  `0cdd18222ec35d918d8ec0589b286b1a265a6a32`. The subsequent tag event correctly
-  stopped publication when checkout exposed the peeled commit instead of the
-  annotated tag object; the hotfix regression reproduces that live shape.
+## Candidate evidence contract
 
-The complete safety suite is intentionally not run locally on krato. Every
-changed release candidate must pass the required GitHub checks on its exact
-head. Provider-menu Human UAT has not yet been recorded; historical results
-were downgraded to `compatible` because the adapter bytes changed.
+- `origin/main` and the exact designated base must be reconciled immediately
+  before candidate creation.
+- The previous published annotated tag and its direct commit target must match
+  `.exocortex/release-baseline.json`.
+- Provider adapters, documentation, public privacy, checksums, file modes,
+  shell syntax, authority, orchestration, recovery, install, update, and
+  rollback checks must agree on the same candidate.
+- Every changed release candidate must pass the complete required checks on
+  its exact state using CI or an explicitly provisioned runner. Local focused
+  checks are insufficient unless current capacity and authority support the
+  complete run.
+- Test output, independent-review evidence, the seal, and Human UAT belong to
+  protected local records or exact-commit CI; this public status page does not
+  manufacture those claims.
 
-## Next verification sequence
+## Local preparation boundary
 
-1. Require the exact tag-CI hotfix candidate to pass GitHub's `phase-b` and
-   `checksums` checks before merge.
-2. Replace the unpublished provisional `v3.2.9` tag on the exact hotfix merge,
-   require the corrected tag quick check to pass, then publish the tag and
-   attested manifest asset and verify the release and asset.
-3. Run the read-only release closeout and fresh-tag verification.
-4. Use the published README prompt for one bounded downstream operator update;
-   do not treat release publication as authority to mutate every repository.
+- The 3.3.0 metadata and integrity inventories are part of the candidate;
+  changing any candidate byte invalidates earlier evidence and requires a new
+  exact-candidate verification and seal.
+- Complete safety evidence, independent review, and Human UAT must bind the
+  same candidate before a separate publication decision can be considered.
+- Local preparation stops before staging or any outward action. Publication is
+  never implied by a prepared or locally accepted candidate.
 
 ## Start here
 
@@ -107,6 +109,6 @@ were downgraded to `compatible` because the adapter bytes changed.
   rules.
 - Read [`MODEL_ROUTING.md`](../control/MODEL_ROUTING.md) for routing policy.
 - Read [`AI_INSTALLATION.md`](AI_INSTALLATION.md) before installation or
-  upgrade rehearsal.
-- Treat this page as stale if its date or evidence no longer matches the live
-  repository state; verify Git and release state before acting.
+  update rehearsal.
+- Treat this page as stale whenever its date or evidence no longer matches live
+  Git and release state.

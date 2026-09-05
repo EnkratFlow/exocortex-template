@@ -1,3 +1,50 @@
+# What's New in 3.3.0 — Guarded local delivery and stronger privacy
+
+- Local work now starts from one exact, owner-readable delivery envelope that
+  binds the repository, base, path scope, writer, reviewer, verification,
+  expiry, rollback, and exclusions. Internal reservations and one-time
+  capabilities remain auditable without becoming repeated human prompts.
+- Developer verification, independent review, QA/SIT, and Human UAT are linked
+  by exact evidence. Accepted local work creates one completion event and
+  handoff, releases the writer, and never implies publication or deployment.
+- Transition and completion replay now validate the complete transaction,
+  capability, event, work item, handoff, reservation, idempotency, and
+  before/after semantics. Altered or missing records fail closed while exact
+  interrupted work remains recoverable.
+- Public-template checks reject personal paths, network coordinates, host and
+  workload disclosures, non-public identities, and common UTF-16 variants
+  without displaying matched values.
+- Credential-shaped paths are rejected before content access. Fictional public
+  tests cover tracked and ordinary untracked source without opening protected
+  runtime or credential-adjacent files.
+- Guarded publication binds GitHub's immutable REST repository ID as well as
+  its canonical name, and binds the exact external executor closure, checker,
+  Python, Git, and GitHub CLI digests. Because 3.3.0 introduces this trust
+  contract, its first publication requires an independently reviewed runtime
+  installed outside the candidate tree rather than candidate-owned code.
+- A separately authorized retirement operation prevents expired or abandoned
+  publication records from permanently reserving their source. It records
+  exact observation evidence and any preserved branch, while never deleting
+  or changing remote state.
+- Publication rejects an envelope over 128 KiB, a candidate source file over
+  64 MiB, or combined derived public metadata over 64 KiB. Sanitized privacy
+  evidence proves only what the bound checker and declared rules observed on
+  the exact bytes; it does not claim that unknown disclosure patterns cannot
+  exist.
+- Capability- and cost-aware parent judgment remains provider-neutral; all 24
+  commands are retained, and the formal model catalog remains optional
+  evidence rather than an activation mechanism.
+
+Version 3.3.0 continues to use GitHub's immutable-release attestation and an
+attested `SHA256SUMS` asset as its public trust mechanism. This document
+describes packaged candidate behavior; it does not prove Git publication, an
+immutable GitHub release, installation, deployment, or template promotion.
+Verify the live release and asset before use.
+
+Everything below this line is preserved historical release documentation.
+
+---
+
 # What's New in 3.2.9 — Safer releases and smarter model routing
 
 - The accountable parent now chooses the correct model using the expected cost

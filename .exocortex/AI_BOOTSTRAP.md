@@ -189,6 +189,43 @@ capability/cost routing, and guarded runtime-work-item mutations. Planning-v1
 records may be oriented through a read-only compatibility view but cannot be
 mutated by that runtime protocol.
 
+For an approved bounded local edit, run its guarded lifecycle in this order:
+`bootstrap-local-delivery`, `seal-local-edit`, then
+`complete-local-delivery`. Bootstrap requires the exact clean isolated
+worktree, base, branch, expiry, and approved path envelope, then atomically
+creates/reserves/activates the item in `developing`; it is not a normal
+transition or checkpoint. Seal rejects an actual changed set outside that
+envelope. The normal developer-verification, independent-review, QA/SIT,
+UAT-ready, and explicit `human_uat` transition remain required.
+For those five pre-UAT local-delivery transitions, omit caller
+`--capability`; the orchestrator derives and consumes the deterministic
+one-time capability from the accepted envelope and exact transition intent.
+Completion then records `local_state=complete`, produces exactly one local
+completion event and handoff, releases the writer, and leaves lifecycle at
+`human_uat`.
+`release_ready` is rejected until that local completion exists, and publication
+remains a separate gate. These operations do not
+grant Git publication, release, deployment, external synchronization,
+credential access, or network egress. `create_event.sh` remains the separate
+manual `/save` event helper.
+
+`bootstrap-local-delivery --envelope-source` and
+`complete-local-delivery --body-file` open only project-relative regular files
+under `.exocortex/local/protocol/inbox/`; credential-shaped names (`.env`,
+`.env.*`, private-key formats, `credentials`, or `secrets`) fail before opening.
+Developer verification, independent review, QA/SIT, UAT-ready, and Human UAT
+each require non-empty evidence. A local transition capability binds the full
+transition intent, while Human UAT records an attestor matching the envelope
+approver. Acceptance criteria remain pending through `uat_ready`; that
+Human-UAT transition refuses failed or blocked criteria and atomically records
+the remaining criteria as passed with its evidence. Completion rechecks that
+every criterion passed and still contains the exact Human-UAT transition
+marker and evidence. This is cooperative local evidence, not cryptographic
+proof by itself: completion also verifies the Human-UAT transition against its
+consumed one-time capability and finalized guarded transaction, and verifies
+the seal plus every preceding pre-UAT transition as one exact capability and
+transaction chain.
+
 ## Egress
 
 Use `.exocortex/scripts/egress_guard.py` only:

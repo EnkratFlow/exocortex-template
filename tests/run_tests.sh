@@ -6,6 +6,17 @@ TEST_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 # shellcheck source=helpers.sh
 source "$TEST_DIR/helpers.sh"
 
+wait_for_test_barrier() {
+    local ready_path="$1" child_pid="$2" wait_count=0
+    while [ ! -e "$ready_path" ] \
+        && kill -0 "$child_pid" 2>/dev/null \
+        && [ "$wait_count" -lt 6000 ]; do
+        sleep 0.05
+        wait_count=$((wait_count + 1))
+    done
+    [ -e "$ready_path" ]
+}
+
 tree_digest() {
     python3 - "$1" <<'PY'
 import hashlib, os, stat, sys
@@ -208,32 +219,38 @@ PY
 }
 
 privacy_scan() {
-    local root="$1" mode="$2" fingerprint_file="$3"
-    PYTHONDONTWRITEBYTECODE=1 python3 - "$root" "$mode" "$fingerprint_file" <<'PY'
+    local root="$1" mode="$2" canary_file="$3"
+    PYTHONDONTWRITEBYTECODE=1 python3 - "$root" "$mode" "$canary_file" <<'PY'
 import re, sys
 from pathlib import Path
 
 root = Path(sys.argv[1]).resolve(strict=True)
 mode = sys.argv[2]
-fingerprint_path = Path(sys.argv[3]).resolve(strict=True)
+canary_path = Path(sys.argv[3]).resolve(strict=True)
 try:
-    fingerprint_path.relative_to(root)
+    canary_path.relative_to(root)
 except ValueError:
     pass
 else:
     raise SystemExit(2)
-fingerprint = fingerprint_path.read_bytes().strip()
-if not fingerprint:
+canary = canary_path.read_bytes().strip()
+if not canary:
     raise SystemExit(2)
-private_tokens = [
-    b'/' + b'Us' + b'ers/',
-    b'guy' + b'robo',
-    b'M' + b'UL-',
-    b'EXO-' + b'PHASE-B',
-]
 
 def unsafe(data: bytes) -> bool:
-    return fingerprint in data or any(token in data for token in private_tokens)
+    return canary in data
+
+def credential_adjacent(relative: str) -> bool:
+    for part in Path(relative).parts:
+        name = part.lower()
+        if (
+            name == '.env'
+            or name.startswith('.env.')
+            or name == '.envrc'
+            or name == 'key-registry.json'
+        ):
+            return True
+    return False
 
 paths = []
 if mode == 'checksums':
@@ -248,6 +265,8 @@ if mode == 'checksums':
         if rel in seen:
             raise SystemExit(2)
         seen.add(rel)
+        if credential_adjacent(rel):
+            continue
         path = root / rel
         if path.is_symlink() or not path.is_file():
             raise SystemExit(2)
@@ -258,9 +277,10 @@ if mode == 'checksums':
         paths.append(path)
 elif mode == 'tree':
     for path in root.rglob('*'):
-        if not path.is_file() or path.is_symlink() or '.git' in path.parts:
+        relative = path.relative_to(root).as_posix()
+        if credential_adjacent(relative):
             continue
-        if any(part == '.env' for part in path.relative_to(root).parts):
+        if not path.is_file() or path.is_symlink() or '.git' in path.parts:
             continue
         paths.append(path)
 else:
@@ -297,23 +317,41 @@ expect_install_denial() {
 
 echo "Exocortex deterministic installer/update suite"
 
-privacy_fingerprint="${EXOCORTEX_PRIVATE_FINGERPRINT_FILE:-}"
-privacy_fingerprint_owned=false
-if [ -z "$privacy_fingerprint" ]; then
-    privacy_fingerprint="$(mktemp "${TMPDIR:-/tmp}/exo-private-fingerprint.XXXXXX")"
-    privacy_fingerprint_owned=true
-    prior_umask="$(umask)"
-    umask 077
-    printf 'private-fixture-%s-%s\n' "$$" "$(date -u +%s)" > "$privacy_fingerprint"
-    umask "$prior_umask"
-fi
-[ -s "$privacy_fingerprint" ] || { echo "private fingerprint input is required" >&2; exit 2; }
+privacy_canary="$(mktemp "${TMPDIR:-/tmp}/exo-privacy-canary.XXXXXX")"
+prior_umask="$(umask)"
+umask 077
+printf 'fictional-public-test-canary-%s-%s\n' "$$" "$(date -u +%s)" > "$privacy_canary"
+umask "$prior_umask"
+[ -s "$privacy_canary" ] || { echo "synthetic privacy canary is required" >&2; exit 2; }
 
-if privacy_scan "$TEMPLATE_DIR" checksums "$privacy_fingerprint"; then
-    ok "candidate checksum inventory contains no private fingerprint"
+if privacy_scan "$TEMPLATE_DIR" checksums "$privacy_canary"; then
+    ok "candidate checksum inventory contains no synthetic privacy canary"
 else
-    bad "candidate checksum inventory contains no private fingerprint"
+    bad "candidate checksum inventory contains no synthetic privacy canary"
 fi
+
+credential_blind_fixture="$(mktemp -d "${TMPDIR:-/tmp}/exo-credential-blind.XXXXXX")"
+credential_blind_paths=(
+    '.exocortex/.env.example'
+    '.exocortex/.env.production'
+    '.exocortex/.env/private.txt'
+    '.exocortex/key-registry.json'
+    'nested/.envrc'
+)
+for relative in "${credential_blind_paths[@]}"; do
+    mkdir -p "$credential_blind_fixture/$(dirname "$relative")"
+    cp "$privacy_canary" "$credential_blind_fixture/$relative"
+    printf '%s  %s\n' \
+        "$(hash_file "$credential_blind_fixture/$relative")" "$relative" \
+        >> "$credential_blind_fixture/SHA256SUMS"
+done
+if privacy_scan "$credential_blind_fixture" checksums "$privacy_canary" \
+    && privacy_scan "$credential_blind_fixture" tree "$privacy_canary"; then
+    ok "privacy scans do not open credential-adjacent path shapes"
+else
+    bad "privacy scans do not open credential-adjacent path shapes"
+fi
+rm -rf "$credential_blind_fixture"
 
 if PYTHONDONTWRITEBYTECODE=1 python3 "$TEMPLATE_DIR/.exocortex/scripts/generate_command_adapters.py" --check >/dev/null; then
     ok "canonical 24-command registry generates exactly 72 current adapters"
@@ -1765,12 +1803,7 @@ done
   --work-item-id TEST-UPGRADE-001 --work-item-revision 0 --request-id race-update \
   --surface-id test-surface --executor-id test-executor --adapter-version test-v1) > "$race_log" 2>&1 &
 race_pid=$!
-race_wait=0
-while [ ! -e "$barrier_root/gate.ready" ] && [ "$race_wait" -lt 800 ]; do
-    sleep 0.05
-    race_wait=$((race_wait + 1))
-done
-if [ -e "$barrier_root/gate.ready" ]; then
+if wait_for_test_barrier "$barrier_root/gate.ready" "$race_pid"; then
     chmod 0755 "$target/.exocortex/COMMAND_SYSTEM.md"
     : > "$barrier_root/gate.continue"
 fi
@@ -1797,12 +1830,7 @@ cp -p "$target/.exocortex/COMMAND_SYSTEM.md" "$hardlink_outside"
   --work-item-id TEST-UPGRADE-001 --work-item-revision 0 --request-id hardlink-race-update \
   --surface-id test-surface --executor-id test-executor --adapter-version test-v1) > "$hardlink_log" 2>&1 &
 hardlink_pid=$!
-hardlink_wait=0
-while [ ! -e "$hardlink_barrier.ready" ] && [ "$hardlink_wait" -lt 800 ]; do
-    sleep 0.05
-    hardlink_wait=$((hardlink_wait + 1))
-done
-if [ -e "$hardlink_barrier.ready" ]; then
+if wait_for_test_barrier "$hardlink_barrier.ready" "$hardlink_pid"; then
     rm -f "$target/.exocortex/COMMAND_SYSTEM.md"
     ln "$hardlink_outside" "$target/.exocortex/COMMAND_SYSTEM.md"
     : > "$hardlink_barrier.continue"
@@ -1834,12 +1862,7 @@ fi
   --work-item-id TEST-UPGRADE-001 --work-item-revision 0 --request-id directory-mode-race-update \
   --surface-id test-surface --executor-id test-executor --adapter-version test-v1) > "$directory_log" 2>&1 &
 directory_pid=$!
-directory_wait=0
-while [ ! -e "$directory_barrier.ready" ] && [ "$directory_wait" -lt 800 ]; do
-    sleep 0.05
-    directory_wait=$((directory_wait + 1))
-done
-if [ -e "$directory_barrier.ready" ]; then
+if wait_for_test_barrier "$directory_barrier.ready" "$directory_pid"; then
     chmod "$directory_mode_raced" "$target/.exocortex"
     : > "$directory_barrier.continue"
 fi
@@ -2063,7 +2086,7 @@ fi
 install_target="$(new_target)"
 fake_home="$(mktemp -d "${TMPDIR:-/tmp}/exo-test-home.XXXXXX")"
 run_install "$install_target" "$TEMPLATE_DIR" "$fake_home" >/dev/null
-if privacy_scan "$install_target" tree "$privacy_fingerprint"; then
+if privacy_scan "$install_target" tree "$privacy_canary"; then
     ok "fresh install contains no private Phase B evidence"
 else
     bad "fresh install contains no private Phase B evidence"
@@ -2072,8 +2095,8 @@ rm -rf "$install_target" "$fake_home"
 
 source_copy="$(mktemp -d "${TMPDIR:-/tmp}/exo-test-source.XXXXXX")"
 cp -Rp "$TEMPLATE_DIR/." "$source_copy/"
-cat "$privacy_fingerprint" >> "$source_copy/README.md"
-if privacy_scan "$source_copy" checksums "$privacy_fingerprint"; then
+cat "$privacy_canary" >> "$source_copy/README.md"
+if privacy_scan "$source_copy" checksums "$privacy_canary"; then
     bad "candidate privacy scan rejects injected fingerprint"
 else
     ok "candidate privacy scan rejects injected fingerprint"
@@ -2083,8 +2106,8 @@ rm -rf "$source_copy"
 install_target="$(new_target)"
 fake_home="$(mktemp -d "${TMPDIR:-/tmp}/exo-test-home.XXXXXX")"
 run_install "$install_target" "$TEMPLATE_DIR" "$fake_home" >/dev/null
-cat "$privacy_fingerprint" >> "$install_target/AI_START_HERE.md"
-if privacy_scan "$install_target" tree "$privacy_fingerprint"; then
+cat "$privacy_canary" >> "$install_target/AI_START_HERE.md"
+if privacy_scan "$install_target" tree "$privacy_canary"; then
     bad "installed-output privacy scan rejects injected fingerprint"
 else
     ok "installed-output privacy scan rejects injected fingerprint"
@@ -2094,10 +2117,10 @@ rm -rf "$install_target" "$fake_home"
 source_copy="$(mktemp -d "${TMPDIR:-/tmp}/exo-test-source.XXXXXX")"
 cp -Rp "$TEMPLATE_DIR/." "$source_copy/"
 mkdir -p "$source_copy/.exocortex/planning"
-cp "$privacy_fingerprint" "$source_copy/.exocortex/planning/private-fixture.txt"
+cp "$privacy_canary" "$source_copy/.exocortex/planning/private-fixture.txt"
 install_target="$(new_target)"
 fake_home="$(mktemp -d "${TMPDIR:-/tmp}/exo-test-home.XXXXXX")"
-if privacy_scan "$source_copy" checksums "$privacy_fingerprint" \
+if privacy_scan "$source_copy" checksums "$privacy_canary" \
     && ! run_install "$install_target" "$source_copy" "$fake_home" >/dev/null 2>&1 \
     && [ ! -e "$install_target/.exocortex" ]; then
     ok "protected planning source data is denied before public install"
@@ -2169,9 +2192,7 @@ else
 fi
 rm -rf "$source_copy" "$install_target" "$fake_home"
 
-if [ "$privacy_fingerprint_owned" = true ]; then
-    rm -f "$privacy_fingerprint"
-fi
+rm -f "$privacy_canary"
 
 if PYTHONDONTWRITEBYTECODE=1 python3 "$TEMPLATE_DIR/tests/test_documentation_contract.py" "$TEMPLATE_DIR"; then
     ok "active installation documentation contract"
@@ -2189,6 +2210,12 @@ if PYTHONDONTWRITEBYTECODE=1 python3 "$TEMPLATE_DIR/tests/test_public_release.py
     ok "public release tree/range and redaction contract"
 else
     bad "public release tree/range and redaction contract"
+fi
+
+if PYTHONDONTWRITEBYTECODE=1 python3 "$TEMPLATE_DIR/tests/test_publication_workflow.py"; then
+    ok "guarded publication authority/recovery/identity contract"
+else
+    bad "guarded publication authority/recovery/identity contract"
 fi
 
 if PYTHONDONTWRITEBYTECODE=1 python3 "$TEMPLATE_DIR/tests/test_installer_security.py" "$TEMPLATE_DIR"; then
@@ -2312,5 +2339,210 @@ expect_docs_contract_failure \
     'README.md: broken local link: docs/also-missing.md'
 
 rm -rf "$docs_negative_base"
+
+if PYTHONDONTWRITEBYTECODE=1 python3 -I - \
+    "$TEMPLATE_DIR/tests/install-pre-commit-hook.sh" <<'PY'
+import hashlib
+import os
+from pathlib import Path
+import shutil
+import stat
+import subprocess
+import sys
+import tempfile
+
+hook_source = Path(sys.argv[1]).resolve(strict=True)
+git_bin = next(
+    (candidate for candidate in ("/usr/bin/git", "/usr/local/bin/git", "/opt/homebrew/bin/git")
+     if Path(candidate).is_file()),
+    None,
+)
+bash_bin = next(
+    (candidate for candidate in ("/bin/bash", "/usr/bin/bash", "/usr/local/bin/bash", "/opt/homebrew/bin/bash")
+     if Path(candidate).is_file()),
+    None,
+)
+if git_bin is None or bash_bin is None:
+    raise SystemExit("fixed Git and Bash executables are required")
+
+clean_environment = {
+    "PATH": "/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin:/opt/homebrew/bin",
+    "HOME": "/nonexistent",
+    "LC_ALL": "C",
+    "LANG": "C",
+    "TZ": "UTC",
+    "GIT_CONFIG_NOSYSTEM": "1",
+    "GIT_CONFIG_GLOBAL": "/dev/null",
+    "GIT_TERMINAL_PROMPT": "0",
+    "GIT_NO_REPLACE_OBJECTS": "1",
+    "PYTHONDONTWRITEBYTECODE": "1",
+    "PYTHONNOUSERSITE": "1",
+    "PYTHONSAFEPATH": "1",
+}
+
+def run(arguments, *, cwd, environment=clean_environment, check=True):
+    result = subprocess.run(
+        arguments,
+        cwd=cwd,
+        env=environment,
+        stdin=subprocess.DEVNULL,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        check=False,
+    )
+    if check and result.returncode:
+        raise AssertionError(
+            f"fixture command failed with status {result.returncode}: {arguments!r}\n"
+            f"{result.stdout}\n{result.stderr}"
+        )
+    return result
+
+def digest(data):
+    return hashlib.sha256(data).hexdigest()
+
+def write(path, data, mode=0o644):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(data)
+    path.chmod(mode)
+
+with tempfile.TemporaryDirectory(prefix="exo-precommit-index-") as raw:
+    root = Path(raw) / "repo"
+    root.mkdir()
+    write(root / "tests/install-pre-commit-hook.sh", hook_source.read_bytes())
+    write(
+        root / "tests/run_tests.sh",
+        b'''#!/bin/bash
+set -eu
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
+[ "$(python3 -I - "$ROOT/src.txt" <<'PY_INNER'
+from pathlib import Path
+import sys
+print(Path(sys.argv[1]).read_text(encoding="utf-8"), end="")
+PY_INNER
+)" = "staged-index-bytes" ]
+[ "$(python3 -I - "$ROOT/src.txt" <<'PY_INNER'
+from pathlib import Path
+import stat
+import sys
+print(oct(stat.S_IMODE(Path(sys.argv[1]).stat().st_mode)))
+PY_INNER
+)" = "0o755" ]
+[ "${EXOCORTEX_AMBIENT_CANARY+x}" != x ]
+''',
+        0o755,
+    )
+    write(
+        root / ".exocortex/scripts/generate_command_adapters.py",
+        b'''#!/usr/bin/env python3
+import os
+import sys
+if sys.argv[1:] != ["--check"] or "EXOCORTEX_AMBIENT_CANARY" in os.environ:
+    raise SystemExit(1)
+''',
+        0o755,
+    )
+    baseline = b"baseline-bytes"
+    write(root / "src.txt", baseline)
+    write(root / "SHA256SUMS", f"{digest(baseline)}  src.txt\n".encode())
+
+    run([git_bin, "init", "-q"], cwd=root)
+    run([git_bin, "add", "."], cwd=root)
+    run(
+        [
+            git_bin,
+            "-c", "user.name=Fictional Fixture",
+            "-c", "user.email=fixture@example.invalid",
+            "commit", "-qm", "baseline fixture",
+        ],
+        cwd=root,
+    )
+
+    staged = b"staged-index-bytes"
+    write(root / "src.txt", staged, 0o755)
+    write(root / "SHA256SUMS", f"{digest(staged)}  src.txt\n".encode())
+    run([git_bin, "add", "src.txt", "SHA256SUMS"], cwd=root)
+    run([git_bin, "update-index", "--chmod=+x", "src.txt"], cwd=root)
+
+    # Deliberately make the checkout wrong after staging. The hook must still
+    # pass because its test, manifest, source bytes, and executable bit all
+    # come from one frozen index snapshot.
+    write(root / "src.txt", b"unstaged-worktree-bytes", 0o644)
+    write(root / "SHA256SUMS", b"not a manifest\n")
+    hostile_home = Path(raw) / "hostile-home"
+    hostile_home.mkdir()
+    write(hostile_home / ".gitconfig", b"[credential]\n\thelper = forbidden-fixture\n")
+    hostile_environment = os.environ.copy()
+    hostile_environment.update(
+        {
+            "EXOCORTEX_AMBIENT_CANARY": "fictional-ambient-value",
+            "HOME": str(hostile_home),
+            "GIT_CONFIG_GLOBAL": str(hostile_home / ".gitconfig"),
+        }
+    )
+    passed = run(
+        [bash_bin, str(root / "tests/install-pre-commit-hook.sh"), "--run-staged-checks"],
+        cwd=root,
+        environment=hostile_environment,
+        check=False,
+    )
+    if passed.returncode or "Right-sized staged checks passed." not in passed.stdout:
+        raise AssertionError(f"staged snapshot unexpectedly failed\n{passed.stdout}\n{passed.stderr}")
+    if "fictional-ambient-value" in passed.stdout + passed.stderr:
+        raise AssertionError("ambient canary was disclosed")
+
+    # A broken staged manifest must fail even when the checkout manifest is
+    # valid, proving checksum verification does not fall back to worktree bytes.
+    write(root / "SHA256SUMS", f"{'0' * 64}  src.txt\n".encode())
+    run([git_bin, "add", "SHA256SUMS"], cwd=root)
+    write(root / "SHA256SUMS", f"{digest(staged)}  src.txt\n".encode())
+    write(root / "src.txt", staged, 0o755)
+    checksum_failure = run(
+        [bash_bin, str(root / "tests/install-pre-commit-hook.sh"), "--run-staged-checks"],
+        cwd=root,
+        environment=hostile_environment,
+        check=False,
+    )
+    if checksum_failure.returncode == 0 or "checksum inventory does not match" not in checksum_failure.stderr:
+        raise AssertionError("broken staged checksum inventory was not rejected")
+
+    # Restore valid staged bytes but stage a non-executable mode. The live
+    # checkout remains executable; the staged-mode assertion must still fail.
+    write(root / "SHA256SUMS", f"{digest(staged)}  src.txt\n".encode())
+    run([git_bin, "add", "SHA256SUMS"], cwd=root)
+    run([git_bin, "update-index", "--chmod=-x", "src.txt"], cwd=root)
+    (root / "src.txt").chmod(0o755)
+    mode_failure = run(
+        [bash_bin, str(root / "tests/install-pre-commit-hook.sh"), "--run-staged-checks"],
+        cwd=root,
+        environment=hostile_environment,
+        check=False,
+    )
+    if mode_failure.returncode == 0:
+        raise AssertionError("wrong staged executable mode was not rejected")
+
+    # Credential-shaped staged paths must be rejected from metadata before
+    # any blob request; neither output stream may contain their synthetic data.
+    credential_canary = b"FICTIONAL_CREDENTIAL_SHAPED_CANARY"
+    write(root / ".exocortex/.env.production", credential_canary)
+    run([git_bin, "add", "-f", ".exocortex/.env.production"], cwd=root)
+    (root / ".exocortex/.env.production").chmod(0)
+    credential_failure = run(
+        [bash_bin, str(root / "tests/install-pre-commit-hook.sh"), "--run-staged-checks"],
+        cwd=root,
+        environment=hostile_environment,
+        check=False,
+    )
+    combined = (credential_failure.stdout + credential_failure.stderr).encode()
+    if credential_failure.returncode == 0 or b"unapproved credential-shaped entry" not in combined:
+        raise AssertionError("credential-shaped staged path was not rejected")
+    if credential_canary in combined:
+        raise AssertionError("credential-shaped staged data was disclosed")
+PY
+then
+    ok "developer hook checks frozen staged bytes and modes in a sterile credential-blind snapshot"
+else
+    bad "developer hook checks frozen staged bytes and modes in a sterile credential-blind snapshot"
+fi
 
 finish_suite
