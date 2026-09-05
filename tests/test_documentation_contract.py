@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import ast
 import json
 import re
 import stat
@@ -167,6 +168,29 @@ require_compact(
     "It never replaces the project, moves memory into a new worktree",
     "Git publication, merge, deployment, and external synchronization remain separate actions",
 )
+require_compact(
+    "AI_START_HERE.md",
+    "absolute home paths, private network coordinates, hostnames, machine details, workload descriptions, and personal addresses or Git identities are data plane",
+)
+require_compact(
+    "README.md",
+    "absolute home paths, private or tailnet network coordinates, non-public email addresses or Git identities, and host-specific machine, workload, or test-policy disclosures",
+    "Findings contain only a rule, count, coarse class, and digest",
+    "credential registry is generic metadata and exact-digest locked",
+)
+for adapter in ("AGENTS.md", "CLAUDE.md"):
+    require_compact(
+        adapter,
+        "Resource-aware verification",
+        "Never bind test policy to a private hostname, machine specification, workload, or remembered capacity",
+        "use only an authorized runner",
+    )
+    forbid(adapter, r"performance[^\n]*full test suites")
+require_compact(
+    ".exocortex/docs/status.md",
+    "using CI or an explicitly provisioned runner",
+    "current capacity and authority support the complete run",
+)
 require(
     ".exocortex/docs/AI_INSTALLATION.md",
     f"--branch v{PACKAGED_VERSION}",
@@ -223,6 +247,8 @@ require(
     "exactly one concise project-local completion event",
     "`/save` remains a manual command",
     "does not regenerate `SESSION_CONTEXT.md`",
+    "Acceptance criteria remain pending",
+    "Completion rechecks that every criterion passed",
 )
 require(
     ".exocortex/control/DELIVERY_WORKFLOW.md",
@@ -232,6 +258,7 @@ require(
     "one accountable parent and no\ndelegate by default",
     "expected to take more than five minutes",
     "exactly one\n    concise project-local completion event",
+    "task completion fails unless every criterion still carries that exact Human-UAT transition marker and evidence",
 )
 require(
     ".exocortex/docs/user-guide.md",
@@ -446,6 +473,21 @@ require(
     "TAG_BASELINE_NOT_ANCESTOR",
     ".exocortex/release-baseline.json",
 )
+require(
+    "scripts/check-public-release.py",
+    "ABSOLUTE_HOME_PATH",
+    "WINDOWS_HOME_PATH",
+    "TAILNET_HOSTNAME",
+    "HOST_BOUND_TEST_POLICY",
+    "HOST_HARDWARE_DISCLOSURE",
+    "LOCAL_WORKLOAD_DISCLOSURE",
+    "NON_PUBLIC_EMAIL",
+    "PRIVATE_NETWORK_IPV4",
+    "CGNAT_NETWORK_IPV4",
+    "PRIVATE_NETWORK_IPV6",
+    "NON_PUBLIC_GIT_IDENTITY",
+    ".exocortex/key-registry.json",
+)
 
 require(
     "SECURITY.md",
@@ -461,6 +503,8 @@ require(
     "Preserved 26 earlier Cursor/GitHub retirement mappings",
     "durable identity-verified private code-plane-only\n  restore archives",
     "reviewed legacy text mode",
+    "Public-template privacy boundary",
+    "Generic credential-registry metadata is exact-digest locked",
 )
 require(
     "WHATSNEW.md",
@@ -490,6 +534,98 @@ forbid(
     r"what\s+the\s+8\s+tests\s+cover",
     r"hook\s+runs\s+the\s+full\s+test\s+suite",
 )
+
+# Guarded local delivery is deliberately credential-blind and network-blind.
+# Test-only fault controls are the only environment reads allowed in this
+# orchestrator; adding a credential lookup must fail this focused contract.
+orchestrator_source = read(".exocortex/scripts/orchestrate_work_item.py")
+try:
+    orchestrator_tree = ast.parse(orchestrator_source)
+except SyntaxError as exc:
+    FAILURES.append(f"orchestrate_work_item.py: invalid Python syntax: {exc}")
+else:
+    allowed_test_environment_reads = {"EXOCORTEX_TEST_MODE", "EXOCORTEX_FAULT_POINT"}
+    for node in ast.walk(orchestrator_tree):
+        if isinstance(node, ast.Subscript):
+            value = node.value
+            if (
+                isinstance(value, ast.Attribute)
+                and isinstance(value.value, ast.Name)
+                and value.value.id == "os"
+                and value.attr == "environ"
+            ):
+                FAILURES.append(
+                    "orchestrate_work_item.py: direct environment-value reads are forbidden"
+                )
+        if not isinstance(node, ast.Call):
+            continue
+        function = node.func
+        if (
+            isinstance(function, ast.Attribute)
+            and isinstance(function.value, ast.Name)
+            and function.value.id == "os"
+            and function.attr == "getenv"
+        ):
+            FAILURES.append("orchestrate_work_item.py: os.getenv reads are forbidden")
+        if (
+            isinstance(function, ast.Attribute)
+            and function.attr == "get"
+            and isinstance(function.value, ast.Attribute)
+            and isinstance(function.value.value, ast.Name)
+            and function.value.value.id == "os"
+            and function.value.attr == "environ"
+        ):
+            key = node.args[0].value if node.args and isinstance(node.args[0], ast.Constant) else None
+            if key not in allowed_test_environment_reads:
+                FAILURES.append(
+                    "orchestrate_work_item.py: non-test environment-value read is forbidden"
+                )
+for forbidden_runtime_token in (
+    "urlopen(",
+    "requests.",
+    "http.client",
+    "socket.",
+    "credential_env",
+    "check-keys",
+):
+    if forbidden_runtime_token in orchestrator_source:
+        FAILURES.append(
+            "orchestrate_work_item.py: local delivery must not gain credential or network access: "
+            f"{forbidden_runtime_token}"
+        )
+for required_runtime_boundary in (
+    'LOCAL_PROTOCOL_INBOX_PREFIX = ".exocortex/local/protocol/inbox/"',
+    "load_local_protocol_json(project_root, args.envelope_source, \"envelope source\")",
+    "read_local_protocol_input(\n        project_root,\n        args.body_file,",
+    '"key-registry.json"',
+    'basename.startswith(".env.")',
+    '"acceptance_binding_mismatch"',
+    '"acceptance_not_satisfied"',
+    '"acceptance_incomplete"',
+    '"acceptance_evidence_mismatch"',
+    '"human_uat_capability_mismatch"',
+    '"human_uat_intent_mismatch"',
+    '"human_uat_transaction_mismatch"',
+    '"capability_path"',
+    '"intent_digest"',
+    'f"human-uat-transition:{transition_id}"',
+):
+    if required_runtime_boundary not in orchestrator_source:
+        FAILURES.append(
+            "orchestrate_work_item.py: credential-blind local inbox boundary is missing: "
+            f"{required_runtime_boundary}"
+        )
+for forbidden_caller_selected_read in (
+    "load_safe_json(args.envelope_source",
+    "read_safe_regular_bytes(args.body_file",
+    "os.path.abspath(os.fspath(args.envelope_source))",
+    "os.path.abspath(os.fspath(args.body_file))",
+):
+    if forbidden_caller_selected_read in orchestrator_source:
+        FAILURES.append(
+            "orchestrate_work_item.py: caller-selected local-delivery file bypasses the inbox boundary: "
+            f"{forbidden_caller_selected_read}"
+        )
 forbid(
     ".exocortex/control/README.md",
     r"/save[^\n]*checkpoint\s+your\s+work\s+state",

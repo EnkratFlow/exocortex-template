@@ -72,13 +72,40 @@ active/default adapter families.
 ## Script boundaries
 
 - `orchestrate_work_item.py`: read-only orientation/routing and guarded local
-  lifecycle mutations.
+  lifecycle mutations. Its `bootstrap-local-delivery`, `seal-local-edit`, and
+  `complete-local-delivery` operations bind one clean isolated worktree to an
+  exact base, branch, and path envelope; atomically create/reserve/activate
+  the approved item in `developing` without creating a transition/checkpoint;
+  seal the actual changed set; then, after the normal verification/review/QA
+  gates and explicit `human_uat`, record `local_state=complete`, create exactly
+  one local event/handoff, and release the writer while lifecycle stays
+  `human_uat`.
 - `authority_guard.py`: executor, capability, scope, expiry, revocation, and
   one-time/idempotent consumption checks.
 - `egress_guard.py`: immutable payload inspection/staging and exact external
   transport.
 - `create_event.sh` and `capture_interrupt.sh`: record project-local state only.
   External delivery is available solely as a distinct guarded egress operation.
+
+The local-delivery operations are cooperative local enforcement. They do not
+grant staging, commit, push, release, deployment, service action, external
+synchronization, credential access, or network egress. `release_ready` and
+publication remain separate gates. `create_event.sh` remains the manual `/save`
+helper and is not task-closeout authority.
+
+The bootstrap `--envelope-source` and completion `--body-file` are limited to
+project-relative regular files under `.exocortex/local/protocol/inbox/` and
+reject credential-shaped names (`.env`, `.env.*`, private-key formats,
+`credentials`, or `secrets`) before opening. All five verification/UAT gates
+require non-empty evidence; each local transition capability binds the full
+transition intent. Human UAT records an attestor matching the envelope
+approver. Acceptance criteria remain pending through `uat_ready`; that
+Human-UAT transition refuses failed or blocked criteria and atomically records
+the remaining criteria as passed with its evidence. Completion rechecks that
+every criterion passed and still contains the exact Human-UAT transition
+marker and evidence. This is cooperative local evidence, not cryptographic
+identity proof; completion also verifies the Human-UAT transition against its
+consumed one-time capability and finalized guarded transaction.
 - legacy provider/global-install adapters: deny or return a prospective plan.
 
 Unknown commands, missing protocol metadata, stale authority, unregistered

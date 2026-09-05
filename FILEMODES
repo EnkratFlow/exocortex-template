@@ -157,12 +157,14 @@
 0644  .exocortex/schemas/authorization.schema.json
 0644  .exocortex/schemas/executor-registry.schema.json
 0644  .exocortex/schemas/external-sync-policy.schema.json
+0644  .exocortex/schemas/local-delivery-envelope.schema.json
 0644  .exocortex/schemas/model-availability.schema.json
 0644  .exocortex/schemas/model-observation.schema.json
 0644  .exocortex/schemas/model-routing-catalog.schema.json
 0644  .exocortex/schemas/model-source-registry.schema.json
 0644  .exocortex/schemas/orchestration.schema.json
 0644  .exocortex/schemas/provider-adapter-matrix.schema.json
+0644  .exocortex/schemas/publication-envelope.schema.json
 0644  .exocortex/schemas/update-reconciliation-plan.schema.json
 0755  .exocortex/scripts/_api_helpers.py
 0755  .exocortex/scripts/archive_events.sh
@@ -198,6 +200,7 @@
 0644  .exocortex/scripts/orchestrate_work_item.py
 0755  .exocortex/scripts/post_to_hub.sh
 0644  .exocortex/scripts/prepare_update_reconciliation.py
+0644  .exocortex/scripts/publish_candidate.py
 0755  .exocortex/scripts/read_memory_stack.sh
 0644  .exocortex/scripts/resolve_designated_base.sh
 0755  .exocortex/scripts/run_brief_status.sh
@@ -267,4 +270,5 @@
 0644  tests/test_documentation_contract.py
 0644  tests/test_installer_security.py
 0644  tests/test_public_release.py
+0644  tests/test_publication_workflow.py
 0755  tests/test_release_state.py

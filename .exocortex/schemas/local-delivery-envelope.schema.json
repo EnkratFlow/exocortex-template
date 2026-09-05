@@ -1,0 +1,118 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/exocortex/schemas/local-delivery-envelope.schema.json",
+  "title": "Exocortex local-delivery business envelope",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "kind",
+    "envelope_id",
+    "work_item_id",
+    "title",
+    "type",
+    "project_root",
+    "branch",
+    "base_sha",
+    "allowed_paths",
+    "outcome",
+    "risk",
+    "rollback",
+    "verification",
+    "exclusions",
+    "writer",
+    "reviewer",
+    "approval",
+    "lease_expires_at"
+  ],
+  "properties": {
+    "schema_version": { "const": "public-v2" },
+    "kind": { "const": "local_delivery_envelope" },
+    "envelope_id": { "$ref": "#/$defs/id" },
+    "work_item_id": { "$ref": "#/$defs/id" },
+    "title": { "type": "string", "minLength": 1, "maxLength": 240 },
+    "type": {
+      "type": "string",
+      "enum": [
+        "feature",
+        "bug",
+        "maintenance",
+        "security_privacy",
+        "migration",
+        "documentation_process",
+        "retrospective_improvement"
+      ]
+    },
+    "project_root": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2000,
+      "pattern": "^(?:/|[A-Za-z]:[\\\\/]|\\\\\\\\)"
+    },
+    "branch": { "type": "string", "minLength": 1, "maxLength": 500 },
+    "base_sha": { "type": "string", "pattern": "^[a-f0-9]{40}$" },
+    "allowed_paths": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/source_path" }
+    },
+    "outcome": { "type": "string", "minLength": 1, "maxLength": 2000 },
+    "risk": { "type": "string", "enum": ["low", "medium", "high", "critical"] },
+    "rollback": { "type": "string", "minLength": 1, "maxLength": 2000 },
+    "verification": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1, "maxLength": 1000 }
+    },
+    "exclusions": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1, "maxLength": 1000 }
+    },
+    "writer": { "$ref": "#/$defs/actor" },
+    "reviewer": { "$ref": "#/$defs/actor" },
+    "approval": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["approved_by", "accepted_at", "expires_at", "summary"],
+      "properties": {
+        "approved_by": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "accepted_at": { "$ref": "#/$defs/timestamp" },
+        "expires_at": { "$ref": "#/$defs/timestamp" },
+        "summary": { "type": "string", "minLength": 1, "maxLength": 2000 }
+      }
+    },
+    "lease_expires_at": { "$ref": "#/$defs/timestamp" }
+  },
+  "$defs": {
+    "id": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,199}$" },
+    "timestamp": { "type": "string", "format": "date-time" },
+    "relative_path": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 500,
+      "not": { "pattern": "(^/|(^|/)\\.\\.(/|$)|[*?\\[\\]])" }
+    },
+    "source_path": {
+      "allOf": [
+        { "$ref": "#/$defs/relative_path" },
+        {
+          "not": {
+            "pattern": "(^|/)(?:\\.[Ee][Nn][Vv](?:\\.[^/]*)?|\\.[Ee][Nn][Vv][Rr][Cc]|[Cc][Rr][Ee][Dd][Ee][Nn][Tt][Ii][Aa][Ll][Ss]\\.[Jj][Ss][Oo][Nn]|[Ss][Ee][Cc][Rr][Ee][Tt][Ss]\\.[Jj][Ss][Oo][Nn]|[Ii][Dd]_(?:[Dd][Ss][Aa]|[Ee][Cc][Dd][Ss][Aa]|[Ee][Dd]25519|[Rr][Ss][Aa])|[Kk][Ee][Yy]-[Rr][Ee][Gg][Ii][Ss][Tt][Rr][Yy]\\.[Jj][Ss][Oo][Nn]|[^/]+\\.(?:[Jj][Kk][Ss]|[Kk][Ee][Yy]|[Kk][Ee][Yy][Ss][Tt][Oo][Rr][Ee]|[Pp]12|[Pp][Ee][Mm]|[Pp][Ff][Xx]))$|(^|/)(?:\\.[Aa][Ww][Ss]|\\.[Ss][Ss][Hh]|[Cc][Rr][Ee][Dd][Ee][Nn][Tt][Ii][Aa][Ll][Ss]|[Ss][Ee][Cc][Rr][Ee][Tt][Ss])(?:/|$)"
+          }
+        }
+      ]
+    },
+    "actor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["surface_id", "executor_id", "adapter_version"],
+      "properties": {
+        "surface_id": { "$ref": "#/$defs/id" },
+        "executor_id": { "$ref": "#/$defs/id" },
+        "adapter_version": { "type": "string", "minLength": 1, "maxLength": 100 }
+      }
+    }
+  }
+}

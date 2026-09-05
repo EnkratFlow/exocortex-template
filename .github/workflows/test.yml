@@ -22,7 +22,7 @@ jobs:
       - name: Enforce public release boundary
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
-          CANDIDATE_SHA: ${{ github.sha }}
+          CANDIDATE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
         run: |
           python3 scripts/check-public-release.py --root .
           if [ -n "$BASE_SHA" ]; then
