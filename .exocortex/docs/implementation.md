@@ -23,6 +23,7 @@ scripts/safe-update.sh                   guarded rehearsal and update wrapper
     EXECUTOR_REGISTRY.json               generated protected project data
     EXTERNAL_SYNC_POLICY.json            generated protected project data
   schemas/
+    local-delivery-envelope.schema.json  exact local-only delivery envelope
     model-source-registry.schema.json    official-source contract
     model-routing-catalog.schema.json    advisory catalog contract
     model-observation.schema.json        normalized discovery evidence
@@ -48,6 +49,34 @@ The template code plane is generic. Memory, events, work items, approvals,
 reservations, executor records, external destinations, and protocol
 transactions are project-local data and are never promoted as template
 fixtures.
+
+The guarded local-delivery sequence is `bootstrap-local-delivery`,
+`seal-local-edit`, then `complete-local-delivery`. Bootstrap verifies the
+approved clean isolated worktree, exact base, branch, and allowed paths, then
+atomically creates/reserves/activates the item in `developing` without a normal
+transition or checkpoint; seal binds the actual changed set. Ordinary
+developer verification, independent review, QA/SIT, UAT-ready, and explicit
+`human_uat` still follow. Completion then records `local_state=complete`,
+writes one local event and handoff, releases the writer, and leaves lifecycle
+at `human_uat`; `release_ready` and publication remain separate. It is
+cooperative local-only enforcement: it does not authorize commit, push,
+release, deployment, external synchronization, credential access, or network
+egress. `create_event.sh` remains the manual `/save` event helper.
+
+The bootstrap `--envelope-source` and completion `--body-file` accept only
+project-relative regular files under `.exocortex/local/protocol/inbox/` and
+reject credential-shaped names (`.env`, `.env.*`, private-key formats,
+`credentials`, or `secrets`) before opening. All five verification/UAT gates
+require non-empty evidence. Every local transition capability binds full
+transition intent, and Human UAT records an attestor matching the envelope
+approver. Acceptance criteria remain pending through `uat_ready`; that
+Human-UAT transition refuses failed or blocked criteria and atomically records
+the remaining criteria as passed with its evidence. Completion rechecks that
+every criterion passed and still contains the exact Human-UAT transition
+marker and evidence. This remains cooperative local evidence, not
+cryptographic proof of a person's identity. Completion also verifies the
+Human-UAT transition against its consumed one-time capability and finalized
+guarded transaction.
 
 The packaged model catalog has no eligible models or verified evaluation
 profiles. Raw availability, evaluation, and quarantine evidence remains
@@ -284,8 +313,11 @@ integration, regression, security/privacy, migration, and recovery evidence.
 
 Human UAT is prepared as concrete, observable cases. The human accepts or
 rejects it in plain language; the implementing model cannot accept its own
-UAT. Recording that decision and performing local closeout are internal
-mechanics of the active local-delivery envelope. Publication,
+UAT. An accepted transition atomically records the remaining acceptance
+criteria as passed with its evidence; a failed or blocked criterion prevents
+that transition, and closeout requires every criterion to be passed. Recording
+that decision and performing local closeout are internal mechanics of the
+active local-delivery envelope. Publication,
 integration/rollout, and exact-target production/egress remain later business
 decisions.
 
@@ -304,6 +336,12 @@ bash .exocortex/scripts/create_event.sh --body-file /path/to/local-body.md
 A save or handoff records facts, decisions, tests, limitations, and the next
 verification. It does not grant a writer lane, create a lifecycle transition,
 commit changes, or synchronize externally.
+
+Task closeout is separate: only `complete-local-delivery`, after matching
+bootstrap, seal, developer verification, independent review, QA/SIT,
+UAT-ready, and `human_uat`, may record `local_state=complete`, create its
+single local completion event and handoff, and release the writer while the
+lifecycle remains `human_uat`.
 
 Automatic phase hooks are reminders only. They do not save, checkpoint,
 transition, select a model, or send data. Legacy editor-history harvesting is

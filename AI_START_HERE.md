@@ -73,6 +73,43 @@ If any field is absent, stale, ambiguous, mismatched, expired, revoked, or consu
 
 Protocol-managed mutations use `.exocortex/scripts/orchestrate_work_item.py` and `.exocortex/scripts/authority_guard.py`. Instructions in prose, a model assertion, configuration, credentials, a branch name, or an allowlist never grants authority by itself.
 
+### Guarded local-delivery sequence
+
+For a new bounded local change, use the orchestrator's three cooperative
+operations in order: `bootstrap-local-delivery`, `seal-local-edit`, and
+`complete-local-delivery`. Bootstrap accepts only an approved, unexpired
+envelope for one clean isolated worktree, exact base and branch, and an exact
+path list, then atomically creates, reserves, and activates the item in
+`developing`; it is not a normal transition or checkpoint. Seal records the
+actual changed-path set and fails if it escapes that list. Developer
+verification, independent review, QA/SIT, UAT-ready, and an explicit
+`human_uat` transition remain required. For those five pre-UAT local-delivery
+transitions, the caller omits `--capability`; the orchestrator derives and
+consumes the deterministic one-time capability from the accepted envelope and
+exact transition intent. Completion then records
+`local_state=complete`, writes exactly one project-local event and handoff,
+and releases the writer while leaving lifecycle at `human_uat`. `release_ready`
+is rejected until that local completion exists, and publication remains a
+separate gate. None of these operations authorizes
+staging, commit, push, release, deployment, service action, synchronization,
+credential access, or network egress.
+
+`bootstrap-local-delivery --envelope-source` and
+`complete-local-delivery --body-file` accept only project-relative regular
+files under `.exocortex/local/protocol/inbox/`; credential-shaped names
+(`.env`, `.env.*`, private-key formats, `credentials`, or `secrets`) are
+rejected before opening. Developer verification, independent review, QA/SIT,
+UAT-ready, and Human UAT each require non-empty evidence, and every local
+transition capability binds the full transition intent. Human UAT records an
+attestor matching the envelope approver. Acceptance criteria remain pending
+through `uat_ready`; that explicit Human-UAT transition refuses failed or
+blocked criteria and atomically records the remaining criteria as passed with
+its evidence. Completion rechecks that every criterion passed and still
+contains the exact Human-UAT transition marker and evidence, and verifies that
+the seal and all five pre-UAT transitions form one exact chain of consumed
+one-time capabilities and finalized guarded transactions. This is cooperative
+local evidence, not cryptographic proof of a person's identity.
+
 ## 4. Work in small delivery slices
 
 Use the lifecycle and acceptance gates in `.exocortex/control/DELIVERY_WORKFLOW.md`.
@@ -133,6 +170,8 @@ exclusions remain routing constraints.
 - `/save` remains a manual command for ordinary conversation. Completion-event
   recording does not turn chat, read-only work, routine tests, or elapsed time
   into automatic saves.
+- `create_event.sh` remains the manual `/save` event helper. It is not the
+  local-delivery closeout operation and cannot release a writer or accept UAT.
 - A retrospective may propose a durable change to project memory or lessons,
   but it cannot write that proposal into permanent memory without the
   applicable local-delivery scope.
@@ -217,4 +256,10 @@ and trusted signature or attestation root.
 
 ## 10. Public-template boundary
 
-Project-local memory, work items, approvals, reservations, events, handoffs, destinations, identities, and origin history are data plane. They are never copied from this template, manifest-tracked, or promoted as public fixtures. Public tests use generated fictional data and reserved example domains.
+Project-local memory, work items, approvals, reservations, events, handoffs,
+destinations, identities, origin history, absolute home paths, private network
+coordinates, hostnames, machine details, workload descriptions, and personal
+addresses or Git identities are data plane. They are never copied from this template,
+manifest-tracked, or promoted as public fixtures. Public tests use generated
+fictional data, documentation address ranges, RFC-reserved example domains,
+generic CI paths, and common UTF-8 or UTF-16 text encodings.

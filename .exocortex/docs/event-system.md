@@ -7,7 +7,9 @@ step. They do not grant authority and are not lifecycle checkpoints.
 ## When an event is created
 
 - An approved local-delivery task that changes project files ends with exactly
-  one concise completion event before the writer is released.
+  one concise completion event before the writer is released. The orchestrator
+  permits that closeout only after a matching `bootstrap-local-delivery`,
+  `seal-local-edit`, and `human_uat`.
 - `/save` is manual for ordinary chat. It first drafts the narrative in chat
   and records it only within an applicable local-delivery authorization.
 - Read-only work, tests, elapsed time, failed attempts, branch changes, and Git
@@ -15,6 +17,33 @@ step. They do not grant authority and are not lifecycle checkpoints.
 
 No event is pushed, synchronized, published, or sent to a provider
 automatically.
+
+`bootstrap-local-delivery` binds one clean isolated worktree to its exact base,
+branch, and allowed paths, then atomically creates/reserves/activates the item
+in `developing` without a normal transition or checkpoint. `seal-local-edit`
+records the actual changed set and rejects an extra path. Ordinary developer
+verification, independent review, QA/SIT, UAT-ready, and explicit `human_uat`
+still follow. `complete-local-delivery` then records `local_state=complete`,
+creates the one local completion event and handoff, releases the writer, and
+leaves lifecycle at `human_uat`; `release_ready` and publication are separate.
+These cooperative local operations never authorize commit, push, release,
+deployment, credential access, or network egress. `create_event.sh` remains
+the manual `/save` helper for narrative events and is not closeout authority.
+
+`bootstrap-local-delivery --envelope-source` and
+`complete-local-delivery --body-file` accept only project-relative regular
+files under `.exocortex/local/protocol/inbox/`; credential-shaped names
+(`.env`, `.env.*`, private-key formats, `credentials`, or `secrets`) are
+rejected before opening. Developer verification, independent review, QA/SIT,
+UAT-ready, and Human UAT require non-empty evidence. Every local transition
+capability binds full transition intent; Human UAT records an attestor matching
+the envelope approver. Acceptance criteria remain pending through `uat_ready`;
+that Human-UAT transition refuses failed or blocked criteria and atomically
+records the remaining criteria as passed with its evidence. Closeout rechecks
+that every criterion passed and still contains the exact Human-UAT transition
+marker and evidence. This is cooperative local evidence, not cryptographic
+proof of a person's identity. Closeout also verifies the Human-UAT transition
+against its consumed one-time capability and finalized guarded transaction.
 
 ## Record an approved event
 

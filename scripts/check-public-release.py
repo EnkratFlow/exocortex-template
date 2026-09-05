@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import ipaddress
 import json
 import os
 import re
@@ -30,6 +31,11 @@ class CheckError(Exception):
     """A safe, metadata-only validation failure."""
 
 
+DEFAULT_GIT_EXECUTABLE = Path("/usr/bin/git")
+GIT_EXECUTABLE = DEFAULT_GIT_EXECUTABLE
+GIT_EXECUTABLE_SHA256: str | None = None
+
+
 @dataclass(frozen=True)
 class Finding:
     rule: str
@@ -41,20 +47,16 @@ class Finding:
 def git_environment() -> dict[str, str]:
     """Return Git environment with replacement and repository redirects disabled."""
 
-    value = os.environ.copy()
-    for name in (
-        "GIT_DIR",
-        "GIT_WORK_TREE",
-        "GIT_INDEX_FILE",
-        "GIT_OBJECT_DIRECTORY",
-        "GIT_ALTERNATE_OBJECT_DIRECTORIES",
-        "GIT_COMMON_DIR",
-        "GIT_NAMESPACE",
-    ):
-        value.pop(name, None)
-    value["GIT_NO_REPLACE_OBJECTS"] = "1"
-    value["GIT_OPTIONAL_LOCKS"] = "0"
-    return value
+    return {
+        "PATH": os.defpath,
+        "GIT_NO_REPLACE_OBJECTS": "1",
+        "GIT_OPTIONAL_LOCKS": "0",
+        "GIT_CONFIG_NOSYSTEM": "1",
+        "GIT_CONFIG_GLOBAL": os.devnull,
+        "GIT_CONFIG": os.devnull,
+        "GIT_TERMINAL_PROMPT": "0",
+        "PYTHONDONTWRITEBYTECODE": "1",
+    }
 
 
 # These patterns intentionally prefer false negatives to low-confidence noise.
@@ -67,12 +69,224 @@ SECRET_PATTERNS: tuple[tuple[str, re.Pattern[bytes]], ...] = (
     ("GITLAB_TOKEN", re.compile(rb"glpat-[A-Za-z0-9_-]{20,}")),
     ("GOOGLE_API_KEY", re.compile(rb"AIza[0-9A-Za-z_-]{30,}")),
     ("OPENAI_KEY", re.compile(rb"sk-(?:proj-)?[A-Za-z0-9_-]{20,}")),
+    ("OPENROUTER_KEY", re.compile(rb"sk-or-v1-[A-Za-z0-9_-]{20,}")),
+    ("GROQ_KEY", re.compile(rb"gsk_[A-Za-z0-9_-]{20,}")),
+    ("XAI_KEY", re.compile(rb"xai-[A-Za-z0-9_-]{20,}")),
+    ("HUGGINGFACE_TOKEN", re.compile(rb"hf_[A-Za-z0-9]{20,}")),
+    ("STRIPE_LIVE_KEY", re.compile(rb"(?:sk|rk)_live_[A-Za-z0-9]{16,}")),
+    ("TAILSCALE_KEY", re.compile(rb"tskey-(?:auth|api|client)-[A-Za-z0-9_-]{16,}")),
+    ("SENDGRID_KEY", re.compile(rb"SG\.[A-Za-z0-9_-]{16,}\.[A-Za-z0-9_-]{16,}")),
+    ("GOOGLE_OAUTH_TOKEN", re.compile(rb"ya29\.[A-Za-z0-9_-]{20,}")),
+    (
+        "JWT_TOKEN",
+        re.compile(rb"eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}"),
+    ),
     ("SLACK_TOKEN", re.compile(rb"xox[baprs]-[A-Za-z0-9-]{20,}")),
     ("AWS_ACCESS_KEY_ID", re.compile(rb"(?:AKIA|ASIA)[0-9A-Z]{16}")),
     (
         "PRIVATE_KEY_BLOCK",
         re.compile(rb"-----BEGIN (?:[A-Z0-9 ]+ )?PRIVATE KEY-----"),
     ),
+    (
+        "GENERIC_CREDENTIAL_ASSIGNMENT",
+        re.compile(
+            rb"(?im)(?:^|[^A-Za-z0-9_])(?:[A-Za-z0-9]+[_.-]){0,4}"
+            rb"(?:api[_-]?key|access[_-]?token|"
+            rb"auth[_-]?token|client[_-]?secret|password|passwd|private[_-]?token|"
+            rb"secret|session[_-]?token|token)[ \t]{0,8}[\"']?[ \t]{0,8}[:=][ \t]{0,8}[\"']?"
+            rb"[A-Za-z0-9+/_.~=-]{24,}"
+        ),
+    ),
+    (
+        "BEARER_CREDENTIAL",
+        re.compile(rb"(?i)\bBearer[ \t]+[A-Za-z0-9._~+/=-]{24,}\b"),
+    ),
+)
+
+# Public template source and release objects must not disclose the machine or
+# network they were prepared on. These checks deliberately use generic shapes;
+# no private hostname, account name, address, or downstream project identifier
+# belongs in the checker itself. Matches are reported only by rule and digest.
+PRIVACY_PATTERNS: tuple[tuple[str, re.Pattern[bytes]], ...] = (
+    (
+        "TAILNET_HOSTNAME",
+        re.compile(
+            rb"(?i)\b(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.){1,}"
+            rb"ts\.net\b"
+        ),
+    ),
+)
+
+HOME_ACCOUNT_PATTERN = rb"(?P<account>[A-Za-z0-9][A-Za-z0-9._-]{0,63})"
+ABSOLUTE_HOME_PATTERN = re.compile(
+    rb"(?i)(?<![A-Za-z0-9._/\\-])/(?:Users|home)/" + HOME_ACCOUNT_PATTERN
+)
+WINDOWS_HOME_PATTERNS: tuple[re.Pattern[bytes], ...] = (
+    re.compile(
+        rb"(?i)(?<![A-Za-z0-9._-])[A-Z]:[\\/]+"
+        rb"(?:Users|Documents[ ]and[ ]Settings)[\\/]+" + HOME_ACCOUNT_PATTERN
+    ),
+    re.compile(
+        rb"(?i)(?<![A-Za-z0-9._-])(?:\\\\|//)"
+        rb"[A-Za-z0-9][A-Za-z0-9._-]{0,63}[\\/]+"
+        rb"(?:Users|Documents[ ]and[ ]Settings)[\\/]+" + HOME_ACCOUNT_PATTERN
+    ),
+)
+GENERIC_CI_HOME_ACCOUNTS = {b"runner"}
+
+HOST_SUBJECT_PATTERN = rb"[a-z0-9](?:[a-z0-9._-]{0,62}[a-z0-9])?"
+
+HOST_POLICY_PATTERNS: tuple[re.Pattern[bytes], ...] = (
+    re.compile(
+        rb"(?im)\b(?:do[ ]not|never|avoid)\s+(?:run(?:ning)?\s+)?"
+        rb"(?:the\s+)?(?:full|complete)\s+(?:[a-z-]+\s+){0,3}"
+        rb"(?:test|safety)\s+suites?\b[^\r\n.]{0,100}"
+        rb"\b(?:on|from)\s+(?:(?P<label>host|machine|node|server)\s+)?"
+        rb"(?P<subject>" + HOST_SUBJECT_PATTERN + rb")\b"
+    ),
+    re.compile(
+        rb"(?im)\b(?:full|complete)\s+(?:[a-z-]+\s+){0,3}"
+        rb"(?:test|safety)\s+suites?\b[^.]{0,120}"
+        rb"\b(?:not\s+run|never\s+runs?)\b[^.]{0,80}"
+        rb"\bon\s+(?:(?P<label>host|machine|node|server)\s+)?"
+        rb"(?P<subject>" + HOST_SUBJECT_PATTERN + rb")\b"
+    ),
+)
+HOST_HARDWARE_PATTERN = re.compile(
+    rb"(?im)\b(?:(?P<label>host|machine|node|server)\s+)?"
+    rb"(?P<subject>" + HOST_SUBJECT_PATTERN + rb")\s+is\s+(?:an?\s+)?"
+    rb"(?:base\s+)?(?:apple\s+)?m[1-9][0-9]?\b"
+    rb"[^\r\n.]{0,100}\b(?:mac(?:book)?|mini|studio)\b"
+)
+HOST_WORKLOAD_PATTERN = re.compile(
+    rb"(?i)\b(?:(?P<label>host|machine|node|server)\s+)?"
+    rb"(?P<subject>" + HOST_SUBJECT_PATTERN + rb")"
+    rb"\s+(?:also\s+)?(?:serves|runs|hosts)\b(?P<body>[^.]{0,240})"
+)
+WORKLOAD_SIGNAL_PATTERN = re.compile(
+    rb"(?i)\b(?:always-on|agent\s+sessions?|remote\s+sessions?|pipeline|journal|"
+    rb"application|service)\b"
+)
+GENERIC_HOST_SUBJECTS = {
+    b"agent",
+    b"app",
+    b"application",
+    b"architecture",
+    b"backend",
+    b"bash",
+    b"build",
+    b"ci",
+    b"client",
+    b"cloud",
+    b"cluster",
+    b"code",
+    b"computer",
+    b"container",
+    b"database",
+    b"desktop",
+    b"device",
+    b"environment",
+    b"example",
+    b"fixture",
+    b"framework",
+    b"frontend",
+    b"github",
+    b"he",
+    b"host",
+    b"infrastructure",
+    b"it",
+    b"java",
+    b"javascript",
+    b"job",
+    b"laptop",
+    b"library",
+    b"linux",
+    b"localhost",
+    b"macos",
+    b"machine",
+    b"model",
+    b"node",
+    b"pipeline",
+    b"platform",
+    b"process",
+    b"program",
+    b"pull",
+    b"python",
+    b"repository",
+    b"router",
+    b"runtime",
+    b"runner",
+    b"script",
+    b"server",
+    b"service",
+    b"she",
+    b"shell",
+    b"software",
+    b"system",
+    b"template",
+    b"test",
+    b"that",
+    b"this",
+    b"suite",
+    b"tool",
+    b"typescript",
+    b"virtual",
+    b"vm",
+    b"worker",
+    b"workstation",
+    b"workflow",
+    b"windows",
+    b"wsl",
+}
+
+EMAIL_PATTERN = re.compile(
+    rb"(?i)\b[A-Z0-9.!#$%&'*+/=?^_`{|}~-]+@"
+    rb"[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?"
+    rb"(?:\.[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?)+\b"
+)
+IPV4_PATTERN = re.compile(rb"(?<![0-9])(?:[0-9]{1,3}\.){3}[0-9]{1,3}(?![0-9])")
+IPV6_TOKEN_PATTERN = re.compile(
+    rb"(?i)(?<![0-9a-f:])[0-9a-f:]{2,39}(?![0-9a-f:])"
+)
+PUBLIC_EXAMPLE_EMAIL_DOMAINS = {
+    b"example.com",
+    b"example.invalid",
+    b"example.net",
+    b"example.org",
+}
+PUBLIC_ROLE_EMAILS = {
+    (b"noreply", b"github.com"),
+    (b"security", b"project.example"),
+}
+PUBLIC_GIT_IDENTITY_NAMES = {
+    b"enkratflow automation",
+    b"enkratflow release",
+    b"fixture",
+    b"github",
+    b"github actions",
+    b"github-actions[bot]",
+    b"web-flow",
+}
+PUBLIC_GITHUB_ROLE_NAMES = {
+    b"enkratflow automation",
+    b"enkratflow release",
+    b"github",
+    b"web-flow",
+}
+GITHUB_USERNAME_PATTERN = rb"[a-z0-9](?:[a-z0-9-]{0,37}[a-z0-9])?"
+GITHUB_NOREPLY_LOCAL_PATTERN = re.compile(
+    rb"(?i)(?:[1-9][0-9]{0,19}\+)?"
+    + GITHUB_USERNAME_PATTERN
+    + rb"(?:\[bot\])?"
+)
+GIT_IDENTITY_PATTERN = re.compile(
+    rb"(?m)^(?:author|committer|tagger) (?P<name>[^\r\n<>]+) "
+    rb"<(?P<email>[^\r\n<>]+)> [0-9]+ [+-][0-9]{4}$"
+)
+PRIVATE_IPV6_NETWORKS = (
+    ipaddress.IPv6Network("fc" + "00::/7"),
+    ipaddress.IPv6Network("fe" + "80::/10"),
+    ipaddress.IPv6Network("fe" + "c0::/10"),
 )
 
 EVENT_EXAMPLES = {
@@ -80,10 +294,29 @@ EVENT_EXAMPLES = {
     ".exocortex/events/2000-01-01_00-00-00_example-event.md",
 }
 ENV_ALLOWLIST = {".exocortex/.env.example"}
+CREDENTIAL_FIXTURE_ALLOWLIST = {
+    ".exocortex/.env.example",
+    ".exocortex/key-registry.json",
+}
+CREDENTIAL_PATH_NAMES = {
+    ".env",
+    ".envrc",
+    "credentials",
+    "credentials.json",
+    "id_dsa",
+    "id_ecdsa",
+    "id_ed25519",
+    "id_rsa",
+    "key-registry.json",
+    "secrets.json",
+}
+CREDENTIAL_PATH_SUFFIXES = (".jks", ".key", ".keystore", ".p12", ".pem", ".pfx")
+CREDENTIAL_DIRECTORY_NAMES = {".aws", ".ssh", "credentials", "secrets"}
 DATA_FIXTURE_DIGESTS = {
     ".exocortex/events/.gitkeep": "98a444192b24c433a7239f4b6bb2d32a531184d966665e4c49d155c4741dc74e",
     ".exocortex/events/2000-01-01_00-00-00_example-event.md": "87a39e4d08a515237bc96bdcc2a7cecbc17ab5aa015978c23584097152c154d1",
     ".exocortex/.env.example": "f7b31458dd5095a7fe2d07d093dc7c0e9702d3693faa76af4addad88168601bf",
+    ".exocortex/key-registry.json": "b1d352104c6479f87ca9040ab2ae0558c8d82bcc0df452cd7a2bdea2faaea7d7",
 }
 PLANNING_STUB_DIGESTS = {
     ".exocortex/PROJECT_MEMORY.md": "5a904b0ea9fad0bfa1972f0deceaa02eb1cbf1260a9d66b6a91919f528276a12",
@@ -99,9 +332,75 @@ PLANNING_STUB_DIGESTS = {
 PLANNING_RUNTIME_PATHS = set(PLANNING_STUB_DIGESTS)
 
 
+def configure_git_executable(path: str, expected_sha256: str | None) -> None:
+    """Bind Git calls to one explicit executable, optionally by exact digest."""
+
+    global GIT_EXECUTABLE, GIT_EXECUTABLE_SHA256
+    selected = Path(path)
+    if not selected.is_absolute() or selected.is_symlink():
+        raise CheckError("GIT_COMMAND_UNTRUSTED")
+    try:
+        value = selected.stat()
+    except OSError as error:
+        raise CheckError("GIT_COMMAND_UNAVAILABLE") from error
+    if not stat.S_ISREG(value.st_mode) or not os.access(selected, os.X_OK):
+        raise CheckError("GIT_COMMAND_UNTRUSTED")
+    if expected_sha256 is not None and not re.fullmatch(r"[a-f0-9]{64}", expected_sha256):
+        raise CheckError("GIT_COMMAND_DIGEST_INVALID")
+    GIT_EXECUTABLE = selected
+    GIT_EXECUTABLE_SHA256 = expected_sha256
+    verified_git_executable()
+
+
+def verified_git_executable() -> str:
+    """Recheck the configured executable before each child process."""
+
+    try:
+        before = GIT_EXECUTABLE.stat()
+        descriptor = os.open(
+            os.fspath(GIT_EXECUTABLE),
+            os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0) | getattr(os, "O_CLOEXEC", 0),
+        )
+    except OSError as error:
+        raise CheckError("GIT_COMMAND_UNAVAILABLE") from error
+    try:
+        opened = os.fstat(descriptor)
+        if (
+            not stat.S_ISREG(opened.st_mode)
+            or (before.st_dev, before.st_ino, before.st_size, before.st_mtime_ns)
+            != (opened.st_dev, opened.st_ino, opened.st_size, opened.st_mtime_ns)
+        ):
+            raise CheckError("GIT_COMMAND_CHANGED")
+        if GIT_EXECUTABLE_SHA256 is not None:
+            digest = hashlib.sha256()
+            while True:
+                chunk = os.read(descriptor, 1024 * 1024)
+                if not chunk:
+                    break
+                digest.update(chunk)
+            if digest.hexdigest() != GIT_EXECUTABLE_SHA256:
+                raise CheckError("GIT_COMMAND_DIGEST_MISMATCH")
+        after = os.stat(GIT_EXECUTABLE, follow_symlinks=False)
+        if (
+            (opened.st_dev, opened.st_ino, opened.st_size, opened.st_mtime_ns)
+            != (after.st_dev, after.st_ino, after.st_size, after.st_mtime_ns)
+        ):
+            raise CheckError("GIT_COMMAND_CHANGED")
+    finally:
+        os.close(descriptor)
+    return os.fspath(GIT_EXECUTABLE)
+
+
 def git(root: Path, *args: str, input_bytes: bytes | None = None) -> bytes:
+    git_executable = verified_git_executable()
     result = subprocess.run(
-        ("git", "-C", os.fspath(root), *args),
+        (
+            git_executable,
+            "-c", "core.fsmonitor=false",
+            "-c", f"core.hooksPath={os.devnull}",
+            "-c", "http.followRedirects=false",
+            "-C", os.fspath(root), *args,
+        ),
         input=input_bytes,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
@@ -125,11 +424,24 @@ def is_env_path(path: str) -> bool:
     return name == ".env" or name.startswith(".env.") or name == ".envrc"
 
 
+def is_credential_path(path: str) -> bool:
+    parts = [part.casefold() for part in PurePosixPath(path).parts]
+    basename = parts[-1]
+    return (
+        basename in CREDENTIAL_PATH_NAMES
+        or basename.startswith(".env.")
+        or basename.endswith(CREDENTIAL_PATH_SUFFIXES)
+        or any(part in CREDENTIAL_DIRECTORY_NAMES for part in parts)
+    )
+
+
 def path_rule(path: str) -> str | None:
     """Return a data-plane rule without reading the file."""
 
     if is_env_path(path) and path not in ENV_ALLOWLIST:
         return "ENV_FILE"
+    if is_credential_path(path) and path not in CREDENTIAL_FIXTURE_ALLOWLIST:
+        return "CREDENTIAL_PATH"
     if path.startswith(".exocortex/SESSION_CONTEXT"):
         return "SESSION_CONTEXT"
     if path.startswith(".exocortex/events/") and path not in EVENT_EXAMPLES:
@@ -177,6 +489,213 @@ def data_fixture_rule(path: str, content: bytes) -> str | None:
     return None if actual_digest == expected_digest else "DATA_FIXTURE_MODIFIED"
 
 
+def public_email(email: bytes) -> tuple[bool, bool]:
+    """Return (allowed, reserved-example) for one normalized address."""
+
+    local, separator, domain = email.lower().rpartition(b"@")
+    if not separator:
+        return False, False
+    example = any(
+        domain == allowed or domain.endswith(b"." + allowed)
+        for allowed in PUBLIC_EXAMPLE_EMAIL_DOMAINS
+    ) or domain == b"example" or domain.endswith(b".example")
+    if example:
+        return True, True
+    if domain == b"users.noreply.github.com":
+        return GITHUB_NOREPLY_LOCAL_PATTERN.fullmatch(local) is not None, False
+    return (local, domain) in PUBLIC_ROLE_EMAILS, False
+
+
+def git_identity_findings(path: str, commit: str, content: bytes) -> list[Finding]:
+    """Require both a generic display name and a narrowly public Git address."""
+
+    if path not in {"<commit-object>", "<tag-object>"}:
+        return []
+    count = 0
+    for match in GIT_IDENTITY_PATTERN.finditer(content):
+        name = b" ".join(match.group("name").strip().lower().split())
+        email = match.group("email").lower()
+        allowed, example = public_email(email)
+        local, _, domain = email.rpartition(b"@")
+        identity_matches_email = example
+        if domain == b"github.com" and local == b"noreply":
+            identity_matches_email = name in PUBLIC_GITHUB_ROLE_NAMES
+        elif domain == b"users.noreply.github.com":
+            handle = local.split(b"+", 1)[-1]
+            identity_matches_email = name == handle
+        if (
+            not allowed
+            or name not in PUBLIC_GIT_IDENTITY_NAMES
+            or not identity_matches_email
+        ):
+            count += 1
+    return [Finding("NON_PUBLIC_GIT_IDENTITY", path, commit, count)] if count else []
+
+
+def is_windows_drive_slash(content: bytes, start: int) -> bool:
+    """Return true when a slash begins a standalone Windows drive path."""
+
+    if start < 2 or re.fullmatch(rb"[A-Za-z]:", content[start - 2 : start]) is None:
+        return False
+    return start == 2 or re.fullmatch(
+        rb"[A-Za-z0-9._-]", content[start - 3 : start - 2]
+    ) is None
+
+
+def home_path_findings(path: str, commit: str, content: bytes) -> list[Finding]:
+    """Detect concrete home paths while permitting a narrow CI account fixture."""
+
+    absolute_count = 0
+    for match in ABSOLUTE_HOME_PATTERN.finditer(content):
+        if match.group("account").lower() in GENERIC_CI_HOME_ACCOUNTS:
+            continue
+        if is_windows_drive_slash(content, match.start()):
+            continue
+        absolute_count += 1
+
+    windows_count = sum(
+        1 for pattern in WINDOWS_HOME_PATTERNS for _ in pattern.finditer(content)
+    )
+    findings: list[Finding] = []
+    if absolute_count:
+        findings.append(Finding("ABSOLUTE_HOME_PATH", path, commit, absolute_count))
+    if windows_count:
+        findings.append(Finding("WINDOWS_HOME_PATH", path, commit, windows_count))
+    return findings
+
+
+def concrete_host_subject(match: re.Match[bytes]) -> bool:
+    """Treat every non-generic subject token as a concrete machine name."""
+
+    subject = match.group("subject").lower()
+    return subject not in GENERIC_HOST_SUBJECTS
+
+
+def strong_workload_host_subject(match: re.Match[bytes]) -> bool:
+    """Return true for a labelled name or a hostname-shaped subject token."""
+
+    subject = match.group("subject").lower()
+    return bool(match.groupdict().get("label")) or any(
+        value in subject for value in b"0123456789._-"
+    )
+
+
+def content_scan_views(content: bytes) -> tuple[bytes, ...]:
+    """Return raw bytes plus one high-confidence UTF-16 text representation."""
+
+    encoding: str | None = None
+    body = content
+    if content.startswith(b"\xff\xfe"):
+        encoding = "utf-16-le"
+        body = content[2:]
+    elif content.startswith(b"\xfe\xff"):
+        encoding = "utf-16-be"
+        body = content[2:]
+    elif len(content) >= 8 and len(content) % 2 == 0:
+        pairs = len(content) // 2
+        even_zeroes = content[0::2].count(0)
+        odd_zeroes = content[1::2].count(0)
+        if odd_zeroes / pairs >= 0.6 and even_zeroes / pairs <= 0.2:
+            encoding = "utf-16-le"
+        elif even_zeroes / pairs >= 0.6 and odd_zeroes / pairs <= 0.2:
+            encoding = "utf-16-be"
+    if encoding is None:
+        return (content,)
+    try:
+        decoded = body.decode(encoding).encode("utf-8")
+    except UnicodeError:
+        return (content,)
+    return (content, decoded)
+
+
+def privacy_findings(path: str, commit: str, content: bytes) -> list[Finding]:
+    """Detect high-confidence public-template privacy disclosures."""
+
+    findings: list[Finding] = []
+    findings.extend(home_path_findings(path, commit, content))
+    for rule, pattern in PRIVACY_PATTERNS:
+        count = len(pattern.findall(content))
+        if count:
+            findings.append(Finding(rule, path, commit, count))
+
+    host_policy_count = 0
+    for pattern in HOST_POLICY_PATTERNS:
+        for match in pattern.finditer(content):
+            if concrete_host_subject(match):
+                host_policy_count += 1
+    if host_policy_count:
+        findings.append(
+            Finding("HOST_BOUND_TEST_POLICY", path, commit, host_policy_count)
+        )
+
+    hardware_count = sum(
+        1
+        for match in HOST_HARDWARE_PATTERN.finditer(content)
+        if concrete_host_subject(match)
+    )
+    if hardware_count:
+        findings.append(
+            Finding("HOST_HARDWARE_DISCLOSURE", path, commit, hardware_count)
+        )
+
+    workload_count = 0
+    for match in HOST_WORKLOAD_PATTERN.finditer(content):
+        if not concrete_host_subject(match):
+            continue
+        signals = len(WORKLOAD_SIGNAL_PATTERN.findall(match.group("body")))
+        required_signals = 1 if strong_workload_host_subject(match) else 2
+        if signals >= required_signals:
+            workload_count += 1
+    if workload_count:
+        findings.append(
+            Finding("LOCAL_WORKLOAD_DISCLOSURE", path, commit, workload_count)
+        )
+
+    non_public_email_count = 0
+    for match in EMAIL_PATTERN.finditer(content):
+        allowed, _ = public_email(match.group(0))
+        if allowed:
+            continue
+        non_public_email_count += 1
+    if non_public_email_count:
+        findings.append(Finding("NON_PUBLIC_EMAIL", path, commit, non_public_email_count))
+
+    private_count = 0
+    cgnat_count = 0
+    for match in IPV4_PATTERN.finditer(content):
+        octets = tuple(int(value) for value in match.group(0).split(b"."))
+        if any(value > 255 for value in octets):
+            continue
+        first, second, _, _ = octets
+        if first == 10 or (first == 172 and 16 <= second <= 31) or (
+            first == 192 and second == 168
+        ):
+            private_count += 1
+        elif first == 100 and 64 <= second <= 127:
+            cgnat_count += 1
+    if private_count:
+        findings.append(Finding("PRIVATE_NETWORK_IPV4", path, commit, private_count))
+    if cgnat_count:
+        findings.append(Finding("CGNAT_NETWORK_IPV4", path, commit, cgnat_count))
+
+    private_ipv6_count = 0
+    for match in IPV6_TOKEN_PATTERN.finditer(content):
+        token = match.group(0)
+        if b":" not in token:
+            continue
+        try:
+            address = ipaddress.IPv6Address(token.decode("ascii"))
+        except (UnicodeDecodeError, ipaddress.AddressValueError):
+            continue
+        if any(address in network for network in PRIVATE_IPV6_NETWORKS):
+            private_ipv6_count += 1
+    if private_ipv6_count:
+        findings.append(
+            Finding("PRIVATE_NETWORK_IPV6", path, commit, private_ipv6_count)
+        )
+    return findings
+
+
 def content_findings(path: str, commit: str, content: bytes) -> list[Finding]:
     findings: list[Finding] = []
     planning_rule = planning_stub_rule(path, content)
@@ -185,15 +704,19 @@ def content_findings(path: str, commit: str, content: bytes) -> list[Finding]:
     fixture_rule = data_fixture_rule(path, content)
     if fixture_rule:
         findings.append(Finding(fixture_rule, path, commit, 1))
+    views = content_scan_views(content)
     for rule, pattern in SECRET_PATTERNS:
-        count = len(pattern.findall(content))
+        count = sum(len(pattern.findall(view)) for view in views)
         if count:
             findings.append(Finding(rule, path, commit, count))
+    for view in views:
+        findings.extend(privacy_findings(path, commit, view))
+        findings.extend(git_identity_findings(path, commit, view))
     return findings
 
 
-def path_secret_findings(path: str, commit: str) -> list[Finding]:
-    """Detect high-confidence credential shapes in Git-visible path bytes."""
+def path_sensitive_findings(path: str, commit: str) -> list[Finding]:
+    """Detect high-confidence secret or privacy shapes in Git-visible paths."""
 
     encoded = path.encode("utf-8", errors="surrogateescape")
     findings: list[Finding] = []
@@ -201,6 +724,7 @@ def path_secret_findings(path: str, commit: str) -> list[Finding]:
         count = len(pattern.findall(encoded))
         if count:
             findings.append(Finding(rule, path, commit, count))
+    findings.extend(privacy_findings(path, commit, encoded))
     return findings
 
 
@@ -337,7 +861,7 @@ def current_tree_findings(root: Path, *, include_untracked: bool = False) -> lis
     findings: list[Finding] = []
     paths = source_tree_paths(root) if include_untracked else tracked_paths(root)
     for path in paths:
-        findings.extend(path_secret_findings(path, "WORKTREE"))
+        findings.extend(path_sensitive_findings(path, "WORKTREE"))
         rule = path_rule(path)
         if rule:
             findings.append(Finding(rule, path, "WORKTREE", 1))
@@ -358,7 +882,7 @@ def commit_findings(root: Path, revision: str) -> list[Finding]:
     findings: list[Finding] = []
     content_cache: dict[str, bytes] = {}
     for path, object_id, mode, object_type in commit_tree_entries(root, commit):
-        findings.extend(path_secret_findings(path, commit))
+        findings.extend(path_sensitive_findings(path, commit))
         topology_rule = git_entry_rule(mode, object_type)
         if topology_rule:
             findings.append(Finding(topology_rule, path, commit, 1))
@@ -503,7 +1027,7 @@ def range_path_findings(root: Path, baseline: str, candidate: str) -> list[Findi
     content_cache: dict[str, bytes] = {}
     for commit in range_commits(root, baseline, candidate):
         for path, object_id, mode, object_type in commit_tree_entries(root, commit):
-            for finding in path_secret_findings(path, commit):
+            for finding in path_sensitive_findings(path, commit):
                 key = (finding.rule, path)
                 if key not in seen:
                     findings.append(finding)
@@ -570,14 +1094,8 @@ def range_findings(root: Path, baseline: str, candidate: str) -> list[Finding]:
     baseline_commit = resolve_commit(root, baseline, "BASELINE")
     candidate_commit = resolve_commit(root, candidate, "CANDIDATE")
     try:
-        subprocess.run(
-            ("git", "-C", os.fspath(root), "merge-base", "--is-ancestor", baseline_commit, candidate_commit),
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-            check=True,
-            env=git_environment(),
-        )
-    except subprocess.CalledProcessError as error:
+        git(root, "merge-base", "--is-ancestor", baseline_commit, candidate_commit)
+    except CheckError as error:
         raise CheckError("RANGE_NON_ANCESTOR") from error
 
     findings = range_path_findings(root, baseline_commit, candidate_commit)
@@ -586,7 +1104,11 @@ def range_findings(root: Path, baseline: str, candidate: str) -> list[Finding]:
     )
     regular_paths = range_regular_blob_paths(root, baseline_commit, candidate_commit)
     for object_id in sorted(range_blobs(root, baseline_commit, candidate_commit)):
-        paths = regular_paths.get(object_id, set())
+        paths = {
+            path
+            for path in regular_paths.get(object_id, set())
+            if path_rule(path) is None
+        }
         if not paths:
             continue
         content = git(root, "cat-file", "blob", object_id)
@@ -600,6 +1122,7 @@ def path_class(finding: Finding) -> str:
 
     by_rule = {
         "ENV_FILE": "environment",
+        "CREDENTIAL_PATH": "credential",
         "DATA_FIXTURE_MODIFIED": "data-fixture",
         "EVENT_DATA": "event",
         "LOCAL_PROTOCOL_DATA": "local-protocol",
@@ -614,6 +1137,17 @@ def path_class(finding: Finding) -> str:
         "SAFE_TOPOLOGY_UNSUPPORTED": "unsafe-topology",
         "PATH_UNREADABLE": "unsafe-topology",
         "WORK_ITEM_DATA": "work-item",
+        "ABSOLUTE_HOME_PATH": "privacy",
+        "WINDOWS_HOME_PATH": "privacy",
+        "TAILNET_HOSTNAME": "privacy",
+        "HOST_BOUND_TEST_POLICY": "privacy",
+        "HOST_HARDWARE_DISCLOSURE": "privacy",
+        "LOCAL_WORKLOAD_DISCLOSURE": "privacy",
+        "NON_PUBLIC_EMAIL": "privacy",
+        "PRIVATE_NETWORK_IPV4": "privacy",
+        "CGNAT_NETWORK_IPV4": "privacy",
+        "PRIVATE_NETWORK_IPV6": "privacy",
+        "NON_PUBLIC_GIT_IDENTITY": "privacy",
     }
     if finding.path == "<unattributed-blob>":
         return "unattributed-blob"
@@ -656,6 +1190,15 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     parser.add_argument("--baseline", help="Required with --candidate; ancestor commit")
     parser.add_argument("--candidate", help="Required with --baseline; descendant commit")
     parser.add_argument(
+        "--git-executable",
+        default=os.fspath(DEFAULT_GIT_EXECUTABLE),
+        help="Exact absolute Git executable used for all Git-backed checks",
+    )
+    parser.add_argument(
+        "--git-executable-sha256",
+        help="Optional approved SHA-256 for --git-executable; publication supplies it",
+    )
+    parser.add_argument(
         "--tree",
         help="Scan the complete immutable tree at this commit instead of the worktree",
     )
@@ -680,6 +1223,7 @@ def main(argv: list[str] | None = None) -> int:
     args = parse_args(sys.argv[1:] if argv is None else argv)
     root = Path(args.root).resolve()
     try:
+        configure_git_executable(args.git_executable, args.git_executable_sha256)
         if not root.is_dir():
             raise CheckError("ROOT_INVALID")
         if args.source_tree:
