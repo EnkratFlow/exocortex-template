@@ -1240,16 +1240,16 @@ def _validate_record(record: Dict[str, Any]) -> Dict[str, Any]:
             raise ProtocolError("invalid_retirement", "publication retirement evidence prefix is inconsistent")
         if (retirement["prior_state"] == "effect_unknown") != (record["unknown_effect"] is not None):
             raise ProtocolError("invalid_retirement", "retirement unknown-effect evidence is inconsistent")
-    seen_requests = set()
+    seen_request_ids = set()
     observed_operations: List[str] = []
     for item in record["idempotency"]:
         if not isinstance(item, dict):
             raise ProtocolError("invalid_publication_record", "publication idempotency entries must be objects")
         require_exact_keys(item, ["request_id", "operation", "result_id", "accepted_at"], [], "publication idempotency")
         request = require_id(item["request_id"], "idempotency request_id")
-        if request in seen_requests:
+        if request in seen_request_ids:
             raise ProtocolError("duplicate_idempotency", "publication request IDs must be unique")
-        seen_requests.add(request)
+        seen_request_ids.add(request)
         if item["operation"] not in {"bootstrap_publication", *OPERATIONS, "retire_publication"}:
             raise ProtocolError("invalid_publication_record", "publication idempotency operation is invalid")
         require_id(item["result_id"], "idempotency result_id")

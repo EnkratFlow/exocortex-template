@@ -204,6 +204,7 @@ PY
 materialize_index() {
     run_clean "$HOST_PYTHON" -I - \
         "$REPO_ROOT" "$INDEX_ROOT" "$HOST_GIT" "$INDEX_FILE" <<'PY'
+import hashlib
 import os
 import re
 import stat
@@ -222,10 +223,12 @@ approved_credential_blobs = {
     ".exocortex/.env.example": {
         "mode": "100644",
         "sha1": "11dc64a1a9e6fab6608e1c7360f884d888279ad8",
+        "sha256": "f7b31458dd5095a7fe2d07d093dc7c0e9702d3693faa76af4addad88168601bf",
     },
     ".exocortex/key-registry.json": {
         "mode": "100644",
         "sha1": "22d5d4ecf108933f28016d95fdcdb74cc6ee4df9",
+        "sha256": "b1d352104c6479f87ca9040ab2ae0558c8d82bcc0df452cd7a2bdea2faaea7d7",
     },
 }
 nofollow = getattr(os, "O_NOFOLLOW", 0)
@@ -320,8 +323,8 @@ for encoded in listing.split(b"\0"):
         approved = approved_credential_blobs.get(relative)
         if approved is None or approved["mode"] != mode or approved[object_format] != object_id:
             raise SystemExit("staged index contains an unapproved credential-shaped entry")
-        # Preserve only its authenticated presence and mode. Never request or
-        # materialize the credential-adjacent blob bytes.
+        # Only these two exact public fixture objects may be materialized.
+        # Every other credential-shaped path fails before any blob request.
         records.append((relative, mode, object_id, True))
     else:
         records.append((relative, mode, object_id, False))
@@ -340,16 +343,6 @@ try:
     for relative, mode, object_id, credential_adjacent in records:
         target = destination / relative
         target.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
-        if credential_adjacent:
-            descriptor = os.open(
-                target,
-                os.O_WRONLY | os.O_CREAT | os.O_EXCL | nofollow,
-                0o600,
-            )
-            os.close(descriptor)
-            os.chmod(target, int(mode[-3:], 8), follow_symlinks=False)
-            continue
-
         batch.stdin.write((object_id + "\n").encode("ascii"))
         batch.stdin.flush()
         header = batch.stdout.readline(256)
@@ -369,10 +362,12 @@ try:
         )
         try:
             remaining = size
+            content_digest = hashlib.sha256()
             while remaining:
                 chunk = batch.stdout.read(min(1024 * 1024, remaining))
                 if not chunk:
                     raise OSError
+                content_digest.update(chunk)
                 view = memoryview(chunk)
                 while view:
                     written = os.write(descriptor, view)
@@ -381,6 +376,12 @@ try:
                     view = view[written:]
                 remaining -= len(chunk)
             if batch.stdout.read(1) != b"\n":
+                raise OSError
+            if (
+                credential_adjacent
+                and content_digest.hexdigest()
+                != approved_credential_blobs[relative]["sha256"]
+            ):
                 raise OSError
             os.fsync(descriptor)
         finally:
