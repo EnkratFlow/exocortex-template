@@ -191,6 +191,24 @@ IFS=$'\t' read -r RECORDED_BASELINE_TAG RECORDED_BASELINE_COMMIT <<< "$BASELINE_
 [ "$BASELINE_COMMIT" = "$RECORDED_BASELINE_COMMIT" ] \
     || fail_state "BASELINE_RECORD_COMMIT_MISMATCH" "$BASELINE_TAG"
 
+# A reviewed release normally lands as a merge commit. Its first parent is the
+# already-public main state before the reviewed release slice; the other parent
+# carries the reviewed candidate commits. Keep the previous published release
+# as the ancestry/version anchor, but do not retroactively classify older public
+# Git history as downloadable release content.
+RELEASE_RANGE_BASE="$BASELINE_COMMIT"
+TAG_PARENT_COUNT="$(git -C "$ROOT" rev-list --parents -n 1 "$TAG_COMMIT" \
+    | awk '{print NF - 1}')" \
+    || fail_state "TAG_PARENT_COUNT_INVALID" "$TAG_NAME"
+[[ "$TAG_PARENT_COUNT" =~ ^[0-9]+$ ]] \
+    || fail_state "TAG_PARENT_COUNT_INVALID" "$TAG_NAME"
+if [ "$TAG_PARENT_COUNT" -ge 2 ]; then
+    RELEASE_RANGE_BASE="$(git -C "$ROOT" rev-parse --verify "$TAG_COMMIT^1" 2>/dev/null)" \
+        || fail_state "TAG_RELEASE_RANGE_BASE_INVALID" "$TAG_NAME"
+    git -C "$ROOT" merge-base --is-ancestor "$BASELINE_COMMIT" "$RELEASE_RANGE_BASE" \
+        || fail_state "TAG_RELEASE_RANGE_BASE_NOT_DESCENDANT" "$BASELINE_TAG..$TAG_NAME"
+fi
+
 # Extract the checker from the immutable candidate commit into an owner-private
 # directory. Its directory contains no worktree modules that can shadow Python
 # standard-library imports.
@@ -208,7 +226,7 @@ ACTUAL_CHECKER_HASH="$(sha256_stream < "$TAG_PUBLIC_CHECKER")"
     env -i PATH="$CHECK_PATH" HOME="$CLOSEOUT_TMP/home" TMPDIR="$CLOSEOUT_TMP/tmp" \
         LC_ALL=C LANG=C PYTHONDONTWRITEBYTECODE=1 \
         "$PYTHON_BIN" "$TAG_PUBLIC_CHECKER" --root "$ROOT" --tree "$TAG_COMMIT" \
-        --baseline "$BASELINE_COMMIT" --candidate "$TAG_COMMIT" \
+        --baseline "$RELEASE_RANGE_BASE" --candidate "$TAG_COMMIT" \
         --tag-object "$TAG_OBJECT_ID" >/dev/null
 ) || fail_state "PUBLIC_BOUNDARY_FAILED" "$BASELINE_TAG..$TAG_NAME"
 
@@ -236,6 +254,7 @@ echo "local_main=$LOCAL_MAIN"
 echo "origin_main=$TRACKING_MAIN"
 echo "baseline_tag=$BASELINE_TAG"
 echo "baseline_commit=$BASELINE_COMMIT"
+echo "release_range_base=$RELEASE_RANGE_BASE"
 echo "tag=$TAG_NAME"
 echo "tag_commit=$TAG_COMMIT"
 echo "tag_candidate_digest=$TAG_CANDIDATE_DIGEST"

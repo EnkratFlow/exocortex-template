@@ -87,8 +87,9 @@ this order:
    peeled commit of the previous reviewed published release. Finish the
    candidate and its checksums in an isolated worktree.
    Run `python3 scripts/check-public-release.py --root "$PWD"` and the
-   baseline-to-candidate form to reject protected paths and transient leaked
-   blobs before review.
+   exact candidate-base-to-head form to reject protected paths and transient
+   leaked blobs before review. The previous release tag is the ancestry and
+   version anchor, not the start of a retroactive scan of older public history.
 2. Rehearse a clean installation and at least one representative
    existing-repository update in disposable targets. Preserve project memory
    and verify a second update is a zero-change result.
@@ -96,7 +97,9 @@ this order:
    and Human UAT on the disposable outcomes.
 4. Run the complete Exocortex safety suite once for that exact candidate. A
    changed candidate invalidates the result; a status-label change does not.
-5. Review and merge the exact candidate.
+5. Review and merge the exact candidate with a merge commit. The tagged merge's
+   first parent freezes the already-public pre-candidate boundary; its other
+   parent retains the reviewed candidate commits.
 6. Stop if the primary `main` worktree is dirty. Preserve and reconcile those
    local files; never force-update, reset, or overwrite them.
 7. In a clean `main` worktree, run `git fetch --prune --tags origin` and
@@ -106,7 +109,10 @@ this order:
    publication, require GitHub immutable releases to be enabled. Create the
    GitHub release as a draft, attach the exact tag's `SHA256SUMS` as a release
    asset, and only then publish it. The release notes name the peeled commit SHA,
-   SHA-256 of `SHA256SUMS`, owner-selected attestation, and trust identity.
+   SHA-256 of `SHA256SUMS`, owner-selected attestation, and trust identity. The
+   release check scans the exact candidate slice from the tagged merge's first
+   parent, the complete tagged tree, merge message, and annotated tag while the
+   recorded previous release remains the version and ancestry anchor.
    A checksum in the same trust domain is consistency evidence, not independent
    owner authenticity.
 9. Verify the immutable release and its downloaded manifest asset before using
@@ -142,7 +148,7 @@ this order:
 
 The checker is read-only and uses already-fetched refs. It fails when local
 `main`, `origin/main`, the packaged version, annotated tag identity,
-candidate-bound previous-release record, baseline-to-release public boundary,
+candidate-bound previous-release record, reviewed-slice public boundary,
 main-worktree cleanliness, or the published digest disagree. It extracts and
 hash-verifies the public-boundary checker from the exact tag rather than
 executing the mutable worktree copy. It does not itself validate the
@@ -150,8 +156,10 @@ release attestation; the preceding `gh release verify` and
 `gh release verify-asset` steps provide that evidence.
 
 The quick GitHub workflow fails closed when a nonzero push base is unavailable.
-For a new tag push, it derives the range start from the checksum-bound
-`.exocortex/release-baseline.json`; this CI check complements but does not
+For a new tag push, the checksum-bound `.exocortex/release-baseline.json`
+supplies the previous published ancestry/version anchor. A genuine tagged merge
+uses its first parent as the reviewed release-slice start. This CI check does
+not claim older already-public Git history is release payload and does not
 replace the mandatory release closeout or owner-authenticity evidence.
 
 ## What Not to Change

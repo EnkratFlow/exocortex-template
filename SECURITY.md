@@ -109,6 +109,14 @@ We aim to acknowledge new vulnerability reports within **72 hours**.
 - The public checker rejects unapproved credential-shaped paths before opening
   them and detects both known provider token formats and high-risk generic
   credential assignments or bearer credentials without rendering their values.
+- Release closeout treats the previous published tag as the version and
+  ancestry anchor. When the exact release lands as a genuine merge commit, its
+  first parent starts the reviewed release slice. The checker still scans the
+  complete tagged tree, candidate commits, transient paths and blobs, merge
+  message, and annotated tag. It excludes only the hosting provider's author
+  and committer identity headers on that merge commit; non-merge candidate
+  identities and the tagger remain checked. This does not claim that older
+  already-public Git history is clean or remove it from the repository.
 - Publication retirement is a separate, fresh one-time authority. It can
   release an expired local reservation only after exact no-effect or
   preserved-branch evidence. It never deletes or modifies remote state and

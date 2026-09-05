@@ -12,8 +12,12 @@
   before/after semantics. Altered or missing records fail closed while exact
   interrupted work remains recoverable.
 - Public-template checks reject personal paths, network coordinates, host and
-  workload disclosures, non-public identities, and common UTF-16 variants
-  without displaying matched values.
+  workload disclosures, non-public candidate identities, and common UTF-16
+  variants without displaying matched values. Tagged merge releases scan the
+  complete tree and exact reviewed release slice from the merge's first parent,
+  while older already-public history remains outside the downloadable payload
+  claim. Only the merge commit's hosting-provider identity headers are excluded;
+  its message, candidate commits, transient objects, and tagger remain checked.
 - Credential-shaped paths are rejected before content access. Fictional public
   tests cover tracked and ordinary untracked source without opening protected
   runtime or credential-adjacent files.

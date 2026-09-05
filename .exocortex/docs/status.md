@@ -1,6 +1,6 @@
 # Exocortex release status
 
-Last updated: 2026-09-04
+Last updated: 2026-09-05
 
 This is the living, human-readable maintainer view of the public template. It
 is release-scoped, not a downstream project's status page, approval record,
@@ -21,7 +21,7 @@ release attestation, or replacement for exact test and Git evidence.
 | Local delivery | Implemented; exact-candidate verification required | Bind one understandable local decision to the exact repository, base, worktree, paths, writer, reviewer, verification, expiry, rollback, and exclusions. |
 | Lifecycle evidence | Implemented; exact-candidate verification required | Link developer verification, independent review, QA/SIT, and Human UAT; create one local completion event and handoff before releasing the writer. |
 | Recovery and replay | Implemented; exact-candidate verification required | Reject altered or missing transition and completion records while preserving exact interrupted recovery and idempotent replay. |
-| Public-template privacy | Implemented; focused and complete verification required | Apply the bound checker and declared rules to exact candidate and metadata bytes without displaying matched values; this scoped evidence is not proof that no undiscovered disclosure pattern exists. |
+| Public-template privacy | Implemented; focused and complete verification required | Apply the bound checker and declared rules to the complete tagged tree, exact reviewed release slice, merge message, and annotated tag without displaying matched values; this scoped evidence is not proof that older public history is clean or that no undiscovered disclosure pattern exists. |
 | Credential-blind handling | Implemented; focused and complete verification required | Reject credential-shaped paths before content access while accounting for ordinary untracked source and safe ignored dirt. |
 | Model routing | Retained | Use provider-neutral, capability-, risk-, and cost-aware parent judgment; the formal catalog remains optional evidence and activates nothing by default. |
 | Install and update | Compatibility verification required | Preserve project memory, events, decisions, customizations, protected local state, credentials, and rollback boundaries during future named-target rehearsals. |
@@ -82,6 +82,10 @@ unknown disclosure pattern exists.
   before candidate creation.
 - The previous published annotated tag and its direct commit target must match
   `.exocortex/release-baseline.json`.
+- The tagged release must preserve a genuine merge boundary. Its first parent
+  starts the reviewed release slice while the previous published tag remains
+  the version and ancestry anchor; only the merge commit's hosting-provider
+  identity headers are outside template-payload inspection.
 - Provider adapters, documentation, public privacy, checksums, file modes,
   shell syntax, authority, orchestration, recovery, install, update, and
   rollback checks must agree on the same candidate.

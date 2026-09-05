@@ -121,8 +121,20 @@ jobs:
               || { echo 'TAG_BASELINE_EQUALS_CANDIDATE' >&2; exit 1; }
             git merge-base --is-ancestor "$RECORDED_BASELINE" "$PEELED_CANDIDATE" \
               || { echo 'TAG_BASELINE_NOT_ANCESTOR' >&2; exit 1; }
+            RELEASE_RANGE_BASE="$RECORDED_BASELINE"
+            CANDIDATE_PARENT_COUNT="$(git rev-list --parents -n 1 "$PEELED_CANDIDATE" \
+              | awk '{print NF - 1}')" \
+              || { echo 'TAG_PARENT_COUNT_INVALID' >&2; exit 1; }
+            [[ "$CANDIDATE_PARENT_COUNT" =~ ^[0-9]+$ ]] \
+              || { echo 'TAG_PARENT_COUNT_INVALID' >&2; exit 1; }
+            if [ "$CANDIDATE_PARENT_COUNT" -ge 2 ]; then
+              RELEASE_RANGE_BASE="$(git rev-parse --verify "$PEELED_CANDIDATE^1")" \
+                || { echo 'TAG_RELEASE_RANGE_BASE_INVALID' >&2; exit 1; }
+              git merge-base --is-ancestor "$RECORDED_BASELINE" "$RELEASE_RANGE_BASE" \
+                || { echo 'TAG_RELEASE_RANGE_BASE_NOT_DESCENDANT' >&2; exit 1; }
+            fi
             python3 scripts/check-public-release.py --root . \
-              --baseline "$RECORDED_BASELINE" --candidate "$PEELED_CANDIDATE" \
+              --baseline "$RELEASE_RANGE_BASE" --candidate "$PEELED_CANDIDATE" \
               --tag-object "$TAG_OBJECT"
           elif [ -n "$PUSH_BEFORE_SHA" ] \
             && [ "$PUSH_BEFORE_SHA" != "0000000000000000000000000000000000000000" ]; then
