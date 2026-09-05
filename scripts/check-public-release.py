@@ -1072,6 +1072,22 @@ def range_commit_object_findings(root: Path, baseline: str, candidate: str) -> l
     findings: list[Finding] = []
     for commit in range_commits(root, baseline, candidate):
         content = git(root, "cat-file", "commit", commit)
+        headers, separator, message = content.partition(b"\n\n")
+        header_lines = headers.splitlines()
+        parent_count = sum(line.startswith(b"parent ") for line in header_lines)
+        if separator and parent_count >= 2:
+            # A hosting provider may write the author/committer identity on the
+            # merge commit even when every reviewed candidate commit uses the
+            # release identity. Git identity headers are repository history,
+            # not downloadable template content. Keep scanning the complete
+            # merge message and every other header, and keep scanning identity
+            # headers on all non-merge commits in the reviewed candidate slice.
+            header_lines = [
+                line
+                for line in header_lines
+                if not line.startswith((b"author ", b"committer "))
+            ]
+            content = b"\n".join(header_lines) + b"\n\n" + message
         findings.extend(content_findings("<commit-object>", commit, content))
     return findings
 

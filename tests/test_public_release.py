@@ -251,7 +251,14 @@ RECORDED_BASELINE_TARGET_TYPE="$(git cat-file -p "$RECORDED_BASELINE_TAG_OBJECT"
 [ "$RECORDED_BASELINE_TARGET" = "$RECORDED_BASELINE" ]
 [ "$RECORDED_BASELINE" != "$PEELED_CANDIDATE" ]
 git merge-base --is-ancestor "$RECORDED_BASELINE" "$PEELED_CANDIDATE"
-printf '%s\n%s\n' "$PEELED_CANDIDATE" "$TAG_OBJECT"
+RELEASE_RANGE_BASE="$RECORDED_BASELINE"
+CANDIDATE_PARENT_COUNT="$(git rev-list --parents -n 1 "$PEELED_CANDIDATE" | awk '{print NF - 1}')"
+[[ "$CANDIDATE_PARENT_COUNT" =~ ^[0-9]+$ ]]
+if [ "$CANDIDATE_PARENT_COUNT" -ge 2 ]; then
+    RELEASE_RANGE_BASE="$(git rev-parse --verify "$PEELED_CANDIDATE^1")"
+    git merge-base --is-ancestor "$RECORDED_BASELINE" "$RELEASE_RANGE_BASE"
+fi
+printf '%s\n%s\n%s\n' "$PEELED_CANDIDATE" "$TAG_OBJECT" "$RELEASE_RANGE_BASE"
 '''
     environment = os.environ.copy()
     environment.update(
@@ -300,7 +307,11 @@ def main() -> None:
         "TAG_BASELINE_COMMIT_MISMATCH",
         "TAG_BASELINE_EQUALS_CANDIDATE",
         "TAG_BASELINE_NOT_ANCESTOR",
-        '--baseline "$RECORDED_BASELINE" --candidate "$PEELED_CANDIDATE"',
+        'RELEASE_RANGE_BASE="$RECORDED_BASELINE"',
+        'git rev-list --parents -n 1 "$PEELED_CANDIDATE"',
+        'git rev-parse --verify "$PEELED_CANDIDATE^1"',
+        "TAG_RELEASE_RANGE_BASE_NOT_DESCENDANT",
+        '--baseline "$RELEASE_RANGE_BASE" --candidate "$PEELED_CANDIDATE"',
         '--tag-object "$TAG_OBJECT"',
     ):
         assert expected in workflow
@@ -694,6 +705,52 @@ def main() -> None:
             "--candidate", candidate, cwd=root,
         )
         assert result.stdout == "public_release=pass\n"
+    finally:
+        temp.cleanup()
+
+    temp, root, baseline = fixture()
+    try:
+        release_base = run("git", "rev-parse", "HEAD", cwd=root).stdout.strip()
+        run("git", "checkout", "-b", "reviewed-release", cwd=root)
+        write(root, "reviewed-release.txt")
+        commit(root, "fictional reviewed release change")
+        run("git", "checkout", "main", cwd=root)
+        run("git", "config", "user.name", PERSONAL_NAME_CANARY, cwd=root)
+        run("git", "config", "user.email", PERSONAL_EMAIL_CANARY, cwd=root)
+        run(
+            "git", "merge", "--no-ff", "reviewed-release", "-m",
+            "Merge fictional reviewed release", cwd=root,
+        )
+        merge_commit = run("git", "rev-parse", "HEAD", cwd=root).stdout.strip()
+        result = run(
+            "python3", str(CHECKER), "--root", str(root), "--baseline",
+            release_base, "--candidate", merge_commit, cwd=root,
+        )
+        assert result.stdout == "public_release=pass\n"
+        assert PERSONAL_NAME_CANARY not in result.stdout + result.stderr
+        assert PERSONAL_EMAIL_CANARY not in result.stdout + result.stderr
+        assert baseline
+    finally:
+        temp.cleanup()
+
+    temp, root, _ = fixture()
+    try:
+        release_base = run("git", "rev-parse", "HEAD", cwd=root).stdout.strip()
+        run("git", "checkout", "-b", "reviewed-release", cwd=root)
+        write(root, "reviewed-release.txt")
+        commit(root, "fictional reviewed release change")
+        run("git", "checkout", "main", cwd=root)
+        run(
+            "git", "merge", "--no-ff", "reviewed-release", "-m",
+            f"Merge fictional reviewed release {CANARY}", cwd=root,
+        )
+        merge_commit = run("git", "rev-parse", "HEAD", cwd=root).stdout.strip()
+        result = run(
+            "python3", str(CHECKER), "--root", str(root), "--baseline",
+            release_base, "--candidate", merge_commit, cwd=root, check=False,
+        )
+        assert_redacted_rule(result, "GITHUB_TOKEN", CANARY)
+        assert '"path_class": "git-object"' in result.stdout
     finally:
         temp.cleanup()
 
@@ -1229,7 +1286,7 @@ def main() -> None:
 
         resolved = annotated_tag_workflow_arguments(root, "v1.2.3", release_commit)
         assert resolved.returncode == 0, resolved.stderr
-        assert resolved.stdout.splitlines() == [release_commit, tag_object]
+        assert resolved.stdout.splitlines() == [release_commit, tag_object, baseline]
 
         run(
             "git", "tag", "-a", "rewritten-baseline", "-m",
@@ -1285,6 +1342,64 @@ def main() -> None:
         )
         duplicate_key = annotated_tag_workflow_arguments(root, "v1.2.3", tag_object)
         assert duplicate_key.returncode != 0
+    finally:
+        temp.cleanup()
+
+    temp, root, baseline = fixture()
+    try:
+        run(
+            "git", "tag", "-a", "v1.2.2", "-m", "fictional baseline release",
+            baseline, cwd=root,
+        )
+        write(root, "already-public.txt", f"fixture={CANARY}\n")
+        commit(root, "already public fictional history")
+        (root / "already-public.txt").unlink()
+        release_base = commit(root, "remove old fictional history")
+        run("git", "checkout", "-b", "reviewed-release", cwd=root)
+        write(
+            root,
+            ".exocortex/release-baseline.json",
+            "{\n"
+            '  "schema_version": "public-v1",\n'
+            '  "kind": "exocortex_release_baseline",\n'
+            '  "previous_published_tag": "v1.2.2",\n'
+            f'  "previous_published_commit": "{baseline}"\n'
+            "}\n",
+        )
+        write(root, "release.txt")
+        commit(root, "fictional reviewed release")
+        run("git", "checkout", "main", cwd=root)
+        run("git", "config", "user.name", PERSONAL_NAME_CANARY, cwd=root)
+        run("git", "config", "user.email", PERSONAL_EMAIL_CANARY, cwd=root)
+        run(
+            "git", "merge", "--no-ff", "reviewed-release", "-m",
+            "Merge fictional reviewed release", cwd=root,
+        )
+        merge_commit = run("git", "rev-parse", "HEAD", cwd=root).stdout.strip()
+        run("git", "tag", "-a", "v1.2.3", "-m", "fictional annotated release", cwd=root)
+        tag_object = run("git", "rev-parse", "v1.2.3", cwd=root).stdout.strip()
+        remote = Path(temp.name) / "remote.git"
+        run("git", "init", "--bare", str(remote), cwd=root)
+        run("git", "remote", "add", "origin", str(remote), cwd=root)
+        run(
+            "git", "push", "origin", "main", "refs/tags/v1.2.2",
+            "refs/tags/v1.2.3", cwd=root,
+        )
+
+        resolved = annotated_tag_workflow_arguments(root, "v1.2.3", merge_commit)
+        assert resolved.returncode == 0, resolved.stderr
+        assert resolved.stdout.splitlines() == [merge_commit, tag_object, release_base]
+
+        reviewed_slice = run(
+            "python3", str(CHECKER), "--root", str(root), "--baseline",
+            release_base, "--candidate", merge_commit, cwd=root,
+        )
+        assert reviewed_slice.stdout == "public_release=pass\n"
+        historical_range = run(
+            "python3", str(CHECKER), "--root", str(root), "--baseline",
+            baseline, "--candidate", merge_commit, cwd=root, check=False,
+        )
+        assert_redacted_rule(historical_range, "GITHUB_TOKEN", CANARY)
     finally:
         temp.cleanup()
 

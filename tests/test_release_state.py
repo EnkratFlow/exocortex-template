@@ -63,6 +63,7 @@ def fixture(
     lightweight_tag: bool = False,
     tag_main_mismatch: bool = False,
     forbidden_range: bool = False,
+    grandfathered_history: bool = False,
     import_shadow: bool = False,
     tag_message_canary: bool = False,
 ) -> tuple[tempfile.TemporaryDirectory[str], Path, str]:
@@ -82,6 +83,14 @@ def fixture(
     run("git", "commit", "-m", "fixture baseline", cwd=root)
     baseline_commit = run("git", "rev-parse", "HEAD", cwd=root).stdout.strip()
     run("git", "tag", "-a", "v3.2.1", "-m", "fixture baseline tag", cwd=root)
+    if grandfathered_history:
+        (root / "historical.txt").write_text(CANARY + "\n", encoding="utf-8")
+        run("git", "add", "historical.txt", cwd=root)
+        run("git", "commit", "-m", "already public fictional history", cwd=root)
+        (root / "historical.txt").unlink()
+        run("git", "add", "-u", cwd=root)
+        run("git", "commit", "-m", "remove old fictional history", cwd=root)
+    run("git", "checkout", "-b", "reviewed-release", cwd=root)
     if forbidden_range:
         (root / "transient.txt").write_text(CANARY + "\n", encoding="utf-8")
         run("git", "add", "transient.txt", cwd=root)
@@ -114,6 +123,11 @@ def fixture(
     (root / "SHA256SUMS").write_text(sums_text, encoding="utf-8")
     run("git", "add", "VERSION", "SHA256SUMS", "scripts", ".exocortex", cwd=root)
     run("git", "commit", "-m", "fixture release", cwd=root)
+    run("git", "checkout", "main", cwd=root)
+    run(
+        "git", "merge", "--no-ff", "reviewed-release", "-m",
+        "Merge fictional reviewed release", cwd=root,
+    )
     tag_name = "v9.9.9" if wrong_tag else "v3.2.2"
     if lightweight_tag:
         run("git", "tag", tag_name, cwd=root)
@@ -180,6 +194,21 @@ def main() -> None:
             "--baseline-tag", "v3.2.1", cwd=root,
         )
         assert "release_state=pass" in result.stdout
+    finally:
+        temp.cleanup()
+
+    temp, root, digest = fixture(grandfathered_history=True)
+    try:
+        result = run(
+            "bash", str(CHECKER), "--published-digest", digest,
+            "--baseline-tag", "v3.2.1", cwd=root,
+        )
+        assert "release_state=pass" in result.stdout
+        release_range_base = run(
+            "git", "rev-parse", "v3.2.2^{commit}^1", cwd=root,
+        ).stdout.strip()
+        assert f"release_range_base={release_range_base}" in result.stdout
+        assert CANARY not in result.stdout + result.stderr
     finally:
         temp.cleanup()
 

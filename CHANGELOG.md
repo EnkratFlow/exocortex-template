@@ -6,12 +6,13 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 ## [Unreleased]
 
-## [3.3.0] - 2026-09-04
+## [3.3.0] - 2026-09-05
 
 ### Security
 
 - **Public-template privacy boundary** — current source, immutable candidate
-  trees, introduced commits, transient blobs and paths, and annotated tag
+  trees, every commit, transient blob and path in the exact reviewed release
+  slice, merge messages, and annotated tag
   objects now reject high-confidence personal host, home-path, private-network,
   tailnet-hostname, non-public-email, and personal Git-identity disclosures
   in common UTF-8 and UTF-16 text forms without rendering matched values.
@@ -41,6 +42,13 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 ### Fixed
 
+- **Release-slice closeout** — a tagged merge now uses its first parent as the
+  reviewed candidate boundary while retaining the previous published tag as
+  the version and ancestry anchor. Hosting-provider identity headers on the
+  merge commit are excluded from template-payload scanning; its message,
+  non-merge candidate identities, transient objects, complete tree, and tagger
+  remain checked. Older already-public history is neither reclassified as a
+  new release payload nor claimed clean.
 - **Tamper-resistant recovery and replay** — duplicate-key JSON, wrong-root
   envelopes, altered transition or completion journals, forged gate evidence,
   missing completion records, and mismatched capabilities now fail closed.

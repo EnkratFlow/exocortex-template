@@ -470,11 +470,18 @@ test-policy disclosures.
 Unapproved credential-shaped paths are rejected before content access. Known
 provider formats, high-risk generic credential assignments, and bearer
 credentials are reported only by sanitized rule/count/class/digest evidence.
-It scans current source, immutable candidate trees, introduced commit and tag
-objects, and transient candidate paths and blobs, including common UTF-16LE and
-UTF-16BE text forms. Reserved example domains and generic CI home paths remain
-usable in documentation and fixtures. Findings contain only a rule, count,
-coarse class, and digest; matched values and raw paths are never shown.
+It scans current source, immutable candidate trees, every commit, path, and
+transient blob in the exact reviewed release slice, and the annotated tag,
+including common UTF-16LE and UTF-16BE text forms. For a tagged merge commit,
+the first parent is the release-slice boundary while the previous published tag
+remains the version and ancestry anchor. Author and committer identity headers
+on that genuine merge commit are repository-host metadata rather than template
+payload, so they are excluded; its complete message, all non-merge candidate
+commit metadata, and the tagger remain checked. Older already-public history is
+not represented as newly downloadable release content and is not claimed clean
+or erased. Reserved example domains and generic CI home paths remain usable in
+documentation and fixtures. Findings contain only a rule, count, coarse class,
+and digest; matched values and raw paths are never shown.
 The shipped credential registry is generic metadata and exact-digest locked.
 
 `SHA256SUMS` and its published digest prove byte consistency only. They do not
