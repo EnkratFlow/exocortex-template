@@ -1,6 +1,6 @@
 # Exocortex Command Quick Reference
 
-The canonical registry contains exactly 24 commands. Each command begins
+The canonical registry contains exactly 26 commands. Each command begins
 read-only, and its JSON specification beneath `.exocortex/commands/` is the
 single behavior source. A command name, argument, model statement, or adapter
 never grants mutation or egress authority.
@@ -34,6 +34,8 @@ measured, current-surface evidence can admit a model to routing.
 
 | Command | Purpose |
 |---|---|
+| `/preflight <topic>` | Check relevant project lessons and incidents before work |
+| `/orchestrate` | Draft a bounded plan with cost-aware model routing |
 | `/groom` | Process captured interrupts |
 | `/refine-backlog` | Propose promotion, deferral, or removal of backlog items |
 | `/prioritize` | Propose strategic TODO ordering |
@@ -67,7 +69,7 @@ measured, current-surface evidence can admit a model to routing.
 | Generic or unidentified host | Read `AI_START_HERE.md`, then the matching JSON |
 
 Run `python3 .exocortex/scripts/generate_command_adapters.py --check` to verify
-the exact 24-name/72-adapter repository mapping. Native provider-menu visibility
+the exact 26-name/78-adapter repository mapping. Native provider-menu visibility
 still requires bounded Human UAT for the installed provider version. Evidence
 statuses are `verified`, `compatible`, `failed`, `blocked`, or `unavailable`.
 

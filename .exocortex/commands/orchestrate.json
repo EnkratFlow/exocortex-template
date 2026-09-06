@@ -1,0 +1,40 @@
+{
+  "name": "/orchestrate",
+  "aliases": [
+    "orchestrate",
+    "plan-orchestrate"
+  ],
+  "description": "Draft a bounded work plan with capability- and cost-aware model routing, checks and approval gates.",
+  "protocol": {
+    "entry_contract": "AI_START_HERE.md",
+    "authority": "exact_capability_required_for_mutation",
+    "egress": "separate_destination_specific_authorization",
+    "default_role": "read_only"
+  },
+  "requires_argument": false,
+  "steps": [
+    {
+      "type": "read",
+      "files": [
+        ".exocortex/control/MODEL_ROUTING.md",
+        ".exocortex/control/DELIVERY_WORKFLOW.md"
+      ],
+      "description": "Read the existing routing and delivery rules; these remain authoritative."
+    },
+    {
+      "type": "ai",
+      "action": "Resolve the goal and relevant project context",
+      "context": "Use the user's requested goal or the clear goal from this conversation. Ask one concise question only if the intended outcome is unclear. Read relevant non-secret project-local memory, TODO and current-state evidence if present. Use the read-only preflight command flow when past lessons could affect the plan. Resolve the actual repository and current Git state. Preserve unrelated or parallel work and every event. Do not scan sibling repositories or assume prior notes grant authority."
+    },
+    {
+      "type": "ai",
+      "action": "Draft the smallest useful orchestration plan in chat",
+      "context": "State the goal, repository, scope and exclusions, current evidence, bounded phases and dependencies, one accountable parent and write owner, proposed model routing with cost rationale, existing focused checks and expected duration, observable acceptance criteria, approval gates, and rollback. Match the detail to the task; do not impose a fixed collection of expert roles or test layers. Follow MODEL_ROUTING.md: select for capability, availability, privacy, reliability and expected total cost of a correct outcome, not advertised price alone. Include a user-configured local model when its demonstrated capabilities and available tools fit the work. Do not assume any model, endpoint, machine, credentials or worker service exists, and do not require a particular vendor. Keep host details and model configuration project-local. Use one parent and no delegate by default; propose independent bounded lanes only when they materially help. A proposed lane is not a spawned agent or a dispatched job. Identify unknown timing or capability honestly. Reuse existing checks; propose any new test design for approval before implementing it. Stop the plan at the next meaningful owner decision."
+    },
+    {
+      "type": "ai",
+      "action": "Present the plan and await the next applicable decision",
+      "context": "The default output is the plan in this conversation only. Ask whether the owner wants to revise it, keep it in chat, save a named local plan, or authorize its first bounded implementation phase. Drafting or approving a plan does not start implementation, dispatch workers, select a model through an API, run tests, create an event, checkpoint, publish or deploy. If the owner requests persistence or implementation, use the existing AI_START_HERE.md business-envelope and guarded-executor flow for that exact action and target. Reuse an applicable unexpired authorization without asking for internal bookkeeping approvals; otherwise obtain the required bounded authorization once. Never write a temporary plan or call a legacy unguarded save helper merely to display the draft."
+    }
+  ]
+}

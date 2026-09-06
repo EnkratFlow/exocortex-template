@@ -6,6 +6,17 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 ## [Unreleased]
 
+### Added
+
+- Generic `/preflight` for read-only preparation from project-local lessons,
+  incidents and decisions, and `/orchestrate` for chat-first bounded planning
+  with capability- and cost-aware routing, including suitable local models.
+- Six generated command adapters; the registry now contains 26 commands and
+  78 adapters. Both new commands are model-invocable only for their read-only
+  flows. Saving, implementation and worker dispatch retain separate gates.
+- Updated command documentation and existing adapter compatibility expectations.
+  Provider-menu Human UAT for the new commands remains pending.
+
 ## [3.3.0] - 2026-09-05
 
 ### Security

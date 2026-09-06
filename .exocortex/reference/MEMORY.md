@@ -2,11 +2,11 @@
 
 This folder contains the canonical memory for this project.
 
-**Workflow Commands:** The exact 24 commands are defined as JSON specs in:
+**Workflow Commands:** The exact 26 commands are defined as JSON specs in:
 → `.exocortex/commands/*.json` (the single behavior source)
 → `.exocortex/COMMAND_SYSTEM.md` (schema reference and full command index)
 → `.exocortex/provider-adapters.json` (provider invocation and migration matrix)
-→ `.agents/skills/`, `.claude/skills/`, and `.cursor/skills/` (72 generated thin command adapters)
+→ `.agents/skills/`, `.claude/skills/`, and `.cursor/skills/` (78 generated thin command adapters)
 
 Every provider starts at `AI_START_HERE.md`. Codex invokes a skill with
 `$command` or its selector; other supported surfaces use the syntax recorded in

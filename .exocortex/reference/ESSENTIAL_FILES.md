@@ -4,9 +4,9 @@
 
 - `AI_START_HERE.md` — provider-neutral entry and authority contract
 - `.exocortex/AI_BOOTSTRAP.md` — command discovery/execution
-- `.exocortex/commands/` — 24 JSON command specifications
+- `.exocortex/commands/` — 26 JSON command specifications
 - `.exocortex/provider-adapters.json` — provider invocation and migration matrix
-- `.exocortex/scripts/generate_command_adapters.py` — deterministic 72-adapter generator/check
+- `.exocortex/scripts/generate_command_adapters.py` — deterministic 78-adapter generator/check
 - `.agents/skills/` — portable generated Agent Skills
 - `.claude/skills/` — generated Claude command skills
 - `.cursor/skills/` — generated Cursor command skills alongside preserved persona skills
