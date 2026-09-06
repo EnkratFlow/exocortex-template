@@ -12,7 +12,9 @@
 0644  .agents/skills/longterm/SKILL.md
 0644  .agents/skills/monthly-review/SKILL.md
 0644  .agents/skills/onboard/SKILL.md
+0644  .agents/skills/orchestrate/SKILL.md
 0644  .agents/skills/pattern-review/SKILL.md
+0644  .agents/skills/preflight/SKILL.md
 0644  .agents/skills/prioritize/SKILL.md
 0644  .agents/skills/refine-backlog/SKILL.md
 0644  .agents/skills/save/SKILL.md
@@ -36,7 +38,9 @@
 0644  .claude/skills/longterm/SKILL.md
 0644  .claude/skills/monthly-review/SKILL.md
 0644  .claude/skills/onboard/SKILL.md
+0644  .claude/skills/orchestrate/SKILL.md
 0644  .claude/skills/pattern-review/SKILL.md
+0644  .claude/skills/preflight/SKILL.md
 0644  .claude/skills/prioritize/SKILL.md
 0644  .claude/skills/refine-backlog/SKILL.md
 0644  .claude/skills/save/SKILL.md
@@ -72,7 +76,9 @@
 0644  .cursor/skills/longterm/SKILL.md
 0644  .cursor/skills/monthly-review/SKILL.md
 0644  .cursor/skills/onboard/SKILL.md
+0644  .cursor/skills/orchestrate/SKILL.md
 0644  .cursor/skills/pattern-review/SKILL.md
+0644  .cursor/skills/preflight/SKILL.md
 0644  .cursor/skills/prioritize/SKILL.md
 0644  .cursor/skills/product-manager/SKILL.md
 0644  .cursor/skills/project-planner/SKILL.md
@@ -111,7 +117,9 @@
 0644  .exocortex/commands/longterm.json
 0644  .exocortex/commands/monthly-review.json
 0644  .exocortex/commands/onboard.json
+0644  .exocortex/commands/orchestrate.json
 0644  .exocortex/commands/pattern-review.json
+0644  .exocortex/commands/preflight.json
 0644  .exocortex/commands/prioritize.json
 0644  .exocortex/commands/refine-backlog.json
 0644  .exocortex/commands/save.json

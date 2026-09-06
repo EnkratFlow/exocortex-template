@@ -256,7 +256,7 @@ translate the Bash safety logic into PowerShell ad hoc.
 ## Core model
 
 - `AI_START_HERE.md` is the canonical provider-neutral entry point.
-- `.exocortex/AI_BOOTSTRAP.md` discovers the 24 command specifications.
+- `.exocortex/AI_BOOTSTRAP.md` discovers the 26 command specifications.
 - `.exocortex/control/MODEL_ROUTING.md` selects by capability, risk,
   exact current-session availability, a route timestamp within 60 seconds of
   current UTC, and measured cost per successful completion—not latency claims
@@ -392,10 +392,32 @@ authority. Recursive improvement therefore compounds safely:
 - System: `/onboard`, `/system-scan`, `/ai-export`, `/ecosystem`,
   `/init-exocortex`, `/check-keys`, `/handoff`
 
-The 24 JSON specifications are retained as the single behavior source; the
+
+### Prepare work with project memory and cost-aware routing
+
+- `/preflight <topic>` searches the current project's relevant lessons, incidents,
+  decisions and events, then explains useful precautions. It is read-only; no
+  matches does not mean the proposed change is safe.
+- `/orchestrate` drafts a bounded work plan in chat: scope, phases, ownership,
+  model routing, existing checks, acceptance gates and rollback. It considers
+  capability, privacy, reliability and total cost, including a user-configured
+  local model when suitable. It does not require a vendor or model catalog.
+
+On Codex, use `$preflight` and `$orchestrate` or the skill selector. Both are
+model-invocable for read-only preparation; neither starts implementation,
+spawns workers, saves files or grants approval. Saving a plan or starting work
+uses the existing guarded delivery flow. These commands plan local-model use;
+they do not install a model server or configure a network worker.
+
+The public template contains generic command behavior only. Each project keeps
+its own memories, events, model configuration and private connection details.
+Existing events are not rewritten by either command. Provider-menu observations
+below are historical; the two new commands still require candidate Human UAT.
+
+The 26 JSON specifications are retained as the single behavior source; the
 commands are not being removed. The deterministic adapter generator produces
-72 thin repository adapters from them: 24 portable Agent Skills, 24 Claude
-skills, and 24 Cursor skills.
+78 thin repository adapters from them: 26 portable Agent Skills, 26 Claude
+skills, and 26 Cursor skills.
 
 Current evidence is version- and surface-scoped. `verified` means the recorded
 client displayed every Exocortex entry during bounded Human UAT; it does not
@@ -403,7 +425,7 @@ mean a command was executed or that mutation authority was granted.
 
 | Surface | Repository adapter | Native invocation | Recorded evidence |
 |---|---|---|---|
-| Codex | `.agents/skills/{command}/SKILL.md` | `$command` or the skills selector | `compatible`; repository catalog resolves 24/24, but desktop selector UAT remains pending |
+| Codex | `.agents/skills/{command}/SKILL.md` | `$command` or the skills selector | `compatible`; 26-command repository catalog; desktop selector UAT remains pending |
 | Claude Desktop 1.24012.1 (0adcae) | `.claude/skills/{command}/SKILL.md` | `/command` | `compatible`; historical 24/24 visibility predates the invocation-policy change, so candidate UAT is required |
 | Cursor Stable 3.12.30 | `.cursor/skills/{command}/SKILL.md` | `/command` | `compatible`; historical 24/24 visibility predates the invocation-policy change, so candidate UAT is required |
 | GitHub Copilot | `.agents/skills/{command}/SKILL.md` | `/command` where repository skills are supported | `compatible`; 24/24 was observed, but the exact client version was not captured |

@@ -18,7 +18,7 @@ and measured evaluation evidence. A new or cheaper catalog entry is
 quarantined until reviewed; discovery never activates it. The complete
 evidence and denial rules are in `.exocortex/control/MODEL_ROUTING.md`.
 
-Commands are defined in the 24 JSON files under `.exocortex/commands/` and are
+Commands are defined in the 26 JSON files under `.exocortex/commands/` and are
 grouped as daily, memory, planning/review, and system operations. See
 `.exocortex/COMMAND_SYSTEM.md` for the index.
 
