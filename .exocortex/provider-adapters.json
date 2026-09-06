@@ -2,7 +2,7 @@
   "schema_version": "public-v2",
   "kind": "provider_adapter_matrix",
   "canonical_registry": ".exocortex/commands",
-  "expected_command_count": 24,
+  "expected_command_count": 26,
   "generator": ".exocortex/scripts/generate_command_adapters.py",
   "command_invocation_policy": {
     "model_invocable": [
@@ -12,6 +12,8 @@
       "history",
       "longterm",
       "onboard",
+      "orchestrate",
+      "preflight",
       "scrum",
       "shortterm",
       "subconscious",
@@ -83,8 +85,8 @@
       "evidence_adapter_family": "portable-agent-skills",
       "default_install": true,
       "revalidation_required": true,
-      "evidence": "The repository skill catalog resolves all 24 canonical commands.",
-      "limitation": "Literal desktop skill-selector visibility remains Human-UAT-pending."
+      "evidence": "The repository command catalog contains 26 canonical commands; discovery of the two new commands requires candidate Human UAT.",
+      "limitation": "Literal desktop skill-selector visibility remains Human-UAT-pending. The new preflight and orchestrate commands have not yet passed provider-menu Human UAT."
     },
     {
       "id": "claude",
@@ -99,7 +101,7 @@
       "default_install": true,
       "revalidation_required": true,
       "evidence": "Historical pre-classification UAT showed all 24 Exocortex native slash commands exactly once; the new per-command invocation policy has not been revalidated.",
-      "limitation": "Candidate UAT is required. The historical Claude Desktop 1.24012.1 result does not transfer to the changed adapters, Claude Code, the VS Code extension, or another client version."
+      "limitation": "Candidate UAT is required. The historical Claude Desktop 1.24012.1 result does not transfer to the changed adapters, Claude Code, the VS Code extension, or another client version. The new preflight and orchestrate commands have not yet passed provider-menu Human UAT."
     },
     {
       "id": "cursor",
@@ -114,7 +116,7 @@
       "default_install": true,
       "revalidation_required": true,
       "evidence": "Historical pre-classification UAT showed 72 unique names containing all 24 Exocortex commands exactly once; the new per-command invocation policy has not been revalidated.",
-      "limitation": "Candidate UAT is required. The historical Cursor Stable 3.12.30 result and earlier 3.6.21 portable-family failure remain version-scoped evidence only."
+      "limitation": "Candidate UAT is required. The historical Cursor Stable 3.12.30 result and earlier 3.6.21 portable-family failure remain version-scoped evidence only. The new preflight and orchestrate commands have not yet passed provider-menu Human UAT."
     },
     {
       "id": "github-copilot",
@@ -129,7 +131,7 @@
       "default_install": true,
       "revalidation_required": true,
       "evidence": "The current available surface displayed all 24 Exocortex commands.",
-      "limitation": "Verified status requires the exact client version to be captured during a later regression run."
+      "limitation": "Verified status requires the exact client version to be captured during a later regression run. The new preflight and orchestrate commands have not yet passed provider-menu Human UAT."
     },
     {
       "id": "kimi-code",
@@ -144,7 +146,7 @@
       "default_install": true,
       "revalidation_required": true,
       "evidence": "Historical pre-classification UAT showed all 24 Exocortex /skill:{name} entries exactly once; the changed portable adapter bodies have not been revalidated.",
-      "limitation": "Candidate UAT is required. The historical Kimi Code CLI 1.14.0 result does not transfer to changed adapters, Kimi Desktop Work, or another Kimi surface."
+      "limitation": "Candidate UAT is required. The historical Kimi Code CLI 1.14.0 result does not transfer to changed adapters, Kimi Desktop Work, or another Kimi surface. The new preflight and orchestrate commands have not yet passed provider-menu Human UAT."
     },
     {
       "id": "kimi-desktop",
@@ -174,7 +176,7 @@
       "default_install": true,
       "revalidation_required": true,
       "evidence": "Historical pre-classification UAT showed all 24 Exocortex skills exactly once; the changed portable adapter bodies have not been revalidated.",
-      "limitation": "Candidate UAT is required. The historical Zed 1.12.0 stable.328 result is version-scoped and does not transfer to changed adapters or ACP-hosted agents."
+      "limitation": "Candidate UAT is required. The historical Zed 1.12.0 stable.328 result is version-scoped and does not transfer to changed adapters or ACP-hosted agents. The new preflight and orchestrate commands have not yet passed provider-menu Human UAT."
     },
     {
       "id": "windsurf",

@@ -16,7 +16,9 @@
     "longterm",
     "monthly-review",
     "onboard",
+    "orchestrate",
     "pattern-review",
+    "preflight",
     "prioritize",
     "refine-backlog",
     "save",
@@ -35,6 +37,8 @@
       "history",
       "longterm",
       "onboard",
+      "orchestrate",
+      "preflight",
       "scrum",
       "shortterm",
       "subconscious",
@@ -61,17 +65,17 @@
     {
       "id": "portable-agent-skills",
       "path_template": ".agents/skills/{command}/SKILL.md",
-      "expected_files": 24
+      "expected_files": 26
     },
     {
       "id": "claude-code-skills",
       "path_template": ".claude/skills/{command}/SKILL.md",
-      "expected_files": 24
+      "expected_files": 26
     },
     {
       "id": "cursor-native-skills",
       "path_template": ".cursor/skills/{command}/SKILL.md",
-      "expected_files": 24
+      "expected_files": 26
     }
   ],
   "status_names": [
@@ -260,6 +264,6 @@
   "reactivated_paths": [
     ".cursor/skills/onboard/SKILL.md"
   ],
-  "repository_adapter_count": 72,
+  "repository_adapter_count": 78,
   "provider_menu_visibility": "human_uat_required"
 }

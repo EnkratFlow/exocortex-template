@@ -65,13 +65,13 @@ point to the JSON but cannot restate, replace, or expand its flow. If they
 conflict, report the deviation in one line and follow the JSON without
 combining the conflicting instructions.
 
-## Available commands (24)
+## Available commands (26)
 
 | Group | Commands |
 |---|---|
 | Daily | `/work`, `/scrum`, `/save`, `/daily-end`, `/interrupt`, `/brief` |
 | Memory | `/shortterm`, `/longterm`, `/subconscious`, `/drill`, `/history` |
-| Planning | `/groom`, `/refine-backlog`, `/prioritize`, `/weekly-review`, `/monthly-review`, `/pattern-review` |
+| Planning | `/groom`, `/refine-backlog`, `/prioritize`, `/weekly-review`, `/monthly-review`, `/pattern-review`, `/preflight`, `/orchestrate` |
 | System | `/onboard`, `/system-scan`, `/ai-export`, `/ecosystem`, `/init-exocortex`, `/check-keys`, `/handoff` |
 
 `check-keys` never reads or tests a key in the default process. `handoff` is
@@ -80,8 +80,8 @@ not a lifecycle checkpoint.
 
 ## Provider-native discovery
 
-The 24 JSON specifications remain behavior authority. A deterministic generator
-creates 72 thin adapters without copying command behavior. The provider matrix
+The 26 JSON specifications remain behavior authority. A deterministic generator
+creates 78 thin adapters without copying command behavior. The provider matrix
 classifies each command exactly once as `model_invocable` or `manual_only`:
 
 - `.agents/skills/{command}/SKILL.md` — portable Agent Skills for Codex
