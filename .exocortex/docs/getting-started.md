@@ -49,7 +49,7 @@ security logic ad hoc.
 ## First commands
 
 - `/work`: read-only orientation and next-work options.
-- `/onboard`: project-local codebase orientation.
+- `/onboard`: project-local codebase orientation plus continuity with the current checkout; ends with `Ready to work` only when the recorded context has been reconciled with the present commit, otherwise `Onboarding incomplete:` and the gap.
 - `/system-scan`: read-only health report.
 - `/save`: draft local narrative memory; not a checkpoint.
 - `/handoff`: strict local evidence packet; not authority.

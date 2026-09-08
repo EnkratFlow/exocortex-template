@@ -6,8 +6,9 @@ Ask the AI to read `AI_START_HERE.md`. It should identify the current project,
 live Git state, exact work item/revision/base, writer status, passed and pending
 evidence, and the next gate without changing anything.
 
-Use `/work` for a normal entry, `/onboard` for deeper code orientation, and
-`/system-scan` for a read-only health report.
+Use `/work` for a normal entry, `/onboard` for deeper code orientation that
+also reconciles the recorded context with the current checkout before it
+claims readiness, and `/system-scan` for a read-only health report.
 
 ## Giving approval
 

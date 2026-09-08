@@ -19,6 +19,7 @@
 ## Runtime protocol
 
 - `.exocortex/scripts/authority_guard.py`
+- `.exocortex/scripts/onboard_evidence.py` — read-only identity/coverage evidence for `/onboard`; no writes, no network
 - `.exocortex/scripts/orchestrate_work_item.py`
 - `.exocortex/schemas/local-delivery-envelope.schema.json` — exact clean
   worktree/base/branch/path envelope for guarded local delivery

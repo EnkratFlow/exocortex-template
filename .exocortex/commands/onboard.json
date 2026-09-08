@@ -1,27 +1,41 @@
 {
   "name": "/onboard",
-  "description": "Read and understand the codebase before starting work. Builds a working mental model of the project structure, entry points, architecture, and current context.",
+  "description": "Read and understand the codebase before starting work, then establish continuity with the current checkout: identity, what the recorded context covers, the gap between that and the present commit, and a report that says either 'Ready to work' or exactly what is still unresolved.",
   "protocol": {
     "entry_contract": "AI_START_HERE.md",
     "authority": "exact_capability_required_for_mutation",
     "egress": "separate_destination_specific_authorization",
     "default_role": "read_only"
   },
+  "constraints": {
+    "read_only": "Onboarding never regenerates context, writes events or handoffs, checkpoints, commits, starts the application, reads credentials, contacts the network, or synchronizes externally. Cached remote refs are cached, not freshly verified remote state.",
+    "completion": "The phrase 'Ready to work. What do you need?' is allowed only when every material current-state gap named by the evidence collector has been resolved by reading and inspection. Otherwise the report ends with 'Onboarding incomplete:' followed by the specific gap. Missing optional files or old documents do not block completion when other evidence resolves the relevant context; missing required evidence is never silently converted into success.",
+    "bounded": "Follow the references needed to understand the active work rather than reading all history. If an inspection limit (the collector's caps, or your own) leaves material uncertainty, say so in the report instead of guessing."
+  },
   "steps": [
     {
-      "type": "ai",
-      "action": "Detect project type and read foundational files",
-      "context": "Read the project root directory tree (2-3 levels, filenames only). Read whichever exist: package.json, requirements.txt, pyproject.toml, Cargo.toml, go.mod, README.md. Identify: language, framework, package manager, approximate size."
+      "type": "shell",
+      "command": "python3 .exocortex/scripts/onboard_evidence.py",
+      "description": "Collect read-only identity, provenance and coverage evidence for the active checkout (no writes, no network)",
+      "outputs": {
+        "identity": "repository root, branch or detached HEAD, head commit, working-tree counts and paths, installed Exocortex version and the file it was read from ('absent' when none)",
+        "context": "whether SESSION_CONTEXT.md exists, its mtime, and the newest event timestamp it covers",
+        "events": "event count, newest event, and the events newer than what the context covers",
+        "commits": "the newest commit any recent event records (coverage basis), and every commit after it with changed paths and a substantive/documentation flag",
+        "records": "TODO, handoff and interrupt records and whether each is newer than the context",
+        "discrepancies": "coded findings such as context_missing, events_newer_than_context, commits_after_event_coverage, context_recent_but_uncovered, uncommitted_changes_present, branch_differs_from_default, exocortex_version_unknown, evidence_truncated",
+        "readiness": "the material gaps that must be resolved before 'Ready to work'"
+      }
     },
     {
       "type": "ai",
-      "action": "Read structure and config files",
-      "context": "Read whichever exist: Dockerfile, docker-compose*.yml, tsconfig.json, next.config.*, .env.example, Makefile, .github/workflows/*.yml. Identify how the project builds, runs, and deploys."
+      "action": "Establish identity and scope",
+      "context": "From the collector output, state: the resolved repository root; the branch, or 'detached HEAD' with the commit; the head commit and its date; the working-tree status (clean, or the counts and the checkout-local paths); the installed Exocortex version together with the file it was read from, or 'unknown, no version file found' when the source is absent (never guess a version); and that this session's role is read-only. Scope every later conclusion to this checkout only."
     },
     {
       "type": "ai",
-      "action": "Read entry points and core architecture",
-      "context": "Based on the detected framework, read the main entry point files and up to 10 core source files. Focus on: API routes/endpoints, service modules, data models/schemas, type definitions. Read signatures and structure, not full implementations. Skip node_modules, .git, __pycache__, dist, build, .next."
+      "action": "Read the codebase for orientation",
+      "context": "Read the project root directory tree (2-3 levels, filenames only) and whichever exist of package.json, requirements.txt, pyproject.toml, Cargo.toml, go.mod, README.md, Dockerfile, docker-compose*.yml, tsconfig.json, Makefile, .github/workflows/*.yml. Identify language, framework, package manager, how the project builds, runs and deploys. Then read the main entry points and up to 10 core source files (routes/endpoints, services, data models, type definitions): signatures and structure, not full implementations. Skip node_modules, .git, __pycache__, dist, build, .next. Orientation is necessary but not sufficient: it does not establish continuity."
     },
     {
       "type": "read",
@@ -32,13 +46,24 @@
         ".exocortex/TODO.md",
         ".exocortex/reference/ESSENTIAL_FILES.md"
       ],
-      "description": "Load project memory and current context",
-      "on_error": "continue"
+      "description": "Load project memory and the generated context",
+      "on_error": "record_gap",
+      "on_error_note": "A file that is missing or unreadable is recorded as a gap for the reconciliation step, never treated as read. Generated context is supporting evidence about the past, not authority about the present."
     },
     {
       "type": "ai",
-      "action": "Synthesize and display onboarding summary",
-      "context": "Display a structured summary with: Project name, Stack (language/framework/deps), Structure (how source is organized), Entry points, Key modules, Data (database/storage), Deployment (how it runs), Context (from exocortex files: current work, recent lessons, active tasks). End with: 'Ready to work. What do you need?'"
+      "action": "Determine what the existing context actually covers",
+      "context": "Using the collector's `context`, `events`, `commits` and `records` sections together with what you just read: state the newest event the generated context covers, the newest event on disk, and the newest commit any recorded event names (the coverage basis). Prefer recorded commit ancestry and explicit coverage statements over file timestamps: a recently regenerated SESSION_CONTEXT.md is not evidence that it covers the current work, and the collector flags that case as context_recent_but_uncovered. Treat TODO, handoff and interrupt records as claims dated by their content, not as current truth. Do not treat cached remote-tracking refs as verified remote state."
+    },
+    {
+      "type": "ai",
+      "action": "Reconcile the gap between the recorded context and the current checkout",
+      "context": "Read every event the collector lists as newer than the context (all of them if the list is not truncated). For every commit listed after the coverage basis that is flagged substantive, inspect its diff (git show --stat and the relevant hunks) or the current implementation of the changed paths; commit titles alone do not satisfy this step. Explain the resulting behaviour, the important decisions it embodies, and what remains unfinished. Where a TODO or handoff claim is superseded by what the code or a newer event shows, say which claim is stale and what supersedes it. Identify uncommitted changes as checkout-local: list their paths, preserve them, and keep them distinct from committed work. Stay bounded: follow the references needed to understand the active work, not all history; if the collector reports truncation or your own limit leaves something material uninspected, carry that forward as an unresolved gap rather than assuming."
+    },
+    {
+      "type": "ai",
+      "action": "Report continuity, then decide completion",
+      "context": "Produce the onboarding report with these sections, in this order: (1) Repository, branch or detached HEAD and commit, working-tree status, Exocortex version and its source. (2) Stack and structure, from the orientation step. (3) What was most recently worked on and what changed, citing the events and commits inspected. (4) Important decisions and constraints. (5) What remains unfinished or unresolved. (6) What the next agent should verify first. (7) Stale, missing, conflicting or unverified evidence, including any file the read step could not load. Throughout, distinguish three things explicitly: what exists in the local implementation, what recorded events or documents CLAIM about tests or deployments, and what you actually verified during this onboarding (which is read-only inspection, never a run). Then decide: if every material gap the collector named has been resolved by the reconciliation step and nothing material is left uninspected, end with exactly 'Ready to work. What do you need?'. Otherwise end with 'Onboarding incomplete:' and the specific gap (for example the events not yet read, the substantive commits not yet inspected, the truncated list, or the missing required evidence), so the next action is obvious."
     }
   ]
 }
