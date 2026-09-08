@@ -6,10 +6,10 @@ are interchangeable workers.
 
 This template is public beta. Read `VERSION` for the packaged version.
 
-> **Public releases are authenticity-gated.** Version 3.3.0 selects GitHub's
+> **Public releases are authenticity-gated.** Version 3.3.1 selects GitHub's
 > immutable-release attestation for the trust identity
 > `github.com/EnkratFlow/exocortex-template`. Before executing downloaded code,
-> require `gh release verify v3.3.0 -R github.com/EnkratFlow/exocortex-template`
+> require `gh release verify v3.3.1 -R github.com/EnkratFlow/exocortex-template`
 > to pass and
 > verify the downloaded `SHA256SUMS` release asset with
 > `gh release verify-asset`. Stop if the release is not immutable, either
@@ -42,7 +42,7 @@ before it executes any candidate-owned script.
 
 ```text
 Prepare a read-only Exocortex clean-install preflight for the repository I
-currently have open. Use only the official GitHub release v3.3.0 from
+currently have open. Use only the official GitHub release v3.3.1 from
 https://github.com/EnkratFlow/exocortex-template.
 
 Require GitHub CLI verification of the immutable release for the exact trust
@@ -73,12 +73,12 @@ external systems.
 ```text
 Prepare a read-only Exocortex safe-update preflight for the repository I
 currently have open. Update it from its installed version to the official
-GitHub release v3.3.0 from
+GitHub release v3.3.1 from
 https://github.com/EnkratFlow/exocortex-template.
 
 This existing repository and its project-local data are the target. Do not
 treat a fresh template clone or a bare Git snapshot that omits local data as a
-replacement. A temporary clone of v3.3.0 is the update source only. An approved
+replacement. A temporary clone of v3.3.1 is the update source only. An approved
 disposable rehearsal or isolated worktree is allowed, but it must preserve and
 verify the target's protected data. Require GitHub CLI verification of the
 immutable release for the exact trust identity
@@ -131,36 +131,36 @@ below.
 ```bash
 (
 set -eu
-gh release verify v3.3.0 -R github.com/EnkratFlow/exocortex-template
-mkdir -m 700 /tmp/exocortex-release-verify-v3.3.0
-gh release download v3.3.0 -R github.com/EnkratFlow/exocortex-template \
-  --pattern SHA256SUMS --dir /tmp/exocortex-release-verify-v3.3.0
-gh release verify-asset v3.3.0 \
-  /tmp/exocortex-release-verify-v3.3.0/SHA256SUMS \
+gh release verify v3.3.1 -R github.com/EnkratFlow/exocortex-template
+mkdir -m 700 /tmp/exocortex-release-verify-v3.3.1
+gh release download v3.3.1 -R github.com/EnkratFlow/exocortex-template \
+  --pattern SHA256SUMS --dir /tmp/exocortex-release-verify-v3.3.1
+gh release verify-asset v3.3.1 \
+  /tmp/exocortex-release-verify-v3.3.1/SHA256SUMS \
   -R github.com/EnkratFlow/exocortex-template
-git clone --depth 1 --branch v3.3.0 \
+git clone --depth 1 --branch v3.3.1 \
   https://github.com/EnkratFlow/exocortex-template.git \
-  /tmp/exocortex-template-v3.3.0
-cmp -s /tmp/exocortex-release-verify-v3.3.0/SHA256SUMS \
-  /tmp/exocortex-template-v3.3.0/SHA256SUMS
-git -C /tmp/exocortex-template-v3.3.0 rev-parse HEAD
+  /tmp/exocortex-template-v3.3.1
+cmp -s /tmp/exocortex-release-verify-v3.3.1/SHA256SUMS \
+  /tmp/exocortex-template-v3.3.1/SHA256SUMS
+git -C /tmp/exocortex-template-v3.3.1 rev-parse HEAD
 )
 ```
 
 On macOS:
 
 ```bash
-shasum -a 256 /tmp/exocortex-template-v3.3.0/SHA256SUMS
+shasum -a 256 /tmp/exocortex-template-v3.3.1/SHA256SUMS
 ```
 
 On Linux or inside WSL:
 
 ```bash
-sha256sum /tmp/exocortex-template-v3.3.0/SHA256SUMS
+sha256sum /tmp/exocortex-template-v3.3.1/SHA256SUMS
 ```
 
 Compare both outputs with the peeled commit and candidate digest in the
-v3.3.0 GitHub release notes. Stop if either differs. Do not substitute `main`,
+v3.3.1 GitHub release notes. Stop if either differs. Do not substitute `main`,
 `latest`, another checkout, or an unattested manifest. The immutable-release
 attestation and verified asset establish the selected repository identity; the
 peeled commit and digest checks establish exact byte consistency. Use the
@@ -176,12 +176,12 @@ the retained asset and exact tag clone:
 ```bash
 (
 set -eu
-gh release verify v3.3.0 -R github.com/EnkratFlow/exocortex-template
-gh release verify-asset v3.3.0 \
-  /tmp/exocortex-release-verify-v3.3.0/SHA256SUMS \
+gh release verify v3.3.1 -R github.com/EnkratFlow/exocortex-template
+gh release verify-asset v3.3.1 \
+  /tmp/exocortex-release-verify-v3.3.1/SHA256SUMS \
   -R github.com/EnkratFlow/exocortex-template
-cmp -s /tmp/exocortex-release-verify-v3.3.0/SHA256SUMS \
-  /tmp/exocortex-template-v3.3.0/SHA256SUMS
+cmp -s /tmp/exocortex-release-verify-v3.3.1/SHA256SUMS \
+  /tmp/exocortex-template-v3.3.1/SHA256SUMS
 )
 ```
 
@@ -198,9 +198,9 @@ The underlying installation command is:
 ```bash
 cd /path/to/approved-isolated-worktree
 HOME=<new-empty-owner-only-disposable-home> \
-EXOCORTEX_LOCAL_SOURCE=/tmp/exocortex-template-v3.3.0 \
+EXOCORTEX_LOCAL_SOURCE=/tmp/exocortex-template-v3.3.1 \
 EXOCORTEX_CANDIDATE_DIGEST=<sha256-computed-from-verified-release-asset> \
-  bash /tmp/exocortex-template-v3.3.0/install.sh "project-name"
+  bash /tmp/exocortex-template-v3.3.1/install.sh "project-name"
 ```
 
 ### 2B. Existing-repository update
@@ -212,8 +212,8 @@ fresh owner-only backup directory outside both the target and template first.
 ```bash
 cd /path/to/existing-project
 mkdir -m 700 /tmp/exocortex-restore
-bash /tmp/exocortex-template-v3.3.0/scripts/safe-update.sh \
-  --template /tmp/exocortex-template-v3.3.0 \
+bash /tmp/exocortex-template-v3.3.1/scripts/safe-update.sh \
+  --template /tmp/exocortex-template-v3.3.1 \
   --candidate-digest <sha256-computed-from-verified-release-asset> \
   --backup-dir /tmp/exocortex-restore \
   --dry-run
@@ -511,7 +511,7 @@ independently prove repository-owner authenticity when the repository, tag,
 release notes, and digest share one trust domain. Public installation must stop
 unless the release also carries the owner-selected signature or attestation
 evidence and the operator verifies it against its documented trust identity.
-Version 3.3.0 selects GitHub's immutable-release attestation for
+Version 3.3.1 selects GitHub's immutable-release attestation for
 `github.com/EnkratFlow/exocortex-template` and publishes `SHA256SUMS` as an
 attested release asset. Verify both with `gh release verify` and
 `gh release verify-asset`; an absent, mutable, mismatched, or unverifiable
