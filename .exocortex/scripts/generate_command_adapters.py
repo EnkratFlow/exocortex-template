@@ -29,12 +29,12 @@ EXPECTED_FAMILIES = {
 EXPECTED_CANONICAL_COMMANDS = (
     "ai-export", "brief", "check-keys", "daily-end", "drill", "ecosystem", "groom",
     "handoff", "history", "init-exocortex", "interrupt", "longterm", "monthly-review",
-    "onboard", "pattern-review", "prioritize", "refine-backlog", "save", "scrum",
+    "onboard", "orchestrate", "pattern-review", "preflight", "prioritize", "refine-backlog", "save", "scrum",
     "shortterm", "subconscious", "system-scan", "weekly-review", "work",
 )
 EXPECTED_COMMAND_INVOCATION_POLICY = {
     "model_invocable": {
-        "ai-export", "brief", "drill", "history", "longterm", "onboard",
+        "ai-export", "brief", "drill", "history", "longterm", "onboard", "orchestrate", "preflight",
         "scrum", "shortterm", "subconscious", "system-scan", "work",
     },
     "manual_only": {
@@ -72,7 +72,7 @@ EXPECTED_LEGACY_RETIREMENTS = {
     },
 }
 EXPECTED_WINDSURF_RETIREMENTS = {
-    f".windsurf/workflows/{name}.md" for name in EXPECTED_CANONICAL_COMMANDS
+    f".windsurf/workflows/{name}.md" for name in EXPECTED_LEGACY_COMMANDS
 } | {".windsurfrules"}
 EXPECTED_STATUS_DEFINITIONS = {
     "verified": "The recorded installed version passed complete provider-native discovery Human UAT.",
@@ -175,8 +175,8 @@ def validate_matrix(matrix: dict[str, Any]) -> list[dict[str, Any]]:
         raise AdapterError("provider matrix must be public-v2 provider_adapter_matrix")
     if matrix.get("canonical_registry") != ".exocortex/commands":
         raise AdapterError("provider matrix canonical registry mismatch")
-    if matrix.get("expected_command_count") != 24:
-        raise AdapterError("provider matrix must require exactly 24 commands")
+    if matrix.get("expected_command_count") != 26:
+        raise AdapterError("provider matrix must require exactly 26 commands")
     if matrix.get("generator") != ".exocortex/scripts/generate_command_adapters.py":
         raise AdapterError("provider matrix generator mismatch")
 
@@ -210,7 +210,7 @@ def validate_matrix(matrix: dict[str, Any]) -> list[dict[str, Any]]:
     if actual_policy["model_invocable"] & actual_policy["manual_only"]:
         raise AdapterError("provider matrix command invocation policy overlaps")
     if set().union(*actual_policy.values()) != set(EXPECTED_CANONICAL_COMMANDS):
-        raise AdapterError("provider matrix command invocation policy must classify exactly 24 commands")
+        raise AdapterError("provider matrix command invocation policy must classify exactly 26 commands")
 
     if matrix.get("status_definitions") != EXPECTED_STATUS_DEFINITIONS:
         raise AdapterError("provider matrix status definitions mismatch")
@@ -495,8 +495,8 @@ def main() -> int:
             for policy, command_names in matrix["command_invocation_policy"].items()
         }
         outputs = expected_outputs(families, commands, invocation_policy)
-        if len(outputs) != 72:
-            raise AdapterError("generated adapter path set must contain exactly 72 files")
+        if len(outputs) != 78:
+            raise AdapterError("generated adapter path set must contain exactly 78 files")
         if args.write:
             write_outputs(families, outputs)
         failures = check_outputs(families, outputs)
