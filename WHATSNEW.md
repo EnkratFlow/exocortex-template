@@ -1,3 +1,12 @@
+# What's New in 3.3.1 — /onboard tells the truth about continuity
+
+- `/onboard` now starts with a read-only evidence collector and reconciles the
+  recorded context with the current checkout by commit ancestry. It ends with
+  "Ready to work" only when every material gap is resolved; otherwise it reports
+  "Onboarding incomplete" and names the gap. No other command changed.
+
+---
+
 # What's New in 3.3.0 — Guarded local delivery and stronger privacy
 
 - Local work now starts from one exact, owner-readable delivery envelope that
