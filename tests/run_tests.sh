@@ -2224,6 +2224,12 @@ else
     bad "installer public-boundary and ambient-environment contract"
 fi
 
+if PYTHONDONTWRITEBYTECODE=1 python3 "$TEMPLATE_DIR/tests/test_onboard_contract.py" "$TEMPLATE_DIR"; then
+    ok "/onboard continuity and conditional-completion contract"
+else
+    bad "/onboard continuity and conditional-completion contract"
+fi
+
 docs_negative_base="$(mktemp -d "${TMPDIR:-/tmp}/exo-doc-contract-base.XXXXXX")"
 while IFS='  ' read -r _ rel; do
     [ -n "$rel" ] || continue

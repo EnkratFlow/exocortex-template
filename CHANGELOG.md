@@ -6,6 +6,24 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 ## [Unreleased]
 
+### Changed
+
+- **`/onboard` completion contract.** Onboarding now begins with a read-only
+  evidence collector (`.exocortex/scripts/onboard_evidence.py`) that reports
+  the checkout's identity (root, branch or detached HEAD, commit, working
+  tree, installed Exocortex version and the file it came from), what the
+  generated context and recent events actually cover by recorded commit
+  ancestry, every commit after that coverage with its changed paths, checkout-
+  local uncommitted changes, discrepancies and truncation. The command then
+  requires the newer events to be read and the substantive commits' diffs or
+  current implementations inspected (commit titles alone are insufficient),
+  and its report separates local implementation, recorded claims and what was
+  verified during onboarding. `Ready to work. What do you need?` is permitted
+  only when every material gap is resolved; otherwise the report ends with
+  `Onboarding incomplete:` and the specific gap. Memory-read errors are
+  recorded as gaps instead of being continued past. Provider skills remain
+  generated thin adapters. Covered by `tests/test_onboard_contract.py`.
+
 ## [3.3.0] - 2026-09-05
 
 ### Security
