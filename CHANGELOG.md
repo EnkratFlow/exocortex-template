@@ -36,6 +36,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
   `Onboarding incomplete:` and the specific gap. Memory-read errors are
   recorded as gaps instead of being continued past. Provider skills remain
   generated thin adapters. Covered by `tests/test_onboard_contract.py`.
+- CONTRIBUTING: release candidates are merged with a merge commit only. A
+  squash or rebase merge places the merging account's identity inside the
+  closeout's scanned range and fails the public-boundary check.
 
 ## [3.3.0] - 2026-09-05
 
