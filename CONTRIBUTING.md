@@ -97,9 +97,14 @@ this order:
    and Human UAT on the disposable outcomes.
 4. Run the complete Exocortex safety suite once for that exact candidate. A
    changed candidate invalidates the result; a status-label change does not.
-5. Review and merge the exact candidate with a merge commit. The tagged merge's
+5. Review and merge the exact candidate with a merge commit. Never use the
+   squash or rebase merge buttons for a release candidate. The tagged merge's
    first parent freezes the already-public pre-candidate boundary; its other
-   parent retains the reviewed candidate commits.
+   parent retains the reviewed candidate commits, and only the merge commit's
+   hosting-provider identity headers are excluded from the closeout scan. A
+   squash merge is a single-parent commit that carries the merging account's
+   identity inside the scanned range, so the public-boundary check rejects it
+   and the version cannot be published from that commit.
 6. Stop if the primary `main` worktree is dirty. Preserve and reconcile those
    local files; never force-update, reset, or overwrite them.
 7. In a clean `main` worktree, run `git fetch --prune --tags origin` and
