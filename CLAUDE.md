@@ -4,7 +4,7 @@ Read `AI_START_HERE.md` before substantive action and follow its read order, aut
 
 For manual commands, `.exocortex/commands/<name>.json` is the sole command-flow behavior source. This file may point to that specification but cannot restate or override it; if they conflict, report the deviation and follow the JSON without combining instructions.
 
-This is a thin provider adapter. It does not independently grant authority. Without an exact current approval, registered guarded executor, and writer reservation when applicable, remain read-only. Never read or expose secret values or `.env` contents.
+This is a thin provider adapter. It does not independently grant authority. Guarded operations (work-item transitions, guarded template updates, guarded egress) require the registered executor and capability checks in `AI_START_HERE.md`. Ordinary project work, including edits, tests, commits, branch pushes to the project's own remote, pull requests, and `/save`, is not guarded and needs no registration. Never read or expose secret values or `.env` contents.
 
 ## Resource-aware verification
 

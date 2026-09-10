@@ -6,6 +6,38 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 ## [Unreleased]
 
+## [3.3.2] - 2026-09-10
+
+### Changed
+
+- **Installer speed.** One clean install takes about 4 seconds instead of 26
+  on the same machine, and the complete safety suite and every update
+  rehearsal shorten accordingly. The read-only preflight validates every
+  target path in one process with the same rules and messages as the shell
+  walk; the in-place walk before each write caches ancestor directories
+  verified during the run; integrity verification hashes the manifest in one
+  process with an exact per-file fallback; per-copy hashing and mode probing
+  are replaced by a builtin lookup of the reviewed digest and bound mode, a
+  byte comparison after the copy, and one batched verification of mode,
+  regular-file status, and link count before the manifest is finalized; the
+  hard-link check still runs before any in-place overwrite; manifest records
+  are appended with last-digest-wins finalization. Every rejection and its
+  message are unchanged.
+- **Guarded operations are scoped explicitly.** `AI_START_HERE.md`,
+  `AI_BOOTSTRAP.md`, the installation guide, and the Claude, Codex, and
+  Copilot adapters now state that executor registration, writer reservations,
+  and one-time capabilities apply to work-item transitions, guarded template
+  updates, and guarded egress only. Ordinary project work (edits, tests,
+  commits, branch pushes to the project's own remote, pull requests, `/save`,
+  `/interrupt`) is not guarded and needs no registration. Git operations
+  against the project's own remote are not egress and are not governed by
+  `EXTERNAL_SYNC_POLICY.json`. Long-lived registrations are recommended for a
+  private project's own trusted executors; daily expiry protects nothing.
+- **Pre-commit hook.** Policy unchanged: code-plane changes still run the
+  staged installer suite from the frozen index snapshot, which now takes
+  minutes rather than half an hour because of the installer change.
+- Phase-b evidence includes a per-line timing log beside each suite log.
+
 ## [3.3.1] - 2026-09-08
 
 ### Added

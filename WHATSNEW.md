@@ -1,3 +1,18 @@
+# What's New in 3.3.2 — Faster installs, gates scoped to guarded operations
+
+- A clean install takes about 4 seconds instead of 26, with every safety
+  rejection unchanged, so the complete suite and every update rehearsal run
+  several times faster.
+- The entry document, bootstrap, installation guide, and agent adapters now say
+  plainly what the guards cover: work-item transitions, guarded template
+  updates, and guarded egress. Editing, tests, commits, pushing a branch to the
+  project's own remote, pull requests, and `/save` are ordinary project work
+  and need no registration or capability.
+- The pre-commit hook's installer-suite run for code-plane changes takes
+  minutes now, not half an hour.
+
+---
+
 # What's New in 3.3.1 — /onboard tells the truth about continuity
 
 - `/onboard` now starts with a read-only evidence collector and reconciles the

@@ -14,6 +14,8 @@ fail() {
     exit 1
 }
 
+NL=$'\n'
+
 sha256_file() {
     if command -v shasum >/dev/null 2>&1; then
         shasum -a 256 "$1" 2>/dev/null | awk '{print $1}'
@@ -191,12 +193,27 @@ is_integrity_scope() {
     esac
 }
 
+sha256_check_batch() {
+    # One process verifies every listed digest. A failure is never reported
+    # from here; the caller then re-checks file by file for the exact error.
+    if command -v shasum >/dev/null 2>&1; then
+        (cd "$SOURCE_COPY" && shasum -a 256 -c --status "$1" >/dev/null 2>&1)
+    elif command -v sha256sum >/dev/null 2>&1; then
+        (cd "$SOURCE_COPY" && sha256sum -c --status "$1" >/dev/null 2>&1)
+    else
+        return 1
+    fi
+}
+
 verify_integrity() {
     local sums="$SOURCE_COPY/SHA256SUMS"
     [ -f "$sums" ] || fail "SHA256SUMS is required"
     [ -s "$sums" ] || fail "SHA256SUMS is empty"
 
-    local line hash rel actual
+    local line hash rel actual listed="$NL" batch_verified=false
+    if sha256_check_batch "$sums"; then
+        batch_verified=true
+    fi
     while IFS= read -r line || [ -n "$line" ]; do
         [ -z "$line" ] && continue
         case "$line" in \#*) continue ;; esac
@@ -206,23 +223,41 @@ verify_integrity() {
         case "/$rel/" in */../*|*/./*) fail "unsafe SHA256SUMS path" ;; esac
         [ "$rel" != "SHA256SUMS" ] || fail "SHA256SUMS cannot checksum itself"
         is_integrity_scope "$rel" || fail "checksum entry is outside the public code-plane scope: $rel"
-        if grep -Fqx "$rel" "$LISTED_SUMS"; then
-            fail "duplicate SHA256SUMS path: $rel"
-        fi
+        case "$listed" in
+            *"$NL$rel$NL"*) fail "duplicate SHA256SUMS path: $rel" ;;
+        esac
+        listed="$listed$rel$NL"
         echo "$rel" >> "$LISTED_SUMS"
         [ -f "$SOURCE_COPY/$rel" ] || fail "checksum-listed file is missing: $rel"
-        actual="$(file_hash "$SOURCE_COPY/$rel")"
-        [ "$actual" = "$hash" ] || fail "checksum mismatch: $rel"
+        if [ "$batch_verified" != true ]; then
+            actual="$(file_hash "$SOURCE_COPY/$rel")"
+            [ "$actual" = "$hash" ] || fail "checksum mismatch: $rel"
+        fi
     done < "$sums"
 
     while IFS= read -r file; do
         rel="${file#$SOURCE_COPY/}"
         is_integrity_scope "$rel" || continue
-        grep -Fqx "$rel" "$LISTED_SUMS" || fail "code-plane file missing from SHA256SUMS: $rel"
+        case "$listed" in
+            *"$NL$rel$NL"*) ;;
+            *) fail "code-plane file missing from SHA256SUMS: $rel" ;;
+        esac
     done < <(find "$SOURCE_COPY" -type f | sort)
 }
 
 verify_integrity
+
+# One reviewed digest per source file, readable with a builtin instead of a
+# hashing process per copy. Keys are the relative path with "/" encoded.
+DIGEST_INDEX="$TMP_ROOT/digests"
+mkdir -p "$DIGEST_INDEX"
+while IFS= read -r line || [ -n "$line" ]; do
+    [ -n "$line" ] || continue
+    case "$line" in \#*) continue ;; esac
+    key="${line:66}"
+    key="${key//\//%2F}"
+    printf '%s\n' "${line:0:64}" > "$DIGEST_INDEX/$key"
+done < "$SOURCE_COPY/SHA256SUMS"
 
 verify_file_modes() {
     run_trusted_python - "$SOURCE_COPY" <<'PY'
@@ -276,6 +311,17 @@ PY
 }
 
 verify_file_modes || fail "candidate file-mode inventory failed validation"
+
+# One bound mode per source file, readable with a builtin. FILEMODES was just
+# validated: every line is "0644  path" or "0755  path".
+MODE_INDEX="$TMP_ROOT/modes"
+mkdir -p "$MODE_INDEX"
+while IFS= read -r line || [ -n "$line" ]; do
+    [ -n "$line" ] || continue
+    key="${line:6}"
+    key="${key//\//%2F}"
+    printf '%s\n' "${line:0:4}" > "$MODE_INDEX/$key"
+done < "$SOURCE_COPY/FILEMODES"
 
 ADAPTER_GENERATOR="$SOURCE_COPY/.exocortex/scripts/generate_command_adapters.py"
 ADAPTER_MATRIX="$SOURCE_COPY/.exocortex/provider-adapters.json"
@@ -351,10 +397,10 @@ manifest_get() {
 }
 
 record_manifest() {
-    local path="$1" digest="$2" next="$TMP_ROOT/manifest-next"
-    awk -v k="$path " 'index($0,k)!=1' "$MANIFEST_NEW" > "$next"
-    printf '%s %s\n' "$path" "$digest" >> "$next"
-    mv "$next" "$MANIFEST_NEW"
+    # Append only; the finalization step keeps the last digest recorded for
+    # each path, which is what the per-call rewrite used to guarantee.
+    local path="$1" digest="$2"
+    printf '%s %s\n' "$path" "$digest" >> "$MANIFEST_NEW"
 }
 
 retire_legacy_adapters() {
@@ -407,22 +453,47 @@ retire_legacy_adapters() {
     done < "$RETIREMENTS"
 }
 
+# Ancestor directories already verified during this run as existing,
+# non-symlink directories. Only the installer mutates the target while it runs,
+# so a verified ancestor is not re-walked for every file. The final path
+# component is always checked fresh. Same rejections as before, far fewer
+# shell steps: this walk was half of every install's wall time.
+SAFE_ANCESTORS="$NL"
+# The path verified by the most recent walk. Callers verify the same path two
+# or three times in a row (parent, file, copy); the repeat walks are skipped
+# until the installer itself creates a directory, which clears this.
+LAST_SAFE_REL=""
+
 assert_safe_target_path() {
-    local rel="$1" current="$TARGET_ROOT" part index=0
-    local -a parts
+    local rel="$1" current="$TARGET_ROOT" rest part
+    if [ -n "$LAST_SAFE_REL" ] && [ "$rel" = "$LAST_SAFE_REL" ]; then
+        return 0
+    fi
     case "$rel" in
         ""|/*|.|..|../*|*/../*|*/..) fail "unsafe install target path: $rel" ;;
     esac
-    IFS='/' read -r -a parts <<< "$rel"
-    for part in "${parts[@]}"; do
+    rest="${rel%/}"
+    while :; do
+        part="${rest%%/*}"
         [ -n "$part" ] && [ "$part" != "." ] && [ "$part" != ".." ] || fail "unsafe install target path: $rel"
         current="$current/$part"
-        [ ! -L "$current" ] || fail "refusing target path with symlink component: $rel"
-        if [ -e "$current" ] && [ "$index" -lt "$(( ${#parts[@]} - 1 ))" ]; then
-            [ -d "$current" ] || fail "target ancestor is not a directory: $rel"
+        if [ "$rest" = "$part" ]; then
+            [ ! -L "$current" ] || fail "refusing target path with symlink component: $rel"
+            break
         fi
-        index=$((index + 1))
+        case "$SAFE_ANCESTORS" in
+            *"$NL$current$NL"*) ;;
+            *)
+                [ ! -L "$current" ] || fail "refusing target path with symlink component: $rel"
+                if [ -e "$current" ]; then
+                    [ -d "$current" ] || fail "target ancestor is not a directory: $rel"
+                    SAFE_ANCESTORS="$SAFE_ANCESTORS$current$NL"
+                fi
+                ;;
+        esac
+        rest="${rest#*/}"
     done
+    LAST_SAFE_REL="$rel"
 }
 
 assert_safe_target_file_path() {
@@ -431,6 +502,13 @@ assert_safe_target_file_path() {
     if [ -e "$rel" ] && [ ! -f "$rel" ]; then
         fail "target file path is not a regular file: $rel"
     fi
+}
+
+assert_no_external_links() {
+    # Checked by the batched preflight for every target, and again here right
+    # before an existing regular file is overwritten in place, which is the
+    # only write that could reach a hard-linked file elsewhere.
+    local rel="$1"
     if [ -e "$rel" ] && [ "$(file_link_count "$rel")" != "1" ]; then
         fail "target file path has external hard links: $rel"
     fi
@@ -444,15 +522,27 @@ assert_safe_target_dir_path() {
     fi
 }
 
+VERIFIED_PARENTS="$NL"
+
 ensure_target_parent() {
     local rel="$1" parent parent_real
     assert_safe_target_path "$rel"
-    parent="$(dirname "$rel")"
+    parent="${rel%/*}"
+    [ "$parent" != "$rel" ] || parent="."
     if [ "$parent" != "." ]; then
+        case "$VERIFIED_PARENTS" in
+            *"$NL$parent$NL"*)
+                if [ -d "$parent" ] && [ ! -L "$parent" ]; then
+                    return 0
+                fi
+                ;;
+        esac
         mkdir -p -- "$parent"
+        LAST_SAFE_REL=""
         assert_safe_target_path "$rel"
         parent_real="$(cd "$parent" && pwd -P)"
         case "$parent_real/" in "$TARGET_ROOT/"*) ;; *) fail "target parent escapes the install target: $rel" ;; esac
+        VERIFIED_PARENTS="$VERIFIED_PARENTS$parent$NL"
     fi
 }
 
@@ -460,27 +550,60 @@ ensure_target_dir() {
     local rel="$1" resolved
     assert_safe_target_dir_path "$rel"
     mkdir -p -- "$rel"
+    LAST_SAFE_REL=""
     assert_safe_target_dir_path "$rel"
     resolved="$(cd "$rel" && pwd -P)"
     case "$resolved/" in "$TARGET_ROOT/"*) ;; *) fail "target directory escapes the install target: $rel" ;; esac
 }
 
+
 copy_with_bound_mode() {
     local source_file="$1"
     local target_file="$2"
-    local source_rel expected_mode
+    local source_rel key expected_mode=""
     source_rel="${source_file#"$SOURCE_COPY/"}"
-    expected_mode="$(awk -v p="$source_rel" 'substr($0,7)==p{print substr($0,1,4); exit}' "$SOURCE_COPY/FILEMODES")"
+    key="${source_rel//\//%2F}"
+    [ -f "$MODE_INDEX/$key" ] && read -r expected_mode < "$MODE_INDEX/$key"
     [[ "$expected_mode" =~ ^0(644|755)$ ]] || fail "source file lacks a bound mode: $source_rel"
     cp -p "$source_file" "$target_file"
     chmod "$expected_mode" "$target_file"
     [ -f "$target_file" ] && [ ! -L "$target_file" ] \
         || fail "copied target is not a regular non-symlink file: $target_file"
-    [ "$(file_hash "$target_file")" = "$(file_hash "$source_file")" ] \
+    cmp -s "$source_file" "$target_file" \
         || fail "copied target bytes do not match the reviewed source: $target_file"
-    [ "$(file_mode "$target_file")" = "$expected_mode" ] \
-        || fail "copied target mode does not match the reviewed source: $target_file"
+    # Mode, regular-file, and link-count verification of every copied target
+    # runs once in verify_copied_targets before the manifest is finalized.
+    printf '%s\t%s\n' "$expected_mode" "$target_file" >> "$COPIED_TARGETS"
     record_copy_and_maybe_fault
+}
+
+verify_copied_targets() {
+    local message
+    [ -s "$COPIED_TARGETS" ] || return 0
+    message="$(run_trusted_python - "$TARGET_ROOT" "$COPIED_TARGETS" <<'PY'
+import os
+import stat
+import sys
+
+root, listing = sys.argv[1], sys.argv[2]
+with open(listing, encoding="utf-8") as handle:
+    for line in handle:
+        line = line.rstrip("\n")
+        if not line:
+            continue
+        mode_text, rel = line.split("\t", 1)
+        info = os.lstat(os.path.join(root, rel))
+        if stat.S_ISLNK(info.st_mode) or not stat.S_ISREG(info.st_mode):
+            print(f"copied target is not a regular non-symlink file: {rel}")
+            sys.exit(1)
+        if format(stat.S_IMODE(info.st_mode), "04o") != mode_text:
+            print(f"copied target mode does not match the reviewed source: {rel}")
+            sys.exit(1)
+        if info.st_nlink != 1:
+            print(f"target file path has external hard links: {rel}")
+            sys.exit(1)
+PY
+)" || fail "$message"
 }
 
 is_generated_command_adapter() {
@@ -552,8 +675,14 @@ safe_copy_file() {
     [ -f "$source_file" ] || return 0
     ensure_target_parent "$target_file"
     assert_safe_target_file_path "$target_file"
-    local source_hash current_hash installed_hash
-    source_hash="$(file_hash "$source_file")"
+    local source_hash="" current_hash installed_hash key
+    key="${source_file#"$SOURCE_COPY/"}"
+    key="${key//\//%2F}"
+    if [ -f "$DIGEST_INDEX/$key" ]; then
+        read -r source_hash < "$DIGEST_INDEX/$key"
+    else
+        source_hash="$(file_hash "$source_file")"
+    fi
     if [ ! -e "$target_file" ]; then
         copy_with_bound_mode "$source_file" "$target_file"
         record_manifest "$target_file" "$source_hash"
@@ -561,11 +690,16 @@ safe_copy_file() {
     fi
     [ -f "$target_file" ] || fail "target path is not a regular file: $target_file"
     [ ! -L "$target_file" ] || fail "refusing to replace symlink target: $target_file"
-    current_hash="$(file_hash "$target_file")"
+    if cmp -s "$source_file" "$target_file"; then
+        current_hash="$source_hash"
+    else
+        current_hash="$(file_hash "$target_file")"
+    fi
     installed_hash="$(manifest_get "$target_file")"
     if [ "$current_hash" = "$source_hash" ]; then
         record_manifest "$target_file" "$source_hash"
     elif [ -n "$installed_hash" ] && [ "$current_hash" = "$installed_hash" ]; then
+        assert_no_external_links "$target_file"
         copy_with_bound_mode "$source_file" "$target_file"
         record_manifest "$target_file" "$source_hash"
     else
@@ -625,6 +759,80 @@ ensure_data_stubs() {
     write_if_missing .exocortex/.project-name "$PROJECT_NAME"
 }
 
+PREFLIGHT_PATHS="$TMP_ROOT/preflight-paths"
+COPIED_TARGETS="$TMP_ROOT/copied-targets"
+: > "$PREFLIGHT_PATHS"
+: > "$COPIED_TARGETS"
+
+preflight_add() {
+    # $1 = F (file target) or D (directory target), $2 = relative target path.
+    printf '%s\t%s\n' "$1" "$2" >> "$PREFLIGHT_PATHS"
+}
+
+preflight_check_paths() {
+    # The read-only preflight validates every listed target path in one
+    # process, with exactly the rules and messages of assert_safe_target_path,
+    # assert_safe_target_file_path, and assert_safe_target_dir_path, in list
+    # order. The copy phase still re-checks each path in place right before it
+    # writes. Walking several hundred paths in shell was most of an install.
+    local message
+    message="$(run_trusted_python - "$TARGET_ROOT" "$PREFLIGHT_PATHS" <<'PY'
+import os
+import sys
+
+root, listing = sys.argv[1], sys.argv[2]
+
+
+def unsafe(rel):
+    return (
+        rel == ""
+        or rel.startswith("/")
+        or rel in (".", "..")
+        or rel.startswith("../")
+        or "/../" in rel
+        or rel.endswith("/..")
+    )
+
+
+with open(listing, encoding="utf-8") as handle:
+    for line in handle:
+        line = line.rstrip("\n")
+        if not line:
+            continue
+        kind, rel = line.split("\t", 1)
+        if unsafe(rel):
+            print(f"unsafe install target path: {rel}")
+            sys.exit(1)
+        parts = (rel[:-1] if rel.endswith("/") else rel).split("/")
+        for part in parts:
+            if part in ("", ".", ".."):
+                print(f"unsafe install target path: {rel}")
+                sys.exit(1)
+        current = root
+        for index, part in enumerate(parts):
+            current = current + "/" + part
+            if os.path.islink(current):
+                print(f"refusing target path with symlink component: {rel}")
+                sys.exit(1)
+            if index < len(parts) - 1 and os.path.exists(current) and not os.path.isdir(current):
+                print(f"target ancestor is not a directory: {rel}")
+                sys.exit(1)
+        target = root + "/" + rel
+        if kind == "F":
+            if os.path.exists(target) and not os.path.isfile(target):
+                print(f"target file path is not a regular file: {rel}")
+                sys.exit(1)
+            if os.path.exists(target) and os.lstat(target).st_nlink != 1:
+                print(f"target file path has external hard links: {rel}")
+                sys.exit(1)
+        elif kind == "D":
+            if os.path.exists(target) and not os.path.isdir(target):
+                print(f"target directory path is not a directory: {rel}")
+                sys.exit(1)
+PY
+)" || fail "$message"
+}
+
 preflight_source_dir_targets() {
     local source_dir="$1" target_dir="$2" source_file rel
     [ -d "$source_dir" ] || return 0
@@ -633,7 +841,7 @@ preflight_source_dir_targets() {
         if [ "$target_dir" = ".exocortex" ] && is_data_relpath "$rel"; then
             continue
         fi
-        assert_safe_target_file_path "$target_dir/$rel"
+        preflight_add F "$target_dir/$rel"
     done < <(find "$source_dir" -type f | sort)
 }
 
@@ -641,19 +849,19 @@ preflight_install_targets() {
     local rel dir legacy replacement
     preflight_source_dir_targets "$SOURCE_COPY/.exocortex" .exocortex
     for rel in AI_START_HERE.md AGENTS.md CLAUDE.md .rules; do
-        [ -f "$SOURCE_COPY/$rel" ] && assert_safe_target_file_path "$rel"
+        [ -f "$SOURCE_COPY/$rel" ] && preflight_add F "$rel"
     done
-    assert_safe_target_file_path .cursorrules
+    preflight_add F .cursorrules
     preflight_source_dir_targets "$SOURCE_COPY/.cursor" .cursor
     preflight_source_dir_targets "$SOURCE_COPY/.github/skills" .github/skills
-    [ -f "$SOURCE_COPY/.github/copilot-instructions.md" ] && assert_safe_target_file_path .github/copilot-instructions.md
+    [ -f "$SOURCE_COPY/.github/copilot-instructions.md" ] && preflight_add F .github/copilot-instructions.md
     preflight_source_dir_targets "$SOURCE_COPY/.claude/skills" .claude/skills
     preflight_source_dir_targets "$SOURCE_COPY/.agents" .agents
     while IFS=$'\t' read -r legacy replacement; do
-        assert_safe_target_file_path "$legacy"
-        [ -z "$replacement" ] || assert_safe_target_file_path "$replacement"
+        preflight_add F "$legacy"
+        [ -z "$replacement" ] || preflight_add F "$replacement"
     done < "$RETIREMENTS"
-    [ -f "$SOURCE_COPY/VERSION" ] && assert_safe_target_file_path .exocortex/.version
+    [ -f "$SOURCE_COPY/VERSION" ] && preflight_add F .exocortex/.version
     for dir in \
         .exocortex/events \
         .exocortex/control \
@@ -662,7 +870,7 @@ preflight_install_targets() {
         .exocortex/local/protocol/descriptors \
         .exocortex/local/protocol/payloads \
         .exocortex/local/protocol/audit; do
-        assert_safe_target_dir_path "$dir"
+        preflight_add D "$dir"
     done
     for rel in \
         .exocortex/SESSION_CONTEXT.md \
@@ -679,8 +887,9 @@ preflight_install_targets() {
         .gitignore \
         .exocortex/.install-manifest \
         .exocortex/.install-manifest.tmp; do
-        assert_safe_target_file_path "$rel"
+        preflight_add F "$rel"
     done
+    preflight_check_paths
 }
 
 preflight_install_targets
@@ -774,15 +983,15 @@ if [ "$gitignore_existed" = false ]; then
     chmod 0644 "$GITIGNORE"
 fi
 
+verify_copied_targets
+
 ensure_target_dir .exocortex
 ensure_target_parent "$MANIFEST"
 ensure_target_parent "$MANIFEST.tmp"
-if awk 'NF >= 2 && seen[$1]++ { found=1 } END { exit !found }' "$MANIFEST_NEW"; then
-    fail "duplicate install-manifest path"
-fi
 {
     echo '# Exocortex install manifest - template code plane only'
-    sort -u "$MANIFEST_NEW"
+    # Last recorded digest per path wins; then one sorted entry per path.
+    awk 'NF >= 2 { last[$1] = $0 } END { for (k in last) print last[k] }' "$MANIFEST_NEW" | sort -u
 } > "$MANIFEST.tmp"
 mv "$MANIFEST.tmp" "$MANIFEST"
 

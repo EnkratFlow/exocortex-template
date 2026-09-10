@@ -181,8 +181,20 @@ payload:
 - `.exocortex/local/protocol/payloads/`
 - `.exocortex/local/protocol/audit/`
 
-Unregistered, unavailable, expired, revoked, mismatched, or unknown executors
-remain read-only. Registration does not grant a work-item operation.
+Executor registration, writer reservations, and one-time capabilities govern
+the guarded runtime operations only: work-item mutations through
+`orchestrate_work_item.py`, guarded template updates through
+`scripts/safe-update.sh --apply`, and payload delivery through
+`egress_guard.py`. For those operations, unregistered, unavailable, expired,
+revoked, mismatched, or unknown executors remain read-only, and registration
+does not grant a work-item operation. Ordinary project work is not a guarded
+operation: editing, tests, commits, pushing a branch to the project's own
+remote, pull requests, and the manual `/save` and `/interrupt` commands need
+no registration and no capability.
+
+A private project's own trusted executors may hold long-lived registrations;
+a year is reasonable. A registration that expires within a day turns the
+first write of every day into a re-approval and protects nothing.
 
 Use `.exocortex/scripts/orchestrate_work_item.py` for read-only orientation,
 capability/cost routing, and guarded runtime-work-item mutations. Planning-v1
@@ -227,6 +239,12 @@ the seal plus every preceding pre-UAT transition as one exact capability and
 transaction chain.
 
 ## Egress
+
+Egress is payload delivery through the guard to a configured destination
+(vault, hub, provider, and key-check adapters). Git operations against the
+project's own remote, including branch pushes and pull requests, are ordinary
+version control and are not governed by the guard or by
+`EXTERNAL_SYNC_POLICY.json`.
 
 Use `.exocortex/scripts/egress_guard.py` only:
 
