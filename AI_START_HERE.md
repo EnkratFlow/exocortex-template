@@ -58,7 +58,17 @@ Unknown, unregistered, expired, revoked, unattested, or unconstrained AI surface
 
 ## 3. Resolve authority deterministically
 
-Before a mutation, identify all of the following from project-local records:
+This section governs protocol-managed mutations: work-item records and
+transitions, guarded template updates, and guarded egress. Ordinary project
+work is not protocol-managed and needs none of these records: editing files,
+running tests, committing, pushing a branch to the project's own remote,
+opening or updating a pull request, and the manual `/save` and `/interrupt`
+commands proceed under the project's branch policy and the owner's standing
+instructions. Read-only is the default for the guarded operations only, not
+for the project.
+
+Before a protocol-managed mutation, identify all of the following from
+project-local records:
 
 - work-item ID and revision;
 - approved operation;
@@ -177,6 +187,13 @@ exclusions remain routing constraints.
   applicable local-delivery scope.
 
 ## 7. Fail closed on egress
+
+Egress means delivering a payload through the guard to a configured
+destination: vault, hub, provider, or key-check adapters. Git operations
+against the project's own remote, including pushing a branch and opening a
+pull request, are ordinary version control, not egress, and
+`EXTERNAL_SYNC_POLICY.json` does not govern them. Publishing a template
+release is the separate publication gate in the installation guide.
 
 External delivery uses `.exocortex/scripts/egress_guard.py` and requires:
 

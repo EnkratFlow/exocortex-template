@@ -38,12 +38,15 @@ The hook runs right-sized checks from staged paths:
 - Markdown-only work gets the documentation contract, adapter check, checksum
   verification, and staged diff check.
 - Event/memory tooling gets its focused suite plus the quick checks.
-- Other code-plane changes get `bash tests/run_tests.sh`, adapter verification,
-  and the staged diff check.
+- Other code-plane changes get the quick contracts: documentation contract,
+  public-release contract, adapter verification, checksum verification, and
+  the staged diff check. The installer and update suite
+  (`tests/run_tests.sh`) runs in CI, never in the hook; run it locally only
+  when a change touches the installer or updater and you want an early answer.
 
 If tests fail, the commit is blocked.
 
-The hook runs only focused or quick checks; it never runs the complete
+The hook runs only quick checks; it never runs the complete
 Exocortex safety suite. The complete suite remains the once-per-exact-candidate
 review/CI gate described above.
 

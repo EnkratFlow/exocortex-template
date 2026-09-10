@@ -691,6 +691,10 @@ to a named branch, and creation of a draft pull request. It does not authorize
 merge. Integration/rollout and exact-target production/egress remain later
 business decisions.
 
+This gate concerns publishing the installation or update change itself. It
+does not restrict the project's own code: project branches, pushes to the
+project's remote, and pull requests follow the project's branch policy.
+
 ## Human UAT
 
 The owner should be able to confirm:

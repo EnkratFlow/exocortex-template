@@ -6,6 +6,30 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 ## [Unreleased]
 
+### Changed
+
+- **Installer speed.** One clean install takes about 15 seconds instead of 26
+  on the same machine, and the complete safety suite shortens accordingly. The
+  target-path safety walk caches ancestor directories verified during the run
+  and no longer re-walks the same path back to back; integrity verification
+  hashes the manifest in one process with an exact per-file fallback; the
+  reviewed source digest is reused for the copy check; manifest records are
+  appended with last-digest-wins finalization. Every rejection and its
+  message are unchanged.
+- **Guarded operations are scoped explicitly.** `AI_START_HERE.md`,
+  `AI_BOOTSTRAP.md`, the installation guide, and the Claude, Codex, and
+  Copilot adapters now state that executor registration, writer reservations,
+  and one-time capabilities apply to work-item transitions, guarded template
+  updates, and guarded egress only. Ordinary project work (edits, tests,
+  commits, branch pushes to the project's own remote, pull requests, `/save`,
+  `/interrupt`) is not guarded and needs no registration. Git operations
+  against the project's own remote are not egress and are not governed by
+  `EXTERNAL_SYNC_POLICY.json`. Long-lived registrations are recommended for a
+  private project's own trusted executors; daily expiry protects nothing.
+- **Pre-commit hook.** Code-plane changes get the quick contracts only; the
+  installer and update suite runs in CI, never in the hook.
+- Phase-b evidence includes a per-line timing log beside each suite log.
+
 ## [3.3.1] - 2026-09-08
 
 ### Added

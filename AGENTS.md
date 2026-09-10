@@ -6,7 +6,7 @@ Then read `.exocortex/AI_BOOTSTRAP.md` and `.exocortex/reference/MEMORY.md` in t
 
 For manual commands, `.exocortex/commands/<name>.json` is the sole command-flow behavior source. This file may point to that specification but cannot restate or override it; if they conflict, report the deviation and follow the JSON without combining instructions.
 
-This file is a thin Codex-compatible adapter. It does not grant mutation, Git, release, deployment, service, credential, external-sync, or promotion authority. Unknown or unattested surfaces remain read-only. Protocol-managed writes and outward actions must pass the registered guarded-executor and exact capability checks described in `AI_START_HERE.md`.
+This file is a thin Codex-compatible adapter. It does not independently grant authority. Guarded operations (work-item transitions, guarded template updates, guarded egress) must pass the registered guarded-executor and exact capability checks described in `AI_START_HERE.md`. Ordinary project work, including edits, tests, commits, branch pushes to the project's own remote, pull requests, and `/save`, is not guarded and needs no registration.
 
 Never read or expose secret values or `.env` contents.
 
