@@ -8,7 +8,8 @@
   updates, and guarded egress. Editing, tests, commits, pushing a branch to the
   project's own remote, pull requests, and `/save` are ordinary project work
   and need no registration or capability.
-- The pre-commit hook never runs the long installer suite; CI does.
+- The pre-commit hook's installer-suite run for code-plane changes takes
+  minutes now, not half an hour.
 
 ---
 

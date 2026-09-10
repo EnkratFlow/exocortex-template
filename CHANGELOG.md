@@ -33,8 +33,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
   against the project's own remote are not egress and are not governed by
   `EXTERNAL_SYNC_POLICY.json`. Long-lived registrations are recommended for a
   private project's own trusted executors; daily expiry protects nothing.
-- **Pre-commit hook.** Code-plane changes get the quick contracts only; the
-  installer and update suite runs in CI, never in the hook.
+- **Pre-commit hook.** Policy unchanged: code-plane changes still run the
+  staged installer suite from the frozen index snapshot, which now takes
+  minutes rather than half an hour because of the installer change.
 - Phase-b evidence includes a per-line timing log beside each suite log.
 
 ## [3.3.1] - 2026-09-08

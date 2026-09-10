@@ -593,9 +593,8 @@ EOF
           && verify_checksums "$INDEX_ROOT" \
           && run_index_git diff --cached --check --no-ext-diff --no-textconv
     else
-        echo "Exocortex: quick contracts for code-plane changes (the installer suite runs in CI)..."
-        run_clean "$HOST_PYTHON" -I "$INDEX_ROOT/tests/test_documentation_contract.py" "$INDEX_ROOT" \
-          && run_clean "$HOST_PYTHON" -I "$INDEX_ROOT/tests/test_public_release.py" "$INDEX_ROOT" \
+        echo "Exocortex: affected deterministic suite..."
+        run_clean "$HOST_BASH" "$tests_dir/run_tests.sh" \
           && run_clean "$HOST_PYTHON" -I "$INDEX_ROOT/.exocortex/scripts/generate_command_adapters.py" --check \
           && verify_checksums "$INDEX_ROOT" \
           && run_index_git diff --cached --check --no-ext-diff --no-textconv
