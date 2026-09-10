@@ -1,8 +1,8 @@
 # What's New in 3.3.2 — Faster installs, gates scoped to guarded operations
 
-- A clean install takes about 15 seconds instead of 26, with every safety
+- A clean install takes about 4 seconds instead of 26, with every safety
   rejection unchanged, so the complete suite and every update rehearsal run
-  faster.
+  several times faster.
 - The entry document, bootstrap, installation guide, and agent adapters now say
   plainly what the guards cover: work-item transitions, guarded template
   updates, and guarded egress. Editing, tests, commits, pushing a branch to the

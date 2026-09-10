@@ -6,15 +6,22 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 ## [Unreleased]
 
+## [3.3.2] - 2026-09-10
+
 ### Changed
 
-- **Installer speed.** One clean install takes about 15 seconds instead of 26
-  on the same machine, and the complete safety suite shortens accordingly. The
-  target-path safety walk caches ancestor directories verified during the run
-  and no longer re-walks the same path back to back; integrity verification
-  hashes the manifest in one process with an exact per-file fallback; the
-  reviewed source digest is reused for the copy check; manifest records are
-  appended with last-digest-wins finalization. Every rejection and its
+- **Installer speed.** One clean install takes about 4 seconds instead of 26
+  on the same machine, and the complete safety suite and every update
+  rehearsal shorten accordingly. The read-only preflight validates every
+  target path in one process with the same rules and messages as the shell
+  walk; the in-place walk before each write caches ancestor directories
+  verified during the run; integrity verification hashes the manifest in one
+  process with an exact per-file fallback; per-copy hashing and mode probing
+  are replaced by a builtin lookup of the reviewed digest and bound mode, a
+  byte comparison after the copy, and one batched verification of mode,
+  regular-file status, and link count before the manifest is finalized; the
+  hard-link check still runs before any in-place overwrite; manifest records
+  are appended with last-digest-wins finalization. Every rejection and its
   message are unchanged.
 - **Guarded operations are scoped explicitly.** `AI_START_HERE.md`,
   `AI_BOOTSTRAP.md`, the installation guide, and the Claude, Codex, and
