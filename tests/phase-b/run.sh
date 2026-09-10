@@ -51,13 +51,24 @@ bash "$ROOT/tests/phase-b/fault_shims.sh" "$DENY_BIN" >/dev/null
 
 python3 "$ROOT/tests/phase-b/hash_tree.py" "$ROOT" --output "$EVIDENCE/candidate-tree.json"
 
+timed_tee() {  # $1 = verbatim log (evidence), $2 = same lines prefixed with epoch seconds (timing only)
+    python3 -u -c '
+import sys, time
+verbatim = open(sys.argv[1], "wb")
+timed = open(sys.argv[2], "wb")
+for line in sys.stdin.buffer:
+    verbatim.write(line); verbatim.flush()
+    timed.write(("%.1f " % time.time()).encode("ascii") + line); timed.flush()
+' "$1" "$2"
+}
+
 set +e
-(cd "$ROOT" && HOME="$FAKE_HOME" PATH="$DENY_BIN:$PATH" EXOCORTEX_PRIVATE_FINGERPRINT_FILE="$PRIVATE_FINGERPRINT" bash tests/run_tests.sh) >"$EVIDENCE/installer.log" 2>&1
-echo "$?" > "$EVIDENCE/installer.rc"
-(cd "$ROOT" && HOME="$FAKE_HOME" PATH="$DENY_BIN:$PATH" EXOCORTEX_AUDIT_EVIDENCE_PATH="$EVIDENCE/egress-audit.jsonl" bash .exocortex/scripts/tests/test_orchestration_protocol.sh) >"$EVIDENCE/orchestration.log" 2>&1
-echo "$?" > "$EVIDENCE/orchestration.rc"
-(cd "$ROOT" && HOME="$FAKE_HOME" PATH="$DENY_BIN:$PATH" bash .exocortex/scripts/tests/test_event_tooling.sh) >"$EVIDENCE/event-tooling.log" 2>&1
-echo "$?" > "$EVIDENCE/event-tooling.rc"
+(cd "$ROOT" && HOME="$FAKE_HOME" PATH="$DENY_BIN:$PATH" EXOCORTEX_PRIVATE_FINGERPRINT_FILE="$PRIVATE_FINGERPRINT" bash tests/run_tests.sh) 2>&1 | timed_tee "$EVIDENCE/installer.log" "$EVIDENCE/installer.timing.log"
+echo "${PIPESTATUS[0]}" > "$EVIDENCE/installer.rc"
+(cd "$ROOT" && HOME="$FAKE_HOME" PATH="$DENY_BIN:$PATH" EXOCORTEX_AUDIT_EVIDENCE_PATH="$EVIDENCE/egress-audit.jsonl" bash .exocortex/scripts/tests/test_orchestration_protocol.sh) 2>&1 | timed_tee "$EVIDENCE/orchestration.log" "$EVIDENCE/orchestration.timing.log"
+echo "${PIPESTATUS[0]}" > "$EVIDENCE/orchestration.rc"
+(cd "$ROOT" && HOME="$FAKE_HOME" PATH="$DENY_BIN:$PATH" bash .exocortex/scripts/tests/test_event_tooling.sh) 2>&1 | timed_tee "$EVIDENCE/event-tooling.log" "$EVIDENCE/event-tooling.timing.log"
+echo "${PIPESTATUS[0]}" > "$EVIDENCE/event-tooling.rc"
 PYTHONDONTWRITEBYTECODE=1 python3 "$ROOT/tests/phase-b/verify_evidence.py" "$EVIDENCE"
 rc=$?
 echo "Complete Exocortex safety evidence: $EVIDENCE"
