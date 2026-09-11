@@ -269,7 +269,19 @@ translate the Bash safety logic into PowerShell ad hoc.
 - `.exocortex/scripts/egress_guard.py` separates local immutable payload staging
   from destination-specific outward authorization.
 
-Unknown or unregistered AI surfaces are read-only. A save is local narrative
+Registration, writer reservations, and one-time capabilities govern the
+guarded operations only: runtime work-item transitions, guarded template
+updates, and guarded egress. For those, an unknown or unregistered AI surface
+is read-only. Ordinary project work is not guarded and needs no registration:
+editing files, running tests, committing, pushing a branch to the project's
+own remote, opening a pull request, and `/save` and `/interrupt` proceed under
+the project's own branch policy. Git operations against the project's own
+remote are version control, not egress, and `EXTERNAL_SYNC_POLICY.json` does
+not govern them. A private project's own trusted executors may hold long-lived
+registrations; an entry that expires within a day turns the first write of
+every day into a re-approval and protects nothing.
+
+A save is local narrative
 memory, not a lifecycle checkpoint. A handoff transfers evidence, not
 authority. Human-facing decisions use four business-level envelopes:
 `local_delivery`, `publication`, `integration_rollout`, and exact-target
@@ -388,7 +400,7 @@ authority. Recursive improvement therefore compounds safely:
 - Daily: `/work`, `/scrum`, `/save`, `/daily-end`, `/interrupt`, `/brief`
 - Memory: `/shortterm`, `/longterm`, `/subconscious`, `/drill`, `/history`
 - Planning: `/groom`, `/refine-backlog`, `/prioritize`, `/weekly-review`,
-  `/monthly-review`, `/pattern-review`
+  `/monthly-review`, `/pattern-review`, `/preflight`, `/orchestrate`
 - System: `/onboard`, `/system-scan`, `/ai-export`, `/ecosystem`,
   `/init-exocortex`, `/check-keys`, `/handoff`
 
