@@ -6,6 +6,26 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 ## [Unreleased]
 
+## [3.3.3] - 2026-09-11
+
+### Changed
+
+- **README states the scope of the guards.** 3.3.2 scoped registration,
+  writer reservations and one-time capabilities to the guarded operations in
+  `AI_START_HERE.md`, `AI_BOOTSTRAP.md`, the installation guide and the
+  provider adapters, but the README still carried the unqualified sentence
+  "Unknown or unregistered AI surfaces are read-only". Agents reading the
+  README refused ordinary work in private projects on that basis. The Core
+  model section now states that the guards govern runtime work-item
+  transitions, guarded template updates and guarded egress only; that
+  editing, tests, commits, branch pushes to the project's own remote, pull
+  requests, `/save` and `/interrupt` are not guarded and need no
+  registration; that Git operations against the project's own remote are
+  version control rather than egress; and that a private project's own
+  trusted executors may hold long-lived registrations.
+- The command list gains `/preflight` and `/orchestrate`, which 3.3.1
+  documented below the list but never added to its categories.
+
 ## [3.3.2] - 2026-09-10
 
 ### Changed
