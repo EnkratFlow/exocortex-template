@@ -1,3 +1,16 @@
+# What's New in 3.3.3 — The README matches the guards
+
+- The README no longer says that unregistered AI surfaces are read-only
+  without qualification. It now states what 3.3.2 established everywhere
+  else: the guards cover runtime work-item transitions, guarded template
+  updates and guarded egress. Editing, tests, commits, pushing a branch to
+  the project's own remote, pull requests and `/save` are ordinary project
+  work that needs no registration, and Git against the project's own remote
+  is version control rather than egress.
+- `/preflight` and `/orchestrate` appear in the command list.
+
+---
+
 # What's New in 3.3.2 — Faster installs, gates scoped to guarded operations
 
 - A clean install takes about 4 seconds instead of 26, with every safety
