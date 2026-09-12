@@ -312,7 +312,17 @@ def collect(start: Path) -> dict:
         disc.append({"code": "commits_after_event_coverage", "count": out["commits"]["after_coverage_count"],
                      "substantive": substantive})
     head_date = out["identity"]["head_commit_date"] or ""
-    head_date_utc = datetime.fromisoformat(head_date).astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ") if head_date else ""
+    # Accept a trailing "Z": datetime.fromisoformat only learned that spelling in
+    # Python 3.11, and this template supports Python 3.9+. authority_guard.py,
+    # model_registry.py and prepare_update_reconciliation.py already normalize it
+    # the same way; this collector was the one that did not.
+    head_date_utc = (
+        datetime.fromisoformat(head_date.replace("Z", "+00:00"))
+        .astimezone(timezone.utc)
+        .strftime("%Y-%m-%dT%H:%M:%SZ")
+        if head_date
+        else ""
+    )
     # "recent" means the file was written after the newest uncovered commit: a regenerated context that still
     # does not record the work. Being newer than the last event is normal (contexts are generated right after saves).
     context_is_recent = bool(context.get("mtime")) and bool(head_date_utc) and context["mtime"] > head_date_utc
