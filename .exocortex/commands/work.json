@@ -27,9 +27,9 @@
     {
       "type": "shell",
       "command": "python3 .exocortex/scripts/get_subconscious_nudge.py",
-      "description": "Subconscious nudge — single-sentence pattern probe (DMN activation)",
+      "description": "Subconscious nudge \u2014 single-sentence pattern probe (DMN activation)",
       "outputs": {
-        "subconscious_nudge": "One-sentence 💭 insight or empty if insufficient data"
+        "subconscious_nudge": "One-sentence \ud83d\udcad insight or empty if insufficient data"
       }
     },
     {
@@ -40,13 +40,13 @@
         "shortterm_memory",
         "subconscious_nudge"
       ],
-      "context": "You are producing a work brief to re-orient the user into this project only. Read project-local Git state and TODO.md before generating the brief. Do not query a cross-project index, hub, vault, or external memory.\n\nGenerate a rich, structured brief in this order:\n\n1. RIGHT NOW - display right_now_section verbatim. If it contains insufficient recent context, read at most the two newest project-local `.exocortex/events/*.md` files and reconstruct the last work, decisions, next actions, and blockers.\n\n2. SHORT-TERM - display shortterm_memory verbatim.\n\n3. SUBCONSCIOUS NUDGE - display subconscious_nudge if non-empty.\n\n4. GIT STATE - run read-only Git status, branch, and recent-log commands. List each modified or untracked path and flag a branch that appears pending integration.\n\n5. OPEN ITEMS - read project-local `.exocortex/OPEN_DECISIONS.md` when present and identify unresolved decisions or overdue local actions.\n\n6. NEXT TASK - show the first incomplete task group from the Ready section of `.exocortex/TODO.md`.\n\nThen show the A/B/C choice. Name actual local evidence and identify uncertainty instead of guessing."
+      "context": "You are producing a work brief to re-orient the user into this project only. Read project-local Git state and TODO.md before generating the brief. Do not query a cross-project index, hub, vault, or external memory.\n\nGenerate a rich, structured brief in this order:\n\n1. RIGHT NOW - display right_now_section verbatim. If it contains insufficient recent context, read at most the two newest project-local `.exocortex/events/*.md` files and reconstruct the last work, decisions, next actions, and blockers.\n\n2. SHORT-TERM - display shortterm_memory verbatim.\n\n3. SUBCONSCIOUS NUDGE - display subconscious_nudge if non-empty.\n\n4. GIT STATE - run read-only Git status, branch, and recent-log commands. List each modified or untracked path and flag a branch that appears pending integration. A working tree can be shared with another session, so say plainly which listed paths this session did not create; treat every one of them as another writer's work.\n\n5. OPEN ITEMS - read project-local `.exocortex/OPEN_DECISIONS.md` when present and identify unresolved decisions or overdue local actions.\n\n6. NEXT TASK - show the first incomplete task group from the Ready section of `.exocortex/TODO.md`.\n\nThen show the A/B/C choice. Name actual local evidence and identify uncertainty instead of guessing.\n\nIf the human chooses B, stage only the paths this session changed, naming each one explicitly. Never run `git add -A` or `git add .`, and never stage a path this session did not create: in a shared working tree that commits another writer's work under this session's name. If ownership of any listed path is unclear, say so and commit nothing until the human resolves it. Offering B is not authority to commit, and it never authorizes push, merge, deployment, or synchronization."
     },
     {
       "type": "user_choice",
       "options": [
         "A) Start next task",
-        "B) Commit uncommitted first",
+        "B) Commit this session's own changes first",
         "C) Something else"
       ]
     }
