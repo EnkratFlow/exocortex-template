@@ -1,3 +1,46 @@
+# Unreleased Phase B provider-evidence reconciliation
+
+- `AI_START_HERE.md` is now the provider-neutral entry contract, with
+  minute-scale delivery gates, model-neutral cost-aware routing, one guarded
+  writer, deterministic checkpoints, local handoffs, and deny-by-default
+  external egress.
+- The 24 canonical command JSON files remain the behavior source and all 24
+  commands are retained.
+- Generated parity remains 24 portable Agent Skills, 24 Claude skills, and 24
+  dedicated Cursor skills.
+- Version-scoped visibility UAT verified all 24 Exocortex entries in Cursor
+  Stable 3.12.30, Claude Desktop 1.24012.1 (0adcae), Kimi Code CLI 1.14.0,
+  and Zed 1.12.0 stable.328 built-in Agent.
+- Kimi Desktop Work 3.1.3 is explicitly separate from Kimi Code CLI and remains
+  `failed` at 0/24.
+- Codex and GitHub Copilot remain `compatible` with their recorded limitations.
+- Windsurf remains unavailable and absent from active/default installation.
+- Provider evidence now uses the version-scoped statuses `verified`,
+  `compatible`, `failed`, `blocked`, and `unavailable`.
+- Direct pre-C1 and C1 updates retain 49 manifest-and-byte-gated migration
+  protections. Customized or unknown paths remain untouched.
+- A provider-neutral AI installation guide now supplies copy-paste clean-install
+  and existing-repository prompts, the complete guarded apply contract, the
+  GitHub approval boundary, and Human UAT.
+- The current platform matrix records macOS as verified, Linux as pending
+  final-candidate CI, WSL as Human-UAT-pending, and Git Bash/native Windows as
+  unsupported.
+- Active security, contributing, save, installation, upgrade, and internal
+  documentation have been reconciled with deterministic drift tests.
+
+All provider UAT was discovery-only: no command or model request was executed,
+and no repository authority was granted.
+
+This is an uncommitted local candidate. It is not a release or promotion.
+
+---
+
+Everything below this line is preserved historical release documentation. Its
+old commands, flags, counts, model defaults, and provider claims describe those
+earlier versions and are not current operator instructions. Use the root
+`README.md`, `SECURITY.md`, and `.exocortex/docs/AI_INSTALLATION.md` for the
+current path.
+
 # What's New in 3.1.9
 
 This release switches the Anthropic fallback model from haiku to sonnet across the memory scripts.

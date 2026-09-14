@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/exocortex/schemas/executor-registry.schema.json",
+  "title": "Exocortex guarded executor registry",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "kind", "registry_version", "default_role", "executors"],
+  "properties": {
+    "schema_version": { "const": "public-v2" },
+    "kind": { "const": "executor_registry" },
+    "registry_version": { "type": "integer", "minimum": 1 },
+    "default_role": { "const": "read_only" },
+    "executors": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "surface_id",
+          "executor_id",
+          "adapter_version",
+          "guard_digest",
+          "roles",
+          "status",
+          "registered_at",
+          "expires_at",
+          "revoked_at"
+        ],
+        "properties": {
+          "surface_id": { "$ref": "#/$defs/id" },
+          "executor_id": { "$ref": "#/$defs/id" },
+          "adapter_version": { "type": "string", "minLength": 1, "maxLength": 100 },
+          "guard_digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+          "roles": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": { "type": "string", "enum": ["read_only", "writer", "egress"] }
+          },
+          "status": { "type": "string", "enum": ["active", "expired", "revoked"] },
+          "registered_at": { "$ref": "#/$defs/timestamp" },
+          "expires_at": { "$ref": "#/$defs/timestamp" },
+          "revoked_at": { "oneOf": [{ "type": "null" }, { "$ref": "#/$defs/timestamp" }] }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "id": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,199}$" },
+    "timestamp": { "type": "string", "format": "date-time" }
+  }
+}

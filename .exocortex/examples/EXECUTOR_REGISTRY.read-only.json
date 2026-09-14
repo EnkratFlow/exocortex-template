@@ -1,0 +1,7 @@
+{
+  "schema_version": "public-v2",
+  "kind": "executor_registry",
+  "registry_version": 1,
+  "default_role": "read_only",
+  "executors": []
+}

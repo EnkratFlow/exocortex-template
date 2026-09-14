@@ -2,11 +2,17 @@
 
 This folder contains the canonical memory for this project.
 
-**Workflow Commands:** All workflow commands (/save, /work, /history, /groom, etc.) are defined as JSON specs in:
-→ `.exocortex/commands/*.json` (one file per command)
+**Workflow Commands:** The exact 24 commands are defined as JSON specs in:
+→ `.exocortex/commands/*.json` (the single behavior source)
 → `.exocortex/COMMAND_SYSTEM.md` (schema reference and full command index)
-→ Triggered via Cursor user rule (Settings > General > Rules for AI) which reads `.exocortex/AI_BOOTSTRAP.md`
-→ Other editors: tell the AI "read .exocortex/AI_BOOTSTRAP.md" at session start
+→ `.exocortex/provider-adapters.json` (provider invocation and migration matrix)
+→ `.agents/skills/`, `.claude/skills/`, and `.cursor/skills/` (72 generated thin command adapters)
+
+Every provider starts at `AI_START_HERE.md`. Codex invokes a skill with
+`$command` or its selector; other supported surfaces use the syntax recorded in
+the provider matrix. An unidentified host reads the matching JSON directly and
+does not receive a native-menu claim. Windsurf is currently unavailable and is
+not part of active/default installation.
 
 **AI Persona & Commands:** The AI assistant is configured as a senior multidisciplinary expert. Quick help:
 → `QUICK_REFERENCE.md` - Fast lookup for commands and when to use them

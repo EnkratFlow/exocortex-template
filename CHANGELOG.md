@@ -4,6 +4,64 @@ All notable changes to this project will be documented here.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+Historical release entries below preserve what earlier versions shipped. Their
+installation commands and support claims are not current instructions; the
+root `README.md`, `SECURITY.md`, and
+`.exocortex/docs/AI_INSTALLATION.md` are authoritative.
+
+### Added
+- **Provider-neutral entry and delivery protocol** — added
+  `AI_START_HERE.md`, minute-scale Kanban/SDLC gates, model-neutral
+  capability/risk/cost routing, public-v2 work items, one-writer authority,
+  checkpoint/handoff separation, and deny-by-default external egress.
+- **AI-guided installation and update** — added copy-paste clean-install and
+  existing-repository prompts for coding agents with local filesystem and
+  terminal access. The AI must pin and verify the template, rehearse, stop for
+  exact approval, and keep commit, push, PR, merge, deployment, synchronization,
+  and promotion separately gated.
+- **Safe existing-repository migration** — added complete protected-data
+  inventory, external restore archive, complete changed-path evidence,
+  guarded apply, retry, idempotency, rollback, and one-target-at-a-time rules.
+- **Platform evidence matrix** — macOS is verified; Linux requires
+  final-candidate CI; WSL requires Human UAT; Git Bash and native Windows remain
+  unsupported.
+- **Documentation contract tests** — active documentation now fails
+  deterministically on obsolete manual-copy, credential-creation,
+  remote-pipe-install, save-as-checkpoint, stale test-count, wrong upgrade-link,
+  unsupported-platform, implicit-approval, or bundled-publication guidance.
+
+### Changed
+- **Provider-native command parity** — the 72 generated command adapters are
+  now 24 portable Agent Skills, 24 Claude skills, and 24 dedicated Cursor
+  skills. All remain thin, manual-only pointers to the canonical JSON commands.
+- **Accepted provider visibility evidence** — Cursor Stable 3.12.30, Claude
+  Desktop 1.24012.1 (0adcae), Kimi Code CLI 1.14.0, and Zed 1.12.0 stable.328
+  built-in Agent each passed version-scoped native visibility UAT for all 24
+  Exocortex entries. No command was executed during those checks.
+- **Kimi surface distinction** — Kimi Desktop Work 3.1.3 is recorded separately
+  as `failed` at 0/24. That result does not invalidate the verified Kimi Code
+  CLI result.
+- **Remaining evidence limits** — Codex and GitHub Copilot remain `compatible`;
+  Codex selector UAT is pending and the passing Copilot client version was not
+  captured. Cursor 3.6.21's earlier portable-adapter failure remains historical
+  version-and-family evidence.
+- **Windsurf status** — removed Windsurf from active/default support and
+  installation because no installed version was available for Human UAT.
+  Older Windsurf entries below remain historical release records.
+
+### Migration
+- Preserved 24 earlier Cursor/GitHub retirement mappings and added 25 Windsurf
+  retirements. Removal requires prior manifest ownership and byte equality;
+  customized or unknown files remain with
+  `EXOCORTEX_ADAPTER_COLLISION_PRESERVED`.
+
+### Tests
+- Added deterministic provider-matrix, frontmatter, generated-path,
+  pre-C1/C1 direct-update, collision-preservation, manifest-uniqueness, and
+  idempotency coverage.
+
 ## [3.1.9] - 2026-05-18
 
 ### Changed

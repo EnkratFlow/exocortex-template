@@ -1,164 +1,144 @@
-# Exocortex File Classification & Upgrade Manifest
+# Exocortex Upgrade Manifest — Public-v2
 
-> Last updated: Feb 7, 2026 · v1.0
-> Source of truth: exocortex-template/.exocortex/ (canonical implementation)
+## Plane classification
 
-## The Three Planes
+### Code plane: template-managed
 
+Generic entry adapters, command specifications, schemas, guards, installer and
+updater code, documentation, and deterministic tests may flow from the public
+template to projects. Manifest updates apply only when the installed hash still
+matches the prior template hash.
+
+The adapter code plane includes `.agents/skills`, `.claude/skills`, and
+`.cursor/skills`. Their 72 command-adapter files are generated from the 24 canonical JSON
+commands and validated before any install target mutation.
+
+### Data plane: protected project truth
+
+Never copy from the template, overwrite, delete, or manifest-track:
+
+```text
+SESSION_CONTEXT.md
+SESSION_CONTEXT.local.md
+TODO.md
+LESSONS.md
+PROJECT_MEMORY.md
+OPEN_DECISIONS.md
+subconscious_patterns.md
+.env
+.project-name
+.install-manifest
+events/**
+archive/**
+hub/**
+local/**
+planning/**
+work-items/**
+control/ACTIVE_WORK.md
+control/BRANCH_POLICY.md
+control/REPO_STATE.md
+control/EXECUTOR_REGISTRY.json
+control/EXTERNAL_SYNC_POLICY.json
+control/INTERRUPTS.md
+control/BACKLOG.md
+control/ROADMAP.md
+control/ARCH_OVERVIEW.md
+control/REPO_ORGANIZATION_REPORT.md
+.hub_enabled
+.hub_disabled
 ```
-CODE PLANE (shareable)        → Flows DOWN from template/source to all projects
-DATA PLANE (project-local)    → NEVER leaves the project boundary
-HUB PLANE  (cross-project)    → Summaries flow UP from projects to hub
-```
 
-**Golden rule:** Code flows DOWN. Summaries flow UP. Memory NEVER flows sideways.
+Under a separate exact missing-default bootstrap, only these absent protected
+defaults may be created:
 
----
+- the exact generic file bytes emitted by the pinned candidate's reviewed
+  `install.sh` `ensure_data_stubs` function for `SESSION_CONTEXT.md`, `TODO.md`,
+  `LESSONS.md`, `PROJECT_MEMORY.md`, `OPEN_DECISIONS.md`,
+  `control/INTERRUPTS.md`, `control/BACKLOG.md`, `control/ROADMAP.md`, an empty
+  read-only `control/EXECUTOR_REGISTRY.json`, and deny-all
+  `control/EXTERNAL_SYNC_POLICY.json`;
+- real, non-symlink directories at `events`, `control`, and
+  `local/protocol/{capabilities,transactions,descriptors,payloads,audit}`; and
+- `.project-name` with one exact project-specific value supplied and approved
+  by the owner, never inferred as generic content.
 
-## CODE PLANE — Safe to Propagate
+Every file must be a real regular file checked with non-following metadata.
+Existing paths are never overwritten. All of these remain data-plane paths and
+the bootstrap grants no writer, apply, Git, or outward authority.
 
-These files contain infrastructure, not memory. They are identical (or should be)
-across all exocortex-enabled projects.
+### External plane: explicit immutable payload
 
-### scripts/ (Python + Bash)
+There is no automatic hub or upward summary plane. External sync is a separate
+operation over one content-addressed local payload descriptor and one exact
+destination/method approval. Project memory never flows sideways.
 
-| File | Type | Purpose |
-|------|------|---------|
-| `get_rightnow_memory.py` | Python | Episodic memory 0-7 days (OpenAI 2-pass) |
-| `get_shortterm_memory.py` | Python | Semantic memory 7-31 days (OpenAI 2-pass) |
-| `get_longterm_memory.py` | Python | Compressed memory 31+ days (OpenAI 2-pass) |
-| `get_subconscious_memory.py` | Python | Cross-cutting pattern detection ALL events |
-| `get_subconscious_nudge.py` | Python | DMN nudge — single sentence for /work |
-| `drill_memory.py` | Python | Topic-specific deep dive |
-| `_api_helpers.py` | Python | Shared API call + error handling module |
-| `create_event.sh` | Bash | Create timestamped event file |
-| `generate_context.sh` | Bash | Rebuild SESSION_CONTEXT.md from events |
-| `archive_events.sh` | Bash | Archive old events |
-| `save_work_state.sh` | Bash | Save current state + post to hub |
-| `post_to_hub.sh` | Bash | Post summary to ecosystem hub |
-| `capture_interrupt.sh` | Bash | Add item to INTERRUPTS.md |
-| `groom_interrupts.sh` | Bash | Move interrupts to backlog |
-| `detect_work_state.sh` | Bash | Check git/todo state |
-| `get_next_task.sh` | Bash | Parse next Ready task from TODO.md |
-| `read_memory_stack.sh` | Bash | Read all memory tiers sequentially |
-| `run_brief_status.sh` | Bash | Quick status check |
-| `run_end_day.sh` | Bash | End-of-day workflow |
-| `run_morning_workflow.sh` | Bash | Morning startup workflow |
-| `run_scrum.sh` | Bash | Daily standup |
+## Update rules
 
-### commands/ (20 JSON specs)
+1. Pin the exact template source, preserve the separately approved SHA-256 of
+   `SHA256SUMS`, and verify both that candidate digest and all complete
+   checksums before target mutation.
+2. Reject malformed, duplicate, missing, extra in-scope, traversal, or
+   mismatched checksum entries.
+3. Validate the provider matrix and exact 24-command/72-adapter generated set.
+4. Create a restore archive in an explicit disposable backup directory.
+5. Before dry run, verify the required legacy protected defaults by path
+   metadata. Bootstrap only missing generic scaffolding under a separate exact
+   approval; never overwrite existing project data or let apply create defaults
+   after capability consumption.
+6. Rehearse in a newly created disposable copy with fake `HOME` and no network.
+7. Hash the complete protected data plane before and after rehearsal.
+8. Emit the SHA-256, count, and complete sorted changed-path list. The digest
+   covers UTF-8 relative paths in bytewise sorted order, each terminated by LF;
+   an empty change set hashes the empty byte string.
+9. Preserve user-modified and unknown files; never silently adopt them into the
+   manifest.
+10. Require a separate exact approval before applying to the real target.
+11. Run twice to prove idempotency, inject failures, and restore into a second
+   disposable target to prove rollback.
+12. Update one target at a time. Batch `--yes` behavior is not part of the
+   public-v2 authority model.
+13. Promote only scrubbed code-plane changes from an approved clean base; scan
+    the promoted tree and newly reachable history for private evidence.
 
-All 20 JSON command specifications:
-`ai-export.json`, `brief.json`, `daily-end.json`, `drill.json`,
-`ecosystem.json`, `groom.json`, `history.json`, `init-exocortex.json`,
-`interrupt.json`, `longterm.json`, `monthly-review.json`, `prioritize.json`,
-`refine-backlog.json`, `save.json`, `scrum.json`, `shortterm.json`,
-`subconscious.json`, `system-scan.json`, `weekly-review.json`, `work.json`
+The provider-neutral operator prompt, complete dry-run and guarded-apply
+commands, required authority fields, GitHub boundary, and Human UAT are in
+`.exocortex/docs/AI_INSTALLATION.md`.
 
-### docs/ (generic documentation)
+## Provider-adapter migration
 
-| File | Purpose |
-|------|---------|
-| `SUBCONSCIOUS_ARCHITECTURE.md` | Neuroscience foundations + design |
-| `COMMAND_SYSTEM.md` | Command schema reference |
-| `architecture.md` | System architecture |
-| `memory-system.md` | Memory system design |
-| `event-system.md` | Event system reference |
-| `EVENT_SYSTEM_USAGE.md` | Event usage guide |
-| `user-guide.md` | User guide |
-| `vision.md` | Product vision |
-| `getting-started.md` | Setup guide |
-| `implementation.md` | Implementation notes |
-| `roadmap.md` | Product roadmap |
+The canonical command JSON files are never retired by the adapter migration.
+The matrix records two cumulative groups:
 
-### control/ (structure only — content is project-specific)
+- 24 prior Cursor/GitHub paths with canonical portable replacements; and
+- 25 retired Windsurf paths: 24 workflows plus `.windsurfrules`.
 
-| File | Propagate? | Notes |
-|------|-----------|-------|
-| `README.md` | ✅ YES | Workflow guide (generic) |
-| `SNIPPETS.md` | ✅ YES | Command catalog (generic) |
-| `DAILY_WORKFLOW.md` | ✅ YES | Workflow instructions (generic) |
-| `QA_STRATEGY.md` | ✅ YES | QA approach (generic) |
-| `INTERRUPTS.md` | ❌ TEMPLATE ONLY | Content is project-specific |
-| `BACKLOG.md` | ❌ TEMPLATE ONLY | Content is project-specific |
-| `ROADMAP.md` | ❌ TEMPLATE ONLY | Content is project-specific |
-| `ARCH_OVERVIEW.md` | ❌ NO | Project-specific architecture |
-| `END_SESSION_PROMPT.md` | ✅ YES | Session end workflow (generic) |
-| `REPO_ORGANIZATION_REPORT.md` | ❌ NO | Project-specific |
+For replacement-backed paths, the replacement must first be present and
+canonical. For either group, the installer removes a path only when it is
+recorded in the prior install manifest and its current bytes still match the
+recorded hash. Windsurf remains in safe-update inventory and restore archives
+so managed deletions are visible, authorized, and recoverable even though it is
+not part of fresh/default installation.
 
-### Root-level docs (CODE)
+If the replacement or legacy path is customized, unknown, missing, or
+noncanonical, preserve the old path and emit
+`EXOCORTEX_ADAPTER_COLLISION_PRESERVED`. Do not advertise the target as having
+collision-free provider parity until that target-specific finding is resolved.
 
-| File | Purpose |
-|------|---------|
-| `MEMORY_TIERS.md` | Memory tier documentation |
-| `COMMAND_SYSTEM.md` | Command reference |
-| `PERSONA_AND_COMMANDS.md` | Persona + all 20 commands |
-| `README.md` | Exocortex overview |
-| `AI_BOOTSTRAP.md` | Portable command execution protocol for AI agents |
+`.cursor/skills/onboard/SKILL.md` is the sole reactivated path. A
+manifest-owned, byte-matching legacy copy is retired before the current Cursor
+adapter is copied. Customized or unknown content is preserved, and the current
+adapter does not overwrite it. The resulting manifest must contain at most one
+record per path.
 
-### reference/ (CODE)
+## Restore portability
 
-| File | Purpose |
-|------|---------|
-| `MEMORY.md` | Memory system reference |
-| `ESSENTIAL_FILES.md` | File location map (template) |
-| `QUICK_REFERENCE.md` | Quick command reference |
+Use the verified native restore procedure for the target operating system. On
+macOS, disable copyfile metadata when extracting the archive so AppleDouble
+sidecars are not materialized. A generic archive reader is not equivalent to a
+verified rollback.
 
----
-
-## DATA PLANE — NEVER Propagate
-
-These files contain project-specific memory, decisions, and state.
-**Overwriting these would be memory corruption.**
-
-| File | Why Sacred |
-|------|-----------|
-| `events/*.md` | Project's autobiographical memory |
-| `SESSION_CONTEXT.md` | Current work state |
-| `TODO.md` | Active tasks |
-| `LESSONS.md` | Project-specific lessons learned |
-| `OPEN_DECISIONS.md` | Pending decisions |
-| `PROJECT_MEMORY.md` | System constraints and invariants |
-| `subconscious_patterns.md` | Cross-session pattern persistence |
-| `.env` | API keys (local config) |
-| `control/INTERRUPTS.md` | Active interrupts (project-specific) |
-| `control/BACKLOG.md` | Investigation items (project-specific) |
-| `control/ROADMAP.md` | Strategic plan (project-specific) |
-| `control/ARCH_OVERVIEW.md` | Project architecture (project-specific) |
-
----
-
-## HUB PLANE — Ecosystem Parent Project Only
-
-| Location | Purpose |
-|----------|---------|
-| `hub/activity_stream.txt` | Append-only log from all projects |
-| `hub/projects/*.txt` | Last-known-state per project |
-| `hub/README.md` | Hub documentation |
-
----
-
-## Special Case: Ecosystem Parent Project
-
-One project in your setup can act as the **ecosystem parent** (a hub repo). Configure its path by setting `EXOCORTEX_HUB_DIR` in `~/.exocortex/.env`. It receives:
-- ✅ All CODE plane files (same as child projects)
-- ✅ Hub infrastructure (hub/ directory)
-- ✅ Ecosystem-specific commands (may have additional ecosystem commands)
-- ✅ Its events CAN reference other projects (that's its job)
-- ❌ It does NOT receive other projects' events, TODO, LESSONS, etc.
-
-The hub project's memory IS cross-project by nature — it's the "scrum of scrums"
-brain. Its SESSION_CONTEXT.md SHOULD mention all child projects. Its events SHOULD
-record ecosystem-level activities. This is not corruption — it's its purpose.
-
----
-
-## Upgrade Safety Rules
-
-1. **NEVER overwrite a DATA file** — even if the target has an older version
-2. **Create directories** that don't exist (commands/, docs/, control/, reference/)
-3. **Preserve .env** — never touch it
-4. **Preserve events/** — never touch them
-5. **Back up before upgrading** — copy current state to .exocortex/archive/pre-upgrade/
-6. **Template-only for control/** — if INTERRUPTS.md doesn't exist, create from template; if it exists, don't touch it
-7. **Archive AI_INSTRUCTIONS.md** — old projects still have it; archive it, don't delete
+Current evidence supports macOS. Linux must pass the final candidate's Ubuntu
+CI before promotion. WSL remains Human-UAT-pending. Git Bash and native Windows
+PowerShell/Command Prompt are unsupported because their archive, hash, path,
+permission, and rollback behavior has not been verified. Do not infer native
+Windows support from provider availability.

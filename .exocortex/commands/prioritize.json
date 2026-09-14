@@ -1,6 +1,12 @@
 {
   "name": "/prioritize",
   "description": "Reorder TODO.md by strategic importance through guided questions",
+  "protocol": {
+    "entry_contract": "AI_START_HERE.md",
+    "authority": "exact_capability_required_for_mutation",
+    "egress": "separate_destination_specific_authorization",
+    "default_role": "read_only"
+  },
   "steps": [
     {
       "type": "ai",
@@ -9,8 +15,8 @@
     },
     {
       "type": "ai",
-      "action": "Apply approved priority order",
-      "context": "Show proposed new TODO.md order. Ask 'Does this order feel right?' Only rewrite the Ready section of TODO.md after explicit approval. Never auto-write."
+      "action": "Prepare the exact guarded mutation request",
+      "context": "Show the complete proposed project-local diff. If the user wants it recorded, identify exact paths, current work-item revision, executor, and content for a one-time capability. Do not write until the registered guarded executor accepts it."
     }
   ]
 }
