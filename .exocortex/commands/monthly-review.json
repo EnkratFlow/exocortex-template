@@ -1,21 +1,29 @@
 {
   "name": "/monthly-review",
   "description": "Monthly directional review: vision alignment, trends, course correction",
+  "protocol": {
+    "entry_contract": "AI_START_HERE.md",
+    "authority": "exact_capability_required_for_mutation",
+    "egress": "separate_destination_specific_authorization",
+    "default_role": "read_only"
+  },
   "steps": [
     {
       "type": "ai",
-      "action": "High-level reflection and trend analysis",
-      "context": "Read .exocortex/TODO.md, recent events, .exocortex/control/INTERRUPTS.md, .exocortex/OPEN_DECISIONS.md, and .exocortex/control/ROADMAP.md. Reflect: what built/learned, what aligned with vision, what felt wasteful. Review trends: repeated interrupt themes, repeated blockers, energy vs output mismatch. Ask 3 directional questions: 1) What should you stop doing? 2) What deserves more focus? 3) Is the direction still correct?"
+      "action": "Prepare a read-only monthly review report from project-local evidence",
+      "context": "Read only project-local Exocortex and Git evidence. Do not mutate TODO, BACKLOG, memory, events, or another repository. Present proposed changes with exact target paths."
+    },
+    {
+      "type": "user_choice",
+      "options": [
+        "A) Keep the report read-only",
+        "B) Request a separately scoped guarded local recording operation"
+      ]
     },
     {
       "type": "ai",
-      "action": "Propose directional updates",
-      "context": "Propose updates to PROJECT_MEMORY.md (only if direction changed), SESSION_CONTEXT.md, and high-level TODO priorities. About direction, not productivity. Fewer priorities is better. Ask 'Approve these directional updates?' Only write after explicit approval."
-    },
-    {
-      "type": "ai",
-      "action": "Write monthly review summary event and sync to RAG API",
-      "context": "Write a monthly review summary to /tmp/monthly_review_event.md using your FILE EDITOR TOOL (not a terminal command). Format:\n\n# Monthly Review — {month} {year}\n\n## What Was Built\n{concrete list — shipped features, milestones, decisions}\n\n## What to Stop\n{things identified for removal or deprioritisation}\n\n## What Deserves More Focus\n{underinvested areas worth doubling down on}\n\n## Direction Check\n{is the overall direction still correct? what changed?}\n\n## Recurring Themes\n{patterns from interrupts, blockers, energy mismatches this month}\n\nThen run: `bash .exocortex/scripts/create_event.sh --body-file /tmp/monthly_review_event.md` followed by `bash .exocortex/scripts/sync_event_to_vault.sh $(ls -t .exocortex/events/*.md 2>/dev/null | head -1)`. Show one line: '✓ Monthly review saved and synced' or '✓ Monthly review saved (sync skipped — no RAG key)'."
+      "action": "Respect the selected authority boundary",
+      "context": "If A, stop with zero writes. If B, produce the exact operation, paths, work-item revision, and proposed content needed for a one-time capability; do not write or sync yet."
     }
   ]
 }

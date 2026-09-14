@@ -1,6 +1,12 @@
 {
   "name": "/system-scan",
   "description": "Full system health check — read-only analysis for a senior engineer new to the project",
+  "protocol": {
+    "entry_contract": "AI_START_HERE.md",
+    "authority": "exact_capability_required_for_mutation",
+    "egress": "separate_destination_specific_authorization",
+    "default_role": "read_only"
+  },
   "steps": [
     {
       "type": "ai",

@@ -1,7 +1,16 @@
 {
   "name": "/check-keys",
-  "aliases": ["check-keys", "keys"],
+  "aliases": [
+    "check-keys",
+    "keys"
+  ],
   "description": "Validate all API keys — shows status, purpose, and location. Never exposes key values.",
+  "protocol": {
+    "entry_contract": "AI_START_HERE.md",
+    "authority": "exact_capability_required_for_mutation",
+    "egress": "separate_destination_specific_authorization",
+    "default_role": "read_only"
+  },
   "security": "NEVER read, echo, grep, or display any key value. Run the shell script only. Return its output verbatim.",
   "steps": [
     {

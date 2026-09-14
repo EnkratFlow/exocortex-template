@@ -1,0 +1,7 @@
+{
+  "schema_version": "public-v2",
+  "kind": "external_sync_policy",
+  "default": "deny",
+  "policy_version": 1,
+  "destinations": []
+}

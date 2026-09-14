@@ -1,0 +1,353 @@
+{
+  "acceptance_criteria": [
+    {
+      "evidence": [
+        "PASS: strict source registry, schemas, privacy contract, complete offline evidence 7654434833cd3aa543da7b9a51f9a465a7288546e78e49d84903071670dbb35e."
+      ],
+      "id": "C5-AC-01",
+      "status": "passed",
+      "text": "A strict provider-neutral source registry records official HTTPS model, pricing, and lifecycle sources with observation and expiry metadata and no credential fields."
+    },
+    {
+      "evidence": [
+        "PASS: deterministic discovery is network-free, quarantines unknown observations, and cannot activate the routing catalog."
+      ],
+      "id": "C5-AC-02",
+      "status": "passed",
+      "text": "Deterministic discovery compares exact source observations without network access, quarantines unknown models, treats absence as not observed rather than retired, and never activates or edits a routing catalog."
+    },
+    {
+      "evidence": [
+        "PASS: source, availability, lifecycle, capability, risk, and cost-per-success freshness gates fail closed; the shipped catalog has zero eligible models."
+      ],
+      "id": "C5-AC-03",
+      "status": "passed",
+      "text": "Routing requires fresh source-backed catalog, exact local availability evidence, active lifecycle, compatible capability and risk, and non-stale cost-per-success evidence; stale, unknown, quarantined, deprecated, unavailable, or unbenchmarked models fail closed."
+    },
+    {
+      "evidence": [
+        "PASS: routing binds source, catalog, availability, and evaluation evidence digests and replays deterministically."
+      ],
+      "id": "C5-AC-04",
+      "status": "passed",
+      "text": "Every routing result binds source, catalog, availability, and evaluation evidence digests so replay is deterministic while normative policy remains free of provider or model pins."
+    },
+    {
+      "evidence": [
+        "PASS: final installer/update suite 118/118; protected local observations, approvals, memory, and project data remain excluded from code-plane replacement."
+      ],
+      "id": "C5-AC-05",
+      "status": "passed",
+      "text": "Installer and updater validate the model registries before target mutation, install only code-plane registry artifacts, and preserve local observations, quarantine, availability, approvals, and project data."
+    },
+    {
+      "evidence": [
+        "PASS: hash-bound reconciliation validates exact current/candidate bytes and effect paths; unknown/customized paths remain preserved by default."
+      ],
+      "id": "C5-AC-06",
+      "status": "passed",
+      "text": "A hash-bound target-specific reconciliation plan can adopt or retire only exact approved collision paths after current and candidate byte verification; the standard updater continues preserving unknown or customized paths by default."
+    },
+    {
+      "evidence": [
+        "PASS: version 3.2.0 replayed from GitHub main f87fe7384ca32387772b05d591fbbd18342c458c; privacy, 262 checksums, 263 file modes, 264-path payload, and digest 963dca709573b799bb17971be3ed6a4ee49508ec65f56ae6fe0ad24a402800b3 verified; private records remain outside the public candidate."
+      ],
+      "id": "C5-AC-07",
+      "status": "passed",
+      "text": "The release candidate is replayed from GitHub main f87fe7384ca32387772b05d591fbbd18342c458c, versioned 3.2.0, privacy scrubbed, checksum complete, and reconciled with current C4 and parent planning truth without publishing private records."
+    },
+    {
+      "evidence": [
+        "PASS: complete evidence 7654434833cd3aa543da7b9a51f9a465a7288546e78e49d84903071670dbb35e; installer 118/118, orchestration/routing/egress 53/53, event tooling, documentation, privacy, rollback, replay, and fault coverage passed; independent review PASS with P0/P1/P2 all zero. Linux CI remains a publication gate."
+      ],
+      "id": "C5-AC-08",
+      "status": "passed",
+      "text": "Complete deterministic, regression, privacy, history, checksum, documentation, rollback, idempotency, fault, and independent-review evidence passes on the exact C5 candidate; Linux final-candidate CI remains an explicit publication gate."
+    },
+    {
+      "evidence": [
+        "PASS: disposable Mulligan R3 apply and UAT-2 correction were exact-plan, one-time, local-only operations; protected state, application, Firebase-rules, build, PWA, browser, and live-repository paths stayed outside the effect sets and byte-preserved; rollback/replay protections passed."
+      ],
+      "id": "C5-AC-09",
+      "status": "passed",
+      "text": "A fully isolated Mulligan canary at exact committed application SHA 93bf17ed4ca2cfa2466b750f96168f2e89bc7cc7 and tree 967d8d45c0585d4100b8991ba46ffecc29fa6b36 proves standard-update preservation, separately planned canonical reconciliation, application/rules/build regression safety, rollback, replay denial, and zero source-worktree or production change."
+    },
+    {
+      "evidence": [
+        "PARTIAL Human UAT: project owner accepted R3 UAT-2 semantic save/checkpoint/egress behavior.",
+        "Pending Human UAT: UAT-1 zero-context orientation, UAT-3 routing, and UAT-4 Mulligan-specific protections.",
+        "No model self-certified Human UAT and no lifecycle transition to uat_ready was made."
+      ],
+      "id": "C5-AC-10",
+      "status": "pending",
+      "text": "Human UAT is prepared for zero-context entry, command parity, model quarantine and activation behavior, stale-catalog denial, deterministic routing replay, and focused Mulligan operational smoke; no model records its own acceptance."
+    }
+  ],
+  "checkpoints": [
+    {
+      "created_at": "2026-07-27T14:25:06Z",
+      "id": "checkpoint-b8d4abc494c044fdfe3f20a10da0b2b9",
+      "local_only": true,
+      "request_id": "EXO-PHASE-B-001-C5-develop-v1",
+      "state": "developing",
+      "transition_id": "transition-c43375af28a225f8d5d3836ba059b0d9"
+    },
+    {
+      "created_at": "2026-07-29T00:22:40Z",
+      "id": "checkpoint-69b2b88cd46fa6d8c126f54793d01ac3",
+      "local_only": true,
+      "request_id": "EXO-PHASE-B-001-C5-closeout-developer-verified-v1",
+      "state": "developer_verified",
+      "transition_id": "transition-771c7f3879e3ca3f2fb911e6dd7d5ec2"
+    },
+    {
+      "created_at": "2026-07-29T00:23:36Z",
+      "id": "checkpoint-03c67c898c731c28e22f15016f92191c",
+      "local_only": true,
+      "request_id": "EXO-PHASE-B-001-C5-closeout-qa-sit-v1",
+      "state": "qa_sit",
+      "transition_id": "transition-988bcf50a559851b4ca79c889ee27328"
+    }
+  ],
+  "designated_base": {
+    "ref": "C4 owner-accepted public candidate, content-reconciled with GitHub main f87fe7384ca32387772b05d591fbbd18342c458c",
+    "sha": "3f5ed26ac4bf3578b7370af6d2046a6c5704ca72b3ee821bfc37704b1261223f",
+    "source": "approved_work_item"
+  },
+  "handoffs": [
+    {
+      "base_sha": "3f5ed26ac4bf3578b7370af6d2046a6c5704ca72b3ee821bfc37704b1261223f",
+      "candidate_sha": "963dca709573b799bb17971be3ed6a4ee49508ec65f56ae6fe0ad24a402800b3",
+      "capability_digest": "1f9b78cb0fcd80051a68e0ed2585e1d3b1822645c804f448322ceea4b8419116",
+      "capability_id": "EXO-PHASE-B-001-C5-CLOSEOUT-HANDOFF-V1",
+      "closed_gates": [
+        "Human UAT-1, UAT-3, and UAT-4 remain pending; AC-10 remains pending.",
+        "Commit, push, PR, merge, live installation, deployment, external synchronization, and template promotion remain separately gated."
+      ],
+      "created_at": "2026-07-29T00:24:23Z",
+      "evidence_hashes": [
+        "7654434833cd3aa543da7b9a51f9a465a7288546e78e49d84903071670dbb35e",
+        "c732aa980fa84d5c44929618e8394ddb0e975f583228a7a6e4b5ce724d6c6b5d",
+        "d5800ea95b7b3c099046d882b14fcee95cdb17f4d35bbf733916c7fb693307fd"
+      ],
+      "first_verification": "Verify SHA256SUMS digest 963dca709573b799bb17971be3ed6a4ee49508ec65f56ae6fe0ad24a402800b3, then run shasum -a 256 -c SHA256SUMS in the isolated candidate.",
+      "id": "handoff-e291fb5d2eef5f6de5e5b155dfc98bf0",
+      "local_only": true,
+      "registry_digest": "9110e56e6da0e6b072499b7d8db8c4e23ba5e5fbed22a0a4b6d0fc068c35fb0e",
+      "request_id": "EXO-PHASE-B-001-C5-closeout-handoff-v1",
+      "state": "qa_sit",
+      "writer_status": "released"
+    }
+  ],
+  "id": "EXO-PHASE-B-001-C5",
+  "idempotency": [
+    {
+      "accepted_at": "2026-07-27T14:24:55Z",
+      "operation": "reserve_writer",
+      "request_id": "EXO-PHASE-B-001-C5-reserve-v1",
+      "result_id": "reservation-6b175634a4eb6642b1cdd35a6c2a2a4b"
+    },
+    {
+      "accepted_at": "2026-07-27T14:25:06Z",
+      "operation": "transition_work_item",
+      "request_id": "EXO-PHASE-B-001-C5-develop-v1",
+      "result_id": "transition-c43375af28a225f8d5d3836ba059b0d9"
+    },
+    {
+      "accepted_at": "2026-07-27T19:25:04Z",
+      "operation": "amend_work_item_scope",
+      "request_id": "EXO-PHASE-B-001-C5-scope-amend-v2",
+      "result_id": "scope-amendment-3716605109eb77dcff92784abde94095"
+    },
+    {
+      "accepted_at": "2026-07-27T20:33:43Z",
+      "operation": "amend_work_item_scope",
+      "request_id": "EXO-PHASE-B-001-C5-scope-amend-v3",
+      "result_id": "scope-amendment-d869c3af83809349b1704230dcc21bfe"
+    },
+    {
+      "accepted_at": "2026-07-28T12:29:18Z",
+      "operation": "reserve_writer",
+      "request_id": "EXO-PHASE-B-001-C5-uat2-reserve-v1",
+      "result_id": "reservation-9c51887a54c84a82b1bc06b464f6e0dd"
+    },
+    {
+      "accepted_at": "2026-07-29T00:19:56Z",
+      "operation": "reconcile_closeout_evidence",
+      "request_id": "EXO-PHASE-B-001-C5-closeout-reconcile-v1",
+      "result_id": "closeout-reconciliation-963dca709573b799b"
+    },
+    {
+      "accepted_at": "2026-07-29T00:22:17Z",
+      "operation": "reserve_writer",
+      "request_id": "EXO-PHASE-B-001-C5-closeout-reserve-v1",
+      "result_id": "reservation-ffae4bc821edc7a24763bbff2cfee559"
+    },
+    {
+      "accepted_at": "2026-07-29T00:22:40Z",
+      "operation": "transition_work_item",
+      "request_id": "EXO-PHASE-B-001-C5-closeout-developer-verified-v1",
+      "result_id": "transition-771c7f3879e3ca3f2fb911e6dd7d5ec2"
+    },
+    {
+      "accepted_at": "2026-07-29T00:23:20Z",
+      "operation": "transition_work_item",
+      "request_id": "EXO-PHASE-B-001-C5-closeout-independent-review-v1",
+      "result_id": "transition-52111159f46508e68d653f2040362ae8"
+    },
+    {
+      "accepted_at": "2026-07-29T00:23:36Z",
+      "operation": "transition_work_item",
+      "request_id": "EXO-PHASE-B-001-C5-closeout-qa-sit-v1",
+      "result_id": "transition-988bcf50a559851b4ca79c889ee27328"
+    },
+    {
+      "accepted_at": "2026-07-29T00:23:53Z",
+      "operation": "release_writer",
+      "request_id": "EXO-PHASE-B-001-C5-closeout-release-v1",
+      "result_id": "release-7a1af0585debd73a3a22c64b1cb254ab"
+    },
+    {
+      "accepted_at": "2026-07-29T00:24:23Z",
+      "operation": "create_handoff",
+      "request_id": "EXO-PHASE-B-001-C5-closeout-handoff-v1",
+      "result_id": "handoff-e291fb5d2eef5f6de5e5b155dfc98bf0"
+    }
+  ],
+  "kind": "delivery_work_item",
+  "lane": {
+    "allowed_paths": [
+      ".agents/skills/save/SKILL.md",
+      ".claude/skills/save/SKILL.md",
+      ".cursor/rules/plan-orchestrate.mdc",
+      ".cursor/skills/save/SKILL.md",
+      ".exocortex/AI_BOOTSTRAP.md",
+      ".exocortex/PERSONA_AND_COMMANDS.md",
+      ".exocortex/README.md",
+      ".exocortex/commands/save.json",
+      ".exocortex/control/DELIVERY_WORKFLOW.md",
+      ".exocortex/control/MODEL_ROUTING.md",
+      ".exocortex/control/QA_STRATEGY.md",
+      ".exocortex/control/README.md",
+      ".exocortex/docs/AI_INSTALLATION.md",
+      ".exocortex/docs/IDE_INTEGRATION_GUIDE.md",
+      ".exocortex/docs/UPGRADE_MANIFEST.md",
+      ".exocortex/docs/architecture.md",
+      ".exocortex/docs/getting-started.md",
+      ".exocortex/docs/implementation.md",
+      ".exocortex/docs/user-guide.md",
+      ".exocortex/model-routing-catalog.json",
+      ".exocortex/model-source-registry.json",
+      ".exocortex/planning/ACTIVE_WORK.md",
+      ".exocortex/planning/work-items/EXO-PHASE-B-001.json",
+      ".exocortex/planning/work-items/EXO-PHASE-B-001.md",
+      ".exocortex/provider-adapters.json",
+      ".exocortex/reference/ESSENTIAL_FILES.md",
+      ".exocortex/reference/QUICK_REFERENCE.md",
+      ".exocortex/schemas/model-availability.schema.json",
+      ".exocortex/schemas/model-observation.schema.json",
+      ".exocortex/schemas/model-routing-catalog.schema.json",
+      ".exocortex/schemas/model-source-registry.schema.json",
+      ".exocortex/schemas/provider-adapter-matrix.schema.json",
+      ".exocortex/schemas/update-reconciliation-plan.schema.json",
+      ".exocortex/scripts/generate_command_adapters.py",
+      ".exocortex/scripts/model_registry.py",
+      ".exocortex/scripts/orchestrate_work_item.py",
+      ".exocortex/scripts/prepare_update_reconciliation.py",
+      ".gitignore",
+      "AI_START_HERE.md",
+      "CHANGELOG.md",
+      "CONTRIBUTING.md",
+      "FILEMODES",
+      "README.md",
+      "SECURITY.md",
+      "SHA256SUMS",
+      "VERSION",
+      "WHATSNEW.md",
+      "init-project.sh",
+      "install.sh",
+      "scripts/safe-update.sh",
+      "tests/phase-b/provider-adapter-matrix.json",
+      "tests/phase-b/test-plan.json",
+      "tests/phase-b/test_phase_b.py",
+      "tests/run_tests.sh",
+      "tests/test_documentation_contract.py"
+    ],
+    "reservation": {
+      "executor_id": null,
+      "lease_expires_at": null,
+      "status": "released",
+      "surface_id": null,
+      "version": 4,
+      "writer": null
+    }
+  },
+  "lifecycle": {
+    "attempt": 2,
+    "blocked": null,
+    "state": "qa_sit"
+  },
+  "revision": 13,
+  "schema_version": "public-v2",
+  "title": "Complete source-backed model freshness and release-candidate readiness",
+  "transitions": [
+    {
+      "accepted_at": "2026-07-27T14:25:06Z",
+      "capability_id": "EXO-PHASE-B-001-C5-DEVELOP-V1",
+      "checkpoint_eligible": true,
+      "evidence": [
+        "Owner approved C5 source-backed model freshness, gated discovery, release-candidate and planning reconciliation, isolated Mulligan canaries, Human UAT preparation, and local-only handoff.",
+        "Exact 43-path lane digest ad3eb5dbd4cfbb1d0f52d21f14c1641e52f81bd9745253e304b1cae87ebd26c8; starting candidate SHA256SUMS digest 3f5ed26ac4bf3578b7370af6d2046a6c5704ca72b3ee821bfc37704b1261223f; GitHub main f87fe7384ca32387772b05d591fbbd18342c458c; no commit or outward/live action."
+      ],
+      "from": "reserved",
+      "id": "transition-c43375af28a225f8d5d3836ba059b0d9",
+      "operation": "begin-C5-release-candidate-completion",
+      "request_id": "EXO-PHASE-B-001-C5-develop-v1",
+      "to": "developing"
+    },
+    {
+      "accepted_at": "2026-07-29T00:22:40Z",
+      "capability_id": "EXO-PHASE-B-001-C5-CLOSEOUT-DEVELOPER-VERIFIED-V1",
+      "checkpoint_eligible": true,
+      "evidence": [
+        "Exact 3.2.0 SHA256SUMS 963dca709573b799bb17971be3ed6a4ee49508ec65f56ae6fe0ad24a402800b3; complete evidence 7654434833cd3aa543da7b9a51f9a465a7288546e78e49d84903071670dbb35e; 118 installer and 53 orchestration tests plus event tooling passed."
+      ],
+      "from": "developing",
+      "id": "transition-771c7f3879e3ca3f2fb911e6dd7d5ec2",
+      "operation": "final_C5_local_developer_verification",
+      "request_id": "EXO-PHASE-B-001-C5-closeout-developer-verified-v1",
+      "to": "developer_verified"
+    },
+    {
+      "accepted_at": "2026-07-29T00:23:20Z",
+      "capability_id": "EXO-PHASE-B-001-C5-CLOSEOUT-INDEPENDENT-REVIEW-V1",
+      "checkpoint_eligible": false,
+      "evidence": [
+        "Independent review unconditional PASS: P0 0, P1 0, P2 0; review evidence c732aa980fa84d5c44929618e8394ddb0e975f583228a7a6e4b5ce724d6c6b5d."
+      ],
+      "from": "developer_verified",
+      "id": "transition-52111159f46508e68d653f2040362ae8",
+      "operation": "independent_C5_closeout_review",
+      "request_id": "EXO-PHASE-B-001-C5-closeout-independent-review-v1",
+      "review_evidence_hash": "c732aa980fa84d5c44929618e8394ddb0e975f583228a7a6e4b5ce724d6c6b5d",
+      "reviewer_executor_id": "codex-c5-closeout-reviewer",
+      "reviewer_surface_id": "codex-review",
+      "to": "independent_review"
+    },
+    {
+      "accepted_at": "2026-07-29T00:23:36Z",
+      "capability_id": "EXO-PHASE-B-001-C5-CLOSEOUT-QA-SIT-V1",
+      "checkpoint_eligible": true,
+      "evidence": [
+        "Exact local 3.2.0 candidate passed complete deterministic QA/SIT and independent review; AC-01 through AC-09 passed, while AC-10 remains partial and pending."
+      ],
+      "from": "independent_review",
+      "id": "transition-988bcf50a559851b4ca79c889ee27328",
+      "operation": "final_C5_QA_SIT",
+      "request_id": "EXO-PHASE-B-001-C5-closeout-qa-sit-v1",
+      "review_transition_id": "transition-52111159f46508e68d653f2040362ae8",
+      "to": "qa_sit"
+    }
+  ],
+  "type": "retrospective_improvement"
+}

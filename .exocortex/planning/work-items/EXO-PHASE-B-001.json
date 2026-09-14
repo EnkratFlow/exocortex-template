@@ -5,12 +5,12 @@
   "title": "Generalize the accepted multi-AI delivery protocol into the Exocortex template",
   "type": "template_generalization",
   "priority": "high",
-  "revision": 2,
+  "revision": 6,
   "lifecycle": {
     "state": "refined",
     "attempt": 0,
     "blocked": null,
-    "note": "The owner accepted the captured plan and approved G1 refinement. Ready, writer reservation, implementation, rehearsals, release, and promotion require later approvals."
+    "note": "C1 through C4 are preserved as accepted or verified predecessors. C5 revision 13 binds the final local 3.2.0 candidate at QA/SIT: AC-01 through AC-09 passed, AC-10 remains partial and pending, the writer is released, and the local handoff is recorded. This revision 6 planning reconciliation creates no parent lifecycle transition, checkpoint, reservation, uat_ready or release_ready state, commit, outward action, live-target authority, or promotion authority."
   },
   "distribution": {
     "classification": "project-local-planning-data",
@@ -21,27 +21,141 @@
     "promotion_boundary": "This planning branch and any descendant carrying private planning history must never be pushed, merged, fast-forwarded, or used directly as a public pull request. A later promotion gate must replay only the accepted privacy-scrubbed code-plane diff onto an approved clean public base, produce new public commits with no planning ancestry, and scan both the exact promoted tree and all newly reachable commit trees/messages before publication."
   },
   "authority": {
-    "approval_id": "EXO-PHASE-B-001-G1",
+    "approval_id": "EXO-PHASE-B-001-CLEAN-RC-LOCAL",
     "status": "consumed",
-    "accepted_at": "2026-07-22T12:57:24Z",
-    "scope": "Refine only the same three project-local planning paths: add R-01 through R-12 closure criteria, return R-06 to open until machine-enforced, define the exact prospective implementation allowlist, migration sequence, fault-injection, rollback, and hypercare verification, and make dynamic capability-and-cost orchestration explicit.",
+    "accepted_at": "2026-07-24T11:02:29Z",
+    "scope": "Create one clean isolated local worktree from c6ccd8358c6896d8456cb4aa19b09744ea44b1e8, replay the privacy-safe 0eb3c667a505b90c9221ed768d47039a1638df5e correction and only the accepted public code plane bound by SHA256SUMS aca144f7b774aab4099b963694a39d9076b80dd2046ba3bf06689dc1b267ed40, then run deterministic tests, both disposable rehearsals, independent review, and a local handoff.",
     "excludes": [
-      "protocol implementation",
-      "Healthy changes",
-      "upgrade execution",
+      "planning, runtime, event, identity, session, private-object, or private-history replay",
+      "release_ready transition",
+      "commit",
       "push or pull request",
       "merge",
       "release or deployment",
-      "service action",
-      "credential access",
+      "live installation or live-target change",
       "external synchronization",
-      "template promotion"
+      "template promotion",
+      "hypercare acceptance"
+    ]
+  },
+  "clean_release_candidate_gate": {
+    "id": "EXO-PHASE-B-001-CLEAN-RC-LOCAL",
+    "status": "local_candidate_preparation_complete_pending_owner_disposition",
+    "clean_base_sha": "c6ccd8358c6896d8456cb4aa19b09744ea44b1e8",
+    "required_privacy_safe_replay_sha": "0eb3c667a505b90c9221ed768d47039a1638df5e",
+    "candidate_branch": "codex/exo-phase-b-001-rc1",
+    "candidate_head_sha": "c6ccd8358c6896d8456cb4aa19b09744ea44b1e8",
+    "candidate_commit_exists": false,
+    "accepted_source": {
+      "work_item": "EXO-PHASE-B-001-C3",
+      "revision": 17,
+      "candidate_tree_sha256": "382434f751d8cfa6c42149fe20b3dc2e44421d0d2455ab699edf61d734ec84de",
+      "sha256sums_digest": "aca144f7b774aab4099b963694a39d9076b80dd2046ba3bf06689dc1b267ed40",
+      "handoff_id": "handoff-a72411986759632b73789031214952e1"
+    },
+    "result": {
+      "sha256sums_digest": "aca144f7b774aab4099b963694a39d9076b80dd2046ba3bf06689dc1b267ed40",
+      "manifest_entry_count": 250,
+      "public_payload_path_count": 251,
+      "public_payload_path_digest": "89902e8d73eb04e1a74c0651abf176a7130a612a0d7c7e30a05dc437654e0f1b",
+      "delta_path_count": 247,
+      "delta_path_digest": "2716391d4a5ff085016244dfdfff65c219e196cf7d23926a8d049ba87aac1eff",
+      "scope_summary_sha256": "fe76a7690f682c9db26f534eb920bb48488c3ea942f1fbc294944bfaac5b5464",
+      "candidate_tree_evidence_sha256": "87646f89a41c8969fe9ea769dd4a08244351ff86c92374a672f04a0a9f27bf3e",
+      "root_name_neutral_candidate_tree_digest": "4b7fe728875d647da3553afaff712f91fa13bb207938faec809eecd835d20161",
+      "test_evidence_manifest_sha256": "2e3dff1475dd14dafb1223ed0b2dc0c64146d9d0f121c9fea4930f944f942a03",
+      "healthy_clean_install_evidence_sha256": "fb032faef1fdfc8bd4777b8cbb85deb931529313b55e2a7bf154765e604d8c54",
+      "existing_safe_update_evidence_sha256": "a0f1418082ebf1975a483acafa91c725695cb5bd1105cf8bda5da008b23ba950",
+      "privacy_history_scan_sha256": "289f900aa4c72bbfe1edf4e2c38ec7f1155880397d4090891a4739cb7195857c",
+      "independent_review_sha256": "aa25f3a9d744057c7789c41f2428978996967535d655cde40e4a98c1a98954b7",
+      "combined_evidence_manifest_sha256": "fea91a133e3a9572bdf664ce0e6929d5bf7b0f3baedf8eb288c7882dde7f2f9b",
+      "handoff": {
+        "path": ".exocortex/events/2026-07-24_11-46-56_macbook-cursor.md",
+        "sha256": "c0594ea4506c5cf44aa4336c7608b9b480aba8e4e5dcdb52b0d6ed6c4f99279a",
+        "scope": "local-only narrative handoff; no lifecycle transition or checkpoint"
+      }
+    },
+    "excluded_inputs": [
+      ".exocortex/planning",
+      ".exocortex/work-items",
+      ".exocortex/events other than the generic base fixture",
+      "executor identities and capability transactions",
+      "session records",
+      "private Mulligan objects or history",
+      "private application fixtures or origin metadata",
+      "the private-planning branch ancestry"
+    ],
+    "disclosed_caveats": [
+      "Healthy Functions declares Node 22; the available Node 20.20 verification is smoke evidence rather than exact engine parity.",
+      "The approved base already contains three deleted operational-event paths in reachable history; their blobs passed privacy-marker scans, but a zero-operational-history standard would require a separately approved sanitized root or history rewrite.",
+      "The public .gitignore is not a complete staging barrier for every project-local data-plane path; exact-path staging or a later approved CI path-allowlist hardening gate is required.",
+      "The candidate-tree inventory includes linked-worktree .git pointer metadata and is not a portable tree identity; SHA256SUMS is the portable content binding."
+    ],
+    "does_not_authorize": [
+      "release_ready transition",
+      "commit",
+      "push or pull request",
+      "merge",
+      "release or deployment",
+      "live-target action",
+      "external synchronization",
+      "template promotion",
+      "hypercare acceptance"
+    ]
+  },
+  "c5_release_candidate_closeout": {
+    "work_item": "EXO-PHASE-B-001-C5",
+    "revision": 13,
+    "lifecycle_state": "qa_sit",
+    "version": "3.2.0",
+    "candidate_branch": "codex/exo-phase-b-001-rc2",
+    "candidate_git_base": "f87fe7384ca32387772b05d591fbbd18342c458c",
+    "candidate_commit_exists": false,
+    "staged_path_count": 0,
+    "payload": {
+      "modified_path_count": 136,
+      "deleted_path_count": 23,
+      "untracked_manifest_covered_path_count": 105,
+      "total_path_count": 264,
+      "sha256sums_digest": "963dca709573b799bb17971be3ed6a4ee49508ec65f56ae6fe0ad24a402800b3",
+      "manifest_entry_count": 262,
+      "filemode_entry_count": 263,
+      "candidate_tree_evidence_sha256": "693d6ea536a6c9c5df2ff13aaea118896ea6c63d47f71a1f734e70c284e1b6a4"
+    },
+    "verification": {
+      "evidence_manifest_sha256": "d5800ea95b7b3c099046d882b14fcee95cdb17f4d35bbf733916c7fb693307fd",
+      "installer_update": "118 passed, 0 failed",
+      "orchestration_routing_egress": "53 passed, 0 failed",
+      "event_tooling": "passed",
+      "documentation_contract": "passed",
+      "independent_review": "unconditional PASS; P0 0, P1 0, P2 0",
+      "credentials_used": false,
+      "live_provider_used": false,
+      "live_target_used": false,
+      "external_sync_used": false
+    },
+    "human_uat": {
+      "accepted": [
+        "R3 UAT-2 semantic save, checkpoint, and egress behavior"
+      ],
+      "pending": [
+        "UAT-1 zero-context orientation",
+        "UAT-3 routing",
+        "UAT-4 Mulligan-specific protections"
+      ]
+    },
+    "handoff_id": "handoff-e291fb5d2eef5f6de5e5b155dfc98bf0",
+    "writer_status": "released",
+    "next_business_envelopes": [
+      "exact publication envelope for stage, commit, named-branch push, and draft PR",
+      "remaining Human UAT before uat_ready",
+      "later integration, rollout, production, or egress envelopes only if separately chosen"
     ]
   },
   "lane": {
     "repository": "exocortex-template",
     "base_sha": "0eb3c667a505b90c9221ed768d47039a1638df5e",
-    "observed_main_sha": "c6ccd8358c6896d8456cb4aa19b09744ea44b1e8",
+    "observed_main_sha": "f87fe7384ca32387772b05d591fbbd18342c458c",
     "base_contained_in_main": false,
     "branch": "codex/exo-phase-b-001-planning",
     "worktree_hint": "exocortex-template-phase-b-planning",
@@ -53,7 +167,7 @@
     "reservation": {
       "status": "none",
       "writer": null,
-      "note": "The approved planning gate does not reserve an implementation writer."
+      "note": "The C5 local closeout writer is released and all closeout executor registrations are expired. C1 authority is expired; C2 through C5 writers are released. No authority carries into commit, push, PR, merge, release, promotion, deployment, or external synchronization."
     }
   },
   "ownership": {
@@ -65,8 +179,8 @@
   "reference_evidence": {
     "template_base": {
       "sha": "0eb3c667a505b90c9221ed768d47039a1638df5e",
-      "purpose": "Approved Phase B planning base containing the version-fallback correction.",
-      "promotion_note": "This commit is not contained in the observed main branch; integration requires a later decision."
+      "purpose": "Required privacy-safe version-fallback correction whose behavior is replayed without inheriting the planning ancestry.",
+      "promotion_note": "The clean RC starts from this commit's parent, local main c6ccd8358c6896d8456cb4aa19b09744ea44b1e8, and includes the corrected behavior through the accepted public code plane."
     },
     "mulligan_accepted_record": {
       "sha": "50cd1c3db6d69c6d16a68e8935576016b21276b2",
@@ -84,7 +198,16 @@
       "QA-08 release disposition and bounded hypercare are pending",
       "R-04 application/protocol branch integration remains open",
       "release, deployment, external synchronization, and template promotion are not authorized"
-    ]
+    ],
+    "clean_release_candidate": {
+      "branch": "codex/exo-phase-b-001-rc1",
+      "head_sha": "c6ccd8358c6896d8456cb4aa19b09744ea44b1e8",
+      "committed": false,
+      "sha256sums_digest": "aca144f7b774aab4099b963694a39d9076b80dd2046ba3bf06689dc1b267ed40",
+      "delta_path_count": 247,
+      "delta_path_digest": "2716391d4a5ff085016244dfdfff65c219e196cf7d23926a8d049ba87aac1eff",
+      "handling": "This isolated working tree is the only current public-candidate route. The private planning branch and its ancestry remain prohibited from publication."
+    }
   },
   "requirements": [
     {
@@ -510,62 +633,66 @@
     {
       "id": "AC-01",
       "text": "A zero-context AI can identify the repository, exact Git authority, active work item, lifecycle state, writer reservation, available evidence, and closed gates in under five minutes without prior chat context.",
-      "status": "pending"
+      "status": "verified_locally_pending_owner_disposition"
     },
     {
       "id": "AC-02",
       "text": "Routing is provider-neutral, capability- and cost-based, deterministic-first, and enforces one accountable writer with bounded read-only support.",
-      "status": "pending"
+      "status": "verified_locally_pending_owner_disposition"
     },
     {
       "id": "AC-03",
       "text": "Accepted lifecycle transitions, rejection, retry, replay, checkpoint, handoff, and manual narrative-save behavior are deterministic, idempotent, and unambiguous.",
-      "status": "pending"
+      "status": "verified_locally_pending_owner_disposition"
     },
     {
       "id": "AC-04",
       "text": "External synchronization fails closed before credential lookup, event-content reads, copy, or network activity unless a current exact destination-specific authorization exists.",
-      "status": "pending"
+      "status": "verified_locally_pending_owner_disposition"
     },
     {
       "id": "AC-05",
       "text": "The exact public candidate contains no private Mulligan or owner-specific data and installs no project-local planning, work-item history, events, approvals, or origin metadata.",
-      "status": "pending"
+      "status": "pending_owner_disposition",
+      "evidence": "The exact clean RC passed working-tree and reachable-history privacy scans, excludes the private data plane and planning ancestry, and is bound by privacy/history summary 289f900aa4c72bbfe1edf4e2c38ec7f1155880397d4090891a4739cb7195857c."
     },
     {
       "id": "AC-06",
-      "text": "A disposable Healthy clean install preserves every pre-existing tracked file, editor configuration, application source, generated-source boundary, credential boundary, and external-service state.",
-      "status": "pending"
+      "text": "A disposable Healthy clean install preserves every pre-existing tracked file byte-for-byte except for appending one deterministic managed Exocortex block to .gitignore without altering its pre-existing bytes or order; editor configuration, application source, generated-source boundary, credential boundary, and external-service state remain unchanged.",
+      "status": "passed",
+      "evidence": "Passed on the predecessor G3 rehearsal and repeated on the exact clean RC. The clean run preserved .claude/launch.json, changed only the managed .gitignore block among pre-existing tracked files, installed idempotently, and passed 112 application plus 37 Functions tests. Functions Node 22 engine parity remains a disclosed environment check."
     },
     {
       "id": "AC-07",
       "text": "A disposable existing-repository upgrade preserves project-local memory, events, planning state, user-modified and untracked extensions, and supports verified idempotent re-run and rollback.",
-      "status": "pending"
+      "status": "passed",
+      "evidence": "Passed on the predecessor G3 rehearsal and repeated on the exact clean RC. The final fictional fixture produced complete 202-path evidence, guarded apply, protected-state equality, a zero-path rerun, and rollback without authority resurrection or AppleDouble sidecars."
     },
     {
       "id": "AC-08",
       "text": "Independent cross-provider Human UAT passes entry, rejection, retry, handoff, install, and upgrade cases before template promotion is considered.",
-      "status": "pending"
+      "status": "passed",
+      "evidence": "Owner accepted the bounded G3 and C3 Human UAT. C3 records four version-scoped verified surfaces and honest limitations for every other surface; the exact adapter bytes and 24-command/72-adapter contract were revalidated on the clean RC."
     },
     {
       "id": "AC-09",
       "text": "Implementation, rehearsals, Human UAT, release/hypercare conclusion, promotion, and each live-repository rollout remain separately approved gates.",
-      "status": "pending"
+      "status": "verified_locally_pending_owner_disposition"
     },
     {
       "id": "AC-10",
       "text": "Every protocol-managed mutation or egress capability is bound to an attested registered guarded executor and machine-validated against one current, exact, scoped, expiring, revocable, one-time human approval plus the current target or immutable-payload digest immediately before the side effect; absent, unregistered, non-attested, stale, mismatched, revoked, or consumed identity/authority fails before reservation, write, child process, payload read, credential lookup, copy, or network attempt, and an unconstrained AI surface cannot hold a writer or egress role.",
-      "status": "pending"
+      "status": "verified_locally_pending_owner_disposition"
     },
     {
       "id": "AC-11",
       "text": "Pinned-source integrity, migration compatibility, concurrency, time-of-check/time-of-use, fault-injection, evidence-completeness, recovery, and revocation cases pass on the exact candidate with no skipped required case.",
-      "status": "pending"
+      "status": "verified_locally_pending_owner_disposition"
     },
     {
       "id": "AC-12",
       "text": "Recursive-improvement retrospectives can propose a bounded next work item from measured evidence, but cannot reserve a writer, mutate a repository, call a provider, synchronize data, release, deploy, or promote without the next exact human gate.",
-      "status": "pending"
+      "status": "verified_locally_pending_owner_disposition"
     }
   ],
   "qa_matrix": [
@@ -574,94 +701,94 @@
       "name": "Schema, lifecycle, scope, and exact-path validation",
       "gate": "developer_verified",
       "required": true,
-      "status": "planned"
+      "status": "passed_on_clean_rc"
     },
     {
       "id": "QA-02",
       "name": "Provider-neutral cold-start, routing, rejection, retry, checkpoint, replay, and handoff regression",
       "gate": "developer_verified",
       "required": true,
-      "status": "planned"
+      "status": "passed_on_clean_rc"
     },
     {
       "id": "QA-03",
       "name": "Fail-closed destination-bound egress regression before secret or content access",
       "gate": "security_privacy_review",
       "required": true,
-      "status": "planned"
+      "status": "passed_on_clean_rc"
     },
     {
       "id": "QA-04",
       "name": "Public privacy, generic-fixture, data-plane exclusion, checksum, and manifest regression",
       "gate": "security_privacy_review",
       "required": true,
-      "status": "planned"
+      "status": "passed_on_clean_rc"
     },
     {
       "id": "QA-05",
       "name": "Full template installer and updater test suite on the exact candidate",
       "gate": "qa_sit",
       "required": true,
-      "status": "planned"
+      "status": "passed_on_clean_rc"
     },
     {
       "id": "QA-06",
       "name": "Healthy disposable clean-install rehearsal",
       "gate": "qa_sit",
       "required": true,
-      "status": "planned"
+      "status": "passed_on_clean_rc_with_node22_engine_parity_disclosed"
     },
     {
       "id": "QA-07",
       "name": "Existing-repository disposable upgrade, second-run idempotency, and restore rehearsal",
       "gate": "qa_sit",
       "required": true,
-      "status": "planned"
+      "status": "passed_on_clean_rc"
     },
     {
       "id": "QA-08",
       "name": "Independent cross-provider review and Human UAT",
       "gate": "human_uat",
       "required": true,
-      "status": "planned"
+      "status": "passed_on_C3_human_uat_and_clean_rc_review"
     },
     {
       "id": "QA-09",
       "name": "Release disposition and bounded hypercare",
       "gate": "done",
       "required": true,
-      "status": "planned"
+      "status": "pending_release_and_hypercare_gate"
     },
     {
       "id": "QA-10",
       "name": "Executor admission, pinned-source supply-chain, approval capability, concurrency, TOCTOU, and schema-migration regression",
       "gate": "security_privacy_review",
       "required": true,
-      "status": "planned"
+      "status": "passed_on_clean_rc"
     },
     {
       "id": "QA-11",
       "name": "Required-case discovery, evidence completeness, mutation sensitivity, and sterile cross-provider review",
       "gate": "qa_sit",
       "required": true,
-      "status": "planned"
+      "status": "passed_on_clean_rc"
     },
     {
       "id": "QA-12",
       "name": "Fault-injected recovery, revocation, containment, rollback, and hypercare-trigger regression",
       "gate": "release_ready",
       "required": true,
-      "status": "planned"
+      "status": "passed_on_clean_rc_for_pre_release_fault_and_rollback_scope"
     }
   ],
   "rehearsals": {
     "healthy_clean_install": {
-      "status": "not_authorized",
+      "status": "completed_on_predecessor_and_repeated_on_clean_rc",
       "observed_source": {
         "repository": "Healthy",
         "branch": "main",
-        "sha": "87cd63cd9b87efb6d3b234dd2362c78242492a24",
-        "tree": "clean when observed; reverify before rehearsal"
+        "sha": "c53b77bdae61cfef28a8e4084d2ffc87ab45c7e5",
+        "tree": "clean at disposable clone creation"
       },
       "constraints": [
         "use a disposable isolated copy only",
@@ -669,7 +796,7 @@
         "run non-interactively with no global editor-home change",
         "use no real secrets, browser profile, Firebase credentials, network, build, or deploy authority",
         "preserve .claude/launch.json byte-for-byte",
-        "preserve app/healthy.html and every pre-existing tracked file byte-for-byte during installation",
+        "preserve app/healthy.html and every pre-existing tracked file byte-for-byte except for one deterministic appended Exocortex-managed .gitignore block that leaves all pre-existing .gitignore bytes and order intact",
         "verify placeholder-only ignored local configuration",
         "verify second-run idempotency and no duplicate ignore entries",
         "run local regressions only under the later rehearsal approval"
@@ -678,10 +805,21 @@
         "fresh AI/editor cold start reads the provider-neutral entry contract",
         "the AI identifies the disposable rehearsal boundary",
         "no automatic lifecycle checkpoint, external sync, build, deploy, or production action occurs"
-      ]
+      ],
+      "clean_rc_evidence": {
+        "summary_sha256": "fb032faef1fdfc8bd4777b8cbb85deb931529313b55e2a7bf154765e604d8c54",
+        "install_passes": 2,
+        "canonical_commands": 24,
+        "generated_adapters": 72,
+        "application_tests_passed": 112,
+        "functions_tests_passed": 37,
+        "node_runtime": "v20.20.0",
+        "functions_declared_node_engine": "22",
+        "qualification": "Node 20.20 verification is smoke evidence; exact Node 22 engine parity remains a future environment check."
+      }
     },
     "existing_repository_upgrade": {
-      "status": "not_authorized",
+      "status": "completed_on_predecessor_and_repeated_on_clean_rc",
       "observed_source": {
         "repository": "enkratflow-ui",
         "branch": "chore/lessons-layout-and-build-errors",
@@ -698,9 +836,702 @@
         "verify first apply, second-run idempotency, protected-path equality, and restore into a second disposable copy",
         "no external synchronization, credentials, service, or production access"
       ],
-      "known_gap": "The current safe-update protected-path rehearsal does not individually cover every archive, hub, planning, subconscious, and hub-marker path; the implementation test scope must close or explicitly detect this gap before live rollout."
+      "known_gap": null,
+      "clean_rc_evidence": {
+        "summary_sha256": "a0f1418082ebf1975a483acafa91c725695cb5bd1105cf8bda5da008b23ba950",
+        "complete_changed_path_count": 202,
+        "complete_changed_path_digest": "f19d4464a86b017e1e6a50e639f947d3fb62417cb89fb6b3d18fab655eabfa12",
+        "guarded_apply": "passed",
+        "protected_data": "passed",
+        "idempotent_second_run_path_count": 0,
+        "rollback": "passed_without_authority_resurrection_or_appledouble_sidecars"
+      }
     }
   },
+  "g3_human_uat": {
+    "status": "accepted_findings_resolved_in_local_candidate_and_revalidated_on_clean_rc",
+    "accepted_by": "project-owner",
+    "accepted_at": "2026-07-22T22:44:06Z",
+    "recorded_under": "EXO-PHASE-B-001-G3-RECORD-ONLY",
+    "candidate_head": "da49a5d4bfb42acd9839b189febbe95f60b4c843",
+    "candidate_sha256sums_digest": "d1e1d633097f8223699f3ab424524d31e7f8a26ffc7dd8eead51b343f1724443",
+    "evidence": {
+      "handoff": ".exocortex/events/2026-07-22_20-28-21_macbook-cursor.md",
+      "private_evidence_root": "/private/tmp/exo-g3-evidence.i4Pu8o",
+      "summary_digest": "4b27be848d86631c6b94580f9745bfd340832a0d157ecf67ac4674c79d5184a8",
+      "human_uat_guide_digest": "12fbc6dd451ace29a3de777d6aa130425e6271389c35d60b6628983a3e52cc14"
+    },
+    "accepted_outcomes": [
+      "the disposable Healthy clean installation preserved the live source and passed the recorded deterministic target checks",
+      "the disposable existing-repository safe update preserved protected and customized state, converged on rerun, and passed verified rollback",
+      "external synchronization remained denied and no live repository, credential, provider, network, service, deployment, or production target was used",
+      "the native entry and upgrade behavior was understandable to the human reviewer"
+    ],
+    "open_findings": [],
+    "resolved_findings": [
+      {
+        "id": "G3-F01",
+        "resolution": "Complete deterministic changed-path evidence passed above 120 paths and was repeated on the clean RC with 202 sorted paths bound by f19d4464a86b017e1e6a50e639f947d3fb62417cb89fb6b3d18fab655eabfa12."
+      },
+      {
+        "id": "G3-F02",
+        "resolution": "Native macOS extraction and rollback portability guidance is documented; clean-RC rollback restored the pre-apply surface with zero AppleDouble sidecars and no authority resurrection."
+      },
+      {
+        "id": "G3-F03",
+        "resolution": "The accepted candidate has 24 canonical commands, 72 generated adapters, truthful provider-specific syntax, and exact-version Human UAT for four verified surfaces."
+      }
+    ],
+    "resolution_evidence": {
+      "C2": {
+        "revision": 27,
+        "state": "uat_ready",
+        "acceptance": "12/12 passed",
+        "candidate_tree_sha256": "db6d6ab030b9937d0108f1e5d5a7bb38ff5ffd00820f324edc8f259a8b695428",
+        "sha256sums_digest": "d84985b9e388fcbae32aae015ed83a0dff7f316887d850798d3199d4ee55441d",
+        "handoff_id": "handoff-34c572bb5421a7d884cf2bd53b2ba1e6"
+      },
+      "C3": {
+        "revision": 17,
+        "state": "human_uat",
+        "acceptance": "8/8 passed and owner-accepted",
+        "candidate_tree_sha256": "382434f751d8cfa6c42149fe20b3dc2e44421d0d2455ab699edf61d734ec84de",
+        "sha256sums_digest": "aca144f7b774aab4099b963694a39d9076b80dd2046ba3bf06689dc1b267ed40",
+        "human_uat_transition_id": "transition-bcd83776984f7e11c251eeeea24049e2",
+        "checkpoint_id": "checkpoint-f17a73b05a4a5e0464af6c6977014d58",
+        "handoff_id": "handoff-a72411986759632b73789031214952e1"
+      },
+      "clean_rc": {
+        "sha256sums_digest": "aca144f7b774aab4099b963694a39d9076b80dd2046ba3bf06689dc1b267ed40",
+        "test_evidence_manifest_sha256": "2e3dff1475dd14dafb1223ed0b2dc0c64146d9d0f121c9fea4930f944f942a03",
+        "healthy_summary_sha256": "fb032faef1fdfc8bd4777b8cbb85deb931529313b55e2a7bf154765e604d8c54",
+        "existing_update_summary_sha256": "a0f1418082ebf1975a483acafa91c725695cb5bd1105cf8bda5da008b23ba950"
+      }
+    },
+    "remaining_release_conditions": [
+      "owner review of the Node 22 engine-parity, base-history, and staging-barrier caveats",
+      "separate exact local-commit decision",
+      "staged-tree verification and immutable local candidate SHA if commit is approved",
+      "separate release, promotion, rollout, and hypercare decisions"
+    ],
+    "does_not_authorize": [
+      "corrective implementation",
+      "commit",
+      "live installation or update",
+      "push or pull request",
+      "merge",
+      "release or deployment",
+      "external synchronization",
+      "template promotion"
+    ]
+  },
+  "corrective_work": {
+    "id": "EXO-PHASE-B-001-C1",
+    "revision": 1,
+    "title": "Complete update evidence and provide exact 24-command native adapter parity",
+    "type": "retrospective_improvement",
+    "priority": "high",
+    "status": "historical_runtime_predecessor_superseded_by_C2_and_C3",
+    "writer": null,
+    "record_role": "historical_preimplementation_plan_and_runtime_evidence_pointer",
+    "superseded_by": "EXO-PHASE-B-001-C2",
+    "current_status_note": "C1 runtime revision 3 remains developing as recorded, but its writer lease, executor registrations, and capabilities expired or were consumed. Its implementation evidence is preserved; no C1 authority is valid. G3-F01 and the initial G3-F03 work were completed and subsequently verified or corrected by C2 and C3.",
+    "source_findings": [
+      {
+        "id": "G3-F01",
+        "severity": "P1",
+        "problem": "safe-update.sh reports the correct changed-path count but truncates its normal human review display after 120 paths.",
+        "required_outcome": "Emit or durably reference the complete deterministic changed-path list and its digest, and prove a greater-than-120-path case without truncation."
+      },
+      {
+        "id": "G3-F03",
+        "severity": "P1",
+        "problem": "The canonical registry contains 24 commands, while native provider adapters and current reference documentation do not expose the same exact set or semantics.",
+        "required_outcome": "Expose all 24 commands through each claimed provider's repository-native command or skill mechanism, preserve one canonical behavior source, remove discovery collisions, and state provider-specific invocation syntax honestly."
+      }
+    ],
+    "canonical_commands": [
+      "ai-export",
+      "brief",
+      "check-keys",
+      "daily-end",
+      "drill",
+      "ecosystem",
+      "groom",
+      "handoff",
+      "history",
+      "init-exocortex",
+      "interrupt",
+      "longterm",
+      "monthly-review",
+      "onboard",
+      "pattern-review",
+      "prioritize",
+      "refine-backlog",
+      "save",
+      "scrum",
+      "shortterm",
+      "subconscious",
+      "system-scan",
+      "weekly-review",
+      "work"
+    ],
+    "provider_contract": [
+      {
+        "surface": "Codex",
+        "repository_adapter": ".agents/skills/{command}/SKILL.md",
+        "native_invocation": "$command or the skills selector",
+        "literal_slash_claim": false
+      },
+      {
+        "surface": "Claude",
+        "repository_adapter": ".claude/skills/{command}/SKILL.md",
+        "native_invocation": "/command",
+        "literal_slash_claim": true
+      },
+      {
+        "surface": "Cursor",
+        "repository_adapter": ".agents/skills/{command}/SKILL.md",
+        "native_invocation": "/command",
+        "literal_slash_claim": true
+      },
+      {
+        "surface": "GitHub Copilot",
+        "repository_adapter": ".agents/skills/{command}/SKILL.md",
+        "native_invocation": "/command where repository skills are supported",
+        "literal_slash_claim": true
+      },
+      {
+        "surface": "Kimi Code",
+        "repository_adapter": ".agents/skills/{command}/SKILL.md",
+        "native_invocation": "/skill:command or /command when collision-free",
+        "literal_slash_claim": true
+      },
+      {
+        "surface": "Windsurf",
+        "repository_adapter": ".windsurf/workflows/{command}.md",
+        "native_invocation": "/command",
+        "literal_slash_claim": true
+      },
+      {
+        "surface": "generic or unidentified host",
+        "repository_adapter": "AI_START_HERE.md and .exocortex/commands/{command}.json",
+        "native_invocation": "host-dependent",
+        "literal_slash_claim": false
+      }
+    ],
+    "exact_prospective_path_allowlist": {
+      "status": "historical_boundary_implemented_under_separate_C1_runtime_authority",
+      "path_template_rule": "Each {command} placeholder expands only to one of the 24 canonical_commands above; no other child path is allowed.",
+      "create_or_modify_path_templates": [
+        ".agents/skills/{command}/SKILL.md",
+        ".claude/skills/{command}/SKILL.md",
+        ".windsurf/workflows/{command}.md"
+      ],
+      "legacy_cursor_adapter_paths_to_supersede_only_after_collision_and_compatibility_proof": [
+        ".cursor/commands/ai-export.md",
+        ".cursor/commands/brief.md",
+        ".cursor/commands/daily-end.md",
+        ".cursor/commands/drill.md",
+        ".cursor/commands/ecosystem.md",
+        ".cursor/commands/groom.md",
+        ".cursor/commands/handoff.md",
+        ".cursor/commands/history.md",
+        ".cursor/commands/init-exocortex.md",
+        ".cursor/commands/interrupt.md",
+        ".cursor/commands/longterm.md",
+        ".cursor/commands/monthly-review.md",
+        ".cursor/commands/onboard.md",
+        ".cursor/commands/prioritize.md",
+        ".cursor/commands/refine-backlog.md",
+        ".cursor/commands/save.md",
+        ".cursor/commands/scrum.md",
+        ".cursor/commands/shortterm.md",
+        ".cursor/commands/subconscious.md",
+        ".cursor/commands/system-scan.md",
+        ".cursor/commands/weekly-review.md",
+        ".cursor/commands/work.md"
+      ],
+      "fixed_paths": [
+        ".cursor/skills/onboard/SKILL.md",
+        ".github/skills/onboard/SKILL.md",
+        ".exocortex/AI_BOOTSTRAP.md",
+        ".exocortex/COMMAND_SYSTEM.md",
+        ".exocortex/provider-adapters.json",
+        ".exocortex/schemas/provider-adapter-matrix.schema.json",
+        ".exocortex/scripts/generate_command_adapters.py",
+        ".exocortex/docs/IDE_INTEGRATION_GUIDE.md",
+        ".exocortex/docs/UPGRADE_MANIFEST.md",
+        ".exocortex/reference/ESSENTIAL_FILES.md",
+        ".exocortex/reference/MEMORY.md",
+        ".exocortex/reference/QUICK_REFERENCE.md",
+        ".github/workflows/checksums.yml",
+        ".github/workflows/test.yml",
+        "README.md",
+        "SHA256SUMS",
+        "install.sh",
+        "scripts/safe-update.sh",
+        "tests/helpers.sh",
+        "tests/run_tests.sh",
+        "tests/phase-b/provider-adapter-matrix.json",
+        "tests/phase-b/test-plan.json",
+        "tests/phase-b/test_phase_b.py"
+      ],
+      "migration_rule": "A downstream customized legacy adapter is preserved. Only a manifest-owned byte-matching legacy Cursor adapter may be retired, and only after the replacement native skill is present, validated, and collision-free."
+    },
+    "acceptance_criteria": [
+      "the canonical registry remains exactly 24 valid command JSON files",
+      "every claimed native surface exposes exactly the same 24 names with no duplicate visible name or noncanonical onboard collision",
+      "every adapter is generated as a thin delegate to AI_START_HERE.md and exactly one matching command JSON and cannot expand mutation or egress authority",
+      "side-effectful commands are manual-only and save remains narrative memory rather than a lifecycle checkpoint",
+      "Codex is documented with its supported dollar-sign or skill-selector invocation rather than a false literal-slash promise",
+      "unidentified providers remain on the model-neutral fallback until an exact supported repository convention is verified",
+      "fresh install, second install, safe update, and protected customized-adapter migration tests pass",
+      "safe update exposes or references the complete changed-path list and digest for a case above 120 paths",
+      "current documentation derives or validates command counts and contains no live 20-command or 22-of-24 claim, while historical release notes remain unchanged",
+      "checksums, CI path triggers, privacy scanning, and public data-plane exclusions include every new adapter surface",
+      "independent correctness, compatibility, privacy, and authority review finds no actionable P0 or P1"
+    ],
+    "next_gate": "Historical only. Never reuse C1 authority; current work proceeds only through the clean-RC and later separately approved downstream gates.",
+    "closed_gates": [
+      "commit",
+      "live target",
+      "push or pull request",
+      "merge",
+      "release or deployment",
+      "external synchronization",
+      "template promotion"
+    ]
+  },
+  "corrective_work_followups": [
+    {
+      "id": "EXO-PHASE-B-001-C2",
+      "revision": 27,
+      "title": "Correct provider-native command discovery and safely retire unverified Windsurf defaults",
+      "type": "retrospective_improvement",
+      "priority": "high",
+      "status": "runtime_uat_ready_all_criteria_passed_writer_released",
+      "writer": null,
+      "record_role": "verified_implementation_and_provider_uat_predecessor",
+      "superseded_by": "EXO-PHASE-B-001-C3 for current provider-status truth",
+      "current_status_note": "C2 runtime revision 27 is uat_ready with all 12 criteria passed, candidate tree db6d6ab030b9937d0108f1e5d5a7bb38ff5ffd00820f324edc8f259a8b695428, SHA256SUMS d84985b9e388fcbae32aae015ed83a0dff7f316887d850798d3199d4ee55441d, final handoff handoff-34c572bb5421a7d884cf2bd53b2ba1e6, and writer released. Its preimplementation provider table is historical; C3 is authoritative for current provider status.",
+      "source_work": {
+        "parent": "EXO-PHASE-B-001",
+        "predecessor": "EXO-PHASE-B-001-C1",
+        "predecessor_runtime_revision": 3,
+        "predecessor_runtime_state": "developing",
+        "candidate_head": "da49a5d4bfb42acd9839b189febbe95f60b4c843",
+        "candidate_sha256sums_digest": "61ec14ded36f244704ad7cdb44ce74b321697e201a97cb0c82cd8b38976edb31",
+        "candidate_tree_evidence_digest": "e13c2754d5a18bb982ba280d4635a7bfa4797d99e6a03a8570dcfffc5394ef0f",
+        "candidate_pre_record_status_fingerprint": "9500fec3e4f69af1d94ae3e7b3f7cfb9a171cf065567ac6f5ccc8d2b8c23d3d8",
+        "status_fingerprint_note": "This fingerprint was captured before the revision 4 planning-record edits. Every future provider UAT must capture a fresh pre-session fingerprint after the record reconciliation and compare that fresh value with its post-session fingerprint.",
+        "handoff": ".exocortex/events/2026-07-23_00-35-45_macbook-cursor.md",
+        "authority_note": "C1's recorded writer lease and executor registrations are expired and both C1 capabilities are consumed. No C1 authority carries into C2, and every candidate digest must be revalidated before a later implementation gate."
+      },
+      "record_authority": {
+        "approval_id": "EXO-PHASE-B-001-C2-RECORD-ONLY",
+        "status": "consumed",
+        "accepted_at": "2026-07-23T12:25:02Z",
+        "accepted_by": "project-owner",
+        "scope": "Create the C2 planning follow-up, bind the exact prospective 68-path allowlist and digest, and record provider statuses, Cursor/Windsurf correction, cumulative migration protections, and Claude, Kimi, and Zed Human UAT plans.",
+        "excludes": [
+          "implementation",
+          "authentication",
+          "provider session",
+          "commit",
+          "installation or live-target change",
+          "push or pull request",
+          "merge",
+          "release or deployment",
+          "external synchronization",
+          "template promotion"
+        ]
+      },
+      "provider_status_definitions": [
+        {
+          "status": "verified",
+          "meaning": "The recorded installed version and evidence set passed complete native-menu Human UAT."
+        },
+        {
+          "status": "compatible",
+          "meaning": "The documented provider contract and structural validation support the adapter, but complete Human UAT is pending or partial."
+        },
+        {
+          "status": "failed",
+          "meaning": "The recorded installed version produced a concrete reproducible native-menu failure."
+        },
+        {
+          "status": "blocked",
+          "meaning": "A prerequisite such as authentication prevented the Human UAT from completing."
+        },
+        {
+          "status": "unavailable",
+          "meaning": "No installed local surface exists for the required Human UAT."
+        }
+      ],
+      "provider_status_rule": "Every status is scoped to the recorded provider version and evidence set. A provider, client, adapter, discovery, or configuration change invalidates stale evidence and requires revalidation before the support claim is promoted.",
+      "provider_statuses": [
+        {
+          "surface": "GitHub Copilot",
+          "version": "exact client version not captured",
+          "status": "compatible",
+          "evidence": "The current available surface displayed all 24 Exocortex commands.",
+          "limitation": "The 24-of-24 observation is retained, but verified status requires the exact client version to be captured during the next regression run."
+        },
+        {
+          "surface": "Codex",
+          "version": "current Codex desktop task",
+          "status": "compatible",
+          "evidence": "The repository skill catalog resolves all 24 canonical commands.",
+          "limitation": "Literal desktop skill-selector visibility remains Human-UAT-pending."
+        },
+        {
+          "surface": "Cursor",
+          "version": "3.6.21",
+          "status": "failed",
+          "evidence": "The portable .agents/skills commands did not appear in the native menu while existing .cursor/skills entries did.",
+          "limitation": "The exact root cause remains unproven; indexing, cache, configuration, and duplicate-root discovery must not be represented as established causes."
+        },
+        {
+          "surface": "Claude Code",
+          "version": "2.1.214",
+          "status": "blocked",
+          "evidence": "Expired OAuth prevented the native-menu Human UAT from completing.",
+          "limitation": "Authentication and any Claude session remain separately authorized user actions."
+        },
+        {
+          "surface": "Kimi Code",
+          "version": "1.14.0",
+          "status": "compatible",
+          "evidence": "The native Agent Skills contract and provider syntax are structurally compatible.",
+          "limitation": "Human UAT is pending and the provider-native spelling is /skill:{name}, not /{name}."
+        },
+        {
+          "surface": "Zed",
+          "version": "0.230.1",
+          "status": "compatible",
+          "evidence": "The built-in Zed Agent documents project-local .agents/skills discovery.",
+          "limitation": "Human UAT is pending; ACP-hosted agents are separate surfaces and are not covered by built-in Agent evidence."
+        },
+        {
+          "surface": "Windsurf",
+          "version": "not installed",
+          "status": "unavailable",
+          "evidence": "No local installed surface exists for provider-native Human UAT.",
+          "limitation": "Remove Windsurf from active advertised support and default installation; historical or explicitly experimental records may remain clearly labeled."
+        },
+        {
+          "surface": "generic or unidentified host",
+          "version": "not applicable",
+          "status": null,
+          "native_menu_status": "not_applicable",
+          "evidence": "AI_START_HERE.md plus the canonical command JSON registry remains the provider-neutral fallback.",
+          "limitation": "The generic fallback makes no native-menu or identical slash-spelling claim."
+        }
+      ],
+      "correction_contract": {
+        "canonical_behavior": "Keep exactly 24 valid .exocortex/commands/*.json files as the single behavior authority.",
+        "generated_default": {
+          "portable_agents_skills": 24,
+          "claude_skills": 24,
+          "cursor_skills": 24,
+          "total": 72
+        },
+        "cursor": [
+          "generate one .cursor/skills/{command}/SKILL.md adapter for each canonical command",
+          "use provider-specific manual-only frontmatter with disable-model-invocation: true",
+          "keep every adapter a thin pointer to AI_START_HERE.md and exactly one matching canonical JSON file",
+          "test .agents and .cursor duplicate-root discovery without accepting duplicate visible names",
+          "test the onboard name collision explicitly and require the canonical Exocortex command to remain distinguishable"
+        ],
+        "windsurf": [
+          "stop generating and installing Windsurf workflows by default",
+          "remove Windsurf from active support claims and default-install documentation",
+          "preserve historical changelog evidence as historical rather than rewriting it",
+          "retain Windsurf only in clearly labeled experimental or archived material unless a later version-specific Human UAT reauthorizes support"
+        ]
+      },
+      "exact_prospective_path_allowlist": {
+        "status": "historical_boundary_implemented_under_separate_C2_runtime_authority",
+        "path_count": 68,
+        "sha256": "4189e80b105b07170e796d95c9dd9eab2426cadf7ac128f7d9d588150574ac48",
+        "digest_rule": "SHA-256 of the UTF-8 encoding of the lexicographically sorted exact relative paths, with one LF after every path including the final path.",
+        "composition": {
+          "fixed_generator_schema_installer_update_documentation_test_checksum_paths": 20,
+          "new_cursor_skill_paths": 24,
+          "retiring_windsurf_workflow_paths": 24
+        },
+        "paths": [
+          ".cursor/skills/ai-export/SKILL.md",
+          ".cursor/skills/brief/SKILL.md",
+          ".cursor/skills/check-keys/SKILL.md",
+          ".cursor/skills/daily-end/SKILL.md",
+          ".cursor/skills/drill/SKILL.md",
+          ".cursor/skills/ecosystem/SKILL.md",
+          ".cursor/skills/groom/SKILL.md",
+          ".cursor/skills/handoff/SKILL.md",
+          ".cursor/skills/history/SKILL.md",
+          ".cursor/skills/init-exocortex/SKILL.md",
+          ".cursor/skills/interrupt/SKILL.md",
+          ".cursor/skills/longterm/SKILL.md",
+          ".cursor/skills/monthly-review/SKILL.md",
+          ".cursor/skills/onboard/SKILL.md",
+          ".cursor/skills/pattern-review/SKILL.md",
+          ".cursor/skills/prioritize/SKILL.md",
+          ".cursor/skills/refine-backlog/SKILL.md",
+          ".cursor/skills/save/SKILL.md",
+          ".cursor/skills/scrum/SKILL.md",
+          ".cursor/skills/shortterm/SKILL.md",
+          ".cursor/skills/subconscious/SKILL.md",
+          ".cursor/skills/system-scan/SKILL.md",
+          ".cursor/skills/weekly-review/SKILL.md",
+          ".cursor/skills/work/SKILL.md",
+          ".exocortex/AI_BOOTSTRAP.md",
+          ".exocortex/COMMAND_SYSTEM.md",
+          ".exocortex/docs/IDE_INTEGRATION_GUIDE.md",
+          ".exocortex/docs/UPGRADE_MANIFEST.md",
+          ".exocortex/provider-adapters.json",
+          ".exocortex/reference/ESSENTIAL_FILES.md",
+          ".exocortex/reference/MEMORY.md",
+          ".exocortex/reference/QUICK_REFERENCE.md",
+          ".exocortex/schemas/provider-adapter-matrix.schema.json",
+          ".exocortex/scripts/generate_command_adapters.py",
+          ".windsurf/workflows/ai-export.md",
+          ".windsurf/workflows/brief.md",
+          ".windsurf/workflows/check-keys.md",
+          ".windsurf/workflows/daily-end.md",
+          ".windsurf/workflows/drill.md",
+          ".windsurf/workflows/ecosystem.md",
+          ".windsurf/workflows/groom.md",
+          ".windsurf/workflows/handoff.md",
+          ".windsurf/workflows/history.md",
+          ".windsurf/workflows/init-exocortex.md",
+          ".windsurf/workflows/interrupt.md",
+          ".windsurf/workflows/longterm.md",
+          ".windsurf/workflows/monthly-review.md",
+          ".windsurf/workflows/onboard.md",
+          ".windsurf/workflows/pattern-review.md",
+          ".windsurf/workflows/prioritize.md",
+          ".windsurf/workflows/refine-backlog.md",
+          ".windsurf/workflows/save.md",
+          ".windsurf/workflows/scrum.md",
+          ".windsurf/workflows/shortterm.md",
+          ".windsurf/workflows/subconscious.md",
+          ".windsurf/workflows/system-scan.md",
+          ".windsurf/workflows/weekly-review.md",
+          ".windsurf/workflows/work.md",
+          ".windsurfrules",
+          "CHANGELOG.md",
+          "README.md",
+          "SHA256SUMS",
+          "WHATSNEW.md",
+          "install.sh",
+          "scripts/safe-update.sh",
+          "tests/phase-b/provider-adapter-matrix.json",
+          "tests/phase-b/test_phase_b.py",
+          "tests/run_tests.sh"
+        ]
+      },
+      "migration_protections": {
+        "rule": "Retire an adapter or integration file only when the prior install manifest proves template ownership and the current file is byte-identical to the owned template version. Preserve customized, unknown, or conflicting files and emit the stable EXOCORTEX_ADAPTER_COLLISION_PRESERVED warning.",
+        "prior_c1_retirement_paths": [
+          ".cursor/commands/ai-export.md",
+          ".cursor/commands/brief.md",
+          ".cursor/commands/daily-end.md",
+          ".cursor/commands/drill.md",
+          ".cursor/commands/ecosystem.md",
+          ".cursor/commands/groom.md",
+          ".cursor/commands/handoff.md",
+          ".cursor/commands/history.md",
+          ".cursor/commands/init-exocortex.md",
+          ".cursor/commands/interrupt.md",
+          ".cursor/commands/longterm.md",
+          ".cursor/commands/monthly-review.md",
+          ".cursor/commands/onboard.md",
+          ".cursor/commands/prioritize.md",
+          ".cursor/commands/refine-backlog.md",
+          ".cursor/commands/save.md",
+          ".cursor/commands/scrum.md",
+          ".cursor/commands/shortterm.md",
+          ".cursor/commands/subconscious.md",
+          ".cursor/commands/system-scan.md",
+          ".cursor/commands/weekly-review.md",
+          ".cursor/commands/work.md",
+          ".cursor/skills/onboard/SKILL.md",
+          ".github/skills/onboard/SKILL.md"
+        ],
+        "c2_windsurf_retirement_paths": [
+          ".windsurf/workflows/ai-export.md",
+          ".windsurf/workflows/brief.md",
+          ".windsurf/workflows/check-keys.md",
+          ".windsurf/workflows/daily-end.md",
+          ".windsurf/workflows/drill.md",
+          ".windsurf/workflows/ecosystem.md",
+          ".windsurf/workflows/groom.md",
+          ".windsurf/workflows/handoff.md",
+          ".windsurf/workflows/history.md",
+          ".windsurf/workflows/init-exocortex.md",
+          ".windsurf/workflows/interrupt.md",
+          ".windsurf/workflows/longterm.md",
+          ".windsurf/workflows/monthly-review.md",
+          ".windsurf/workflows/onboard.md",
+          ".windsurf/workflows/pattern-review.md",
+          ".windsurf/workflows/prioritize.md",
+          ".windsurf/workflows/refine-backlog.md",
+          ".windsurf/workflows/save.md",
+          ".windsurf/workflows/scrum.md",
+          ".windsurf/workflows/shortterm.md",
+          ".windsurf/workflows/subconscious.md",
+          ".windsurf/workflows/system-scan.md",
+          ".windsurf/workflows/weekly-review.md",
+          ".windsurf/workflows/work.md",
+          ".windsurfrules"
+        ],
+        "cumulative_retirement_path_count": 49,
+        "required_upgrade_cases": [
+          "direct update from a pre-C1 installation applies both retirement groups safely",
+          "update from a C1 installation applies only the still-relevant Windsurf retirements",
+          "already-absent managed files remain idempotently absent",
+          "customized, unknown, and colliding files are preserved with the stable warning",
+          "fresh install, reinstall, both direct-update routes, rollback, and second-run idempotency preserve sovereign project data"
+        ]
+      },
+      "human_uat_plans": {
+        "claude": {
+          "version": "2.1.214",
+          "precondition": "The project owner separately authorizes and performs the intended OAuth authentication route; no OAuth URL, code, token, account detail, or credential value is recorded.",
+          "method": [
+            "run only a masked valid-or-invalid authentication status check",
+            "capture candidate HEAD and a fresh pre-session Git status fingerprint after the C2 record reconciliation and before launching Claude",
+            "launch a no-history, plan-permission, non-persistent, no-browser Claude session after authentication succeeds",
+            "type each of the 24 slash commands without pressing Enter",
+            "confirm the exact Exocortex description appears for every command and no command or prompt executes",
+            "exit, capture post-session HEAD and Git status fingerprint, and compare both with the pre-session values"
+          ],
+          "pass_condition": "All 24 exact names and Exocortex descriptions appear with no collision, execution, credential exposure, repository change, or retained prompt history."
+        },
+        "kimi": {
+          "version": "1.14.0",
+          "precondition": "A separate approval authorizes creation and verified deletion of one exact disposable runtime directory; no credential or model request is authorized.",
+          "method": [
+            "redirect all Kimi runtime data to the exact disposable directory with KIMI_SHARE_DIR",
+            "disable automatic update checks, explicitly unset KIMI_API_KEY, use empty inline configuration, and select only the candidate work and .agents/skills directories",
+            "capture candidate HEAD and a fresh pre-session Git status fingerprint before launching Kimi",
+            "open the native help surface without sending a model prompt or invoking a skill",
+            "confirm 24 Exocortex entries use /skill:{name}; the expected total is 26 including Kimi's two built-ins",
+            "exit, capture post-session HEAD and Git status fingerprint, compare both with the pre-session values, and delete only the validated disposable directory"
+          ],
+          "pass_condition": "All 24 provider-native Exocortex skill mappings appear with no model request, credential access, repository mutation, or retained disposable state."
+        },
+        "zed": {
+          "version": "0.230.1",
+          "precondition": "A later bounded Human UAT uses the built-in Zed Agent in the trusted candidate repository; ACP-hosted external agents remain out of scope.",
+          "method": [
+            "capture candidate HEAD and a fresh pre-session Git status fingerprint before opening Zed",
+            "open the candidate with the built-in Zed Agent",
+            "inspect project-local .agents/skills discovery",
+            "confirm all 24 exact Exocortex skill names and descriptions are available without invocation",
+            "exit, capture post-session HEAD and Git status fingerprint, and compare both with the pre-session values"
+          ],
+          "pass_condition": "The built-in Agent exposes exactly 24 unique Exocortex skills without execution, duplicate discovery, repository mutation, or an unsupported ACP inference."
+        }
+      },
+      "acceptance_criteria": [
+        "canonical behavior remains exactly 24 valid command JSON files",
+        "generated default output is exactly 24 portable Agent Skills, 24 Claude skills, and 24 Cursor skills",
+        "every generated adapter is deterministic, thin, manual-only, and authority-neutral",
+        "provider statuses use the recorded evidence definitions with version and limitation metadata",
+        "Cursor exposes exactly 24 unique native commands with no duplicate-root or onboard collision",
+        "Windsurf disappears from active support claims and fresh/default installation while historical records remain clearly historical",
+        "all 49 cumulative C1-plus-C2 retirement mappings remain available and preserve customized, unknown, and conflicting files",
+        "fresh install, reinstall, direct update from pre-C1, direct update from C1, idempotency, rollback, checksums, privacy, and complete changed-path evidence pass",
+        "Claude Human UAT later verifies 24 of 24 after separately approved owner authentication without executing a command or recording credentials",
+        "Kimi Human UAT later verifies 24 provider-native /skill:{name} entries using temporary isolated state and leaves the repository and disposable-state boundary clean",
+        "Zed Human UAT later verifies 24 unique skills through the built-in Agent with ACP explicitly out of scope",
+        "independent correctness, compatibility, migration, privacy, and authority review finds no actionable P0 or P1, and no provider status is promoted without matching evidence"
+      ],
+      "next_gate": "Historical predecessor only. Current work proceeds through the clean RC and later separately approved downstream gates.",
+      "closed_gates": [
+        "implementation",
+        "authentication",
+        "provider session",
+        "commit",
+        "installation or live-target change",
+        "push or pull request",
+        "merge",
+        "release or deployment",
+        "external synchronization",
+        "template promotion"
+      ]
+    },
+    {
+      "id": "EXO-PHASE-B-001-C3",
+      "revision": 17,
+      "title": "Exact-version provider evidence reconciliation",
+      "status": "human_uat_accepted_source_candidate",
+      "record_role": "current_accepted_local_source_candidate",
+      "source_candidate_tree_sha256": "382434f751d8cfa6c42149fe20b3dc2e44421d0d2455ab699edf61d734ec84de",
+      "source_sha256sums_digest": "aca144f7b774aab4099b963694a39d9076b80dd2046ba3bf06689dc1b267ed40",
+      "acceptance": "8/8 passed; owner Human UAT accepted; writer released",
+      "provider_statuses": [
+        {
+          "surface": "Cursor",
+          "version": "Stable 3.12.30",
+          "status": "verified",
+          "result": "24/24"
+        },
+        {
+          "surface": "Claude Desktop",
+          "version": "1.24012.1 (0adcae)",
+          "status": "verified",
+          "result": "24/24"
+        },
+        {
+          "surface": "Kimi Code CLI",
+          "version": "1.14.0",
+          "status": "verified",
+          "result": "24/24"
+        },
+        {
+          "surface": "Zed built-in Agent",
+          "version": "1.12.0 stable.328",
+          "status": "verified",
+          "result": "24/24"
+        },
+        {
+          "surface": "Codex",
+          "version": "current documented surface",
+          "status": "compatible"
+        },
+        {
+          "surface": "GitHub Copilot",
+          "version": "exact client version not captured",
+          "status": "compatible"
+        },
+        {
+          "surface": "Kimi Desktop",
+          "version": "3.1.3",
+          "status": "failed",
+          "result": "0/24",
+          "limitation": "non-default; no active adapter"
+        },
+        {
+          "surface": "Windsurf",
+          "version": "not installed",
+          "status": "unavailable",
+          "limitation": "excluded from default installation"
+        },
+        {
+          "surface": "generic or unidentified host",
+          "version": "not applicable",
+          "status": "not_applicable",
+          "limitation": "no native-menu claim"
+        }
+      ],
+      "final_handoff_id": "handoff-a72411986759632b73789031214952e1",
+      "next_gate": "Accepted public code-plane source for the clean RC; no release-ready or outward authority."
+    }
+  ],
   "migration_contract": {
     "status": "prospective_not_authorized",
     "order": [
@@ -808,13 +1639,13 @@
     },
     {
       "id": "D-03",
-      "description": "The accepted Mulligan identifiers and prior privacy-safe audit summaries are recorded, but their Git objects are intentionally absent from this repository and are not independently verifiable here.",
-      "status": "pending"
+      "description": "Private Mulligan objects remain intentionally absent. They are not required for the approved privacy-safe clean-RC gate, and exact private-object conformance is not claimed.",
+      "status": "not_required_for_clean_rc"
     },
     {
       "id": "D-04",
-      "description": "Choose how the fallback base is reconciled with main before any promotion path.",
-      "status": "pending"
+      "description": "The owner selected local main c6ccd8358c6896d8456cb4aa19b09744ea44b1e8 as the clean base and required replay of the privacy-safe 0eb3c667a505b90c9221ed768d47039a1638df5e behavior.",
+      "status": "satisfied"
     },
     {
       "id": "D-05",
@@ -823,28 +1654,28 @@
     },
     {
       "id": "D-06",
-      "description": "Separate authorization for each disposable install or upgrade rehearsal.",
-      "status": "blocked"
+      "description": "The disposable Healthy install and fictional existing-repository upgrade each ran under their prior separate bounded G3 authorization.",
+      "status": "satisfied"
     },
     {
       "id": "D-07",
-      "description": "Separate Human UAT, release/hypercare, template promotion, and live-repository rollout decisions.",
-      "status": "blocked"
+      "description": "Bounded G3 and C3 Human UAT are accepted. Release, promotion, live rollout, and hypercare remain separate future gates.",
+      "status": "satisfied"
     },
     {
       "id": "D-08",
-      "description": "Separate G2 approval for the exact prospective local implementation allowlist and one fresh writer reservation; G2 does not include target rehearsals or downstream actions.",
-      "status": "blocked"
+      "description": "The G2 local implementation and narrow amendment completed under their prior separate approvals; no implementation writer remains and no downstream authority carried forward.",
+      "status": "satisfied"
     },
     {
       "id": "D-09",
-      "description": "Before promotion, choose a release candidate that contains the approved fallback base or explicitly supersedes it with owner-accepted equivalent evidence.",
-      "status": "pending"
+      "description": "The clean local RC is materialized and verified, but it is uncommitted and has no immutable release-candidate SHA. A commit or downstream disposition requires a separate owner gate.",
+      "status": "local_candidate_verified_pending_commit_decision"
     },
     {
       "id": "D-10",
-      "description": "Before implementation claims conformance with the private pilot, obtain separately authorized read-only source verification or a privacy-safe fictionalized evidence packet without importing private objects or history.",
-      "status": "blocked"
+      "description": "The clean RC relies only on privacy-safe summaries and fictionalized evidence; importing or claiming exact conformance with private Mulligan objects is outside scope.",
+      "status": "not_required_for_clean_rc"
     }
   ],
   "risks": [
@@ -1125,6 +1956,34 @@
       "accepted_at": "2026-07-22T12:57:24Z",
       "accepted_by": "project-owner",
       "scope": "Refine only the same three project-local planning paths with R-01 through R-12 closure criteria, R-06 open, an exact prospective implementation allowlist, explicit dynamic capability-and-cost orchestration, migration, fault-injection, rollback, hypercare, local validation, commit, and local handoff. No implementation or downstream action."
+    },
+    {
+      "id": "EXO-PHASE-B-001-G3-HUMAN-UAT",
+      "status": "accepted",
+      "accepted_at": "2026-07-22T22:44:06Z",
+      "accepted_by": "project-owner",
+      "scope": "Accept the bounded G3 disposable-target Human UAT while retaining stale command-count wording, provider-adapter parity, complete-update-evidence, and rollback portability findings as open. No recording write or downstream action was granted by the acceptance itself."
+    },
+    {
+      "id": "EXO-PHASE-B-001-G3-RECORD-ONLY",
+      "status": "consumed",
+      "accepted_at": "2026-07-22T22:44:06Z",
+      "accepted_by": "project-owner",
+      "scope": "Record the accepted G3 Human UAT, retain complete-update-evidence and 24-command provider-adapter-parity findings as open corrective work, and define the exact prospective corrective path allowlist. No implementation, commit, live-target change, push, merge, deployment, external synchronization, or template promotion."
+    },
+    {
+      "id": "EXO-PHASE-B-001-C2-RECORD-ONLY",
+      "status": "consumed",
+      "accepted_at": "2026-07-23T12:25:02Z",
+      "accepted_by": "project-owner",
+      "scope": "Create EXO-PHASE-B-001-C2 as a captured planning follow-up, bind the proposed 68-path allowlist and digest 4189e80b105b07170e796d95c9dd9eab2426cadf7ac128f7d9d588150574ac48, and record provider statuses, Cursor/Windsurf correction, cumulative migration protections, and Claude, Kimi, and Zed Human UAT plans. No implementation, authentication, provider session, commit, installation, push, synchronization, or promotion."
+    },
+    {
+      "id": "EXO-PHASE-B-001-CLEAN-RC-LOCAL",
+      "status": "consumed",
+      "accepted_at": "2026-07-24T11:02:29Z",
+      "accepted_by": "project-owner",
+      "scope": "Bounded clean-RC local preparation from c6ccd8358c6896d8456cb4aa19b09744ea44b1e8, required replay of the privacy-safe 0eb3c667a505b90c9221ed768d47039a1638df5e behavior, and only the accepted public code plane bound by aca144f7b774aab4099b963694a39d9076b80dd2046ba3bf06689dc1b267ed40; deterministic tests, two disposable rehearsals, independent review, planning reconciliation, and local handoff only. No release_ready, commit, outward action, live target, external synchronization, promotion, or hypercare acceptance."
     }
   ],
   "transitions": [

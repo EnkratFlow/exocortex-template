@@ -1,0 +1,567 @@
+{
+  "acceptance_criteria": [
+    {
+      "id": "C2-AC-01",
+      "status": "passed",
+      "text": "Canonical behavior remains exactly 24 valid command JSON files."
+    },
+    {
+      "id": "C2-AC-02",
+      "status": "passed",
+      "text": "Generated default output is exactly 24 portable Agent Skills, 24 Claude skills, and 24 Cursor skills."
+    },
+    {
+      "id": "C2-AC-03",
+      "status": "passed",
+      "text": "Every generated adapter is deterministic, thin, manual-only, and authority-neutral."
+    },
+    {
+      "id": "C2-AC-04",
+      "status": "passed",
+      "text": "Provider statuses use the recorded evidence definitions with version and limitation metadata."
+    },
+    {
+      "id": "C2-AC-05",
+      "status": "passed",
+      "text": "Cursor exposes exactly 24 unique native commands with no duplicate-root or onboard collision."
+    },
+    {
+      "id": "C2-AC-06",
+      "status": "passed",
+      "text": "Windsurf disappears from active support claims and fresh or default installation while historical records remain clearly historical."
+    },
+    {
+      "id": "C2-AC-07",
+      "status": "passed",
+      "text": "All 49 cumulative C1-plus-C2 retirement mappings remain available and preserve customized, unknown, and conflicting files."
+    },
+    {
+      "id": "C2-AC-08",
+      "status": "passed",
+      "text": "Fresh install, reinstall, direct update from pre-C1, direct update from C1, idempotency, rollback, checksums, privacy, and complete changed-path evidence pass."
+    },
+    {
+      "id": "C2-AC-09",
+      "status": "passed",
+      "text": "Claude Human UAT later verifies 24 of 24 after separately approved owner authentication without executing a command or recording credentials."
+    },
+    {
+      "id": "C2-AC-10",
+      "status": "passed",
+      "text": "Kimi Human UAT later verifies all 24 provider-native skill entries using exact /skill:{name} syntax in temporary isolated state and leaves the repository and disposable-state boundary clean."
+    },
+    {
+      "id": "C2-AC-11",
+      "status": "passed",
+      "text": "Zed Human UAT later verifies 24 unique skills through the built-in Agent with ACP explicitly out of scope."
+    },
+    {
+      "id": "C2-AC-12",
+      "status": "passed",
+      "text": "Independent correctness, compatibility, migration, privacy, and authority review finds no actionable P0 or P1, and no provider status is promoted without matching evidence."
+    }
+  ],
+  "checkpoints": [
+    {
+      "created_at": "2026-07-23T13:09:18Z",
+      "id": "checkpoint-1e7604154dcfb9669bf4ddd5baa05c24",
+      "local_only": true,
+      "request_id": "EXO-PHASE-B-001-C2-develop-v1",
+      "state": "developing",
+      "transition_id": "transition-481378fa9ec50a54526cc32ae5c247e3"
+    },
+    {
+      "created_at": "2026-07-23T15:27:59Z",
+      "id": "checkpoint-9df75863587a317f1b88f0ae3a343f93",
+      "local_only": true,
+      "request_id": "EXO-PHASE-B-001-C2-developer-verified-v1",
+      "state": "developer_verified",
+      "transition_id": "transition-98e2b63f36dd80886ed41d37392c5125"
+    },
+    {
+      "created_at": "2026-07-23T15:31:16Z",
+      "id": "checkpoint-4812072a41ea15ad01ea6653863ef1ca",
+      "local_only": true,
+      "request_id": "EXO-PHASE-B-001-C2-qa-sit-v2",
+      "state": "qa_sit",
+      "transition_id": "transition-b847222b318ccdc72756a786bb74ea2d"
+    },
+    {
+      "created_at": "2026-07-23T15:31:29Z",
+      "id": "checkpoint-d4959c451dfdfe17393c27dd85c8a1d2",
+      "local_only": true,
+      "request_id": "EXO-PHASE-B-001-C2-uat-ready-v2",
+      "state": "uat_ready",
+      "transition_id": "transition-8d50e5dae8daf305527b839d320fc37f"
+    }
+  ],
+  "designated_base": {
+    "ref": "EXO-PHASE-B-001 revision 4, follow-up EXO-PHASE-B-001-C2 revision 1",
+    "sha": "61ec14ded36f244704ad7cdb44ce74b321697e201a97cb0c82cd8b38976edb31",
+    "source": "approved_work_item"
+  },
+  "handoffs": [
+    {
+      "base_sha": "61ec14ded36f244704ad7cdb44ce74b321697e201a97cb0c82cd8b38976edb31",
+      "candidate_sha": "db6d6ab030b9937d0108f1e5d5a7bb38ff5ffd00820f324edc8f259a8b695428",
+      "capability_digest": "d87883511174e74055f7bf671d30b3ac1762640164c0aa8dc88191cda9a96d8b",
+      "capability_id": "EXO-PHASE-B-001-C2-FINAL-HANDOFF-V2",
+      "closed_gates": [
+        "local_C2_implementation",
+        "developer_verification",
+        "independent_review",
+        "QA_SIT",
+        "writer_lane"
+      ],
+      "created_at": "2026-07-23T15:32:11Z",
+      "evidence_hashes": [
+        "d84985b9e388fcbae32aae015ed83a0dff7f316887d850798d3199d4ee55441d",
+        "a64eee35262f557e79e645a0a81e770c0134da7cd7c517a224e3402a0ddb1ca9",
+        "bce0554f6cb82cf3c0f486ac5fa229315b4035fabf0474fe2c97a7e61937a741",
+        "3cc5dee747fe2b6847a534ad0748efef2c6411ebe0df76b07f44516773cd4003",
+        "a88237087c775e735d742150cc8e51f52704d2a437fc26a334ef5e1a19047c70",
+        "f20209e665a35d3320dc3d448c195835099d1acff9685bc3d3387cb358c97e9a",
+        "4df93698dcdf895590e05c2b3bc3f166eb34931d49831644d607b150d9f5d562",
+        "08f9b3521b86c1d27ff93ab7edcbb12faa31538c354fe8c88c9994eb522bf94d"
+      ],
+      "first_verification": "Read AI_START_HERE.md, orient to EXO-PHASE-B-001-C2 revision 11 at uat_ready, verify the writer is released and eight acceptance criteria are passed, then run only a separately approved provider-specific Human UAT.",
+      "id": "handoff-7537f22d438ab97b67d3cb7971541499",
+      "local_only": true,
+      "registry_digest": "dee3469469586c57939663b90d082ed3f1c49a7623fbabb35a862f3280f02bc3",
+      "request_id": "EXO-PHASE-B-001-C2-final-handoff-v2",
+      "state": "uat_ready",
+      "writer_status": "released"
+    },
+    {
+      "base_sha": "61ec14ded36f244704ad7cdb44ce74b321697e201a97cb0c82cd8b38976edb31",
+      "candidate_sha": "db6d6ab030b9937d0108f1e5d5a7bb38ff5ffd00820f324edc8f259a8b695428",
+      "capability_digest": "f749864971565f8c0ea7d2fbbb1c1e5f53fe06746fa49952839a7e901340d955",
+      "capability_id": "EXO-PHASE-B-001-C2-CURSOR-UAT-HANDOFF-V1",
+      "closed_gates": [
+        "Cursor_Human_UAT",
+        "Cursor_UAT_evidence_recording",
+        "bounded_writer_lane"
+      ],
+      "created_at": "2026-07-23T16:07:13Z",
+      "evidence_hashes": [
+        "de9547353071f11084aeeb9b14e7cb9f49e151d98466f4bf9e7139c7fdce04ef",
+        "e48549fcc9fd37de39ff9404d237176ea54ce9829846f1411e313524493002bc",
+        "d84985b9e388fcbae32aae015ed83a0dff7f316887d850798d3199d4ee55441d",
+        "a64eee35262f557e79e645a0a81e770c0134da7cd7c517a224e3402a0ddb1ca9"
+      ],
+      "first_verification": "Read AI_START_HERE.md, orient to EXO-PHASE-B-001-C2 revision 15 at uat_ready, verify 9 of 12 criteria passed and the writer released, then distinguish accepted Cursor UAT from the still-unchanged provider matrix/status and the pending Claude, Kimi, and Zed Human UAT.",
+      "id": "handoff-fc5138815694f5a20c83652596c20e36",
+      "local_only": true,
+      "registry_digest": "dee3469469586c57939663b90d082ed3f1c49a7623fbabb35a862f3280f02bc3",
+      "request_id": "EXO-PHASE-B-001-C2-cursor-uat-handoff-v1",
+      "state": "uat_ready",
+      "writer_status": "released"
+    },
+    {
+      "base_sha": "61ec14ded36f244704ad7cdb44ce74b321697e201a97cb0c82cd8b38976edb31",
+      "candidate_sha": "db6d6ab030b9937d0108f1e5d5a7bb38ff5ffd00820f324edc8f259a8b695428",
+      "capability_digest": "c43655c4b84494e0ab99e38158bf918391743b1fd53c453a4b199b61668ed2ee",
+      "capability_id": "EXO-PHASE-B-001-C2-ZED-UAT-HANDOFF-V1",
+      "closed_gates": [
+        "Zed_Human_UAT",
+        "Zed_UAT_evidence_recording",
+        "bounded_writer_lane"
+      ],
+      "created_at": "2026-07-23T17:40:01Z",
+      "evidence_hashes": [
+        "78c7eb6273a12b05fc7059f88a486d84d1d2146bf78a020ddfadd347ac5fe1ab",
+        "f6e7583ba183a3aff8b0ed857a8af7fb02a1d35ef2d7eb6ba09f0e7925a5f9e0",
+        "d84985b9e388fcbae32aae015ed83a0dff7f316887d850798d3199d4ee55441d",
+        "a64eee35262f557e79e645a0a81e770c0134da7cd7c517a224e3402a0ddb1ca9"
+      ],
+      "first_verification": "Read AI_START_HERE.md, orient to EXO-PHASE-B-001-C2 revision 19 at uat_ready, verify 10 of 12 criteria passed and the writer released, then distinguish accepted Zed UAT from the still-unchanged provider matrix/status and the pending Claude and Kimi Human UAT.",
+      "id": "handoff-17a75b4cc9e0e51b22febaf6a4668957",
+      "local_only": true,
+      "registry_digest": "dee3469469586c57939663b90d082ed3f1c49a7623fbabb35a862f3280f02bc3",
+      "request_id": "EXO-PHASE-B-001-C2-zed-uat-handoff-v1",
+      "state": "uat_ready",
+      "writer_status": "released"
+    },
+    {
+      "base_sha": "61ec14ded36f244704ad7cdb44ce74b321697e201a97cb0c82cd8b38976edb31",
+      "candidate_sha": "db6d6ab030b9937d0108f1e5d5a7bb38ff5ffd00820f324edc8f259a8b695428",
+      "capability_digest": "26b42700742350b2e2e5aa0204f679697c0b8cd2433e31394b46592c8fa2a994",
+      "capability_id": "EXO-PHASE-B-001-C2-CLOSEOUT-HANDOFF-V1",
+      "closed_gates": [
+        "Claude_Human_UAT",
+        "Claude_UAT_evidence_recording",
+        "Kimi_Desktop_failure_evidence_recording",
+        "bounded_writer_lane"
+      ],
+      "created_at": "2026-07-23T23:35:38Z",
+      "evidence_hashes": [
+        "dd4d4a5009ffd271b0ce6b81e786b86c5611774f19e6f5cb1d9ce1e66c9bda8c",
+        "ee1aa1b2ee0ae12f59316b21e677c03bc1ab63628040aad62cdbdbf3be025641",
+        "d84985b9e388fcbae32aae015ed83a0dff7f316887d850798d3199d4ee55441d",
+        "a64eee35262f557e79e645a0a81e770c0134da7cd7c517a224e3402a0ddb1ca9"
+      ],
+      "first_verification": "Read AI_START_HERE.md, orient to EXO-PHASE-B-001-C2 revision 23 at uat_ready, verify 11 of 12 criteria passed and the writer released, distinguish accepted Claude PASS evidence from Kimi Desktop FAIL evidence with C2-AC-10 still pending, then continue only the separately approved read-only Kimi Code CLI Human UAT or diagnosis.",
+      "id": "handoff-2aca67832c6e176971b92790bea75552",
+      "local_only": true,
+      "registry_digest": "ef691a913d0506d9259f4317e7a36e8c2c25035dfcaba5df7eed4e2c52e84e0d",
+      "request_id": "EXO-PHASE-B-001-C2-closeout-handoff-v1",
+      "state": "uat_ready",
+      "writer_status": "released"
+    },
+    {
+      "base_sha": "61ec14ded36f244704ad7cdb44ce74b321697e201a97cb0c82cd8b38976edb31",
+      "candidate_sha": "db6d6ab030b9937d0108f1e5d5a7bb38ff5ffd00820f324edc8f259a8b695428",
+      "capability_digest": "4a71e9f823f91f87075d31df8510b6fad5e4b9606df1df86dc5842fcd60fb7ef",
+      "capability_id": "EXO-PHASE-B-001-C2-KIMI-CLI-UAT-HANDOFF-V1",
+      "closed_gates": [
+        "Kimi_Code_CLI_Human_UAT",
+        "Kimi_Code_CLI_UAT_evidence_recording",
+        "bounded_writer_lane"
+      ],
+      "created_at": "2026-07-24T00:27:41Z",
+      "evidence_hashes": [
+        "0b66a9621cf9bd8d8774fa472bc4f5787d5691ed1353897eb0d87b6e3d5d1f88",
+        "1397c1a88887a7f34e686c60bcb7d45ca6ca42fdd3d0fe422b933168e16e702f",
+        "81bbadbef152a14599ae793e11a569661813255636af8e5d5e8a7d87c282e0bf",
+        "8c99b3b106b6a656f5cc2c2866da1aaf630117afe99a45fe7bccb2b9ced7dbe9",
+        "35d32a76019f994d8b1508e0764bd7d36503b4a305b5191e2240c1fcb3477bf2",
+        "d84985b9e388fcbae32aae015ed83a0dff7f316887d850798d3199d4ee55441d",
+        "a64eee35262f557e79e645a0a81e770c0134da7cd7c517a224e3402a0ddb1ca9"
+      ],
+      "first_verification": "Read AI_START_HERE.md, orient to EXO-PHASE-B-001-C2 revision 27 at uat_ready, verify all 12 acceptance criteria passed and the writer released, confirm Kimi Code CLI 1.14.0 evidence is accepted while provider matrix/status remains unchanged, then request separate authority for any lifecycle progression or provider-status implementation.",
+      "id": "handoff-34c572bb5421a7d884cf2bd53b2ba1e6",
+      "local_only": true,
+      "registry_digest": "ef691a913d0506d9259f4317e7a36e8c2c25035dfcaba5df7eed4e2c52e84e0d",
+      "request_id": "EXO-PHASE-B-001-C2-kimi-cli-uat-handoff-v1",
+      "state": "uat_ready",
+      "writer_status": "released"
+    }
+  ],
+  "id": "EXO-PHASE-B-001-C2",
+  "idempotency": [
+    {
+      "accepted_at": "2026-07-23T13:09:06Z",
+      "operation": "reserve_writer",
+      "request_id": "EXO-PHASE-B-001-C2-reserve-v1",
+      "result_id": "reservation-7c715a52faaf9d6fbb8e831c512afd2b"
+    },
+    {
+      "accepted_at": "2026-07-23T13:09:18Z",
+      "operation": "transition_work_item",
+      "request_id": "EXO-PHASE-B-001-C2-develop-v1",
+      "result_id": "transition-481378fa9ec50a54526cc32ae5c247e3"
+    },
+    {
+      "accepted_at": "2026-07-23T15:27:27Z",
+      "operation": "record_qa_reconciliation",
+      "request_id": "EXO-PHASE-B-001-C2-qa-record-v1",
+      "result_id": "reconciliation-a4ad0169326913ad3fc59ab66a35c652"
+    },
+    {
+      "accepted_at": "2026-07-23T15:27:59Z",
+      "operation": "transition_work_item",
+      "request_id": "EXO-PHASE-B-001-C2-developer-verified-v1",
+      "result_id": "transition-98e2b63f36dd80886ed41d37392c5125"
+    },
+    {
+      "accepted_at": "2026-07-23T15:28:10Z",
+      "operation": "transition_work_item",
+      "request_id": "EXO-PHASE-B-001-C2-independent-review-v1",
+      "result_id": "transition-0002ac60fc14064af2f4cac3c44d436b"
+    },
+    {
+      "accepted_at": "2026-07-23T15:30:46Z",
+      "operation": "correct_acceptance_criterion",
+      "request_id": "EXO-PHASE-B-001-C2-ac05-correction-v1",
+      "result_id": "correction-72b62eb09f1db3536a9688877a637c83"
+    },
+    {
+      "accepted_at": "2026-07-23T15:31:16Z",
+      "operation": "transition_work_item",
+      "request_id": "EXO-PHASE-B-001-C2-qa-sit-v2",
+      "result_id": "transition-b847222b318ccdc72756a786bb74ea2d"
+    },
+    {
+      "accepted_at": "2026-07-23T15:31:29Z",
+      "operation": "transition_work_item",
+      "request_id": "EXO-PHASE-B-001-C2-uat-ready-v2",
+      "result_id": "transition-8d50e5dae8daf305527b839d320fc37f"
+    },
+    {
+      "accepted_at": "2026-07-23T15:31:49Z",
+      "operation": "release_writer",
+      "request_id": "EXO-PHASE-B-001-C2-release-v2",
+      "result_id": "release-4d037eb870668a74723ec16ab0d1927f"
+    },
+    {
+      "accepted_at": "2026-07-23T15:32:11Z",
+      "operation": "create_handoff",
+      "request_id": "EXO-PHASE-B-001-C2-final-handoff-v2",
+      "result_id": "handoff-7537f22d438ab97b67d3cb7971541499"
+    },
+    {
+      "accepted_at": "2026-07-23T16:05:27Z",
+      "operation": "reserve_writer",
+      "request_id": "EXO-PHASE-B-001-C2-cursor-uat-reserve-v1",
+      "result_id": "reservation-0d95d2721051e308eb5dbd0dfa06f221"
+    },
+    {
+      "accepted_at": "2026-07-23T16:06:14Z",
+      "operation": "record_cursor_human_uat",
+      "request_id": "EXO-PHASE-B-001-C2-cursor-uat-record-v1",
+      "result_id": "cursor-uat-e342c9b7a49b21ee6552115178692aab"
+    },
+    {
+      "accepted_at": "2026-07-23T16:06:44Z",
+      "operation": "release_writer",
+      "request_id": "EXO-PHASE-B-001-C2-cursor-uat-release-v1",
+      "result_id": "release-2cb2e50d7a7c069149e8e9086280bcd8"
+    },
+    {
+      "accepted_at": "2026-07-23T16:07:13Z",
+      "operation": "create_handoff",
+      "request_id": "EXO-PHASE-B-001-C2-cursor-uat-handoff-v1",
+      "result_id": "handoff-fc5138815694f5a20c83652596c20e36"
+    },
+    {
+      "accepted_at": "2026-07-23T17:37:58Z",
+      "operation": "reserve_writer",
+      "request_id": "EXO-PHASE-B-001-C2-zed-uat-reserve-v1",
+      "result_id": "reservation-f96eb27e5bb6beb8d49c970e4231f92a"
+    },
+    {
+      "accepted_at": "2026-07-23T17:38:50Z",
+      "operation": "record_zed_human_uat",
+      "request_id": "EXO-PHASE-B-001-C2-zed-uat-record-v1",
+      "result_id": "zed-uat-9179e98898a27d82219ec96f2a115e61"
+    },
+    {
+      "accepted_at": "2026-07-23T17:39:06Z",
+      "operation": "release_writer",
+      "request_id": "EXO-PHASE-B-001-C2-zed-uat-release-v1",
+      "result_id": "release-51b7af16594a2cb9b15ef66230d28a47"
+    },
+    {
+      "accepted_at": "2026-07-23T17:40:01Z",
+      "operation": "create_handoff",
+      "request_id": "EXO-PHASE-B-001-C2-zed-uat-handoff-v1",
+      "result_id": "handoff-17a75b4cc9e0e51b22febaf6a4668957"
+    },
+    {
+      "accepted_at": "2026-07-23T23:31:13Z",
+      "operation": "reserve_writer",
+      "request_id": "EXO-PHASE-B-001-C2-closeout-reserve-v1",
+      "result_id": "reservation-347bcd90b120edf8bd5a0e8f8592bc92"
+    },
+    {
+      "accepted_at": "2026-07-23T23:34:35Z",
+      "operation": "record_claude_kimi_human_uat",
+      "request_id": "EXO-PHASE-B-001-C2-closeout-record-v1",
+      "result_id": "claude-kimi-uat-0bd8bded857d5cadfb873d5f4fd4f55c"
+    },
+    {
+      "accepted_at": "2026-07-23T23:35:09Z",
+      "operation": "release_writer",
+      "request_id": "EXO-PHASE-B-001-C2-closeout-release-v1",
+      "result_id": "release-7a0d0be2e2a40c31ad5050209b81b638"
+    },
+    {
+      "accepted_at": "2026-07-23T23:35:38Z",
+      "operation": "create_handoff",
+      "request_id": "EXO-PHASE-B-001-C2-closeout-handoff-v1",
+      "result_id": "handoff-2aca67832c6e176971b92790bea75552"
+    },
+    {
+      "accepted_at": "2026-07-24T00:25:46Z",
+      "operation": "reserve_writer",
+      "request_id": "EXO-PHASE-B-001-C2-kimi-cli-uat-reserve-v1",
+      "result_id": "reservation-31cc81f6492584cbd0910b6d74d47305"
+    },
+    {
+      "accepted_at": "2026-07-24T00:26:33Z",
+      "operation": "record_kimi_code_cli_human_uat",
+      "request_id": "EXO-PHASE-B-001-C2-kimi-cli-uat-record-v1",
+      "result_id": "kimi-cli-uat-530e5d65f33b67d9ba65df910cd5c19f"
+    },
+    {
+      "accepted_at": "2026-07-24T00:27:09Z",
+      "operation": "release_writer",
+      "request_id": "EXO-PHASE-B-001-C2-kimi-cli-uat-release-v1",
+      "result_id": "release-0e4621514bbce5f95eafa4592498a627"
+    },
+    {
+      "accepted_at": "2026-07-24T00:27:41Z",
+      "operation": "create_handoff",
+      "request_id": "EXO-PHASE-B-001-C2-kimi-cli-uat-handoff-v1",
+      "result_id": "handoff-34c572bb5421a7d884cf2bd53b2ba1e6"
+    }
+  ],
+  "kind": "delivery_work_item",
+  "lane": {
+    "allowed_paths": [
+      ".cursor/skills/ai-export/SKILL.md",
+      ".cursor/skills/brief/SKILL.md",
+      ".cursor/skills/check-keys/SKILL.md",
+      ".cursor/skills/daily-end/SKILL.md",
+      ".cursor/skills/drill/SKILL.md",
+      ".cursor/skills/ecosystem/SKILL.md",
+      ".cursor/skills/groom/SKILL.md",
+      ".cursor/skills/handoff/SKILL.md",
+      ".cursor/skills/history/SKILL.md",
+      ".cursor/skills/init-exocortex/SKILL.md",
+      ".cursor/skills/interrupt/SKILL.md",
+      ".cursor/skills/longterm/SKILL.md",
+      ".cursor/skills/monthly-review/SKILL.md",
+      ".cursor/skills/onboard/SKILL.md",
+      ".cursor/skills/pattern-review/SKILL.md",
+      ".cursor/skills/prioritize/SKILL.md",
+      ".cursor/skills/refine-backlog/SKILL.md",
+      ".cursor/skills/save/SKILL.md",
+      ".cursor/skills/scrum/SKILL.md",
+      ".cursor/skills/shortterm/SKILL.md",
+      ".cursor/skills/subconscious/SKILL.md",
+      ".cursor/skills/system-scan/SKILL.md",
+      ".cursor/skills/weekly-review/SKILL.md",
+      ".cursor/skills/work/SKILL.md",
+      ".exocortex/AI_BOOTSTRAP.md",
+      ".exocortex/COMMAND_SYSTEM.md",
+      ".exocortex/docs/IDE_INTEGRATION_GUIDE.md",
+      ".exocortex/docs/UPGRADE_MANIFEST.md",
+      ".exocortex/provider-adapters.json",
+      ".exocortex/reference/ESSENTIAL_FILES.md",
+      ".exocortex/reference/MEMORY.md",
+      ".exocortex/reference/QUICK_REFERENCE.md",
+      ".exocortex/schemas/provider-adapter-matrix.schema.json",
+      ".exocortex/scripts/generate_command_adapters.py",
+      ".windsurf/workflows/ai-export.md",
+      ".windsurf/workflows/brief.md",
+      ".windsurf/workflows/check-keys.md",
+      ".windsurf/workflows/daily-end.md",
+      ".windsurf/workflows/drill.md",
+      ".windsurf/workflows/ecosystem.md",
+      ".windsurf/workflows/groom.md",
+      ".windsurf/workflows/handoff.md",
+      ".windsurf/workflows/history.md",
+      ".windsurf/workflows/init-exocortex.md",
+      ".windsurf/workflows/interrupt.md",
+      ".windsurf/workflows/longterm.md",
+      ".windsurf/workflows/monthly-review.md",
+      ".windsurf/workflows/onboard.md",
+      ".windsurf/workflows/pattern-review.md",
+      ".windsurf/workflows/prioritize.md",
+      ".windsurf/workflows/refine-backlog.md",
+      ".windsurf/workflows/save.md",
+      ".windsurf/workflows/scrum.md",
+      ".windsurf/workflows/shortterm.md",
+      ".windsurf/workflows/subconscious.md",
+      ".windsurf/workflows/system-scan.md",
+      ".windsurf/workflows/weekly-review.md",
+      ".windsurf/workflows/work.md",
+      ".windsurfrules",
+      "CHANGELOG.md",
+      "README.md",
+      "SHA256SUMS",
+      "WHATSNEW.md",
+      "install.sh",
+      "scripts/safe-update.sh",
+      "tests/phase-b/provider-adapter-matrix.json",
+      "tests/phase-b/test_phase_b.py",
+      "tests/run_tests.sh"
+    ],
+    "reservation": {
+      "executor_id": null,
+      "lease_expires_at": null,
+      "status": "released",
+      "surface_id": null,
+      "version": 10,
+      "writer": null
+    }
+  },
+  "lifecycle": {
+    "attempt": 0,
+    "blocked": null,
+    "state": "uat_ready"
+  },
+  "revision": 27,
+  "schema_version": "public-v2",
+  "title": "Correct provider-native command discovery and safely retire unverified Windsurf defaults",
+  "transitions": [
+    {
+      "accepted_at": "2026-07-23T13:09:18Z",
+      "capability_id": "EXO-PHASE-B-001-C2-DEVELOP-V1",
+      "checkpoint_eligible": true,
+      "evidence": [
+        "Owner-approved C2 revision 1; source SHA256SUMS 61ec14ded36f244704ad7cdb44ce74b321697e201a97cb0c82cd8b38976edb31; exact 68-path set SHA-256 4189e80b105b07170e796d95c9dd9eab2426cadf7ac128f7d9d588150574ac48."
+      ],
+      "from": "reserved",
+      "id": "transition-481378fa9ec50a54526cc32ae5c247e3",
+      "operation": "begin_C2_implementation",
+      "request_id": "EXO-PHASE-B-001-C2-develop-v1",
+      "to": "developing"
+    },
+    {
+      "accepted_at": "2026-07-23T15:27:59Z",
+      "capability_id": "EXO-PHASE-B-001-C2-DEVELOPER-VERIFIED-V1",
+      "checkpoint_eligible": true,
+      "evidence": [
+        "Final SHA256SUMS d84985b9e388fcbae32aae015ed83a0dff7f316887d850798d3199d4ee55441d contains 250 unique valid entries; exact pre-handoff candidate-tree evidence db6d6ab030b9937d0108f1e5d5a7bb38ff5ffd00820f324edc8f259a8b695428.",
+        "All 24 canonical command JSON files are byte-identical to C1; generation passes at 24 commands and 72 adapters; all 68 approved C2 paths changed and no implementation path changed outside the allowlist.",
+        "Phase B Python 29/29, deterministic installer/update 57/57, event tooling, shell syntax, git diff check, checksum, privacy, idempotency, rollback, and authority tests pass; credentials_used=false, live_provider_used=false, live_target_used=false."
+      ],
+      "from": "developing",
+      "id": "transition-98e2b63f36dd80886ed41d37392c5125",
+      "operation": "final_deterministic_verification",
+      "request_id": "EXO-PHASE-B-001-C2-developer-verified-v1",
+      "to": "developer_verified"
+    },
+    {
+      "accepted_at": "2026-07-23T15:28:10Z",
+      "capability_id": "EXO-PHASE-B-001-C2-INDEPENDENT-REVIEW-V1",
+      "checkpoint_eligible": false,
+      "evidence": [
+        "Registered read-only C2 reviewer found the Kimi fallback and stale candidate evidence, then rechecked both corrections against the exact final tree.",
+        "Final independent result: no remaining P0, P1, or P2 findings; 68-path scope, canonical command preservation, 49-path migration safety, manifest uniqueness, and idempotency confirmed."
+      ],
+      "from": "developer_verified",
+      "id": "transition-0002ac60fc14064af2f4cac3c44d436b",
+      "operation": "independent_correctness_compatibility_migration_privacy_authority_review",
+      "request_id": "EXO-PHASE-B-001-C2-independent-review-v1",
+      "review_evidence_hash": "bce0554f6cb82cf3c0f486ac5fa229315b4035fabf0474fe2c97a7e61937a741",
+      "reviewer_executor_id": "codex-c2-reviewer",
+      "reviewer_surface_id": "codex-review",
+      "to": "independent_review"
+    },
+    {
+      "accepted_at": "2026-07-23T15:31:16Z",
+      "capability_id": "EXO-PHASE-B-001-C2-QA-SIT-V2",
+      "checkpoint_eligible": true,
+      "evidence": [
+        "Evidence manifest a64eee35262f557e79e645a0a81e770c0134da7cd7c517a224e3402a0ddb1ca9 reports all_passed=true, credentials_used=false, live_provider_used=false, and live_target_used=false.",
+        "JUnit 3cc5dee747fe2b6847a534ad0748efef2c6411ebe0df76b07f44516773cd4003; installer a88237087c775e735d742150cc8e51f52704d2a437fc26a334ef5e1a19047c70; orchestration f20209e665a35d3320dc3d448c195835099d1acff9685bc3d3387cb358c97e9a; event tooling 4df93698dcdf895590e05c2b3bc3f166eb34931d49831644d607b150d9f5d562.",
+        "Repository-level Cursor adapter parity is verified, while C2-AC-05 remains pending for native provider-menu Human UAT; no provider evidence was inferred from file generation."
+      ],
+      "from": "independent_review",
+      "id": "transition-b847222b318ccdc72756a786bb74ea2d",
+      "operation": "final_C2_QA_SIT",
+      "request_id": "EXO-PHASE-B-001-C2-qa-sit-v2",
+      "review_transition_id": "transition-0002ac60fc14064af2f4cac3c44d436b",
+      "to": "qa_sit"
+    },
+    {
+      "accepted_at": "2026-07-23T15:31:29Z",
+      "capability_id": "EXO-PHASE-B-001-C2-UAT-READY-V2",
+      "checkpoint_eligible": true,
+      "evidence": [
+        "C2-AC-05 remains pending for Cursor native-menu visibility; C2-AC-09 remains pending for separately approved Claude authentication and visibility UAT.",
+        "C2-AC-10 remains pending for all 24 Kimi entries using exact /skill:{name} in isolated non-persistent state; C2-AC-11 remains pending for all 24 Zed built-in Agent entries with ACP excluded.",
+        "Windsurf remains unavailable and outside active/default installation; no provider status was promoted and no provider session, authentication, live installation, external synchronization, or outward action occurred."
+      ],
+      "from": "qa_sit",
+      "id": "transition-8d50e5dae8daf305527b839d320fc37f",
+      "operation": "prepare_C2_provider_Human_UAT",
+      "request_id": "EXO-PHASE-B-001-C2-uat-ready-v2",
+      "to": "uat_ready"
+    }
+  ],
+  "type": "retrospective_improvement"
+}

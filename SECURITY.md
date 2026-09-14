@@ -1,6 +1,6 @@
 # Security Policy
 
-**Last updated:** 2026-04-19
+**Last updated:** 2026-07-24
 
 ## Reporting a Vulnerability
 
@@ -22,27 +22,46 @@ We aim to acknowledge new vulnerability reports within **72 hours**.
 - Shell script injection vulnerabilities in:
   - `install.sh`
   - `init-project.sh`
+  - `scripts/safe-update.sh`
   - scripts under `.exocortex/scripts/`
+- Authority, protected-data, rollback, checksum, or path-validation bypasses
 - Secrets accidentally committed to this repository
-- Cases where the installer downloads and executes unexpected code
+- Documentation that instructs an AI or human to run an unpinned installer,
+  disclose credentials, or combine installation with an unauthorized outward
+  action
 
 ## Scope: Out of Scope
 
-- Security of users' own API keys stored locally in `.env` files (gitignored)
+- Security of credentials independently created and managed by users outside
+  the Exocortex installation flow
 - Security issues in third-party services (OpenAI, Anthropic, etc.)
 - Security issues in a user's project where exocortex is installed
 
 ## Security Model and Known Limitations
 
-- `curl | bash` is convenient but trust-sensitive; review scripts before running in sensitive environments.
-- For higher assurance, download the installer and inspect it locally before execution.
-- The installer clones from GitHub over HTTPS; verify you trust the source repository.
-- API keys are stored in plaintext in local `.env` files; users are responsible for machine-level security.
-- Shell scripts run with the invoking user's permissions; no privilege escalation boundary is provided by this project.
+- Never pipe a remote installer into a shell. Obtain an exact reviewed template
+  revision, verify its `SHA256SUMS`, preserve the separately approved manifest
+  digest, and execute only that pinned local source.
+- Installation does not require an API key and must not read, create, print, or
+  modify credential values.
+- Rehearse in disposable state with a fake `HOME`. Existing repositories use
+  the guarded safe updater, an external restore archive, protected-data hashes,
+  idempotency, and verified rollback.
+- A coding AI follows the same rules. Provider identity, a slash-command menu,
+  repository access, or a conversational “yes” does not grant mutation, Git,
+  deployment, external-sync, or template-promotion authority.
+- The local guards provide cooperative enforcement. Shell scripts run with the
+  invoking user's permissions; a privileged user or unrestricted editor can
+  bypass project-local files. Strong host enforcement requires an OS sandbox
+  or privileged broker and a trusted signing/attestation root.
+- Native Windows is unsupported. WSL remains Human-UAT-pending; do not
+  translate the Bash security logic into an unreviewed PowerShell procedure.
 
 ## Supported Versions
 
-Only the latest `main` branch is supported for security fixes.
+Only explicitly published supported releases receive security fixes.
+Uncommitted candidates, development branches, and unverified platform
+translations are unsupported.
 
 ## License and Warranty
 

@@ -1,0 +1,223 @@
+{
+  "acceptance_criteria": [
+    {
+      "id": "C1-AC-01",
+      "status": "pending",
+      "text": "The canonical registry remains exactly 24 valid command JSON files."
+    },
+    {
+      "id": "C1-AC-02",
+      "status": "pending",
+      "text": "The exact 72 generated adapters are deterministic thin delegates with no authority expansion."
+    },
+    {
+      "id": "C1-AC-03",
+      "status": "pending",
+      "text": "Claimed provider-native surfaces expose the exact command set without a duplicate visible name or noncanonical onboard collision."
+    },
+    {
+      "id": "C1-AC-04",
+      "status": "pending",
+      "text": "Install, reinstall, safe update, customized-adapter preservation, checksums, CI, and privacy coverage include every new adapter surface."
+    },
+    {
+      "id": "C1-AC-05",
+      "status": "pending",
+      "text": "Safe update emits the complete sorted changed-path list and its digest for a case above 120 paths."
+    },
+    {
+      "id": "C1-AC-06",
+      "status": "pending",
+      "text": "Current documentation contains no live 20-command or 22-of-24 claim and documents provider-specific invocation truthfully."
+    },
+    {
+      "id": "C1-AC-07",
+      "status": "pending",
+      "text": "Independent correctness, compatibility, privacy, and authority review finds no actionable P0 or P1."
+    }
+  ],
+  "checkpoints": [
+    {
+      "created_at": "2026-07-22T23:44:04Z",
+      "id": "checkpoint-e35773907de9b54d9bc59e3598d79747",
+      "local_only": true,
+      "request_id": "EXO-PHASE-B-001-C1-develop-v1",
+      "state": "developing",
+      "transition_id": "transition-a4a6c58cad923ab2bdd8f97e66bfc493"
+    }
+  ],
+  "designated_base": {
+    "sha": "d1e1d633097f8223699f3ab424524d31e7f8a26ffc7dd8eead51b343f1724443",
+    "source": "owner-accepted G3 candidate SHA256SUMS digest"
+  },
+  "handoffs": [],
+  "id": "EXO-PHASE-B-001-C1",
+  "idempotency": [
+    {
+      "accepted_at": "2026-07-22T23:43:52Z",
+      "operation": "reserve_writer",
+      "request_id": "EXO-PHASE-B-001-C1-reserve-v1",
+      "result_id": "reservation-8d0f15562021641dbb274a55e6893012"
+    },
+    {
+      "accepted_at": "2026-07-22T23:44:04Z",
+      "operation": "transition_work_item",
+      "request_id": "EXO-PHASE-B-001-C1-develop-v1",
+      "result_id": "transition-a4a6c58cad923ab2bdd8f97e66bfc493"
+    }
+  ],
+  "kind": "delivery_work_item",
+  "lane": {
+    "allowed_paths": [
+      ".agents/skills/ai-export/SKILL.md",
+      ".agents/skills/brief/SKILL.md",
+      ".agents/skills/check-keys/SKILL.md",
+      ".agents/skills/daily-end/SKILL.md",
+      ".agents/skills/drill/SKILL.md",
+      ".agents/skills/ecosystem/SKILL.md",
+      ".agents/skills/groom/SKILL.md",
+      ".agents/skills/handoff/SKILL.md",
+      ".agents/skills/history/SKILL.md",
+      ".agents/skills/init-exocortex/SKILL.md",
+      ".agents/skills/interrupt/SKILL.md",
+      ".agents/skills/longterm/SKILL.md",
+      ".agents/skills/monthly-review/SKILL.md",
+      ".agents/skills/onboard/SKILL.md",
+      ".agents/skills/pattern-review/SKILL.md",
+      ".agents/skills/prioritize/SKILL.md",
+      ".agents/skills/refine-backlog/SKILL.md",
+      ".agents/skills/save/SKILL.md",
+      ".agents/skills/scrum/SKILL.md",
+      ".agents/skills/shortterm/SKILL.md",
+      ".agents/skills/subconscious/SKILL.md",
+      ".agents/skills/system-scan/SKILL.md",
+      ".agents/skills/weekly-review/SKILL.md",
+      ".agents/skills/work/SKILL.md",
+      ".claude/skills/ai-export/SKILL.md",
+      ".claude/skills/brief/SKILL.md",
+      ".claude/skills/check-keys/SKILL.md",
+      ".claude/skills/daily-end/SKILL.md",
+      ".claude/skills/drill/SKILL.md",
+      ".claude/skills/ecosystem/SKILL.md",
+      ".claude/skills/groom/SKILL.md",
+      ".claude/skills/handoff/SKILL.md",
+      ".claude/skills/history/SKILL.md",
+      ".claude/skills/init-exocortex/SKILL.md",
+      ".claude/skills/interrupt/SKILL.md",
+      ".claude/skills/longterm/SKILL.md",
+      ".claude/skills/monthly-review/SKILL.md",
+      ".claude/skills/onboard/SKILL.md",
+      ".claude/skills/pattern-review/SKILL.md",
+      ".claude/skills/prioritize/SKILL.md",
+      ".claude/skills/refine-backlog/SKILL.md",
+      ".claude/skills/save/SKILL.md",
+      ".claude/skills/scrum/SKILL.md",
+      ".claude/skills/shortterm/SKILL.md",
+      ".claude/skills/subconscious/SKILL.md",
+      ".claude/skills/system-scan/SKILL.md",
+      ".claude/skills/weekly-review/SKILL.md",
+      ".claude/skills/work/SKILL.md",
+      ".cursor/commands/ai-export.md",
+      ".cursor/commands/brief.md",
+      ".cursor/commands/daily-end.md",
+      ".cursor/commands/drill.md",
+      ".cursor/commands/ecosystem.md",
+      ".cursor/commands/groom.md",
+      ".cursor/commands/handoff.md",
+      ".cursor/commands/history.md",
+      ".cursor/commands/init-exocortex.md",
+      ".cursor/commands/interrupt.md",
+      ".cursor/commands/longterm.md",
+      ".cursor/commands/monthly-review.md",
+      ".cursor/commands/onboard.md",
+      ".cursor/commands/prioritize.md",
+      ".cursor/commands/refine-backlog.md",
+      ".cursor/commands/save.md",
+      ".cursor/commands/scrum.md",
+      ".cursor/commands/shortterm.md",
+      ".cursor/commands/subconscious.md",
+      ".cursor/commands/system-scan.md",
+      ".cursor/commands/weekly-review.md",
+      ".cursor/commands/work.md",
+      ".cursor/skills/onboard/SKILL.md",
+      ".exocortex/AI_BOOTSTRAP.md",
+      ".exocortex/COMMAND_SYSTEM.md",
+      ".exocortex/docs/IDE_INTEGRATION_GUIDE.md",
+      ".exocortex/docs/UPGRADE_MANIFEST.md",
+      ".exocortex/provider-adapters.json",
+      ".exocortex/reference/ESSENTIAL_FILES.md",
+      ".exocortex/reference/MEMORY.md",
+      ".exocortex/reference/QUICK_REFERENCE.md",
+      ".exocortex/schemas/provider-adapter-matrix.schema.json",
+      ".exocortex/scripts/generate_command_adapters.py",
+      ".github/skills/onboard/SKILL.md",
+      ".github/workflows/checksums.yml",
+      ".github/workflows/test.yml",
+      ".windsurf/workflows/ai-export.md",
+      ".windsurf/workflows/brief.md",
+      ".windsurf/workflows/check-keys.md",
+      ".windsurf/workflows/daily-end.md",
+      ".windsurf/workflows/drill.md",
+      ".windsurf/workflows/ecosystem.md",
+      ".windsurf/workflows/groom.md",
+      ".windsurf/workflows/handoff.md",
+      ".windsurf/workflows/history.md",
+      ".windsurf/workflows/init-exocortex.md",
+      ".windsurf/workflows/interrupt.md",
+      ".windsurf/workflows/longterm.md",
+      ".windsurf/workflows/monthly-review.md",
+      ".windsurf/workflows/onboard.md",
+      ".windsurf/workflows/pattern-review.md",
+      ".windsurf/workflows/prioritize.md",
+      ".windsurf/workflows/refine-backlog.md",
+      ".windsurf/workflows/save.md",
+      ".windsurf/workflows/scrum.md",
+      ".windsurf/workflows/shortterm.md",
+      ".windsurf/workflows/subconscious.md",
+      ".windsurf/workflows/system-scan.md",
+      ".windsurf/workflows/weekly-review.md",
+      ".windsurf/workflows/work.md",
+      "README.md",
+      "SHA256SUMS",
+      "install.sh",
+      "scripts/safe-update.sh",
+      "tests/helpers.sh",
+      "tests/phase-b/provider-adapter-matrix.json",
+      "tests/phase-b/test-plan.json",
+      "tests/phase-b/test_phase_b.py",
+      "tests/run_tests.sh"
+    ],
+    "reservation": {
+      "executor_id": "codex-c1-writer",
+      "lease_expires_at": "2026-07-23T05:30:00Z",
+      "status": "active",
+      "surface_id": "codex-desktop",
+      "version": 1,
+      "writer": "codex-c1-writer"
+    }
+  },
+  "lifecycle": {
+    "attempt": 0,
+    "blocked": null,
+    "state": "developing"
+  },
+  "revision": 3,
+  "schema_version": "public-v2",
+  "title": "Complete update evidence and provide exact 24-command native adapter parity",
+  "transitions": [
+    {
+      "accepted_at": "2026-07-22T23:44:04Z",
+      "capability_id": "EXO-PHASE-B-001-C1-DEVELOP-V1",
+      "checkpoint_eligible": true,
+      "evidence": [
+        "owner-approved C1 revision 1; exact 117-path set sha256 e0001e17e7b773105af2f315dd630592c6eb19ebbcc93fb5236997899a13c0f7"
+      ],
+      "from": "reserved",
+      "id": "transition-a4a6c58cad923ab2bdd8f97e66bfc493",
+      "operation": "begin_C1_implementation",
+      "request_id": "EXO-PHASE-B-001-C1-develop-v1",
+      "to": "developing"
+    }
+  ],
+  "type": "retrospective_improvement"
+}

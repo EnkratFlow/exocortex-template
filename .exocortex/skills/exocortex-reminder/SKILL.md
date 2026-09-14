@@ -1,44 +1,44 @@
 # exocortex-reminder
 
-A lightweight OpenClaw skill that sends a Telegram nudge every 90 minutes during
-active work hours, reminding the developer to run `/save` to capture rich context
-about what they just built.
+<!-- EXOCORTEX_ENTRY: public-v2 -->
+Read `AI_START_HERE.md` before substantive action. It is the canonical,
+provider-neutral entry contract. This reminder never grants project, system,
+schedule, or egress authority.
+<!-- /EXOCORTEX_ENTRY -->
 
-## Purpose
+## Status
 
-Auto-snapshot writes raw git state automatically. But a rich `/save` — with
-decisions, intent, and next steps — requires a brief active moment from the
-developer. This skill fires that nudge so it hits you on your phone, wherever you are.
+This is a manual integration design, not an enabled automation. Repository
+installation does not deploy it, register a schedule, access OpenClaw, or send
+a message.
 
-## Behaviour
+Telegram delivery is external egress and is disabled unless the owner grants a
+separate destination-specific external-system approval. OpenClaw/VPS setup is
+also a separate system mutation outside the project-local writer capability.
 
-When triggered by the OpenClaw cron scheduler, this skill sends a brief Telegram
-message to the configured recipient. No external API calls. No memory reads.
-Pure fire-and-forget notification.
+## Intended reminder
 
-## Trigger
+After both external-system setup and Telegram delivery have been separately
+approved outside this template, an operator may configure a short reminder to
+ask the developer whether they want to run `/save`. The reminder is not a save,
+checkpoint, lifecycle transition, or approval.
 
-This skill is designed to be triggered by `openclaw cron` on a schedule.
-See SETUP.md for the exact cron command.
+Suggested message:
 
-## Message
+```text
+90-minute reminder
 
+If this is a useful stopping point, consider requesting a local narrative save.
+Nothing has been saved or synchronized automatically.
 ```
-⏰ 90 min checkpoint
 
-You've been coding for a while. Take 60 seconds to run /save in your active project.
+## Safety conditions
 
-It captures: what you built, decisions made, what's next.
-The auto-snapshots got the raw state — /save adds the context that matters.
-```
-
-## Parameters
-
-None. This skill takes no parameters and requires no configuration at call time.
-All schedule configuration happens at cron registration time (see SETUP.md).
-
-## Notes
-
-- Works hours: 07:00–22:00 local time on the VPS (configure cron accordingly)
-- Safe to run even when the developer is not coding — they'll see it when they return
-- The reminder is non-intrusive: single message, no follow-up, no escalation
+- An AI must stop before SSH, SCP, cron registration, OpenClaw deployment, or
+  Telegram delivery and request the exact separate approval.
+- No project credential, event, memory, or payload is read for a reminder.
+- No reminder retries, escalates, records a checkpoint, or creates repository
+  state.
+- A future automated adapter requires its own approved transport, policy,
+  capability binding, tests, and rollback procedure; this template does not
+  provide one.

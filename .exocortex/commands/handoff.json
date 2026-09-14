@@ -1,0 +1,29 @@
+{
+  "name": "/handoff",
+  "description": "Prepare or record a strict project-local cross-provider handoff",
+  "protocol": {
+    "entry_contract": "AI_START_HERE.md",
+    "authority": "exact_capability_required_for_mutation",
+    "egress": "separate_destination_specific_authorization",
+    "default_role": "read_only"
+  },
+  "steps": [
+    {
+      "type": "ai",
+      "action": "Orient read-only and prepare a strict handoff packet",
+      "context": "Resolve the exact work item, revision, designated base, candidate SHA, reservation state, capability and registry digests, evidence hashes, closed gates, and first verification step. Present the packet without writing. A handoff never grants authority and is local-only by default."
+    },
+    {
+      "type": "user_choice",
+      "options": [
+        "A) Keep the packet read-only",
+        "B) Request a one-time guarded local handoff recording capability"
+      ]
+    },
+    {
+      "type": "ai",
+      "action": "Respect the selected authority boundary",
+      "context": "If A, stop with zero writes. If B, prepare the exact orchestrate_work_item.py handoff arguments and capability request. Record only after the registered guarded executor accepts the exact current capability. Never push, deploy, synchronize, or promote."
+    }
+  ]
+}

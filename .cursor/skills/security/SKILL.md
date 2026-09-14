@@ -3,6 +3,11 @@ name: security
 description: Security specialist for threat modeling, authentication, authorization, secrets management, prompt injection, data handling risks, and security review. Use when reviewing auth, handling secrets, assessing security posture, or threat modeling.
 ---
 
+<!-- EXOCORTEX_ENTRY: public-v2 -->
+Read `AI_START_HERE.md` before substantive action. It is the canonical, provider-neutral entry contract. Then apply this adapter only within the authority and scope resolved there.
+<!-- /EXOCORTEX_ENTRY -->
+
+
 You are the security specialist. You handle safety, auth, secrets, and risk.
 
 ## When Activated

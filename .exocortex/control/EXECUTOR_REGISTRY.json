@@ -1,0 +1,239 @@
+{
+  "schema_version": "public-v2",
+  "kind": "executor_registry",
+  "registry_version": 11,
+  "default_role": "read_only",
+  "executors": [
+    {
+      "surface_id": "codex-desktop",
+      "executor_id": "codex-c1-writer",
+      "adapter_version": "codex-desktop-v1",
+      "guard_digest": "e4edaeb3d6398d12f6cfeacfb21fece8149b019d2b966a06f207ce079454e31a",
+      "roles": [
+        "read_only",
+        "writer"
+      ],
+      "status": "expired",
+      "registered_at": "2026-07-22T23:41:45Z",
+      "expires_at": "2026-07-23T06:00:00Z",
+      "revoked_at": null
+    },
+    {
+      "surface_id": "codex-review",
+      "executor_id": "codex-c1-reviewer",
+      "adapter_version": "codex-review-v1",
+      "guard_digest": "e4edaeb3d6398d12f6cfeacfb21fece8149b019d2b966a06f207ce079454e31a",
+      "roles": [
+        "read_only"
+      ],
+      "status": "expired",
+      "registered_at": "2026-07-22T23:41:45Z",
+      "expires_at": "2026-07-23T06:00:00Z",
+      "revoked_at": null
+    },
+    {
+      "surface_id": "codex-desktop",
+      "executor_id": "codex-c2-writer",
+      "adapter_version": "codex-desktop-v1",
+      "guard_digest": "e4edaeb3d6398d12f6cfeacfb21fece8149b019d2b966a06f207ce079454e31a",
+      "roles": [
+        "read_only",
+        "writer"
+      ],
+      "status": "expired",
+      "registered_at": "2026-07-23T13:03:54Z",
+      "expires_at": "2026-07-23T21:00:00Z",
+      "revoked_at": null
+    },
+    {
+      "surface_id": "codex-review",
+      "executor_id": "codex-c2-reviewer",
+      "adapter_version": "codex-review-v1",
+      "guard_digest": "e4edaeb3d6398d12f6cfeacfb21fece8149b019d2b966a06f207ce079454e31a",
+      "roles": [
+        "read_only"
+      ],
+      "status": "expired",
+      "registered_at": "2026-07-23T13:03:54Z",
+      "expires_at": "2026-07-23T21:00:00Z",
+      "revoked_at": null
+    },
+    {
+      "surface_id": "codex-desktop",
+      "executor_id": "codex-c2-closeout-writer",
+      "adapter_version": "codex-desktop-v1",
+      "guard_digest": "e4edaeb3d6398d12f6cfeacfb21fece8149b019d2b966a06f207ce079454e31a",
+      "roles": [
+        "read_only",
+        "writer"
+      ],
+      "status": "expired",
+      "registered_at": "2026-07-23T23:30:39Z",
+      "expires_at": "2026-07-24T06:00:00Z",
+      "revoked_at": null
+    },
+    {
+      "surface_id": "codex-desktop",
+      "executor_id": "codex-c3-writer",
+      "adapter_version": "codex-desktop-v1",
+      "guard_digest": "e4edaeb3d6398d12f6cfeacfb21fece8149b019d2b966a06f207ce079454e31a",
+      "roles": [
+        "read_only",
+        "writer"
+      ],
+      "status": "expired",
+      "registered_at": "2026-07-24T01:02:04Z",
+      "expires_at": "2026-07-24T06:00:00Z",
+      "revoked_at": null
+    },
+    {
+      "surface_id": "codex-review",
+      "executor_id": "codex-c3-reviewer",
+      "adapter_version": "codex-review-v1",
+      "guard_digest": "e4edaeb3d6398d12f6cfeacfb21fece8149b019d2b966a06f207ce079454e31a",
+      "roles": [
+        "read_only"
+      ],
+      "status": "expired",
+      "registered_at": "2026-07-24T01:02:04Z",
+      "expires_at": "2026-07-24T06:00:00Z",
+      "revoked_at": null
+    },
+    {
+      "surface_id": "codex-desktop",
+      "executor_id": "codex-c3-uat-closeout-writer",
+      "adapter_version": "codex-desktop-v1",
+      "guard_digest": "e4edaeb3d6398d12f6cfeacfb21fece8149b019d2b966a06f207ce079454e31a",
+      "roles": [
+        "read_only",
+        "writer"
+      ],
+      "status": "expired",
+      "registered_at": "2026-07-24T10:03:03Z",
+      "expires_at": "2026-07-24T12:00:00Z",
+      "revoked_at": null
+    },
+    {
+      "surface_id": "codex-desktop",
+      "executor_id": "codex-c4-writer",
+      "adapter_version": "codex-desktop-v1",
+      "guard_digest": "e4edaeb3d6398d12f6cfeacfb21fece8149b019d2b966a06f207ce079454e31a",
+      "roles": [
+        "read_only",
+        "writer"
+      ],
+      "status": "expired",
+      "registered_at": "2026-07-24T12:39:15Z",
+      "expires_at": "2026-07-24T18:00:00Z",
+      "revoked_at": null
+    },
+    {
+      "surface_id": "codex-review",
+      "executor_id": "codex-c4-reviewer",
+      "adapter_version": "codex-review-v1",
+      "guard_digest": "e4edaeb3d6398d12f6cfeacfb21fece8149b019d2b966a06f207ce079454e31a",
+      "roles": [
+        "read_only"
+      ],
+      "status": "expired",
+      "registered_at": "2026-07-24T12:39:15Z",
+      "expires_at": "2026-07-24T18:00:00Z",
+      "revoked_at": null
+    },
+    {
+      "surface_id": "codex-desktop",
+      "executor_id": "codex-c4-uat-closeout-writer",
+      "adapter_version": "codex-desktop-v1",
+      "guard_digest": "e4edaeb3d6398d12f6cfeacfb21fece8149b019d2b966a06f207ce079454e31a",
+      "roles": [
+        "read_only",
+        "writer"
+      ],
+      "status": "expired",
+      "registered_at": "2026-07-25T03:54:48Z",
+      "expires_at": "2026-07-25T05:00:00Z",
+      "revoked_at": null
+    },
+    {
+      "surface_id": "codex-desktop",
+      "executor_id": "codex-c5-writer",
+      "adapter_version": "codex-desktop-v1",
+      "guard_digest": "e4edaeb3d6398d12f6cfeacfb21fece8149b019d2b966a06f207ce079454e31a",
+      "roles": [
+        "read_only",
+        "writer"
+      ],
+      "status": "expired",
+      "registered_at": "2026-07-27T14:14:10Z",
+      "expires_at": "2026-07-28T02:00:00Z",
+      "revoked_at": null
+    },
+    {
+      "surface_id": "codex-review",
+      "executor_id": "codex-c5-reviewer",
+      "adapter_version": "codex-review-v1",
+      "guard_digest": "e4edaeb3d6398d12f6cfeacfb21fece8149b019d2b966a06f207ce079454e31a",
+      "roles": [
+        "read_only"
+      ],
+      "status": "expired",
+      "registered_at": "2026-07-27T14:14:10Z",
+      "expires_at": "2026-07-28T02:00:00Z",
+      "revoked_at": null
+    },
+    {
+      "surface_id": "codex-desktop",
+      "executor_id": "codex-c5-uat2-writer",
+      "adapter_version": "codex-desktop-v1",
+      "guard_digest": "e4edaeb3d6398d12f6cfeacfb21fece8149b019d2b966a06f207ce079454e31a",
+      "roles": [
+        "read_only",
+        "writer"
+      ],
+      "status": "expired",
+      "registered_at": "2026-07-28T12:28:32Z",
+      "expires_at": "2026-07-28T16:30:00Z",
+      "revoked_at": null
+    },
+    {
+      "surface_id": "codex-review",
+      "executor_id": "codex-c5-uat2-reviewer",
+      "adapter_version": "codex-review-v1",
+      "guard_digest": "e4edaeb3d6398d12f6cfeacfb21fece8149b019d2b966a06f207ce079454e31a",
+      "roles": [
+        "read_only"
+      ],
+      "status": "expired",
+      "registered_at": "2026-07-28T12:28:32Z",
+      "expires_at": "2026-07-28T16:30:00Z",
+      "revoked_at": null
+    },
+    {
+      "surface_id": "codex-desktop",
+      "executor_id": "codex-c5-closeout-writer",
+      "adapter_version": "codex-desktop-v1",
+      "guard_digest": "e4edaeb3d6398d12f6cfeacfb21fece8149b019d2b966a06f207ce079454e31a",
+      "roles": [
+        "read_only",
+        "writer"
+      ],
+      "status": "expired",
+      "registered_at": "2026-07-29T00:19:56Z",
+      "expires_at": "2026-07-29T04:00:00Z",
+      "revoked_at": null
+    },
+    {
+      "surface_id": "codex-review",
+      "executor_id": "codex-c5-closeout-reviewer",
+      "adapter_version": "codex-review-v1",
+      "guard_digest": "e4edaeb3d6398d12f6cfeacfb21fece8149b019d2b966a06f207ce079454e31a",
+      "roles": [
+        "read_only"
+      ],
+      "status": "expired",
+      "registered_at": "2026-07-29T00:19:56Z",
+      "expires_at": "2026-07-29T04:00:00Z",
+      "revoked_at": null
+    }
+  ]
+}

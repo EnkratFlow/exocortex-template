@@ -1,0 +1,427 @@
+{
+  "acceptance_criteria": [
+    {
+      "evidence": [
+        "Accepted exact-version Human UAT reconciled: Cursor Stable 3.12.30 24/24, Claude Desktop 1.24012.1 (0adcae) 24/24, Kimi Code CLI 1.14.0 24/24, and Zed 1.12.0 stable.328 24/24; provider-matrix SHA-256 f40dae3e3a168de650da45dbbf975c5db59df2f11eeaa7faf4c4f98147950690."
+      ],
+      "id": "C3-AC-01",
+      "status": "passed",
+      "text": "Cursor Stable 3.12.30, Claude Desktop 1.24012.1 (0adcae), Kimi Code CLI 1.14.0, and Zed 1.12.0 stable.328 are recorded as verified only from the accepted exact-version Human UAT evidence."
+    },
+    {
+      "evidence": [
+        "Kimi Desktop 3.1.3 remains a separate failed 0/24, non-default, no-active-adapter surface; Kimi Code CLI remains separately verified; golden evidence SHA-256 921baed867281c4f4da0ee209c40fb57f33141c2f916eee930757f7b940934ad."
+      ],
+      "id": "C3-AC-02",
+      "status": "passed",
+      "text": "Kimi Desktop 3.1.3 is a distinct failed, non-default, no-active-adapter surface and does not weaken or broaden the verified Kimi Code CLI claim."
+    },
+    {
+      "evidence": [
+        "Codex and GitHub Copilot remain compatible, Windsurf remains unavailable and excluded from default installation, and no untested surface is verified; schema and golden validation passed."
+      ],
+      "id": "C3-AC-03",
+      "status": "passed",
+      "text": "Codex and GitHub Copilot remain conservatively compatible, Windsurf remains unavailable and absent from default installation, and no untested provider is advertised as verified."
+    },
+    {
+      "evidence": [
+        "Provider matrix, schema, generator validation, and independent golden fixture agree on exactly nine unique provider surfaces; matrix f40dae3e3a168de650da45dbbf975c5db59df2f11eeaa7faf4c4f98147950690, schema e26a19f928b6dacd03e5466686a22eb874aee9e61b1f1bcf49c62e642fd475bd, golden 921baed867281c4f4da0ee209c40fb57f33141c2f916eee930757f7b940934ad; exact-version negative test 7e780440ba061791a0be6b8aeb2fbe3651e30f3e96269ccf675ece6458e17233."
+      ],
+      "id": "C3-AC-04",
+      "status": "passed",
+      "text": "The provider schema, generator validation, and independent golden matrix agree on the complete nine-surface provider set and reject stale or structurally invalid evidence."
+    },
+    {
+      "evidence": [
+        "All 24 canonical command JSON files and all 72 generated thin adapters are byte-identical to the accepted C2 baseline; preservation evidence SHA-256 97fec5cdb7cd79c25dd1c7481896a1c934918d3bb31f4b382275f9a8132531a0."
+      ],
+      "id": "C3-AC-05",
+      "status": "passed",
+      "text": "All 24 canonical command JSON files and all 72 generated thin adapter files remain byte-identical to the accepted C2 candidate."
+    },
+    {
+      "evidence": [
+        "README, IDE guide, changelog, release notes, and roadmap state exact surfaces, versions, limitations, invocation syntax, and historical status without altering historical evidence; documentation review passed."
+      ],
+      "id": "C3-AC-06",
+      "status": "passed",
+      "text": "Current public documentation states provider versions, surfaces, limitations, invocation syntax, and historical roadmap status truthfully without rewriting historical evidence."
+    },
+    {
+      "evidence": [
+        "Exactly ten public-code paths changed; sorted path-set SHA-256 c2412097fe59281390dc26d02f5ae46db519cb6b8fb0b8df40a48aa1e93295bc; final SHA256SUMS aca144f7b774aab4099b963694a39d9076b80dd2046ba3bf06689dc1b267ed40; candidate-tree 382434f751d8cfa6c42149fe20b3dc2e44421d0d2455ab699edf61d734ec84de; exact-scope evidence e135306d2d0e0eaa65ec7b5c3076bcb75b634cf9b8d764108f9af1eb4bd59c50; privacy and diff checks passed."
+      ],
+      "id": "C3-AC-07",
+      "status": "passed",
+      "text": "The implementation changes exactly the approved ten public-code paths, refreshes SHA256SUMS, and introduces no project-local planning, identity, event, approval, origin, secret, or private target data."
+    },
+    {
+      "evidence": [
+        "Generation, schema, Phase B, installer/update, checksum, privacy, and exact-diff verification passed; evidence manifest 0a002a90cc75c11c48434b90a2c2504dcba291d6d89329191d764a58d4990ffd; independent review 19e61d898291f34c824d4abf57f975fee67e1d6d99f8db7823683122924ccbec found P0=0, P1=0, P2=0."
+      ],
+      "id": "C3-AC-08",
+      "status": "passed",
+      "text": "Deterministic generation, schema, Phase B, installer/update, checksum, privacy, and diff verification pass, and independent review finds no actionable P0 or P1."
+    }
+  ],
+  "checkpoints": [
+    {
+      "created_at": "2026-07-24T01:03:58Z",
+      "id": "checkpoint-79cfe9e29d1c225bc51a75cda8f79c7e",
+      "local_only": true,
+      "request_id": "EXO-PHASE-B-001-C3-develop-v1",
+      "state": "developing",
+      "transition_id": "transition-f0411f580459f2ec418507024b7667a1"
+    },
+    {
+      "created_at": "2026-07-24T01:31:46Z",
+      "id": "checkpoint-51cc84bf0ce79ae3da875d2ae5569c18",
+      "local_only": true,
+      "request_id": "EXO-PHASE-B-001-C3-developer-verified-v1",
+      "state": "developer_verified",
+      "transition_id": "transition-e96d697154773caa9a44b5cd6c7cca33"
+    },
+    {
+      "created_at": "2026-07-24T01:44:16Z",
+      "id": "checkpoint-dced6657a597ca843700688f9e31b732",
+      "local_only": true,
+      "request_id": "EXO-PHASE-B-001-C3-qa-sit-v1",
+      "state": "qa_sit",
+      "transition_id": "transition-6dfc2675f2387dbaeb811f41f9dc7f79"
+    },
+    {
+      "created_at": "2026-07-24T01:44:44Z",
+      "id": "checkpoint-8f113b6c47504b61cc55b54138b6edec",
+      "local_only": true,
+      "request_id": "EXO-PHASE-B-001-C3-uat-ready-v1",
+      "state": "uat_ready",
+      "transition_id": "transition-a86e9cdef6245c9b00d657f2fd414b4a"
+    },
+    {
+      "created_at": "2026-07-24T10:05:46Z",
+      "id": "checkpoint-f17a73b05a4a5e0464af6c6977014d58",
+      "local_only": true,
+      "request_id": "EXO-PHASE-B-001-C3-human-uat-v1",
+      "state": "human_uat",
+      "transition_id": "transition-bcd83776984f7e11c251eeeea24049e2"
+    }
+  ],
+  "designated_base": {
+    "ref": "EXO-PHASE-B-001-C2 revision 27 final code-plane SHA256SUMS; owner-approved C3 ten-path reconciliation",
+    "sha": "d84985b9e388fcbae32aae015ed83a0dff7f316887d850798d3199d4ee55441d",
+    "source": "approved_work_item"
+  },
+  "handoffs": [
+    {
+      "base_sha": "d84985b9e388fcbae32aae015ed83a0dff7f316887d850798d3199d4ee55441d",
+      "candidate_sha": "382434f751d8cfa6c42149fe20b3dc2e44421d0d2455ab699edf61d734ec84de",
+      "capability_digest": "536b7a75abbe0ec2facfc69764546559fcbefa27f974bf2bbb1b71a3e9b30b06",
+      "capability_id": "EXO-PHASE-B-001-C3-FINAL-HANDOFF-V1",
+      "closed_gates": [
+        "local_C3_implementation",
+        "developer_verification",
+        "independent_review",
+        "C3_acceptance_reconciliation",
+        "writer_lane"
+      ],
+      "created_at": "2026-07-24T01:40:05Z",
+      "evidence_hashes": [
+        "aca144f7b774aab4099b963694a39d9076b80dd2046ba3bf06689dc1b267ed40",
+        "0a002a90cc75c11c48434b90a2c2504dcba291d6d89329191d764a58d4990ffd",
+        "19e61d898291f34c824d4abf57f975fee67e1d6d99f8db7823683122924ccbec",
+        "e135306d2d0e0eaa65ec7b5c3076bcb75b634cf9b8d764108f9af1eb4bd59c50",
+        "97fec5cdb7cd79c25dd1c7481896a1c934918d3bb31f4b382275f9a8132531a0",
+        "7e780440ba061791a0be6b8aeb2fbe3651e30f3e96269ccf675ece6458e17233"
+      ],
+      "first_verification": "Read AI_START_HERE.md, orient to EXO-PHASE-B-001-C3 revision 8 at independent_review, verify all eight acceptance criteria passed and the writer released, confirm the exact candidate, scope, privacy, preservation, test, and review hashes, then obtain separate authority before QA/SIT, disposable-target rehearsal, commit, live rollout, push, release, external synchronization, or template promotion.",
+      "id": "handoff-a2910cf01a996cd6b63cb82439343798",
+      "local_only": true,
+      "registry_digest": "e67a7dc38c14c0df166280c243681bbb766d1ed32de8b9f67d088298e4c7f65a",
+      "request_id": "EXO-PHASE-B-001-C3-final-handoff-v1",
+      "state": "independent_review",
+      "writer_status": "released"
+    },
+    {
+      "base_sha": "d84985b9e388fcbae32aae015ed83a0dff7f316887d850798d3199d4ee55441d",
+      "candidate_sha": "382434f751d8cfa6c42149fe20b3dc2e44421d0d2455ab699edf61d734ec84de",
+      "capability_digest": "20f36de63075b8edd80e3d091a28b4345b8752a06bbaae833c03cefef634aa75",
+      "capability_id": "EXO-PHASE-B-001-C3-QA-HANDOFF-V1",
+      "closed_gates": [
+        "C3_QA_SIT_recording",
+        "C3_Human_UAT_preparation",
+        "bounded_writer_lane"
+      ],
+      "created_at": "2026-07-24T01:45:44Z",
+      "evidence_hashes": [
+        "aca144f7b774aab4099b963694a39d9076b80dd2046ba3bf06689dc1b267ed40",
+        "0a002a90cc75c11c48434b90a2c2504dcba291d6d89329191d764a58d4990ffd",
+        "19e61d898291f34c824d4abf57f975fee67e1d6d99f8db7823683122924ccbec",
+        "e135306d2d0e0eaa65ec7b5c3076bcb75b634cf9b8d764108f9af1eb4bd59c50",
+        "97fec5cdb7cd79c25dd1c7481896a1c934918d3bb31f4b382275f9a8132531a0",
+        "7e780440ba061791a0be6b8aeb2fbe3651e30f3e96269ccf675ece6458e17233"
+      ],
+      "first_verification": "Read AI_START_HERE.md, orient to EXO-PHASE-B-001-C3 revision 13 at uat_ready, verify all eight criteria passed and the writer released, confirm QA/SIT transition transition-6dfc2675f2387dbaeb811f41f9dc7f79 and Human UAT preparation transition transition-a86e9cdef6245c9b00d657f2fd414b4a, then obtain explicit owner acceptance before recording Human UAT or taking any Git, installation, release, deployment, synchronization, or promotion action.",
+      "id": "handoff-23aa7019316619f9d026054c677d04f8",
+      "local_only": true,
+      "registry_digest": "e67a7dc38c14c0df166280c243681bbb766d1ed32de8b9f67d088298e4c7f65a",
+      "request_id": "EXO-PHASE-B-001-C3-qa-handoff-v1",
+      "state": "uat_ready",
+      "writer_status": "released"
+    },
+    {
+      "base_sha": "d84985b9e388fcbae32aae015ed83a0dff7f316887d850798d3199d4ee55441d",
+      "candidate_sha": "382434f751d8cfa6c42149fe20b3dc2e44421d0d2455ab699edf61d734ec84de",
+      "capability_digest": "43833b87d245f4953c3fba0fe16cf62827217dd1a2f3e2880e737087c96b700b",
+      "capability_id": "EXO-PHASE-B-001-C3-UAT-CLOSEOUT-HANDOFF-V1",
+      "closed_gates": [
+        "C3_Human_UAT",
+        "C3_Human_UAT_evidence_recording",
+        "bounded_writer_lane"
+      ],
+      "created_at": "2026-07-24T10:06:30Z",
+      "evidence_hashes": [
+        "aca144f7b774aab4099b963694a39d9076b80dd2046ba3bf06689dc1b267ed40",
+        "0a002a90cc75c11c48434b90a2c2504dcba291d6d89329191d764a58d4990ffd",
+        "19e61d898291f34c824d4abf57f975fee67e1d6d99f8db7823683122924ccbec",
+        "e135306d2d0e0eaa65ec7b5c3076bcb75b634cf9b8d764108f9af1eb4bd59c50",
+        "97fec5cdb7cd79c25dd1c7481896a1c934918d3bb31f4b382275f9a8132531a0",
+        "7e780440ba061791a0be6b8aeb2fbe3651e30f3e96269ccf675ece6458e17233"
+      ],
+      "first_verification": "Read AI_START_HERE.md, orient to EXO-PHASE-B-001-C3 revision 17 at human_uat, verify all eight criteria passed and the writer released, confirm the Human UAT transition and frozen candidate evidence, then obtain separate authority before release readiness, disposable-target rehearsal, commit, live installation, push, deployment, external synchronization, or template promotion.",
+      "id": "handoff-a72411986759632b73789031214952e1",
+      "local_only": true,
+      "registry_digest": "82e6c4adf525c555d34ca472782b1b7f20adce104fe0756cb316ffcb0b949ae6",
+      "request_id": "EXO-PHASE-B-001-C3-uat-closeout-handoff-v1",
+      "state": "human_uat",
+      "writer_status": "released"
+    }
+  ],
+  "id": "EXO-PHASE-B-001-C3",
+  "idempotency": [
+    {
+      "accepted_at": "2026-07-24T01:03:28Z",
+      "operation": "reserve_writer",
+      "request_id": "EXO-PHASE-B-001-C3-reserve-v1",
+      "result_id": "reservation-3b4550e77bb9b562a84dcd659f6822e5"
+    },
+    {
+      "accepted_at": "2026-07-24T01:03:58Z",
+      "operation": "transition_work_item",
+      "request_id": "EXO-PHASE-B-001-C3-develop-v1",
+      "result_id": "transition-f0411f580459f2ec418507024b7667a1"
+    },
+    {
+      "accepted_at": "2026-07-24T01:31:46Z",
+      "operation": "transition_work_item",
+      "request_id": "EXO-PHASE-B-001-C3-developer-verified-v1",
+      "result_id": "transition-e96d697154773caa9a44b5cd6c7cca33"
+    },
+    {
+      "accepted_at": "2026-07-24T01:37:11Z",
+      "operation": "transition_work_item",
+      "request_id": "EXO-PHASE-B-001-C3-independent-review-v1",
+      "result_id": "transition-28d54a0c42f2db649a80b85f7222684f"
+    },
+    {
+      "accepted_at": "2026-07-24T01:39:16Z",
+      "operation": "record_c3_acceptance_reconciliation",
+      "request_id": "EXO-PHASE-B-001-C3-acceptance-record-v1",
+      "result_id": "reconciliation-52dfab6de454ccba93a323bc0f578ee9"
+    },
+    {
+      "accepted_at": "2026-07-24T01:39:37Z",
+      "operation": "release_writer",
+      "request_id": "EXO-PHASE-B-001-C3-release-v1",
+      "result_id": "release-fdf5aaf13d75c112be5808d1e7dcc968"
+    },
+    {
+      "accepted_at": "2026-07-24T01:40:05Z",
+      "operation": "create_handoff",
+      "request_id": "EXO-PHASE-B-001-C3-final-handoff-v1",
+      "result_id": "handoff-a2910cf01a996cd6b63cb82439343798"
+    },
+    {
+      "accepted_at": "2026-07-24T01:43:46Z",
+      "operation": "reserve_writer",
+      "request_id": "EXO-PHASE-B-001-C3-qa-reserve-v1",
+      "result_id": "reservation-7331a03dd79a984e8c638924707e8603"
+    },
+    {
+      "accepted_at": "2026-07-24T01:44:16Z",
+      "operation": "transition_work_item",
+      "request_id": "EXO-PHASE-B-001-C3-qa-sit-v1",
+      "result_id": "transition-6dfc2675f2387dbaeb811f41f9dc7f79"
+    },
+    {
+      "accepted_at": "2026-07-24T01:44:44Z",
+      "operation": "transition_work_item",
+      "request_id": "EXO-PHASE-B-001-C3-uat-ready-v1",
+      "result_id": "transition-a86e9cdef6245c9b00d657f2fd414b4a"
+    },
+    {
+      "accepted_at": "2026-07-24T01:45:14Z",
+      "operation": "release_writer",
+      "request_id": "EXO-PHASE-B-001-C3-qa-release-v1",
+      "result_id": "release-070c701552ddd972c785a9eccd50915d"
+    },
+    {
+      "accepted_at": "2026-07-24T01:45:44Z",
+      "operation": "create_handoff",
+      "request_id": "EXO-PHASE-B-001-C3-qa-handoff-v1",
+      "result_id": "handoff-23aa7019316619f9d026054c677d04f8"
+    },
+    {
+      "accepted_at": "2026-07-24T10:04:41Z",
+      "operation": "reserve_writer",
+      "request_id": "EXO-PHASE-B-001-C3-uat-closeout-reserve-v1",
+      "result_id": "reservation-e9165c686f9142a6ba6acec29f69b928"
+    },
+    {
+      "accepted_at": "2026-07-24T10:05:46Z",
+      "operation": "transition_work_item",
+      "request_id": "EXO-PHASE-B-001-C3-human-uat-v1",
+      "result_id": "transition-bcd83776984f7e11c251eeeea24049e2"
+    },
+    {
+      "accepted_at": "2026-07-24T10:06:07Z",
+      "operation": "release_writer",
+      "request_id": "EXO-PHASE-B-001-C3-uat-closeout-release-v1",
+      "result_id": "release-5821920342c8007f2aabc7ef5c9913af"
+    },
+    {
+      "accepted_at": "2026-07-24T10:06:30Z",
+      "operation": "create_handoff",
+      "request_id": "EXO-PHASE-B-001-C3-uat-closeout-handoff-v1",
+      "result_id": "handoff-a72411986759632b73789031214952e1"
+    }
+  ],
+  "kind": "delivery_work_item",
+  "lane": {
+    "allowed_paths": [
+      ".exocortex/docs/IDE_INTEGRATION_GUIDE.md",
+      ".exocortex/docs/roadmap.md",
+      ".exocortex/provider-adapters.json",
+      ".exocortex/schemas/provider-adapter-matrix.schema.json",
+      ".exocortex/scripts/generate_command_adapters.py",
+      "CHANGELOG.md",
+      "README.md",
+      "SHA256SUMS",
+      "WHATSNEW.md",
+      "tests/phase-b/provider-adapter-matrix.json"
+    ],
+    "reservation": {
+      "executor_id": null,
+      "lease_expires_at": null,
+      "status": "released",
+      "surface_id": null,
+      "version": 6,
+      "writer": null
+    }
+  },
+  "lifecycle": {
+    "attempt": 0,
+    "blocked": null,
+    "state": "human_uat"
+  },
+  "revision": 17,
+  "schema_version": "public-v2",
+  "title": "Reconcile accepted provider evidence and public support claims",
+  "transitions": [
+    {
+      "accepted_at": "2026-07-24T01:03:58Z",
+      "capability_id": "EXO-PHASE-B-001-C3-DEVELOP-V1",
+      "checkpoint_eligible": true,
+      "evidence": [
+        "Owner-approved C3 ten-path public-code allowlist SHA-256 c2412097fe59281390dc26d02f5ae46db519cb6b8fb0b8df40a48aa1e93295bc; source SHA256SUMS d84985b9e388fcbae32aae015ed83a0dff7f316887d850798d3199d4ee55441d.",
+        "Provider sessions, live targets, commit, push, release, deployment, external synchronization, and promotion remain closed."
+      ],
+      "from": "reserved",
+      "id": "transition-f0411f580459f2ec418507024b7667a1",
+      "operation": "begin_C3_provider_evidence_reconciliation",
+      "request_id": "EXO-PHASE-B-001-C3-develop-v1",
+      "to": "developing"
+    },
+    {
+      "accepted_at": "2026-07-24T01:31:46Z",
+      "capability_id": "EXO-PHASE-B-001-C3-DEVELOPER-VERIFIED-V1",
+      "checkpoint_eligible": true,
+      "evidence": [
+        "Final candidate-tree SHA-256 382434f751d8cfa6c42149fe20b3dc2e44421d0d2455ab699edf61d734ec84de; SHA256SUMS aca144f7b774aab4099b963694a39d9076b80dd2046ba3bf06689dc1b267ed40 with 250 unique valid entries.",
+        "Exactly ten approved public paths changed; path-set digest c2412097fe59281390dc26d02f5ae46db519cb6b8fb0b8df40a48aa1e93295bc; exact-scope evidence e135306d2d0e0eaa65ec7b5c3076bcb75b634cf9b8d764108f9af1eb4bd59c50.",
+        "All 24 canonical commands and 72 generated adapters remain byte-identical to C2; preservation evidence 97fec5cdb7cd79c25dd1c7481896a1c934918d3bb31f4b382275f9a8132531a0.",
+        "Final Phase B evidence 0a002a90cc75c11c48434b90a2c2504dcba291d6d89329191d764a58d4990ffd: installer 57/57, orchestration 29/29, event tooling PASS, credentials/live providers/live targets false; exact-version negative test 7e780440ba061791a0be6b8aeb2fbe3651e30f3e96269ccf675ece6458e17233 passed five stale-version rejections."
+      ],
+      "from": "developing",
+      "id": "transition-e96d697154773caa9a44b5cd6c7cca33",
+      "operation": "final_C3_deterministic_verification",
+      "request_id": "EXO-PHASE-B-001-C3-developer-verified-v1",
+      "to": "developer_verified"
+    },
+    {
+      "accepted_at": "2026-07-24T01:37:11Z",
+      "capability_id": "EXO-PHASE-B-001-C3-INDEPENDENT-REVIEW-V1",
+      "checkpoint_eligible": false,
+      "evidence": [
+        "Independent read-only reviewer confirmed C3-AC-01 through C3-AC-08 against candidate-tree 382434f751d8cfa6c42149fe20b3dc2e44421d0d2455ab699edf61d734ec84de and final Phase B evidence 0a002a90cc75c11c48434b90a2c2504dcba291d6d89329191d764a58d4990ffd.",
+        "Final review findings P0=0, P1=0, P2=0; exact 10-path scope, 24-command/72-adapter preservation, nine-surface truth, stale-version rejection, historical preservation, and privacy all passed."
+      ],
+      "from": "developer_verified",
+      "id": "transition-28d54a0c42f2db649a80b85f7222684f",
+      "operation": "independent_C3_provider_documentation_migration_privacy_review",
+      "request_id": "EXO-PHASE-B-001-C3-independent-review-v1",
+      "review_evidence_hash": "19e61d898291f34c824d4abf57f975fee67e1d6d99f8db7823683122924ccbec",
+      "reviewer_executor_id": "codex-c3-reviewer",
+      "reviewer_surface_id": "codex-review",
+      "to": "independent_review"
+    },
+    {
+      "accepted_at": "2026-07-24T01:44:16Z",
+      "capability_id": "EXO-PHASE-B-001-C3-QA-SIT-V1",
+      "checkpoint_eligible": true,
+      "evidence": [
+        "Frozen candidate-tree 382434f751d8cfa6c42149fe20b3dc2e44421d0d2455ab699edf61d734ec84de; SHA256SUMS aca144f7b774aab4099b963694a39d9076b80dd2046ba3bf06689dc1b267ed40; exact ten-path evidence e135306d2d0e0eaa65ec7b5c3076bcb75b634cf9b8d764108f9af1eb4bd59c50.",
+        "Final Phase B evidence 0a002a90cc75c11c48434b90a2c2504dcba291d6d89329191d764a58d4990ffd reports all_passed=true: installer/update 57/57, orchestration/privacy/authority 29/29, event tooling PASS, credentials_used=false, live_provider_used=false, live_target_used=false.",
+        "Independent review transition transition-28d54a0c42f2db649a80b85f7222684f binds review evidence 19e61d898291f34c824d4abf57f975fee67e1d6d99f8db7823683122924ccbec with P0=0, P1=0, P2=0; exact-version negative test 7e780440ba061791a0be6b8aeb2fbe3651e30f3e96269ccf675ece6458e17233 passed."
+      ],
+      "from": "independent_review",
+      "id": "transition-6dfc2675f2387dbaeb811f41f9dc7f79",
+      "operation": "final_C3_QA_SIT",
+      "request_id": "EXO-PHASE-B-001-C3-qa-sit-v1",
+      "review_transition_id": "transition-28d54a0c42f2db649a80b85f7222684f",
+      "to": "qa_sit"
+    },
+    {
+      "accepted_at": "2026-07-24T01:44:44Z",
+      "capability_id": "EXO-PHASE-B-001-C3-UAT-READY-V1",
+      "checkpoint_eligible": true,
+      "evidence": [
+        "Human UAT case 1: confirm README and the IDE guide identify only Claude Desktop 1.24012.1 (0adcae), Cursor Stable 3.12.30, Kimi Code CLI 1.14.0, and Zed 1.12.0 stable.328 built-in Agent as verified and keep all claims version-scoped.",
+        "Human UAT case 2: confirm Kimi Desktop Work 3.1.3 is visibly separate and failed at 0/24, Codex and GitHub Copilot remain compatible, and Windsurf remains unavailable and outside active/default installation.",
+        "Human UAT case 3: confirm the 24 canonical commands remain present, the public history is clearly historical rather than current support truth, and no private target, identity, approval, event, credential, origin, or external-sync claim appears in the ten public paths.",
+        "No provider or live-target session is part of this preparation; previously accepted exact-version provider observations are evidence inputs, not a new model assertion or outward authorization."
+      ],
+      "from": "qa_sit",
+      "id": "transition-a86e9cdef6245c9b00d657f2fd414b4a",
+      "operation": "prepare_C3_Human_UAT",
+      "request_id": "EXO-PHASE-B-001-C3-uat-ready-v1",
+      "to": "uat_ready"
+    },
+    {
+      "accepted_at": "2026-07-24T10:05:46Z",
+      "capability_id": "EXO-PHASE-B-001-C3-HUMAN-UAT-V1",
+      "checkpoint_eligible": true,
+      "evidence": [
+        "The project owner explicitly accepted the prepared C3 Human UAT for the frozen provider-status reconciliation candidate.",
+        "Acceptance binds candidate-tree 382434f751d8cfa6c42149fe20b3dc2e44421d0d2455ab699edf61d734ec84de, SHA256SUMS aca144f7b774aab4099b963694a39d9076b80dd2046ba3bf06689dc1b267ed40, all eight passed criteria, and the three prepared UAT cases.",
+        "No new provider session, live-target action, Git action, installation, release-ready transition, deployment, external synchronization, or template promotion is authorized."
+      ],
+      "from": "uat_ready",
+      "id": "transition-bcd83776984f7e11c251eeeea24049e2",
+      "operation": "record_C3_Human_UAT_acceptance",
+      "request_id": "EXO-PHASE-B-001-C3-human-uat-v1",
+      "to": "human_uat"
+    }
+  ],
+  "type": "documentation_process"
+}

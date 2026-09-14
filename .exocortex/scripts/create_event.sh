@@ -2,7 +2,7 @@
 # Creates an event file with auto-detected metadata.
 # AI provides content body via stdin or --body-file.
 # Handles: timestamp, machine, editor, branch, git state, filename,
-#          generate_context.sh, post_to_hub.sh
+#          generate_context.sh. External sync is always a separate action.
 #
 # Usage:
 #   echo "content" | bash .exocortex/scripts/create_event.sh
@@ -115,11 +115,6 @@ GIT_EOF
 
 # Regenerate SESSION_CONTEXT
 bash "$SCRIPT_DIR/generate_context.sh" 2>/dev/null || true
-
-# Post to hub (if enabled)
-if [ -f "$EXOCORTEX_DIR/.hub_enabled" ]; then
-  bash "$SCRIPT_DIR/post_to_hub.sh" "$EVENT_PATH" 2>/dev/null || true
-fi
 
 # ── Output ──────────────────────────────────────────────────
 echo "✅ Event saved: .exocortex/events/$FILENAME"

@@ -1,0 +1,397 @@
+{
+  "acceptance_criteria": [
+    {
+      "evidence": [
+        "Active documentation contract passed; final candidate 3f5ed26ac4bf3578b7370af6d2046a6c5704ca72b3ee821bfc37704b1261223f records the pinned installer, guarded updater, 24 commands, narrative-save semantics, and current test truth."
+      ],
+      "id": "C4-AC-01",
+      "status": "passed",
+      "text": "All active public documentation agrees with the pinned local installer, guarded updater, 24-command protocol, narrative-save semantics, and current deterministic suite; historical release notes remain clearly historical."
+    },
+    {
+      "evidence": [
+        "Provider-neutral clean-install and existing-update prompts require read-only orientation, exact target/source/digest, disposable rehearsal, exact approval, and separately gated Git/outward actions."
+      ],
+      "id": "C4-AC-02",
+      "status": "passed",
+      "text": "A provider-neutral AI installation guide gives copy-paste clean-install and existing-update prompts that start read-only, identify the exact target and source, verify the approved digest, rehearse in disposable state, pause for exact approval, and keep Git and outward actions separately gated."
+    },
+    {
+      "evidence": [
+        "The update runbook records complete guarded identity/capability fields, protected-data comparison, post-bootstrap scope stability, idempotent retry, rollback, consumed-authority denial, and local-only handoff."
+      ],
+      "id": "C4-AC-03",
+      "status": "passed",
+      "text": "The existing-repository runbook explains the complete guarded apply contract, all required identity and capability fields, protected-data comparison, retry, idempotency, rollback, and local handoff without exposing or reading credentials."
+    },
+    {
+      "evidence": [
+        "The platform matrix records macOS locally verified, Linux final-candidate CI pending, WSL bounded Human UAT pending, and native Windows PowerShell/Git Bash unsupported."
+      ],
+      "id": "C4-AC-04",
+      "status": "passed",
+      "text": "The platform matrix states only evidence-supported claims: macOS is locally verified, Linux CI is configured but must pass for the final candidate, WSL requires bounded Human UAT, and native Windows PowerShell remains unsupported until a shared cross-platform installer is implemented and tested."
+    },
+    {
+      "evidence": [
+        "Documentation limits install/update execution to coding agents with local repository and terminal access; command-menu visibility alone grants neither capability nor authority."
+      ],
+      "id": "C4-AC-05",
+      "status": "passed",
+      "text": "Documentation makes clear that only coding agents with local repository and terminal access can install or update; provider command-menu visibility alone does not grant installation capability or authority."
+    },
+    {
+      "evidence": [
+        "Documentation contract PASS rejects stale copy, credential creation, curl-pipe, fixed test-count, checkpoint-save, bad-link, unsupported Windows, implicit approval, bundled publication, and broken-link guidance."
+      ],
+      "id": "C4-AC-06",
+      "status": "passed",
+      "text": "Deterministic documentation tests reject stale manual-copy, secret-creation, curl-pipe-shell, eight-test, save-as-checkpoint, wrong upgrade-link, unsupported Windows, implicit approval, or bundled Git-publication guidance."
+    },
+    {
+      "evidence": [
+        "Disposable Healthy installed twice, preserved pre-existing files, passed syntax, Functions 37/37, and production build with network denied. Root 111/112 reproduced identically on untouched Node 20 baseline and is recorded as inherited runtime drift rather than an installation regression."
+      ],
+      "id": "C4-AC-07",
+      "status": "passed",
+      "text": "The complete candidate installs twice into a disposable Healthy target while preserving its pre-existing files and passes the applicable application verification without credentials, providers, network egress, or live-target mutation."
+    },
+    {
+      "evidence": [
+        "Disposable Mulligan exact 217-path guarded update applied once, converged to zero, preserved protected canaries/application bytes, rolled back exactly, retained consumed authority, and denied replay; app tests 265 passed/45 skipped and build passed."
+      ],
+      "id": "C4-AC-08",
+      "status": "passed",
+      "text": "The complete candidate dry-runs, applies once, converges on rerun, and rolls back in a disposable tracked snapshot of Mulligan Tracker while protected Exocortex project data remains byte-identical and no capability authority is resurrected."
+    },
+    {
+      "evidence": [
+        "Consolidated evidence 06632ed10381756b4f507318112c6be410cc4a441c52e65a2030a2428b5e1b83 records installer 75/75, orchestration 29/29, event PASS, adapters 24/72, checksums 252/252, documentation/diff/privacy/scope PASS, with no credentials, provider sessions, live mutation, deployment, sync, or promotion."
+      ],
+      "id": "C4-AC-09",
+      "status": "passed",
+      "text": "Complete deterministic, checksum, exact-scope, privacy, newly-reachable-history, and documentation-link verification passes with no credentials, live providers, live targets, deployment, external synchronization, or promotion."
+    },
+    {
+      "evidence": [
+        "Independent review artifact 2027fce9bb1a11ccab1b6f55246718e7b7c06314f8a6d123effa92edc861b2f4 reports PASS and no in-scope P0/P1/P2; bounded prompt/platform Human UAT remains next."
+      ],
+      "id": "C4-AC-10",
+      "status": "passed",
+      "text": "Independent review finds no actionable P0 or P1 and prepares bounded Human UAT for the copy-paste AI prompts, platform claims, and disposable real-repository upgrade evidence."
+    }
+  ],
+  "checkpoints": [
+    {
+      "created_at": "2026-07-24T12:43:20Z",
+      "id": "checkpoint-ca399f4d5e4c622a7d009777b2812f66",
+      "local_only": true,
+      "request_id": "EXO-PHASE-B-001-C4-develop-v1",
+      "state": "developing",
+      "transition_id": "transition-746d2cae79485d18ce192851c70747e9"
+    },
+    {
+      "created_at": "2026-07-24T14:28:51Z",
+      "id": "checkpoint-26f3a68ac59660e24080fa44845a13a0",
+      "local_only": true,
+      "request_id": "EXO-PHASE-B-001-C4-developer-verified-v1",
+      "state": "developer_verified",
+      "transition_id": "transition-303768b0be6dc925aebe683f67898dc7"
+    },
+    {
+      "created_at": "2026-07-24T14:30:31Z",
+      "id": "checkpoint-f8fb5489bb4b6c17a2e665e9dfe36772",
+      "local_only": true,
+      "request_id": "EXO-PHASE-B-001-C4-qa-sit-v1",
+      "state": "qa_sit",
+      "transition_id": "transition-86325060326c8e15679b8aab7cfa2848"
+    },
+    {
+      "created_at": "2026-07-24T14:30:51Z",
+      "id": "checkpoint-a5696c460853874e91c947ea30d2b655",
+      "local_only": true,
+      "request_id": "EXO-PHASE-B-001-C4-uat-ready-v1",
+      "state": "uat_ready",
+      "transition_id": "transition-850530f4c06a48bcac94c8816e4e6720"
+    },
+    {
+      "created_at": "2026-07-25T03:56:16Z",
+      "id": "checkpoint-3fe03162c61ccba4ad6abfac9727b70f",
+      "local_only": true,
+      "request_id": "EXO-PHASE-B-001-C4-human-uat-v1",
+      "state": "human_uat",
+      "transition_id": "transition-a6f51e459292a4ec7192d8e204078994"
+    }
+  ],
+  "designated_base": {
+    "ref": "EXO-PHASE-B-001 clean RC public code plane before C4",
+    "sha": "aca144f7b774aab4099b963694a39d9076b80dd2046ba3bf06689dc1b267ed40",
+    "source": "approved_work_item"
+  },
+  "handoffs": [
+    {
+      "base_sha": "aca144f7b774aab4099b963694a39d9076b80dd2046ba3bf06689dc1b267ed40",
+      "candidate_sha": "3f5ed26ac4bf3578b7370af6d2046a6c5704ca72b3ee821bfc37704b1261223f",
+      "capability_digest": "fe9735cb96c1d6c558a63e85a46a62acd14d7a133f87bd90781993f79513b898",
+      "capability_id": "EXO-PHASE-B-001-C4-FINAL-HANDOFF-V1",
+      "closed_gates": [
+        "Human UAT acceptance",
+        "release_ready or later lifecycle transition",
+        "commit, push, PR, or merge",
+        "live repository installation or update",
+        "release, deployment, or service action",
+        "external synchronization or template promotion"
+      ],
+      "created_at": "2026-07-24T14:31:35Z",
+      "evidence_hashes": [
+        "06632ed10381756b4f507318112c6be410cc4a441c52e65a2030a2428b5e1b83",
+        "2027fce9bb1a11ccab1b6f55246718e7b7c06314f8a6d123effa92edc861b2f4",
+        "93496bab6ff062bb297a11245c8b52f6f989776715d5d3f83765dc35e4028a96",
+        "d8b363c8d99f307cd5e2cad6e6871233479a540a72bf2ef1a83bd0720bdf6e1a"
+      ],
+      "first_verification": "Human reviews the provider-neutral clean-install and existing-update prompts for isolated-target, exact-digest, exact-approval, rollback, platform-truth, and separately gated Git/outward boundaries.",
+      "id": "handoff-60689678891f5031083f627ab93a0a89",
+      "local_only": true,
+      "registry_digest": "858ee1be781bf1b4fd39a44cdfca4b693862ee7a0e14edae2d142a878519f5af",
+      "request_id": "EXO-PHASE-B-001-C4-final-handoff-v1",
+      "state": "uat_ready",
+      "writer_status": "released"
+    },
+    {
+      "base_sha": "aca144f7b774aab4099b963694a39d9076b80dd2046ba3bf06689dc1b267ed40",
+      "candidate_sha": "3f5ed26ac4bf3578b7370af6d2046a6c5704ca72b3ee821bfc37704b1261223f",
+      "capability_digest": "6cc26c3ec0cff8a023a4795429db51d492036c756b67cdf2c9622f0c8f4dcc0d",
+      "capability_id": "EXO-PHASE-B-001-C4-UAT-CLOSEOUT-HANDOFF-V1",
+      "closed_gates": [
+        "release_ready or later lifecycle transition",
+        "commit, push, PR, or merge",
+        "live repository installation or update",
+        "release, deployment, or service action",
+        "external synchronization or template promotion"
+      ],
+      "created_at": "2026-07-25T03:57:01Z",
+      "evidence_hashes": [
+        "06632ed10381756b4f507318112c6be410cc4a441c52e65a2030a2428b5e1b83",
+        "2027fce9bb1a11ccab1b6f55246718e7b7c06314f8a6d123effa92edc861b2f4"
+      ],
+      "first_verification": "Confirm the recorded human_uat state, released writer, accepted candidate digest, and remaining Linux CI/WSL platform gates before considering any separate release-candidate or Git action.",
+      "id": "handoff-3d8b22e6f915135aab3ef5eb6a4ac625",
+      "local_only": true,
+      "registry_digest": "1d1b6ed3e0f10c0fddea19ea27290757e22994c6f1ee96c9baf3c28b69297dd7",
+      "request_id": "EXO-PHASE-B-001-C4-uat-closeout-handoff-v1",
+      "state": "human_uat",
+      "writer_status": "released"
+    }
+  ],
+  "id": "EXO-PHASE-B-001-C4",
+  "idempotency": [
+    {
+      "accepted_at": "2026-07-24T12:42:58Z",
+      "operation": "reserve_writer",
+      "request_id": "EXO-PHASE-B-001-C4-reserve-v1",
+      "result_id": "reservation-bb7a033ce73c348e4f98aa78f8094356"
+    },
+    {
+      "accepted_at": "2026-07-24T12:43:20Z",
+      "operation": "transition_work_item",
+      "request_id": "EXO-PHASE-B-001-C4-develop-v1",
+      "result_id": "transition-746d2cae79485d18ce192851c70747e9"
+    },
+    {
+      "accepted_at": "2026-07-24T14:28:51Z",
+      "operation": "transition_work_item",
+      "request_id": "EXO-PHASE-B-001-C4-developer-verified-v1",
+      "result_id": "transition-303768b0be6dc925aebe683f67898dc7"
+    },
+    {
+      "accepted_at": "2026-07-24T14:29:12Z",
+      "operation": "transition_work_item",
+      "request_id": "EXO-PHASE-B-001-C4-independent-review-v1",
+      "result_id": "transition-ea8f968618c18423483dfed3ad66a4d3"
+    },
+    {
+      "accepted_at": "2026-07-24T14:30:12Z",
+      "operation": "record_c4_acceptance_reconciliation",
+      "request_id": "EXO-PHASE-B-001-C4-acceptance-record-v1",
+      "result_id": "reconciliation-e0dab817b3da81713c1f3b0a76fe1637"
+    },
+    {
+      "accepted_at": "2026-07-24T14:30:31Z",
+      "operation": "transition_work_item",
+      "request_id": "EXO-PHASE-B-001-C4-qa-sit-v1",
+      "result_id": "transition-86325060326c8e15679b8aab7cfa2848"
+    },
+    {
+      "accepted_at": "2026-07-24T14:30:51Z",
+      "operation": "transition_work_item",
+      "request_id": "EXO-PHASE-B-001-C4-uat-ready-v1",
+      "result_id": "transition-850530f4c06a48bcac94c8816e4e6720"
+    },
+    {
+      "accepted_at": "2026-07-24T14:31:10Z",
+      "operation": "release_writer",
+      "request_id": "EXO-PHASE-B-001-C4-release-v1",
+      "result_id": "release-16ddb6f4f8f6cca31838d2e19f4eafd7"
+    },
+    {
+      "accepted_at": "2026-07-24T14:31:35Z",
+      "operation": "create_handoff",
+      "request_id": "EXO-PHASE-B-001-C4-final-handoff-v1",
+      "result_id": "handoff-60689678891f5031083f627ab93a0a89"
+    },
+    {
+      "accepted_at": "2026-07-25T03:55:52Z",
+      "operation": "reserve_writer",
+      "request_id": "EXO-PHASE-B-001-C4-uat-closeout-reserve-v1",
+      "result_id": "reservation-a130334dbf0a8fd04bf55b0cfdc86fa8"
+    },
+    {
+      "accepted_at": "2026-07-25T03:56:16Z",
+      "operation": "transition_work_item",
+      "request_id": "EXO-PHASE-B-001-C4-human-uat-v1",
+      "result_id": "transition-a6f51e459292a4ec7192d8e204078994"
+    },
+    {
+      "accepted_at": "2026-07-25T03:56:39Z",
+      "operation": "release_writer",
+      "request_id": "EXO-PHASE-B-001-C4-uat-closeout-release-v1",
+      "result_id": "release-0cfe695ed06eef2aab04d9989fa695a1"
+    },
+    {
+      "accepted_at": "2026-07-25T03:57:01Z",
+      "operation": "create_handoff",
+      "request_id": "EXO-PHASE-B-001-C4-uat-closeout-handoff-v1",
+      "result_id": "handoff-3d8b22e6f915135aab3ef5eb6a4ac625"
+    }
+  ],
+  "kind": "delivery_work_item",
+  "lane": {
+    "allowed_paths": [
+      ".exocortex/README.md",
+      ".exocortex/control/README.md",
+      ".exocortex/docs/AI_INSTALLATION.md",
+      ".exocortex/docs/IDE_INTEGRATION_GUIDE.md",
+      ".exocortex/docs/UPGRADE_MANIFEST.md",
+      ".exocortex/docs/getting-started.md",
+      ".exocortex/docs/implementation.md",
+      ".exocortex/docs/user-guide.md",
+      "CHANGELOG.md",
+      "CONTRIBUTING.md",
+      "README.md",
+      "SECURITY.md",
+      "SHA256SUMS",
+      "WHATSNEW.md",
+      "tests/run_tests.sh",
+      "tests/test_documentation_contract.py"
+    ],
+    "reservation": {
+      "executor_id": null,
+      "lease_expires_at": null,
+      "status": "released",
+      "surface_id": null,
+      "version": 4,
+      "writer": null
+    }
+  },
+  "lifecycle": {
+    "attempt": 0,
+    "blocked": null,
+    "state": "human_uat"
+  },
+  "revision": 13,
+  "schema_version": "public-v2",
+  "title": "Complete AI-guided installation and documentation readiness",
+  "transitions": [
+    {
+      "accepted_at": "2026-07-24T12:43:20Z",
+      "capability_id": "EXO-PHASE-B-001-C4-DEVELOP-V1",
+      "checkpoint_eligible": true,
+      "evidence": [
+        "Owner approved documentation reconciliation, provider-neutral AI installation, complete update runbook, platform truth, deterministic tests, Healthy clean-install rehearsal, and disposable Mulligan existing-repository update.",
+        "Exact 16-path allowlist digest 8c469c30b4964ad66681b5d41de605ecb8a333f17dd06afb208acfabec5f9c75; source SHA256SUMS aca144f7b774aab4099b963694a39d9076b80dd2046ba3bf06689dc1b267ed40; commit and all outward or live-target gates remain closed."
+      ],
+      "from": "reserved",
+      "id": "transition-746d2cae79485d18ce192851c70747e9",
+      "operation": "begin_C4_installation_readiness",
+      "request_id": "EXO-PHASE-B-001-C4-develop-v1",
+      "to": "developing"
+    },
+    {
+      "accepted_at": "2026-07-24T14:28:51Z",
+      "capability_id": "EXO-PHASE-B-001-C4-DEVELOPER-VERIFIED-V1",
+      "checkpoint_eligible": true,
+      "evidence": [
+        "Final candidate SHA256SUMS 3f5ed26ac4bf3578b7370af6d2046a6c5704ca72b3ee821bfc37704b1261223f; candidate-tree evidence 93496bab6ff062bb297a11245c8b52f6f989776715d5d3f83765dc35e4028a96; exact approved 16-path digest 8c469c30b4964ad66681b5d41de605ecb8a333f17dd06afb208acfabec5f9c75.",
+        "Consolidated local evidence 06632ed10381756b4f507318112c6be410cc4a441c52e65a2030a2428b5e1b83: installer 75/75, orchestration 29/29, event tooling PASS, 24 commands/72 adapters, checksums 252/252, documentation contract and diff checks PASS.",
+        "Disposable Healthy clean install and Mulligan guarded update/zero-rerun/rollback/replay denial completed with network denied and live repositories unchanged; Healthy inherited Node 20 test result 111/112 is explicitly retained."
+      ],
+      "from": "developing",
+      "id": "transition-303768b0be6dc925aebe683f67898dc7",
+      "operation": "final_C4_local_developer_verification",
+      "request_id": "EXO-PHASE-B-001-C4-developer-verified-v1",
+      "to": "developer_verified"
+    },
+    {
+      "accepted_at": "2026-07-24T14:29:12Z",
+      "capability_id": "EXO-PHASE-B-001-C4-INDEPENDENT-REVIEW-V1",
+      "checkpoint_eligible": false,
+      "evidence": [
+        "Independent exact-candidate review PASS: no in-scope P0, P1, or P2 findings; documentation contract, 252/252 checksum inventory, and scoped diff passed.",
+        "One informational stale comment remains outside the approved C4 allowlist in tests/install-pre-commit-hook.sh; executable behavior and active documentation are correct."
+      ],
+      "from": "developer_verified",
+      "id": "transition-ea8f968618c18423483dfed3ad66a4d3",
+      "operation": "independent_C4_installation_documentation_review",
+      "request_id": "EXO-PHASE-B-001-C4-independent-review-v1",
+      "review_evidence_hash": "2027fce9bb1a11ccab1b6f55246718e7b7c06314f8a6d123effa92edc861b2f4",
+      "reviewer_executor_id": "codex-c4-reviewer",
+      "reviewer_surface_id": "codex-review",
+      "to": "independent_review"
+    },
+    {
+      "accepted_at": "2026-07-24T14:30:31Z",
+      "capability_id": "EXO-PHASE-B-001-C4-QA-SIT-V1",
+      "checkpoint_eligible": true,
+      "evidence": [
+        "All ten C4 acceptance criteria were reconciled to passed at revision 5 from exact local evidence; consolidated evidence SHA-256 06632ed10381756b4f507318112c6be410cc4a441c52e65a2030a2428b5e1b83.",
+        "Healthy and Mulligan rehearsals used disposable tracked snapshots, fake HOME, network denial, no credentials/providers, and proved live repository HEAD/status fingerprints unchanged.",
+        "Linux final-candidate CI and WSL Human UAT remain explicit downstream platform gates; native Windows remains unsupported."
+      ],
+      "from": "independent_review",
+      "id": "transition-86325060326c8e15679b8aab7cfa2848",
+      "operation": "record_C4_local_QA_SIT",
+      "request_id": "EXO-PHASE-B-001-C4-qa-sit-v1",
+      "review_transition_id": "transition-ea8f968618c18423483dfed3ad66a4d3",
+      "to": "qa_sit"
+    },
+    {
+      "accepted_at": "2026-07-24T14:30:51Z",
+      "capability_id": "EXO-PHASE-B-001-C4-UAT-READY-V1",
+      "checkpoint_eligible": true,
+      "evidence": [
+        "Human UAT is bounded to reviewing the provider-neutral prompts and confirming their isolation, exact-approval, rollback, platform-truth, and separately gated Git/outward boundaries; no live installation is required.",
+        "Linux final-candidate CI and WSL execution remain separate open gates; native Windows PowerShell/Git Bash is explicitly unsupported."
+      ],
+      "from": "qa_sit",
+      "id": "transition-850530f4c06a48bcac94c8816e4e6720",
+      "operation": "prepare_C4_installation_Human_UAT",
+      "request_id": "EXO-PHASE-B-001-C4-uat-ready-v1",
+      "to": "uat_ready"
+    },
+    {
+      "accepted_at": "2026-07-25T03:56:16Z",
+      "capability_id": "EXO-PHASE-B-001-C4-HUMAN-UAT-V1",
+      "checkpoint_eligible": true,
+      "evidence": [
+        "Project owner explicitly accepted C4 Human UAT after reviewing the provider-neutral clean-install and existing-repository update prompts and their isolation, exact-approval, secret, rollback, platform-truth, and separately gated Git/outward boundaries.",
+        "Acceptance does not authorize release_ready, commit, push, live installation, deployment, external synchronization, or template promotion."
+      ],
+      "from": "uat_ready",
+      "id": "transition-a6f51e459292a4ec7192d8e204078994",
+      "operation": "record_C4_Human_UAT_acceptance",
+      "request_id": "EXO-PHASE-B-001-C4-human-uat-v1",
+      "to": "human_uat"
+    }
+  ],
+  "type": "documentation_process"
+}
