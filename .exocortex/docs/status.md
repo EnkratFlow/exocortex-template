@@ -10,7 +10,7 @@ release attestation, or replacement for exact test and Git evidence.
 
 - The previous reviewed published baseline is `v3.2.9` at peeled commit
   `8559add4edb35182cd655a62c59fe451425667a9`.
-- The packaged candidate version is `3.3.3`. This tracked file does not prove a
+- The packaged candidate version is `3.3.4`. This tracked file does not prove a
   branch push, merge, annotated tag, immutable GitHub release, attested asset,
   installation, deployment, or template promotion.
 
@@ -41,11 +41,11 @@ release attestation, or replacement for exact test and Git evidence.
 
 ## Publication gates and residual limitations
 
-Before version 3.3.3 may be used as a public installation or update source:
+Before version 3.3.4 may be used as a public installation or update source:
 
 1. Provision a separately installed, independently reviewed publication
    runtime outside the candidate root. Bind its executor-closure, checker,
-   Python, Git, and GitHub CLI SHA-256 digests; 3.3.3 cannot bootstrap trust
+   Python, Git, and GitHub CLI SHA-256 digests; 3.3.4 cannot bootstrap trust
    from its own new publisher or checker.
 2. Freeze one exact candidate and run the focused checks plus the complete
    Exocortex safety suite once.
@@ -99,7 +99,7 @@ unknown disclosure pattern exists.
 
 ## Local preparation boundary
 
-- The 3.3.3 metadata and integrity inventories are part of the candidate;
+- The 3.3.4 metadata and integrity inventories are part of the candidate;
   changing any candidate byte invalidates earlier evidence and requires a new
   exact-candidate verification and seal.
 - Complete safety evidence, independent review, and Human UAT must bind the

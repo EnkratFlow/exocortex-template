@@ -1,3 +1,24 @@
+# What's New in 3.3.4 — It installs on Windows
+
+- A clean install now works under Git Bash on Windows. The public-release
+  checker assumed Git lives at `/usr/bin/git`, a path Windows cannot have, and
+  refused to trust the machine's own Git before it looked at the disk. POSIX
+  behaviour is unchanged on purpose; Windows resolves Git from PATH and the
+  result faces exactly the same trust checks.
+- A clone on Windows no longer fails its own integrity check. Git for Windows
+  rewrites line endings on checkout by default, so every one of the 283
+  checksummed files came out with different bytes and the install reported what
+  looked like tampering. Line endings are now pinned for this repository.
+- `/onboard` works on Python 3.9 and 3.10 again. It parsed the commit date with
+  a function that only accepts a trailing `Z` from Python 3.11, so the command
+  failed outright on two supported versions.
+- `/work` no longer offers to commit changes it did not make. In a working tree
+  shared with another session that option could commit a second writer's work
+  under this session's name. It now names paths the session did not create and
+  stages only by explicit path.
+
+---
+
 # What's New in 3.3.3 — The README matches the guards
 
 - The README no longer says that unregistered AI surfaces are read-only

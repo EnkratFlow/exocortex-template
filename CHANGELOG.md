@@ -6,6 +6,46 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 ## [Unreleased]
 
+## [3.3.4] - 2026-09-14
+
+### Fixed
+
+- **A clean install could not run on Windows.** `check-public-release.py`
+  defaulted to the literal `Path("/usr/bin/git")` on every platform, and
+  `install.sh` invokes the checker without `--git-executable`. Under Windows
+  Python that string has no drive letter, so it is not absolute and
+  `configure_git_executable()` rejected it as `GIT_COMMAND_UNTRUSTED` before
+  it looked at the disk. The install stopped with "template source violates
+  the public-release boundary" on a machine whose Git was fine. The default is
+  now resolved per platform. POSIX keeps the fixed absolute path deliberately;
+  Windows resolves Git from PATH and the result is held to the same checks as
+  any operator-supplied path. With no Git on PATH the fallback stays
+  non-absolute, so the failure is loud rather than failing open.
+- **A genuine clone failed its own integrity check on Windows.** Git for
+  Windows defaults to `core.autocrlf=true`, which rewrites LF to CRLF on
+  checkout. Every file here is checksummed, so a clean clone of v3.3.3 failed
+  all 283 manifest files and presented as tampering rather than as a
+  configuration difference. A new `.gitattributes` pins `eol=lf`. It is
+  checksummed like every other committed file and is not installed into
+  consumer projects, so it imposes no line-ending policy on them.
+- **`/onboard` crashed on Python 3.9 and 3.10.** `onboard_evidence.py` parsed
+  the HEAD commit date with `datetime.fromisoformat`, which only accepts a
+  trailing `Z` from Python 3.11. This template supports Python 3.9+, and the
+  three sibling scripts already normalised that spelling.
+- **The candidate self-scan required a Git work tree it was not always given.**
+  `test_public_release.py` materialises the candidate through
+  `git ls-files --exclude-standard`, so in a work tree without Git metadata the
+  file list came back unfiltered and protected runtime data was reported. The
+  self-scan now runs only when a work tree is present.
+
+### Changed
+
+- **`/work` no longer offers a blanket "Commit uncommitted first".** In a
+  working tree shared with another session that option could commit a second
+  writer's work. The git-state step now names paths the session did not
+  create, the option reads "Commit this session's own changes first", and
+  staging is by explicit path with `git add -A` and `git add .` forbidden.
+
 ## [3.3.3] - 2026-09-11
 
 ### Changed
