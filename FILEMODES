@@ -223,6 +223,7 @@
 0755  .exocortex/scripts/upgrade-exocortex.sh
 0644  .exocortex/skills/exocortex-reminder/SETUP.md
 0644  .exocortex/skills/exocortex-reminder/SKILL.md
+0644  .gitattributes
 0644  .github/copilot-instructions.md
 0644  .github/skills/ai-architect/SKILL.md
 0644  .github/skills/architect/SKILL.md

@@ -1,0 +1,14 @@
+# Every file the installer reads is checksummed in SHA256SUMS, and the
+# installer verifies the bytes on disk against that manifest before it writes
+# anything. Git's end-of-line conversion defeats that: core.autocrlf=true, the
+# default on Git for Windows, rewrites LF to CRLF on checkout, so a genuine
+# clone fails its own integrity check and the failure presents as tampering
+# rather than as a configuration difference. Pinning eol=lf makes checked-out
+# bytes equal committed bytes whatever the client's core.autocrlf says.
+#
+# This file is part of the committed code-plane and is checksummed like every
+# other, but it is not installed into consumer projects: install.sh copies an
+# explicit enumeration of paths, not the manifest, and this is not in it. So it
+# governs how this repository is checked out without imposing a line-ending
+# policy on any project that installs Exocortex.
+* text=auto eol=lf

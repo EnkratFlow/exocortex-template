@@ -18,6 +18,7 @@ import ipaddress
 import json
 import os
 import re
+import shutil
 import stat
 import subprocess
 import sys
@@ -31,7 +32,28 @@ class CheckError(Exception):
     """A safe, metadata-only validation failure."""
 
 
-DEFAULT_GIT_EXECUTABLE = Path("/usr/bin/git")
+def _default_git_executable() -> Path:
+    """The Git binary used when the caller names none.
+
+    POSIX keeps a fixed absolute path deliberately: resolving through PATH
+    would let the surrounding environment choose the binary that validates a
+    public release. Windows has no such path, and Path("/usr/bin/git") is not
+    even absolute there, so configure_git_executable() rejects it as
+    GIT_COMMAND_UNTRUSTED before it ever looks at the disk. That made the
+    installer impossible to run under Git Bash rather than merely stricter.
+    Resolve through PATH on Windows only; the result is then held to exactly
+    the same checks as any operator-supplied path. An operator who wants the
+    POSIX guarantee on Windows passes --git-executable together with
+    --git-executable-sha256.
+    """
+    posix_default = Path("/usr/bin/git")
+    if os.name != "nt":
+        return posix_default
+    resolved = shutil.which("git")
+    return Path(resolved) if resolved else posix_default
+
+
+DEFAULT_GIT_EXECUTABLE = _default_git_executable()
 GIT_EXECUTABLE = DEFAULT_GIT_EXECUTABLE
 GIT_EXECUTABLE_SHA256: str | None = None
 
