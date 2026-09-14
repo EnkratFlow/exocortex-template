@@ -4,11 +4,12 @@
 from __future__ import annotations
 
 import hashlib
+import importlib.util
 import os
 import subprocess
 import sys
 import tempfile
-from pathlib import Path, PurePosixPath
+from pathlib import Path, PurePosixPath, PureWindowsPath
 
 
 TEMPLATE = Path(sys.argv[1] if len(sys.argv) > 1 else ".").resolve()
@@ -1426,6 +1427,51 @@ def main() -> None:
         assert_redacted_rule(historical_range, "GITHUB_TOKEN", CANARY)
     finally:
         temp.cleanup()
+
+    # The default Git executable must stay a fixed absolute path on POSIX and
+    # must be resolvable on Windows. Before 3.3.4 the default was the literal
+    # Path("/usr/bin/git") on every platform. Under Windows Python that string
+    # is not absolute (no drive letter), so configure_git_executable() raised
+    # GIT_COMMAND_UNTRUSTED before touching the disk and install.sh could not
+    # run at all under Git Bash. Guard both halves.
+    spec = importlib.util.spec_from_file_location("checker_under_test", CHECKER)
+    checker = importlib.util.module_from_spec(spec)
+    sys.modules["checker_under_test"] = checker
+    spec.loader.exec_module(checker)
+    try:
+        assert os.fspath(checker.DEFAULT_GIT_EXECUTABLE) == "/usr/bin/git", (
+            "POSIX default must stay the fixed trusted path, not a PATH lookup"
+        )
+        real_name, real_which = os.name, checker.shutil.which
+        try:
+            os.name = "nt"
+            checker.shutil.which = lambda name: (
+                r"C:\Program Files\Git\cmd\git.exe" if name == "git" else None
+            )
+            windows_default = checker._default_git_executable()
+            assert os.fspath(windows_default) == r"C:\Program Files\Git\cmd\git.exe"
+            assert PureWindowsPath(os.fspath(windows_default)).is_absolute(), (
+                "Windows default must be absolute or the trust check rejects it"
+            )
+            checker.shutil.which = lambda name: None
+            # Compare Path to Path: with os.name forced to "nt", Path() builds a
+            # WindowsPath, so os.fspath() renders "/usr/bin/git" with backslashes.
+            # The contract is that it falls back to the same POSIX default the
+            # code names, and that this default is still not absolute under
+            # Windows rules, so the trust check rejects it loudly instead of the
+            # scan silently skipping its Git-backed rules.
+            fallback = checker._default_git_executable()
+            assert fallback == checker.Path("/usr/bin/git"), (
+                "with no Git on PATH the default must fall back to the POSIX path"
+            )
+            assert not PureWindowsPath(os.fspath(fallback)).is_absolute(), (
+                "the fallback must stay non-absolute so configure_git_executable "
+                "raises GIT_COMMAND_UNTRUSTED rather than failing open"
+            )
+        finally:
+            os.name, checker.shutil.which = real_name, real_which
+    finally:
+        sys.modules.pop("checker_under_test", None)
 
     print("public_release_tests=pass")
 
