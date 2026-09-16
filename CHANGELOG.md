@@ -6,6 +6,62 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 ## [Unreleased]
 
+## [3.3.5] - 2026-09-16
+
+### Fixed
+
+- **3.3.4's Windows fix was not enough to finish a clean install.** It
+  resolved Git from PATH inside the checker's sanitized subprocess, but the
+  digest-pinning read that verifies the resolved executable used `os.open()`
+  without `O_BINARY`. Windows text mode stopped that read at the first
+  `0x1A` byte in the binary, always producing a wrong checksum and rejecting
+  a genuine Git. `install.sh` now resolves Git in the unsandboxed shell,
+  where the real PATH is still intact, and hands the checker an explicit
+  `--git-executable` pinned by digest; the digest read itself is now binary-safe.
+- **The source-tree walk had no Windows implementation at all.** It relies on
+  `os.O_NOFOLLOW`/`O_DIRECTORY`/`dir_fd`, none of which exist on Windows, so
+  the checker failed closed with `SAFE_TOPOLOGY_UNSUPPORTED` rather than run
+  unsafely. It now walks the tree on Windows using the NT native API
+  (`NtCreateFile` with `RootDirectory`, `NtQueryDirectoryFile`), checking the
+  raw `FILE_ATTRIBUTE_REPARSE_POINT` bit rather than Python's own
+  `os.path.islink()`, which does not detect a directory junction — a
+  reparse point that needs no elevated privilege to create.
+- **`FILEMODES` could never match on Windows.** Its executable-bit comparison
+  assumes POSIX mode bits; Windows synthesizes `0o666`/`0o444` from the
+  read-only attribute alone and has no bit for it. The comparison is now
+  skipped only on Windows; every other check (regular file, not a symlink,
+  digest match) still runs there.
+- **A generated file list silently gained Windows line endings.** Two
+  separate places generate a plain-text list from a Python script's
+  redirected stdout (`install.sh`'s legacy-retirements list,
+  `safe-update.sh`'s rehearsal changed-paths list); `print()`'s default
+  translation rewrites `\n` to `\r\n` on Windows even when writing to a
+  file, not a console. In `install.sh` this defeated an empty-field check
+  and corrupted a path. In `safe-update.sh` it was the root cause of every
+  real `--apply` silently exiting 2: each `--target-path` built from the
+  list carried an invisible `\r` that never matched the capability's clean
+  `allowed_paths`, and the failure was never wrapped in an error message.
+  Both are now written with explicit `\n` only.
+- **`scripts/safe-update.sh` had every install.sh defect above, plus more.**
+  It never passed `--git-executable` either (now fixed, and threaded through
+  to its own `install.sh` rehearsal, which runs under an already-sanitized
+  environment via a new `EXOCORTEX_GIT_EXECUTABLE` override). The backup
+  directory's ownership check called `os.geteuid()`, which does not exist on
+  Windows — a hard crash, not a wrong value — and its symlink check also
+  missed directory junctions. Four rollback-archive identity checks asserted
+  an exact `0o600` mode Windows can never produce. The rollback archive
+  itself, a gzip tarball, was silently corrupted on every write from the
+  same missing-`O_BINARY` defect. The post-publish durability flush cannot
+  open a directory with `os.open()` on Windows at all; it now uses
+  `CreateFileW` with `FILE_FLAG_BACKUP_SEMANTICS` and `FlushFileBuffers`
+  (which itself requires `GENERIC_WRITE`, not just `GENERIC_READ`, or it is
+  access-denied).
+- **`authority_guard.py` could not even import on Windows.** It imported
+  `fcntl` unconditionally; Windows has no such module. It now uses
+  `msvcrt.locking()` there for the equivalent exclusive lock, and its own
+  file-hashing helper is now binary-safe for the same reason as the checker's
+  digest read above.
+
 ## [3.3.4] - 2026-09-14
 
 ### Fixed

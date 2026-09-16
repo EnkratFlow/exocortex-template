@@ -1,3 +1,20 @@
+# What's New in 3.3.5 — Windows install and update actually finish
+
+- 3.3.4 got Windows past the first wall, but a clean install still could not
+  finish: a digest check meant to verify Git was itself silently reading the
+  wrong bytes on Windows, and the tree walk that checks for unsafe symlinks
+  had no Windows implementation at all, so it correctly refused to run rather
+  than run unsafely. Both are fixed; the walk now uses Windows' own native
+  API and catches directory junctions, which need no special privilege to
+  create and which Python's own symlink check does not see.
+- `scripts/safe-update.sh` — the tool that updates an existing installed
+  project — did not work on Windows at all, in more ways than the installer
+  did: a crash in a permissions check that doesn't exist on that platform,
+  a rollback backup that was silently corrupted on every write, and a
+  generated file list that gained invisible characters and made every real
+  update fail with no error message. All fixed and verified against a real
+  install and a real update on Windows, not just a dry run.
+
 # What's New in 3.3.4 — It installs on Windows
 
 - A clean install now works under Git Bash on Windows. The public-release
