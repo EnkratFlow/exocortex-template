@@ -13,6 +13,7 @@ added and later deleted inside the range.
 from __future__ import annotations
 
 import argparse
+import ctypes
 import hashlib
 import ipaddress
 import json
@@ -30,6 +31,295 @@ from typing import Iterable
 
 class CheckError(Exception):
     """A safe, metadata-only validation failure."""
+
+
+class _WindowsTopologyError(OSError):
+    """A component could not be opened; not a reparse point specifically."""
+
+
+class _WindowsReparsePointError(_WindowsTopologyError):
+    """The component was a reparse point (symlink, junction, or mount
+    point) and was refused, exactly like a POSIX O_NOFOLLOW open failing on
+    a symlink -- a classification, not a scan failure.
+    """
+
+
+if os.name == "nt":
+    # Neither os.O_NOFOLLOW nor os.O_DIRECTORY exist on Windows, and Windows
+    # Python's os.open()/os.stat() do not support dir_fd at all (see
+    # os.supports_dir_fd), so the POSIX walk below -- resolve one path
+    # component at a time, anchored to an already-open parent directory
+    # descriptor, refusing to follow a symlink at each step -- has no direct
+    # translation through the os module. The public Win32 API has no
+    # directory-handle-relative open either (CreateFileW takes a path, never
+    # a parent handle). Only the native NtCreateFile exposes that, via
+    # OBJECT_ATTRIBUTES.RootDirectory, so this reimplements the same
+    # atomic, race-free guarantee using it directly.
+    #
+    # Just as important: Python's own os.stat()/os.path.islink() do not
+    # reliably surface this on Windows. A directory junction -- created
+    # with no elevated privilege required, unlike a real symlink -- reports
+    # S_ISDIR=True and islink()=False, indistinguishable from a real
+    # directory, because CPython only special-cases the symlink reparse
+    # tag. Relying on the stdlib's own classification here would silently
+    # miss exactly the attack this whole mechanism exists to stop, so every
+    # check below reads the raw FILE_ATTRIBUTE_REPARSE_POINT bit instead.
+    import msvcrt
+    from ctypes import wintypes
+
+    _ntdll = ctypes.WinDLL("ntdll")
+    _kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+
+    _STATUS_SUCCESS = 0x00000000
+    _STATUS_NO_MORE_FILES = 0x80000006
+
+    _FILE_OPEN = 1
+    _FILE_DIRECTORY_FILE = 0x00000001
+    _FILE_NON_DIRECTORY_FILE = 0x00000040
+    _FILE_SYNCHRONOUS_IO_NONALERT = 0x00000020
+    _FILE_OPEN_REPARSE_POINT = 0x00200000
+    _FILE_OPEN_FOR_BACKUP_INTENT = 0x00004000
+
+    _FILE_SHARE_READ = 0x00000001
+    _FILE_SHARE_WRITE = 0x00000002
+    _FILE_SHARE_DELETE = 0x00000004
+
+    _GENERIC_READ = 0x80000000
+    _SYNCHRONIZE = 0x00100000
+
+    _OBJ_CASE_INSENSITIVE = 0x00000040
+
+    _FILE_ATTRIBUTE_REPARSE_POINT = 0x400
+    _FILE_ATTRIBUTE_DIRECTORY = 0x10
+
+    _FileDirectoryInformation = 1
+
+    class _UNICODE_STRING(ctypes.Structure):
+        _fields_ = [
+            ("Length", wintypes.USHORT),
+            ("MaximumLength", wintypes.USHORT),
+            ("Buffer", wintypes.LPWSTR),
+        ]
+
+    class _OBJECT_ATTRIBUTES(ctypes.Structure):
+        _fields_ = [
+            ("Length", wintypes.ULONG),
+            ("RootDirectory", wintypes.HANDLE),
+            ("ObjectName", ctypes.POINTER(_UNICODE_STRING)),
+            ("Attributes", wintypes.ULONG),
+            ("SecurityDescriptor", wintypes.LPVOID),
+            ("SecurityQualityOfService", wintypes.LPVOID),
+        ]
+
+    class _IO_STATUS_BLOCK(ctypes.Structure):
+        _fields_ = [
+            ("Status", ctypes.c_ssize_t),
+            ("Information", ctypes.c_size_t),
+        ]
+
+    class _BY_HANDLE_FILE_INFORMATION(ctypes.Structure):
+        _fields_ = [
+            ("dwFileAttributes", wintypes.DWORD),
+            ("ftCreationTime", wintypes.FILETIME),
+            ("ftLastAccessTime", wintypes.FILETIME),
+            ("ftLastWriteTime", wintypes.FILETIME),
+            ("dwVolumeSerialNumber", wintypes.DWORD),
+            ("nFileSizeHigh", wintypes.DWORD),
+            ("nFileSizeLow", wintypes.DWORD),
+            ("nNumberOfLinks", wintypes.DWORD),
+            ("nFileIndexHigh", wintypes.DWORD),
+            ("nFileIndexLow", wintypes.DWORD),
+        ]
+
+    class _FILE_DIRECTORY_INFORMATION_HEADER(ctypes.Structure):
+        _fields_ = [
+            ("NextEntryOffset", wintypes.ULONG),
+            ("FileIndex", wintypes.ULONG),
+            ("CreationTime", ctypes.c_int64),
+            ("LastAccessTime", ctypes.c_int64),
+            ("LastWriteTime", ctypes.c_int64),
+            ("ChangeTime", ctypes.c_int64),
+            ("EndOfFile", ctypes.c_int64),
+            ("AllocationSize", ctypes.c_int64),
+            ("FileAttributes", wintypes.ULONG),
+            ("FileNameLength", wintypes.ULONG),
+        ]
+
+    _NtCreateFile = _ntdll.NtCreateFile
+    _NtCreateFile.argtypes = [
+        ctypes.POINTER(wintypes.HANDLE),
+        wintypes.ULONG,
+        ctypes.POINTER(_OBJECT_ATTRIBUTES),
+        ctypes.POINTER(_IO_STATUS_BLOCK),
+        ctypes.POINTER(ctypes.c_int64),
+        wintypes.ULONG,
+        wintypes.ULONG,
+        wintypes.ULONG,
+        wintypes.ULONG,
+        wintypes.LPVOID,
+        wintypes.ULONG,
+    ]
+    _NtCreateFile.restype = ctypes.c_int32
+
+    _NtQueryDirectoryFile = _ntdll.NtQueryDirectoryFile
+    _NtQueryDirectoryFile.argtypes = [
+        wintypes.HANDLE,
+        wintypes.HANDLE,
+        wintypes.LPVOID,
+        wintypes.LPVOID,
+        ctypes.POINTER(_IO_STATUS_BLOCK),
+        wintypes.LPVOID,
+        wintypes.ULONG,
+        ctypes.c_int,
+        wintypes.BOOLEAN,
+        ctypes.POINTER(_UNICODE_STRING),
+        wintypes.BOOLEAN,
+    ]
+    _NtQueryDirectoryFile.restype = ctypes.c_int32
+
+    _GetFileInformationByHandle = _kernel32.GetFileInformationByHandle
+    _GetFileInformationByHandle.argtypes = [
+        wintypes.HANDLE,
+        ctypes.POINTER(_BY_HANDLE_FILE_INFORMATION),
+    ]
+    _GetFileInformationByHandle.restype = wintypes.BOOL
+
+    def _win_unicode_string(text: str) -> tuple[_UNICODE_STRING, ctypes.Array]:
+        buf = ctypes.create_unicode_buffer(text)
+        value = _UNICODE_STRING()
+        value.Buffer = ctypes.cast(buf, wintypes.LPWSTR)
+        value.Length = len(text) * 2
+        value.MaximumLength = value.Length + 2
+        return value, buf  # keep buf alive as long as value is used
+
+    def _win_open_component(
+        parent_handle: int | None, name: str, *, directory: bool | None
+    ) -> tuple[wintypes.HANDLE, bool, int]:
+        """Open exactly one path component relative to parent_handle,
+        refusing to follow it if that component is a reparse point.
+        parent_handle is None only for the initial (absolute) open of the
+        anchor root, where `name` is then a full NT path (\\??\\C:\\...).
+
+        directory=True/False asserts the expected type, exactly like the
+        POSIX walk always knows which it wants; directory=None opens
+        either type and lets the caller read is_dir back from the result,
+        for the one spot (classifying a freshly listed directory entry)
+        where the type is not yet known -- one atomic open-and-classify
+        step, tighter than a separate stat-then-open pair.
+        """
+
+        unicode_name, _keepalive = _win_unicode_string(name)
+        obj_attr = _OBJECT_ATTRIBUTES()
+        obj_attr.Length = ctypes.sizeof(_OBJECT_ATTRIBUTES)
+        obj_attr.RootDirectory = parent_handle or 0
+        obj_attr.ObjectName = ctypes.pointer(unicode_name)
+        obj_attr.Attributes = _OBJ_CASE_INSENSITIVE
+        obj_attr.SecurityDescriptor = None
+        obj_attr.SecurityQualityOfService = None
+
+        io_status = _IO_STATUS_BLOCK()
+        handle = wintypes.HANDLE()
+
+        type_constraint = 0
+        if directory is True:
+            type_constraint = _FILE_DIRECTORY_FILE
+        elif directory is False:
+            type_constraint = _FILE_NON_DIRECTORY_FILE
+
+        create_options = (
+            _FILE_SYNCHRONOUS_IO_NONALERT
+            | _FILE_OPEN_REPARSE_POINT
+            | _FILE_OPEN_FOR_BACKUP_INTENT
+            | type_constraint
+        )
+
+        status = _NtCreateFile(
+            ctypes.byref(handle),
+            _GENERIC_READ | _SYNCHRONIZE,
+            ctypes.byref(obj_attr),
+            ctypes.byref(io_status),
+            None,
+            0,
+            _FILE_SHARE_READ | _FILE_SHARE_WRITE | _FILE_SHARE_DELETE,
+            _FILE_OPEN,
+            create_options,
+            None,
+            0,
+        )
+        status &= 0xFFFFFFFF
+        if status != _STATUS_SUCCESS:
+            raise _WindowsTopologyError(f"NtCreateFile failed for {name!r}: 0x{status:08X}")
+
+        info = _BY_HANDLE_FILE_INFORMATION()
+        if not _GetFileInformationByHandle(handle, ctypes.byref(info)):
+            _kernel32.CloseHandle(handle)
+            raise _WindowsTopologyError(f"GetFileInformationByHandle failed for {name!r}")
+
+        if info.dwFileAttributes & _FILE_ATTRIBUTE_REPARSE_POINT:
+            _kernel32.CloseHandle(handle)
+            raise _WindowsReparsePointError(f"{name!r} is a reparse point")
+
+        is_dir = bool(info.dwFileAttributes & _FILE_ATTRIBUTE_DIRECTORY)
+        return handle, is_dir, info.nNumberOfLinks
+
+    def _win_close(handle: wintypes.HANDLE) -> None:
+        _kernel32.CloseHandle(handle)
+
+    def _win_open_root(root: Path) -> wintypes.HANDLE:
+        nt_path = "\\??\\" + str(root.resolve(strict=True))
+        handle, _is_dir, _nlink = _win_open_component(None, nt_path, directory=True)
+        return handle
+
+    def _win_list_directory_names(directory_handle: wintypes.HANDLE) -> list[str]:
+        """List entry names in an already-open, already-reparse-checked
+        directory handle -- relative to that handle, never re-resolving a
+        path, so the identity being listed cannot be swapped out from
+        under us.
+        """
+
+        header_size = ctypes.sizeof(_FILE_DIRECTORY_INFORMATION_HEADER)
+        buf_size = 64 * 1024
+        buf = ctypes.create_string_buffer(buf_size)
+        names: list[str] = []
+        restart = True
+        while True:
+            io_status = _IO_STATUS_BLOCK()
+            status = _NtQueryDirectoryFile(
+                directory_handle,
+                None,
+                None,
+                None,
+                ctypes.byref(io_status),
+                buf,
+                buf_size,
+                _FileDirectoryInformation,
+                False,
+                None,
+                restart,
+            )
+            status &= 0xFFFFFFFF
+            if status == _STATUS_NO_MORE_FILES:
+                break
+            if status != _STATUS_SUCCESS:
+                raise _WindowsTopologyError(f"NtQueryDirectoryFile failed: 0x{status:08X}")
+            restart = False
+            offset = 0
+            raw = buf.raw
+            while True:
+                header = _FILE_DIRECTORY_INFORMATION_HEADER.from_buffer_copy(raw, offset)
+                name_offset = offset + header_size
+                name_bytes = raw[name_offset : name_offset + header.FileNameLength]
+                name = name_bytes.decode("utf-16-le")
+                if name not in (".", ".."):
+                    names.append(name)
+                if header.NextEntryOffset == 0:
+                    break
+                offset += header.NextEntryOffset
+        return names
+
+    def _win_handle_to_fd(handle: wintypes.HANDLE) -> int:
+        raw = handle.value if hasattr(handle, "value") else handle
+        return msvcrt.open_osfhandle(raw, os.O_RDONLY | os.O_BINARY)
 
 
 def _default_git_executable() -> Path:
@@ -381,7 +671,10 @@ def verified_git_executable() -> str:
         before = GIT_EXECUTABLE.stat()
         descriptor = os.open(
             os.fspath(GIT_EXECUTABLE),
-            os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0) | getattr(os, "O_CLOEXEC", 0),
+            os.O_RDONLY
+            | getattr(os, "O_NOFOLLOW", 0)
+            | getattr(os, "O_CLOEXEC", 0)
+            | getattr(os, "O_BINARY", 0),
         )
     except OSError as error:
         raise CheckError("GIT_COMMAND_UNAVAILABLE") from error
@@ -759,9 +1052,55 @@ def tracked_paths(root: Path) -> list[str]:
     )
 
 
+def _win_source_tree_paths(root: Path) -> list[str]:
+    paths: list[str] = []
+
+    def walk(directory_handle: wintypes.HANDLE, prefix: tuple[str, ...]) -> None:
+        try:
+            names = sorted(_win_list_directory_names(directory_handle))
+        except OSError as error:
+            raise CheckError("SOURCE_TREE_TOPOLOGY_CHANGED") from error
+        for name in names:
+            if name in {".git", "__pycache__"} or name.endswith((".pyc", ".pyo")):
+                continue
+            relative = normalize_path(PurePosixPath(*prefix, name).as_posix())
+            try:
+                child_handle, is_dir, _nlink = _win_open_component(
+                    directory_handle, name, directory=None
+                )
+            except _WindowsReparsePointError:
+                # Mirrors the POSIX walk: a symlink/junction/mount point
+                # lstats as not-a-directory there, so it is appended as a
+                # leaf rather than descended into. secure_read_regular
+                # rejects it for real once the path is actually read.
+                paths.append(relative)
+                continue
+            except OSError as error:
+                raise CheckError("SOURCE_TREE_TOPOLOGY_CHANGED") from error
+            try:
+                if is_dir:
+                    walk(child_handle, (*prefix, name))
+                else:
+                    paths.append(relative)
+            finally:
+                _win_close(child_handle)
+
+    try:
+        root_handle = _win_open_root(root)
+    except OSError as error:
+        raise CheckError("SOURCE_TREE_TOPOLOGY_CHANGED") from error
+    try:
+        walk(root_handle, ())
+    finally:
+        _win_close(root_handle)
+    return sorted(paths)
+
+
 def source_tree_paths(root: Path) -> list[str]:
     """Return source paths using anchored, non-following directory descriptors."""
 
+    if os.name == "nt":
+        return _win_source_tree_paths(root)
     nofollow = getattr(os, "O_NOFOLLOW", 0)
     directory_flag = getattr(os, "O_DIRECTORY", 0)
     if not nofollow or not directory_flag:
@@ -824,9 +1163,58 @@ def classify_anchored_path(parent_fd: int, name: str) -> str:
     return "UNSAFE_TOPOLOGY"
 
 
+def _win_secure_read_regular(root: Path, path: str) -> tuple[bytes | None, str | None]:
+    parts = PurePosixPath(path).parts
+    if not parts:
+        return None, "PATH_UNREADABLE"
+    handles: list[wintypes.HANDLE] = []
+    try:
+        try:
+            root_handle = _win_open_root(root)
+        except OSError:
+            return None, "PATH_UNREADABLE"
+        handles.append(root_handle)
+        current_handle = root_handle
+        for component in parts[:-1]:
+            try:
+                next_handle, _is_dir, _nlink = _win_open_component(
+                    current_handle, component, directory=True
+                )
+            except _WindowsReparsePointError:
+                return None, "SYMLINK"
+            except OSError:
+                return None, "PATH_UNREADABLE"
+            handles.append(next_handle)
+            current_handle = next_handle
+        try:
+            final_handle, is_dir, nlink = _win_open_component(
+                current_handle, parts[-1], directory=None
+            )
+        except _WindowsReparsePointError:
+            return None, "SYMLINK"
+        except OSError:
+            return None, "PATH_UNREADABLE"
+        handles.append(final_handle)
+        if is_dir:
+            return None, "SPECIAL_PATH"
+        if nlink != 1:
+            return None, "HARDLINK"
+        fd = _win_handle_to_fd(final_handle)
+        handles.pop()  # the fd now owns the handle; closing it closes the handle
+        with os.fdopen(fd, "rb", closefd=True) as stream:
+            return stream.read(), None
+    except OSError:
+        return None, "PATH_UNREADABLE"
+    finally:
+        for handle in reversed(handles):
+            _win_close(handle)
+
+
 def secure_read_regular(root: Path, path: str) -> tuple[bytes | None, str | None]:
     """Read one root-relative file through an openat/O_NOFOLLOW fd chain."""
 
+    if os.name == "nt":
+        return _win_secure_read_regular(root, path)
     nofollow = getattr(os, "O_NOFOLLOW", 0)
     directory_flag = getattr(os, "O_DIRECTORY", 0)
     if not nofollow or not directory_flag:

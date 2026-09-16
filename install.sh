@@ -66,6 +66,27 @@ command -v python3 >/dev/null 2>&1 || fail "python3 is required to validate the 
 HOST_PYTHON="$(command -v python3)"
 case "$HOST_PYTHON" in /*) ;; *) fail "python3 must resolve to an absolute host path" ;; esac
 SANITIZED_PATH="$(dirname "$HOST_PYTHON"):/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/opt/homebrew/bin"
+
+# The sanitized PATH above is a fixed list of Unix-style directories, so the
+# checker's own PATH-based fallback for an unnamed Git executable finds
+# nothing there on Windows either: Git for Windows lives under its own
+# mingw64/bin, never under /usr/bin. Resolve the host's Git here, in the
+# unsandboxed shell that still has the real PATH, and hand the checker an
+# explicit --git-executable pinned by digest — validated exactly as strictly
+# as any operator-supplied path, per configure_git_executable().
+GIT_CHECKER_ARGS=()
+if command -v cygpath >/dev/null 2>&1; then
+    HOST_GIT="$(command -v git || true)"
+    if [ -n "$HOST_GIT" ]; then
+        HOST_GIT_WIN="$(cygpath -w "$HOST_GIT" 2>/dev/null || true)"
+        case "$HOST_GIT_WIN" in
+            [A-Za-z]:\\*)
+                GIT_CHECKER_ARGS=(--git-executable "$HOST_GIT_WIN" --git-executable-sha256 "$(sha256_file "$HOST_GIT")")
+                ;;
+        esac
+    fi
+fi
+
 run_candidate_python() {
     (
         cd "$TMP_ROOT"
@@ -104,7 +125,7 @@ cp "$PUBLIC_CHECKER" "$APPROVED_PUBLIC_CHECKER"
 chmod 0600 "$APPROVED_PUBLIC_CHECKER"
 [ "$(sha256_file "$APPROVED_PUBLIC_CHECKER")" = "$EXPECTED_CHECKER_HASH" ] \
     || fail "public-release checker does not match the approved manifest"
-run_candidate_python "$APPROVED_PUBLIC_CHECKER" --root "$SOURCE_ROOT" --source-tree \
+run_candidate_python "$APPROVED_PUBLIC_CHECKER" --root "$SOURCE_ROOT" --source-tree "${GIT_CHECKER_ARGS[@]}" \
     || fail "template source violates the public-release boundary"
 
 # Copy without repository metadata or credential files. Source validation above
