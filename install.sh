@@ -74,8 +74,20 @@ SANITIZED_PATH="$(dirname "$HOST_PYTHON"):/usr/local/bin:/usr/bin:/bin:/usr/sbin
 # unsandboxed shell that still has the real PATH, and hand the checker an
 # explicit --git-executable pinned by digest — validated exactly as strictly
 # as any operator-supplied path, per configure_git_executable().
+#
+# A caller that already pre-sanitizes its own environment before invoking
+# this script (safe-update.sh's rehearsal, for one) starts install.sh with
+# PATH already scrubbed, so command -v git below would find nothing even
+# though the caller resolved a trustworthy Git moments earlier in its own,
+# still-unsanitized shell. EXOCORTEX_GIT_EXECUTABLE(_SHA256) lets such a
+# caller pass that resolution straight through instead of losing it.
 GIT_CHECKER_ARGS=()
-if command -v cygpath >/dev/null 2>&1; then
+if [ -n "${EXOCORTEX_GIT_EXECUTABLE:-}" ]; then
+    GIT_CHECKER_ARGS=(--git-executable "$EXOCORTEX_GIT_EXECUTABLE")
+    if [ -n "${EXOCORTEX_GIT_EXECUTABLE_SHA256:-}" ]; then
+        GIT_CHECKER_ARGS+=(--git-executable-sha256 "$EXOCORTEX_GIT_EXECUTABLE_SHA256")
+    fi
+elif command -v cygpath >/dev/null 2>&1; then
     HOST_GIT="$(command -v git || true)"
     if [ -n "$HOST_GIT" ]; then
         HOST_GIT_WIN="$(cygpath -w "$HOST_GIT" 2>/dev/null || true)"

@@ -101,15 +101,25 @@ SANITIZED_PATH="$(dirname "$HOST_PYTHON"):$(dirname "$HOST_BASH"):/usr/local/bin
 # unsandboxed shell that still has the real PATH, and hand the checker an
 # explicit --git-executable pinned by digest -- validated exactly as strictly
 # as any operator-supplied path, per configure_git_executable(). See the
-# matching fix in install.sh.
+# matching fix in install.sh. HOST_GIT_WIN/HOST_GIT_SHA256 are also threaded
+# through to the rehearsal install.sh invocation below (via
+# EXOCORTEX_GIT_EXECUTABLE/_SHA256): that invocation runs under this same
+# SANITIZED_PATH, so install.sh's own command -v git would find nothing
+# either, at the point it no longer has the real PATH to resolve it with.
 GIT_CHECKER_ARGS=()
+HOST_GIT_WIN=""
+HOST_GIT_SHA256=""
 if command -v cygpath >/dev/null 2>&1; then
     HOST_GIT="$(command -v git || true)"
     if [ -n "$HOST_GIT" ]; then
         HOST_GIT_WIN="$(cygpath -w "$HOST_GIT" 2>/dev/null || true)"
         case "$HOST_GIT_WIN" in
             [A-Za-z]:\\*)
-                GIT_CHECKER_ARGS=(--git-executable "$HOST_GIT_WIN" --git-executable-sha256 "$(sha256_file "$HOST_GIT")")
+                HOST_GIT_SHA256="$(sha256_file "$HOST_GIT")"
+                GIT_CHECKER_ARGS=(--git-executable "$HOST_GIT_WIN" --git-executable-sha256 "$HOST_GIT_SHA256")
+                ;;
+            *)
+                HOST_GIT_WIN=""
                 ;;
         esac
     fi
@@ -1089,6 +1099,8 @@ run_candidate_installer() {
             EXOCORTEX_FORCE_TAR_STAGE="${EXOCORTEX_FORCE_TAR_STAGE:-0}" \
             EXOCORTEX_TEST_MODE="${EXOCORTEX_TEST_MODE:-0}" \
             EXOCORTEX_TEST_INSTALL_FAULT_AFTER_COPIES="$install_fault" \
+            EXOCORTEX_GIT_EXECUTABLE="$HOST_GIT_WIN" \
+            EXOCORTEX_GIT_EXECUTABLE_SHA256="$HOST_GIT_SHA256" \
             "$HOST_BASH" "$TEMPLATE_ROOT/install.sh" "$(basename "$PROJECT_ROOT")"
     )
 }
