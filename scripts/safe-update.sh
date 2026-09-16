@@ -93,6 +93,28 @@ HOST_BASH="$(command -v bash)"
 case "$HOST_PYTHON" in /*) ;; *) fail "python3 must resolve to an absolute host path" ;; esac
 case "$HOST_BASH" in /*) ;; *) fail "bash must resolve to an absolute host path" ;; esac
 SANITIZED_PATH="$(dirname "$HOST_PYTHON"):$(dirname "$HOST_BASH"):/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/opt/homebrew/bin"
+
+# The sanitized PATH above is a fixed list of Unix-style directories, so the
+# checker's own PATH-based fallback for an unnamed Git executable finds
+# nothing there on Windows either: Git for Windows lives under its own
+# mingw64/bin, never under /usr/bin. Resolve the host's Git here, in the
+# unsandboxed shell that still has the real PATH, and hand the checker an
+# explicit --git-executable pinned by digest -- validated exactly as strictly
+# as any operator-supplied path, per configure_git_executable(). See the
+# matching fix in install.sh.
+GIT_CHECKER_ARGS=()
+if command -v cygpath >/dev/null 2>&1; then
+    HOST_GIT="$(command -v git || true)"
+    if [ -n "$HOST_GIT" ]; then
+        HOST_GIT_WIN="$(cygpath -w "$HOST_GIT" 2>/dev/null || true)"
+        case "$HOST_GIT_WIN" in
+            [A-Za-z]:\\*)
+                GIT_CHECKER_ARGS=(--git-executable "$HOST_GIT_WIN" --git-executable-sha256 "$(sha256_file "$HOST_GIT")")
+                ;;
+        esac
+    fi
+fi
+
 SANITIZED_ENV_ROOT="$(mktemp -d "${TMPDIR:-/tmp}/exocortex-update-env.XXXXXX")"
 TEMPLATE_ROOT="$SANITIZED_ENV_ROOT/candidate"
 mkdir -p "$SANITIZED_ENV_ROOT/home" "$SANITIZED_ENV_ROOT/tmp" "$TEMPLATE_ROOT"
@@ -228,9 +250,13 @@ if (
     or set(mode_records) != expected_mode_paths
 ):
     raise SystemExit("FILEMODES must bind the sorted SHA256SUMS paths plus SHA256SUMS itself")
+import os
+
 for relative in sorted(expected_mode_paths):
     candidate = root / relative
-    if stat.S_IMODE(candidate.stat().st_mode) != mode_records[relative]:
+    # Windows has no representable analog of the POSIX executable bit: see
+    # the matching skip and comment in install.sh's verify_file_modes.
+    if os.name != "nt" and stat.S_IMODE(candidate.stat().st_mode) != mode_records[relative]:
         raise SystemExit(f"FILEMODES mismatch: {relative}")
 
 actual_code_plane = set()
@@ -261,7 +287,7 @@ cp "$PUBLIC_RELEASE_CHECKER_SOURCE" "$PUBLIC_RELEASE_CHECKER"
 chmod 0600 "$PUBLIC_RELEASE_CHECKER"
 [ "$(sha256_file "$PUBLIC_RELEASE_CHECKER")" = "$EXPECTED_PUBLIC_CHECKER_HASH" ] \
     || fail "private public-release checker copy differs from SHA256SUMS"
-run_candidate_python "$PUBLIC_RELEASE_CHECKER" --root "$TEMPLATE_ROOT" --source-tree \
+run_candidate_python "$PUBLIC_RELEASE_CHECKER" --root "$TEMPLATE_ROOT" --source-tree "${GIT_CHECKER_ARGS[@]}" \
     || fail "template source violates the public-release boundary"
 
 # Retired provider paths and project-owned root Cursor rules remain update
@@ -599,23 +625,48 @@ BACKUP_DIR="$(cd "$BACKUP_NORMALIZED" && pwd -P)"
 case "$BACKUP_DIR/" in "$PROJECT_ROOT/"*|"$TEMPLATE_SOURCE_ROOT/"*|"$TEMPLATE_ROOT/"*) fail "backup directory must be outside target and template" ;; esac
 run_trusted_python - "$BACKUP_DIR" <<'PY' \
     || fail "backup directory permissions or ancestry are unsafe"
+import ctypes
 import os
 from pathlib import Path
 import stat
 import sys
 
+# Windows has no uid/mode-bit ownership model at all: os.geteuid() does not
+# exist there (AttributeError, not merely a wrong value), and st_mode's
+# group/other bits are synthesized from the read-only attribute alone, so
+# 0o022 is never meaningful. There is no ACL-based equivalent attempted here;
+# this check is simply skipped on Windows, same as the FILEMODES exec-bit
+# skip in install.sh. is_reparse_point below still runs on Windows, and
+# checks the raw attribute bit rather than stat.S_ISLNK, which -- as with
+# check-public-release.py's source-tree walk -- does not see a directory
+# junction (no elevated privilege required to create one).
+if os.name == "nt":
+    _GetFileAttributesW = ctypes.windll.kernel32.GetFileAttributesW
+    _INVALID_FILE_ATTRIBUTES = 0xFFFFFFFF
+    _FILE_ATTRIBUTE_REPARSE_POINT = 0x400
+
+    def is_reparse_point(p):
+        attrs = _GetFileAttributesW(str(p))
+        if attrs == _INVALID_FILE_ATTRIBUTES:
+            raise SystemExit("backup path ancestor could not be inspected")
+        return bool(attrs & _FILE_ATTRIBUTE_REPARSE_POINT)
+else:
+    def is_reparse_point(p):
+        return stat.S_ISLNK(os.lstat(p).st_mode)
+
 path = Path(sys.argv[1]).resolve(strict=True)
 current = path
 while True:
     value = os.lstat(current)
-    if not stat.S_ISDIR(value.st_mode) or stat.S_ISLNK(value.st_mode):
+    if not stat.S_ISDIR(value.st_mode) or is_reparse_point(current):
         raise SystemExit("backup path must contain only real directories")
-    mode = stat.S_IMODE(value.st_mode)
-    if current == path:
-        if value.st_uid != os.geteuid() or mode & 0o022:
-            raise SystemExit("backup directory must be owner-controlled and not group/world writable")
-    elif mode & 0o022 and not mode & stat.S_ISVTX:
-        raise SystemExit("writable backup ancestor must have the sticky bit")
+    if os.name != "nt":
+        mode = stat.S_IMODE(value.st_mode)
+        if current == path:
+            if value.st_uid != os.geteuid() or mode & 0o022:
+                raise SystemExit("backup directory must be owner-controlled and not group/world writable")
+        elif mode & 0o022 and not mode & stat.S_ISVTX:
+            raise SystemExit("writable backup ancestor must have the sticky bit")
     if current == current.parent:
         break
     current = current.parent
@@ -742,7 +793,10 @@ try:
         or before.st_nlink != 1
         or before.st_dev != expected_dev
         or before.st_ino != expected_ino
-        or stat.S_IMODE(before.st_mode) != 0o600
+        # mktemp creates this file 0600 on POSIX; Windows has no bit for it
+        # (mktemp there reports 0666 regardless), so the check is skipped
+        # rather than asserting something the platform cannot represent.
+        or (os.name != "nt" and stat.S_IMODE(before.st_mode) != 0o600)
     ):
         raise SystemExit("rollback archive identity changed before write")
     os.ftruncate(fd, 0)
@@ -817,7 +871,7 @@ try:
         or value.st_nlink != 1
         or value.st_dev != expected_dev
         or value.st_ino != expected_ino
-        or stat.S_IMODE(value.st_mode) != 0o600
+        or (os.name != "nt" and stat.S_IMODE(value.st_mode) != 0o600)
     ):
         raise SystemExit("rollback archive identity changed before test corruption")
     os.lseek(fd, -1, os.SEEK_END)
@@ -849,7 +903,7 @@ if (
     or value.st_nlink != 1
     or value.st_dev != expected_dev
     or value.st_ino != expected_ino
-    or stat.S_IMODE(value.st_mode) != 0o600
+    or (os.name != "nt" and stat.S_IMODE(value.st_mode) != 0o600)
 ):
     raise SystemExit("rollback archive identity or mode changed")
 digest = hashlib.sha256()
@@ -948,7 +1002,7 @@ raise SystemExit(
         and value.st_nlink == 1
         and value.st_dev == int(sys.argv[2])
         and value.st_ino == int(sys.argv[3])
-        and stat.S_IMODE(value.st_mode) == 0o600
+        and (os.name == "nt" or stat.S_IMODE(value.st_mode) == 0o600)
     ) else 1
 )
 PY
