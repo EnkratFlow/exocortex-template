@@ -321,10 +321,20 @@ if (
 ):
     raise SystemExit("FILEMODES must bind the sorted SHA256SUMS paths plus SHA256SUMS itself")
 
+import os
+
 for relative in sorted(expected_mode_paths):
     path = root / relative
     if path.is_symlink() or not path.is_file():
         raise SystemExit(f"FILEMODES path is not a regular file: {relative}")
+    if os.name == "nt":
+        # Windows has no representable analog of the POSIX executable bit:
+        # os.stat().st_mode there is synthesized purely from the read-only
+        # attribute, so every writable file reads 0o666 regardless of
+        # whether FILEMODES expects 0644 or 0755 -- there is no bit to
+        # compare. Every other guarantee here (regular, non-symlink,
+        # digest-bound, single-hard-link at copy time) still applies.
+        continue
     actual = stat.S_IMODE(path.stat().st_mode)
     if actual != mode_records[relative]:
         raise SystemExit(f"FILEMODES mismatch: {relative}")
@@ -617,7 +627,9 @@ with open(listing, encoding="utf-8") as handle:
         if stat.S_ISLNK(info.st_mode) or not stat.S_ISREG(info.st_mode):
             print(f"copied target is not a regular non-symlink file: {rel}")
             sys.exit(1)
-        if format(stat.S_IMODE(info.st_mode), "04o") != mode_text:
+        # See the matching skip in verify_file_modes: Windows has no
+        # representable analog of the POSIX executable bit to compare.
+        if os.name != "nt" and format(stat.S_IMODE(info.st_mode), "04o") != mode_text:
             print(f"copied target mode does not match the reviewed source: {rel}")
             sys.exit(1)
         if info.st_nlink != 1:
