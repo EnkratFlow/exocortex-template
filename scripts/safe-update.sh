@@ -727,7 +727,7 @@ import sys
 
 path = Path(sys.argv[1])
 replacement = path.with_name(path.name + ".test-substitute")
-flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL
+flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_BINARY", 0)
 if hasattr(os, "O_NOFOLLOW"):
     flags |= os.O_NOFOLLOW
 fd = os.open(replacement, flags, 0o600)
@@ -782,7 +782,9 @@ import sys
 path, expected_dev, expected_ino, fault = (
     sys.argv[1], int(sys.argv[2]), int(sys.argv[3]), sys.argv[4]
 )
-flags = os.O_WRONLY
+# Without O_BINARY, Windows' text-mode write rewrites every 0x0A byte in
+# this gzip stream to 0x0D 0x0A, corrupting the archive; a no-op elsewhere.
+flags = os.O_WRONLY | getattr(os, "O_BINARY", 0)
 if hasattr(os, "O_NOFOLLOW"):
     flags |= os.O_NOFOLLOW
 fd = os.open(path, flags)
@@ -825,7 +827,7 @@ import stat
 import sys
 
 path = sys.argv[1]
-flags = os.O_RDONLY
+flags = os.O_RDONLY | getattr(os, "O_BINARY", 0)
 if hasattr(os, "O_NOFOLLOW"):
     flags |= os.O_NOFOLLOW
 fd = os.open(path, flags)
@@ -860,7 +862,7 @@ import stat
 import sys
 
 path, expected_dev, expected_ino = sys.argv[1], int(sys.argv[2]), int(sys.argv[3])
-flags = os.O_RDWR
+flags = os.O_RDWR | getattr(os, "O_BINARY", 0)
 if hasattr(os, "O_NOFOLLOW"):
     flags |= os.O_NOFOLLOW
 fd = os.open(path, flags)
