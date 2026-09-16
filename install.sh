@@ -66,6 +66,39 @@ command -v python3 >/dev/null 2>&1 || fail "python3 is required to validate the 
 HOST_PYTHON="$(command -v python3)"
 case "$HOST_PYTHON" in /*) ;; *) fail "python3 must resolve to an absolute host path" ;; esac
 SANITIZED_PATH="$(dirname "$HOST_PYTHON"):/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/opt/homebrew/bin"
+
+# The sanitized PATH above is a fixed list of Unix-style directories, so the
+# checker's own PATH-based fallback for an unnamed Git executable finds
+# nothing there on Windows either: Git for Windows lives under its own
+# mingw64/bin, never under /usr/bin. Resolve the host's Git here, in the
+# unsandboxed shell that still has the real PATH, and hand the checker an
+# explicit --git-executable pinned by digest — validated exactly as strictly
+# as any operator-supplied path, per configure_git_executable().
+#
+# A caller that already pre-sanitizes its own environment before invoking
+# this script (safe-update.sh's rehearsal, for one) starts install.sh with
+# PATH already scrubbed, so command -v git below would find nothing even
+# though the caller resolved a trustworthy Git moments earlier in its own,
+# still-unsanitized shell. EXOCORTEX_GIT_EXECUTABLE(_SHA256) lets such a
+# caller pass that resolution straight through instead of losing it.
+GIT_CHECKER_ARGS=()
+if [ -n "${EXOCORTEX_GIT_EXECUTABLE:-}" ]; then
+    GIT_CHECKER_ARGS=(--git-executable "$EXOCORTEX_GIT_EXECUTABLE")
+    if [ -n "${EXOCORTEX_GIT_EXECUTABLE_SHA256:-}" ]; then
+        GIT_CHECKER_ARGS+=(--git-executable-sha256 "$EXOCORTEX_GIT_EXECUTABLE_SHA256")
+    fi
+elif command -v cygpath >/dev/null 2>&1; then
+    HOST_GIT="$(command -v git || true)"
+    if [ -n "$HOST_GIT" ]; then
+        HOST_GIT_WIN="$(cygpath -w "$HOST_GIT" 2>/dev/null || true)"
+        case "$HOST_GIT_WIN" in
+            [A-Za-z]:\\*)
+                GIT_CHECKER_ARGS=(--git-executable "$HOST_GIT_WIN" --git-executable-sha256 "$(sha256_file "$HOST_GIT")")
+                ;;
+        esac
+    fi
+fi
+
 run_candidate_python() {
     (
         cd "$TMP_ROOT"
@@ -104,7 +137,7 @@ cp "$PUBLIC_CHECKER" "$APPROVED_PUBLIC_CHECKER"
 chmod 0600 "$APPROVED_PUBLIC_CHECKER"
 [ "$(sha256_file "$APPROVED_PUBLIC_CHECKER")" = "$EXPECTED_CHECKER_HASH" ] \
     || fail "public-release checker does not match the approved manifest"
-run_candidate_python "$APPROVED_PUBLIC_CHECKER" --root "$SOURCE_ROOT" --source-tree \
+run_candidate_python "$APPROVED_PUBLIC_CHECKER" --root "$SOURCE_ROOT" --source-tree "${GIT_CHECKER_ARGS[@]}" \
     || fail "template source violates the public-release boundary"
 
 # Copy without repository metadata or credential files. Source validation above
@@ -300,10 +333,20 @@ if (
 ):
     raise SystemExit("FILEMODES must bind the sorted SHA256SUMS paths plus SHA256SUMS itself")
 
+import os
+
 for relative in sorted(expected_mode_paths):
     path = root / relative
     if path.is_symlink() or not path.is_file():
         raise SystemExit(f"FILEMODES path is not a regular file: {relative}")
+    if os.name == "nt":
+        # Windows has no representable analog of the POSIX executable bit:
+        # os.stat().st_mode there is synthesized purely from the read-only
+        # attribute, so every writable file reads 0o666 regardless of
+        # whether FILEMODES expects 0644 or 0755 -- there is no bit to
+        # compare. Every other guarantee here (regular, non-symlink,
+        # digest-bound, single-hard-link at copy time) still applies.
+        continue
     actual = stat.S_IMODE(path.stat().st_mode)
     if actual != mode_records[relative]:
         raise SystemExit(f"FILEMODES mismatch: {relative}")
@@ -344,6 +387,16 @@ run_candidate_python "$MODEL_REGISTRY_TOOL" validate-catalog \
 run_trusted_python - "$ADAPTER_MATRIX" > "$RETIREMENTS" <<'PY'
 import json, re, sys
 from pathlib import PurePosixPath
+
+# Windows' default text-mode stdout translates '\n' to '\r\n' on write, even
+# when stdout is redirected to a file rather than a console. Every entry
+# this prints becomes a line the shell later reads with `read -r legacy
+# replacement`; a trailing \r then rides along as part of whichever field
+# was last on the line, defeating the empty-replacement check
+# (`[ -z "$replacement" ]` is false for a lone "\r") and, for entries with a
+# leading path component after it, corrupting the path itself. LF-only
+# output is a no-op on POSIX, where stdout is already LF.
+sys.stdout.reconfigure(newline="\n")
 
 matrix = json.load(open(sys.argv[1], encoding='utf-8'))
 legacy_items = matrix.get('legacy_retirements')
@@ -596,7 +649,9 @@ with open(listing, encoding="utf-8") as handle:
         if stat.S_ISLNK(info.st_mode) or not stat.S_ISREG(info.st_mode):
             print(f"copied target is not a regular non-symlink file: {rel}")
             sys.exit(1)
-        if format(stat.S_IMODE(info.st_mode), "04o") != mode_text:
+        # See the matching skip in verify_file_modes: Windows has no
+        # representable analog of the POSIX executable bit to compare.
+        if os.name != "nt" and format(stat.S_IMODE(info.st_mode), "04o") != mode_text:
             print(f"copied target mode does not match the reviewed source: {rel}")
             sys.exit(1)
         if info.st_nlink != 1:

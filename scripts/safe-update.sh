@@ -93,6 +93,38 @@ HOST_BASH="$(command -v bash)"
 case "$HOST_PYTHON" in /*) ;; *) fail "python3 must resolve to an absolute host path" ;; esac
 case "$HOST_BASH" in /*) ;; *) fail "bash must resolve to an absolute host path" ;; esac
 SANITIZED_PATH="$(dirname "$HOST_PYTHON"):$(dirname "$HOST_BASH"):/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/opt/homebrew/bin"
+
+# The sanitized PATH above is a fixed list of Unix-style directories, so the
+# checker's own PATH-based fallback for an unnamed Git executable finds
+# nothing there on Windows either: Git for Windows lives under its own
+# mingw64/bin, never under /usr/bin. Resolve the host's Git here, in the
+# unsandboxed shell that still has the real PATH, and hand the checker an
+# explicit --git-executable pinned by digest -- validated exactly as strictly
+# as any operator-supplied path, per configure_git_executable(). See the
+# matching fix in install.sh. HOST_GIT_WIN/HOST_GIT_SHA256 are also threaded
+# through to the rehearsal install.sh invocation below (via
+# EXOCORTEX_GIT_EXECUTABLE/_SHA256): that invocation runs under this same
+# SANITIZED_PATH, so install.sh's own command -v git would find nothing
+# either, at the point it no longer has the real PATH to resolve it with.
+GIT_CHECKER_ARGS=()
+HOST_GIT_WIN=""
+HOST_GIT_SHA256=""
+if command -v cygpath >/dev/null 2>&1; then
+    HOST_GIT="$(command -v git || true)"
+    if [ -n "$HOST_GIT" ]; then
+        HOST_GIT_WIN="$(cygpath -w "$HOST_GIT" 2>/dev/null || true)"
+        case "$HOST_GIT_WIN" in
+            [A-Za-z]:\\*)
+                HOST_GIT_SHA256="$(sha256_file "$HOST_GIT")"
+                GIT_CHECKER_ARGS=(--git-executable "$HOST_GIT_WIN" --git-executable-sha256 "$HOST_GIT_SHA256")
+                ;;
+            *)
+                HOST_GIT_WIN=""
+                ;;
+        esac
+    fi
+fi
+
 SANITIZED_ENV_ROOT="$(mktemp -d "${TMPDIR:-/tmp}/exocortex-update-env.XXXXXX")"
 TEMPLATE_ROOT="$SANITIZED_ENV_ROOT/candidate"
 mkdir -p "$SANITIZED_ENV_ROOT/home" "$SANITIZED_ENV_ROOT/tmp" "$TEMPLATE_ROOT"
@@ -228,9 +260,13 @@ if (
     or set(mode_records) != expected_mode_paths
 ):
     raise SystemExit("FILEMODES must bind the sorted SHA256SUMS paths plus SHA256SUMS itself")
+import os
+
 for relative in sorted(expected_mode_paths):
     candidate = root / relative
-    if stat.S_IMODE(candidate.stat().st_mode) != mode_records[relative]:
+    # Windows has no representable analog of the POSIX executable bit: see
+    # the matching skip and comment in install.sh's verify_file_modes.
+    if os.name != "nt" and stat.S_IMODE(candidate.stat().st_mode) != mode_records[relative]:
         raise SystemExit(f"FILEMODES mismatch: {relative}")
 
 actual_code_plane = set()
@@ -261,7 +297,7 @@ cp "$PUBLIC_RELEASE_CHECKER_SOURCE" "$PUBLIC_RELEASE_CHECKER"
 chmod 0600 "$PUBLIC_RELEASE_CHECKER"
 [ "$(sha256_file "$PUBLIC_RELEASE_CHECKER")" = "$EXPECTED_PUBLIC_CHECKER_HASH" ] \
     || fail "private public-release checker copy differs from SHA256SUMS"
-run_candidate_python "$PUBLIC_RELEASE_CHECKER" --root "$TEMPLATE_ROOT" --source-tree \
+run_candidate_python "$PUBLIC_RELEASE_CHECKER" --root "$TEMPLATE_ROOT" --source-tree "${GIT_CHECKER_ARGS[@]}" \
     || fail "template source violates the public-release boundary"
 
 # Retired provider paths and project-owned root Cursor rules remain update
@@ -599,23 +635,48 @@ BACKUP_DIR="$(cd "$BACKUP_NORMALIZED" && pwd -P)"
 case "$BACKUP_DIR/" in "$PROJECT_ROOT/"*|"$TEMPLATE_SOURCE_ROOT/"*|"$TEMPLATE_ROOT/"*) fail "backup directory must be outside target and template" ;; esac
 run_trusted_python - "$BACKUP_DIR" <<'PY' \
     || fail "backup directory permissions or ancestry are unsafe"
+import ctypes
 import os
 from pathlib import Path
 import stat
 import sys
 
+# Windows has no uid/mode-bit ownership model at all: os.geteuid() does not
+# exist there (AttributeError, not merely a wrong value), and st_mode's
+# group/other bits are synthesized from the read-only attribute alone, so
+# 0o022 is never meaningful. There is no ACL-based equivalent attempted here;
+# this check is simply skipped on Windows, same as the FILEMODES exec-bit
+# skip in install.sh. is_reparse_point below still runs on Windows, and
+# checks the raw attribute bit rather than stat.S_ISLNK, which -- as with
+# check-public-release.py's source-tree walk -- does not see a directory
+# junction (no elevated privilege required to create one).
+if os.name == "nt":
+    _GetFileAttributesW = ctypes.windll.kernel32.GetFileAttributesW
+    _INVALID_FILE_ATTRIBUTES = 0xFFFFFFFF
+    _FILE_ATTRIBUTE_REPARSE_POINT = 0x400
+
+    def is_reparse_point(p):
+        attrs = _GetFileAttributesW(str(p))
+        if attrs == _INVALID_FILE_ATTRIBUTES:
+            raise SystemExit("backup path ancestor could not be inspected")
+        return bool(attrs & _FILE_ATTRIBUTE_REPARSE_POINT)
+else:
+    def is_reparse_point(p):
+        return stat.S_ISLNK(os.lstat(p).st_mode)
+
 path = Path(sys.argv[1]).resolve(strict=True)
 current = path
 while True:
     value = os.lstat(current)
-    if not stat.S_ISDIR(value.st_mode) or stat.S_ISLNK(value.st_mode):
+    if not stat.S_ISDIR(value.st_mode) or is_reparse_point(current):
         raise SystemExit("backup path must contain only real directories")
-    mode = stat.S_IMODE(value.st_mode)
-    if current == path:
-        if value.st_uid != os.geteuid() or mode & 0o022:
-            raise SystemExit("backup directory must be owner-controlled and not group/world writable")
-    elif mode & 0o022 and not mode & stat.S_ISVTX:
-        raise SystemExit("writable backup ancestor must have the sticky bit")
+    if os.name != "nt":
+        mode = stat.S_IMODE(value.st_mode)
+        if current == path:
+            if value.st_uid != os.geteuid() or mode & 0o022:
+                raise SystemExit("backup directory must be owner-controlled and not group/world writable")
+        elif mode & 0o022 and not mode & stat.S_ISVTX:
+            raise SystemExit("writable backup ancestor must have the sticky bit")
     if current == current.parent:
         break
     current = current.parent
@@ -676,7 +737,7 @@ import sys
 
 path = Path(sys.argv[1])
 replacement = path.with_name(path.name + ".test-substitute")
-flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL
+flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_BINARY", 0)
 if hasattr(os, "O_NOFOLLOW"):
     flags |= os.O_NOFOLLOW
 fd = os.open(replacement, flags, 0o600)
@@ -692,11 +753,38 @@ try:
 finally:
     os.close(fd)
 os.replace(replacement, path)
-directory_fd = os.open(path.parent, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0))
-try:
-    os.fsync(directory_fd)
-finally:
-    os.close(directory_fd)
+# See the matching Windows branch where the real (non-test-only) archive
+# publication flushes its directory a few dozen lines below: os.open()
+# cannot open a directory at all on Windows, so this needs the Win32 API.
+if os.name == "nt":
+    import ctypes
+    from ctypes import wintypes
+
+    _kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+    _CreateFileW = _kernel32.CreateFileW
+    _CreateFileW.argtypes = [
+        wintypes.LPCWSTR, wintypes.DWORD, wintypes.DWORD, wintypes.LPVOID,
+        wintypes.DWORD, wintypes.DWORD, wintypes.HANDLE,
+    ]
+    _CreateFileW.restype = wintypes.HANDLE
+    _INVALID_HANDLE_VALUE = wintypes.HANDLE(-1).value
+    handle = _CreateFileW(
+        str(path.parent), 0x80000000 | 0x40000000, 0x00000001 | 0x00000002 | 0x00000004,
+        None, 3, 0x02000000, None,
+    )
+    if handle == _INVALID_HANDLE_VALUE:
+        raise OSError("could not open rollback archive directory for durability flush")
+    try:
+        if not _kernel32.FlushFileBuffers(handle):
+            raise OSError("could not flush rollback archive directory")
+    finally:
+        _kernel32.CloseHandle(handle)
+else:
+    directory_fd = os.open(path.parent, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0))
+    try:
+        os.fsync(directory_fd)
+    finally:
+        os.close(directory_fd)
 PY
 fi
 backup_items=()
@@ -731,7 +819,9 @@ import sys
 path, expected_dev, expected_ino, fault = (
     sys.argv[1], int(sys.argv[2]), int(sys.argv[3]), sys.argv[4]
 )
-flags = os.O_WRONLY
+# Without O_BINARY, the Windows text-mode write rewrites every 0x0A byte in
+# this gzip stream to 0x0D 0x0A, corrupting the archive; a no-op elsewhere.
+flags = os.O_WRONLY | getattr(os, "O_BINARY", 0)
 if hasattr(os, "O_NOFOLLOW"):
     flags |= os.O_NOFOLLOW
 fd = os.open(path, flags)
@@ -742,7 +832,10 @@ try:
         or before.st_nlink != 1
         or before.st_dev != expected_dev
         or before.st_ino != expected_ino
-        or stat.S_IMODE(before.st_mode) != 0o600
+        # mktemp creates this file 0600 on POSIX; Windows has no bit for it
+        # (mktemp there reports 0666 regardless), so the check is skipped
+        # rather than asserting something the platform cannot represent.
+        or (os.name != "nt" and stat.S_IMODE(before.st_mode) != 0o600)
     ):
         raise SystemExit("rollback archive identity changed before write")
     os.ftruncate(fd, 0)
@@ -771,7 +864,7 @@ import stat
 import sys
 
 path = sys.argv[1]
-flags = os.O_RDONLY
+flags = os.O_RDONLY | getattr(os, "O_BINARY", 0)
 if hasattr(os, "O_NOFOLLOW"):
     flags |= os.O_NOFOLLOW
 fd = os.open(path, flags)
@@ -806,7 +899,7 @@ import stat
 import sys
 
 path, expected_dev, expected_ino = sys.argv[1], int(sys.argv[2]), int(sys.argv[3])
-flags = os.O_RDWR
+flags = os.O_RDWR | getattr(os, "O_BINARY", 0)
 if hasattr(os, "O_NOFOLLOW"):
     flags |= os.O_NOFOLLOW
 fd = os.open(path, flags)
@@ -817,7 +910,7 @@ try:
         or value.st_nlink != 1
         or value.st_dev != expected_dev
         or value.st_ino != expected_ino
-        or stat.S_IMODE(value.st_mode) != 0o600
+        or (os.name != "nt" and stat.S_IMODE(value.st_mode) != 0o600)
     ):
         raise SystemExit("rollback archive identity changed before test corruption")
     os.lseek(fd, -1, os.SEEK_END)
@@ -849,7 +942,7 @@ if (
     or value.st_nlink != 1
     or value.st_dev != expected_dev
     or value.st_ino != expected_ino
-    or stat.S_IMODE(value.st_mode) != 0o600
+    or (os.name != "nt" and stat.S_IMODE(value.st_mode) != 0o600)
 ):
     raise SystemExit("rollback archive identity or mode changed")
 digest = hashlib.sha256()
@@ -925,13 +1018,49 @@ import sys
 partial, final, fault = sys.argv[1:4]
 os.link(partial, final, follow_symlinks=False)
 os.unlink(partial)
-directory_fd = os.open(Path(final).parent, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0))
-try:
-    if fault == "directory-fsync":
-        raise OSError("injected test-only rollback archive directory-fsync failure")
-    os.fsync(directory_fd)
-finally:
-    os.close(directory_fd)
+parent = Path(final).parent
+if os.name == "nt":
+    # os.open() cannot open a directory at all on Windows (PermissionError:
+    # the CRT-level _wsopen_s this goes through has no concept of it), so
+    # this durability flush -- making the hardlink-then-unlink survive a
+    # crash right after publication -- needs the Win32 API directly: a
+    # directory handle requires FILE_FLAG_BACKUP_SEMANTICS, and the flush
+    # itself is FlushFileBuffers rather than fsync. FlushFileBuffers on a
+    # directory handle also fails with ERROR_ACCESS_DENIED unless the
+    # handle was opened with GENERIC_WRITE, not just GENERIC_READ, even
+    # though nothing is actually written through it -- confirmed empirically.
+    import ctypes
+    from ctypes import wintypes
+
+    _kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+    _CreateFileW = _kernel32.CreateFileW
+    _CreateFileW.argtypes = [
+        wintypes.LPCWSTR, wintypes.DWORD, wintypes.DWORD, wintypes.LPVOID,
+        wintypes.DWORD, wintypes.DWORD, wintypes.HANDLE,
+    ]
+    _CreateFileW.restype = wintypes.HANDLE
+    _INVALID_HANDLE_VALUE = wintypes.HANDLE(-1).value
+    handle = _CreateFileW(
+        str(parent), 0x80000000 | 0x40000000, 0x00000001 | 0x00000002 | 0x00000004,
+        None, 3, 0x02000000, None,
+    )
+    if handle == _INVALID_HANDLE_VALUE:
+        raise OSError("could not open rollback archive directory for durability flush")
+    try:
+        if fault == "directory-fsync":
+            raise OSError("injected test-only rollback archive directory-fsync failure")
+        if not _kernel32.FlushFileBuffers(handle):
+            raise OSError("could not flush rollback archive directory")
+    finally:
+        _kernel32.CloseHandle(handle)
+else:
+    directory_fd = os.open(parent, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0))
+    try:
+        if fault == "directory-fsync":
+            raise OSError("injected test-only rollback archive directory-fsync failure")
+        os.fsync(directory_fd)
+    finally:
+        os.close(directory_fd)
 PY
 
 verify_backup_archive() {
@@ -948,7 +1077,7 @@ raise SystemExit(
         and value.st_nlink == 1
         and value.st_dev == int(sys.argv[2])
         and value.st_ino == int(sys.argv[3])
-        and stat.S_IMODE(value.st_mode) == 0o600
+        and (os.name == "nt" or stat.S_IMODE(value.st_mode) == 0o600)
     ) else 1
 )
 PY
@@ -970,6 +1099,8 @@ run_candidate_installer() {
             EXOCORTEX_FORCE_TAR_STAGE="${EXOCORTEX_FORCE_TAR_STAGE:-0}" \
             EXOCORTEX_TEST_MODE="${EXOCORTEX_TEST_MODE:-0}" \
             EXOCORTEX_TEST_INSTALL_FAULT_AFTER_COPIES="$install_fault" \
+            EXOCORTEX_GIT_EXECUTABLE="$HOST_GIT_WIN" \
+            EXOCORTEX_GIT_EXECUTABLE_SHA256="$HOST_GIT_SHA256" \
             "$HOST_BASH" "$TEMPLATE_ROOT/install.sh" "$(basename "$PROJECT_ROOT")"
     )
 }
@@ -1221,7 +1352,16 @@ def inventory(root):
     return result
 a,b=inventory(left),inventory(right)
 changed=sorted(key for key in set(a)|set(b) if a.get(key)!=b.get(key))
-Path(output).write_text(''.join(value+'\n' for value in changed), encoding='utf-8')
+# write_text()'s default newline=None translates '\n' to os.linesep on
+# write, which is CRLF on Windows. Every line here becomes a
+# --target-path argument the guard compares byte-for-byte against the
+# capability's allowed_paths, so a trailing \r silently defeats every
+# comparison -- confirmed: this is what made a real --apply exit 2 with
+# no message, since authority_guard.py's argparse-driven check/consume
+# rejects the corrupted path and safe-update.sh never wraps that call in
+# fail() (relying on set -e instead). write_bytes() is unaffected by
+# platform newline translation.
+Path(output).write_bytes(''.join(value+'\n' for value in changed).encode('utf-8'))
 PY
 
 if [ -n "$RECONCILIATION_PLAN" ] && ! cmp -s "$CHANGES" "$PLANNED_EFFECTS"; then

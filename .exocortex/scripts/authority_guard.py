@@ -12,7 +12,6 @@ from __future__ import annotations
 import argparse
 import contextlib
 import datetime as dt
-import fcntl
 import hashlib
 import json
 import os
@@ -21,6 +20,11 @@ import re
 import sys
 import tempfile
 from typing import Any, Dict, Iterable, Iterator, List, Optional, Sequence, Set, Tuple
+
+if os.name == "nt":
+    import msvcrt
+else:
+    import fcntl
 
 
 PUBLIC_VERSION = "public-v2"
@@ -113,7 +117,12 @@ def json_digest(value: Any) -> str:
 
 def sha256_file(path: Path) -> str:
     digest = hashlib.sha256()
-    flags = os.O_RDONLY
+    # Without O_BINARY, Windows' text-mode read stops at the first 0x1A
+    # byte, silently truncating the digest -- consistently, since the same
+    # file always truncates at the same point, so this never surfaces as an
+    # error, only as a wrong digest that can mismatch one computed
+    # correctly elsewhere. A no-op on POSIX.
+    flags = os.O_RDONLY | getattr(os, "O_BINARY", 0)
     if hasattr(os, "O_NOFOLLOW"):
         flags |= os.O_NOFOLLOW
     try:
@@ -473,11 +482,69 @@ def check_authority(
 def exclusive_lock(path: Path) -> Iterator[None]:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("a+", encoding="utf-8") as handle:
-        fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
+        # fcntl (POSIX advisory whole-file locking) does not exist on
+        # Windows at all -- this module failed to even import there.
+        # msvcrt.locking() is the Windows equivalent, but it locks a byte
+        # range rather than the whole file, so seek to a fixed offset
+        # first for both threads/processes to contend on the same byte.
+        if os.name == "nt":
+            handle.seek(0)
+            msvcrt.locking(handle.fileno(), msvcrt.LK_LOCK, 1)
+        else:
+            fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
         try:
             yield
         finally:
-            fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+            if os.name == "nt":
+                handle.seek(0)
+                msvcrt.locking(handle.fileno(), msvcrt.LK_UNLCK, 1)
+            else:
+                fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+
+
+def _flush_directory(directory: Path) -> None:
+    """Durably flush a directory entry change (create/replace/unlink).
+
+    os.open() cannot open a directory at all on Windows (PermissionError:
+    the CRT-level _wsopen_s this goes through has no concept of it), so
+    this needs the Win32 API directly: a directory handle requires
+    FILE_FLAG_BACKUP_SEMANTICS, and the flush itself is FlushFileBuffers
+    rather than fsync. FlushFileBuffers on a directory handle also fails
+    with ERROR_ACCESS_DENIED unless the handle was opened with
+    GENERIC_WRITE, not just GENERIC_READ, even though nothing is actually
+    written through it -- confirmed empirically. See the matching fix in
+    scripts/safe-update.sh.
+    """
+
+    if os.name == "nt":
+        import ctypes
+        from ctypes import wintypes
+
+        kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+        create_file_w = kernel32.CreateFileW
+        create_file_w.argtypes = [
+            wintypes.LPCWSTR, wintypes.DWORD, wintypes.DWORD, wintypes.LPVOID,
+            wintypes.DWORD, wintypes.DWORD, wintypes.HANDLE,
+        ]
+        create_file_w.restype = wintypes.HANDLE
+        invalid_handle_value = wintypes.HANDLE(-1).value
+        handle = create_file_w(
+            str(directory), 0x80000000 | 0x40000000, 0x00000001 | 0x00000002 | 0x00000004,
+            None, 3, 0x02000000, None,
+        )
+        if handle == invalid_handle_value:
+            raise OSError(f"could not open directory for durability flush: {directory}")
+        try:
+            if not kernel32.FlushFileBuffers(handle):
+                raise OSError(f"could not flush directory: {directory}")
+        finally:
+            kernel32.CloseHandle(handle)
+    else:
+        directory_fd = os.open(str(directory), os.O_RDONLY)
+        try:
+            os.fsync(directory_fd)
+        finally:
+            os.close(directory_fd)
 
 
 def atomic_write_json(path: Path, value: Dict[str, Any], mode: int = 0o600) -> None:
@@ -492,11 +559,7 @@ def atomic_write_json(path: Path, value: Dict[str, Any], mode: int = 0o600) -> N
             os.fsync(handle.fileno())
         os.chmod(temp_path, mode)
         os.replace(temp_path, path)
-        directory_fd = os.open(str(path.parent), os.O_RDONLY)
-        try:
-            os.fsync(directory_fd)
-        finally:
-            os.close(directory_fd)
+        _flush_directory(path.parent)
     finally:
         if temp_path.exists():
             temp_path.unlink()
