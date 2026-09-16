@@ -12,7 +12,6 @@ from __future__ import annotations
 import argparse
 import contextlib
 import datetime as dt
-import fcntl
 import hashlib
 import json
 import os
@@ -21,6 +20,11 @@ import re
 import sys
 import tempfile
 from typing import Any, Dict, Iterable, Iterator, List, Optional, Sequence, Set, Tuple
+
+if os.name == "nt":
+    import msvcrt
+else:
+    import fcntl
 
 
 PUBLIC_VERSION = "public-v2"
@@ -473,11 +477,24 @@ def check_authority(
 def exclusive_lock(path: Path) -> Iterator[None]:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("a+", encoding="utf-8") as handle:
-        fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
+        # fcntl (POSIX advisory whole-file locking) does not exist on
+        # Windows at all -- this module failed to even import there.
+        # msvcrt.locking() is the Windows equivalent, but it locks a byte
+        # range rather than the whole file, so seek to a fixed offset
+        # first for both threads/processes to contend on the same byte.
+        if os.name == "nt":
+            handle.seek(0)
+            msvcrt.locking(handle.fileno(), msvcrt.LK_LOCK, 1)
+        else:
+            fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
         try:
             yield
         finally:
-            fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+            if os.name == "nt":
+                handle.seek(0)
+                msvcrt.locking(handle.fileno(), msvcrt.LK_UNLCK, 1)
+            else:
+                fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
 
 
 def atomic_write_json(path: Path, value: Dict[str, Any], mode: int = 0o600) -> None:
