@@ -376,6 +376,16 @@ run_trusted_python - "$ADAPTER_MATRIX" > "$RETIREMENTS" <<'PY'
 import json, re, sys
 from pathlib import PurePosixPath
 
+# Windows' default text-mode stdout translates '\n' to '\r\n' on write, even
+# when stdout is redirected to a file rather than a console. Every entry
+# this prints becomes a line the shell later reads with `read -r legacy
+# replacement`; a trailing \r then rides along as part of whichever field
+# was last on the line, defeating the empty-replacement check
+# (`[ -z "$replacement" ]` is false for a lone "\r") and, for entries with a
+# leading path component after it, corrupting the path itself. LF-only
+# output is a no-op on POSIX, where stdout is already LF.
+sys.stdout.reconfigure(newline="\n")
+
 matrix = json.load(open(sys.argv[1], encoding='utf-8'))
 legacy_items = matrix.get('legacy_retirements')
 windsurf_items = matrix.get('windsurf_retirements')
