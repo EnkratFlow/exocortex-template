@@ -759,7 +759,7 @@ if os.name == "nt":
     _CreateFileW.restype = wintypes.HANDLE
     _INVALID_HANDLE_VALUE = wintypes.HANDLE(-1).value
     handle = _CreateFileW(
-        str(path.parent), 0x80000000, 0x00000001 | 0x00000002 | 0x00000004,
+        str(path.parent), 0x80000000 | 0x40000000, 0x00000001 | 0x00000002 | 0x00000004,
         None, 3, 0x02000000, None,
     )
     if handle == _INVALID_HANDLE_VALUE:
@@ -1015,7 +1015,10 @@ if os.name == "nt":
     # this durability flush -- making the hardlink-then-unlink survive a
     # crash right after publication -- needs the Win32 API directly: a
     # directory handle requires FILE_FLAG_BACKUP_SEMANTICS, and the flush
-    # itself is FlushFileBuffers rather than fsync.
+    # itself is FlushFileBuffers rather than fsync. FlushFileBuffers on a
+    # directory handle also fails with ERROR_ACCESS_DENIED unless the
+    # handle was opened with GENERIC_WRITE, not just GENERIC_READ, even
+    # though nothing is actually written through it -- confirmed empirically.
     import ctypes
     from ctypes import wintypes
 
@@ -1028,7 +1031,7 @@ if os.name == "nt":
     _CreateFileW.restype = wintypes.HANDLE
     _INVALID_HANDLE_VALUE = wintypes.HANDLE(-1).value
     handle = _CreateFileW(
-        str(parent), 0x80000000, 0x00000001 | 0x00000002 | 0x00000004,
+        str(parent), 0x80000000 | 0x40000000, 0x00000001 | 0x00000002 | 0x00000004,
         None, 3, 0x02000000, None,
     )
     if handle == _INVALID_HANDLE_VALUE:
