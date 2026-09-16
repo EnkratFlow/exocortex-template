@@ -782,7 +782,7 @@ import sys
 path, expected_dev, expected_ino, fault = (
     sys.argv[1], int(sys.argv[2]), int(sys.argv[3]), sys.argv[4]
 )
-# Without O_BINARY, Windows' text-mode write rewrites every 0x0A byte in
+# Without O_BINARY, the Windows text-mode write rewrites every 0x0A byte in
 # this gzip stream to 0x0D 0x0A, corrupting the archive; a no-op elsewhere.
 flags = os.O_WRONLY | getattr(os, "O_BINARY", 0)
 if hasattr(os, "O_NOFOLLOW"):
