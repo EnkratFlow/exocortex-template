@@ -1352,7 +1352,16 @@ def inventory(root):
     return result
 a,b=inventory(left),inventory(right)
 changed=sorted(key for key in set(a)|set(b) if a.get(key)!=b.get(key))
-Path(output).write_text(''.join(value+'\n' for value in changed), encoding='utf-8')
+# write_text()'s default newline=None translates '\n' to os.linesep on
+# write, which is CRLF on Windows. Every line here becomes a
+# --target-path argument the guard compares byte-for-byte against the
+# capability's allowed_paths, so a trailing \r silently defeats every
+# comparison -- confirmed: this is what made a real --apply exit 2 with
+# no message, since authority_guard.py's argparse-driven check/consume
+# rejects the corrupted path and safe-update.sh never wraps that call in
+# fail() (relying on set -e instead). write_bytes() is unaffected by
+# platform newline translation.
+Path(output).write_bytes(''.join(value+'\n' for value in changed).encode('utf-8'))
 PY
 
 if [ -n "$RECONCILIATION_PLAN" ] && ! cmp -s "$CHANGES" "$PLANNED_EFFECTS"; then
