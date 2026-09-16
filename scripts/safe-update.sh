@@ -743,11 +743,38 @@ try:
 finally:
     os.close(fd)
 os.replace(replacement, path)
-directory_fd = os.open(path.parent, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0))
-try:
-    os.fsync(directory_fd)
-finally:
-    os.close(directory_fd)
+# See the matching Windows branch where the real (non-test-only) archive
+# publication flushes its directory a few dozen lines below: os.open()
+# cannot open a directory at all on Windows, so this needs the Win32 API.
+if os.name == "nt":
+    import ctypes
+    from ctypes import wintypes
+
+    _kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+    _CreateFileW = _kernel32.CreateFileW
+    _CreateFileW.argtypes = [
+        wintypes.LPCWSTR, wintypes.DWORD, wintypes.DWORD, wintypes.LPVOID,
+        wintypes.DWORD, wintypes.DWORD, wintypes.HANDLE,
+    ]
+    _CreateFileW.restype = wintypes.HANDLE
+    _INVALID_HANDLE_VALUE = wintypes.HANDLE(-1).value
+    handle = _CreateFileW(
+        str(path.parent), 0x80000000, 0x00000001 | 0x00000002 | 0x00000004,
+        None, 3, 0x02000000, None,
+    )
+    if handle == _INVALID_HANDLE_VALUE:
+        raise OSError("could not open rollback archive directory for durability flush")
+    try:
+        if not _kernel32.FlushFileBuffers(handle):
+            raise OSError("could not flush rollback archive directory")
+    finally:
+        _kernel32.CloseHandle(handle)
+else:
+    directory_fd = os.open(path.parent, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0))
+    try:
+        os.fsync(directory_fd)
+    finally:
+        os.close(directory_fd)
 PY
 fi
 backup_items=()
@@ -981,13 +1008,46 @@ import sys
 partial, final, fault = sys.argv[1:4]
 os.link(partial, final, follow_symlinks=False)
 os.unlink(partial)
-directory_fd = os.open(Path(final).parent, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0))
-try:
-    if fault == "directory-fsync":
-        raise OSError("injected test-only rollback archive directory-fsync failure")
-    os.fsync(directory_fd)
-finally:
-    os.close(directory_fd)
+parent = Path(final).parent
+if os.name == "nt":
+    # os.open() cannot open a directory at all on Windows (PermissionError:
+    # the CRT-level _wsopen_s this goes through has no concept of it), so
+    # this durability flush -- making the hardlink-then-unlink survive a
+    # crash right after publication -- needs the Win32 API directly: a
+    # directory handle requires FILE_FLAG_BACKUP_SEMANTICS, and the flush
+    # itself is FlushFileBuffers rather than fsync.
+    import ctypes
+    from ctypes import wintypes
+
+    _kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+    _CreateFileW = _kernel32.CreateFileW
+    _CreateFileW.argtypes = [
+        wintypes.LPCWSTR, wintypes.DWORD, wintypes.DWORD, wintypes.LPVOID,
+        wintypes.DWORD, wintypes.DWORD, wintypes.HANDLE,
+    ]
+    _CreateFileW.restype = wintypes.HANDLE
+    _INVALID_HANDLE_VALUE = wintypes.HANDLE(-1).value
+    handle = _CreateFileW(
+        str(parent), 0x80000000, 0x00000001 | 0x00000002 | 0x00000004,
+        None, 3, 0x02000000, None,
+    )
+    if handle == _INVALID_HANDLE_VALUE:
+        raise OSError("could not open rollback archive directory for durability flush")
+    try:
+        if fault == "directory-fsync":
+            raise OSError("injected test-only rollback archive directory-fsync failure")
+        if not _kernel32.FlushFileBuffers(handle):
+            raise OSError("could not flush rollback archive directory")
+    finally:
+        _kernel32.CloseHandle(handle)
+else:
+    directory_fd = os.open(parent, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0))
+    try:
+        if fault == "directory-fsync":
+            raise OSError("injected test-only rollback archive directory-fsync failure")
+        os.fsync(directory_fd)
+    finally:
+        os.close(directory_fd)
 PY
 
 verify_backup_archive() {
