@@ -33,11 +33,9 @@ class InstallTests(unittest.TestCase):
             target = fixture.new_target(root, 'target')
             result = fixture.install(source, target)
             self.assertEqual(result.returncode, 0, result.stderr)
-            for name in ['refresh_rollups.py', 'record_event.py', 'curate_memory.py', 'memory_gepa.py']:
+            for name in ['refresh_rollups.py', 'record_event.py', 'curate_memory.py']:
                 self.assertTrue((target / '.exocortex/scripts' / name).is_file(), result.stderr)
             self.assertTrue((target / '.exocortex/prompts/memory-curator.md').is_file())
-            for name in ['train.json', 'validation.json', 'holdout.json', 'requirements.txt']:
-                self.assertTrue((target / '.exocortex/evals/memory' / name).is_file())
             result = subprocess.run(['bash', str(target / '.exocortex/scripts/create_event.sh')],
                                     input='# Fictional install rehearsal\n\n## Outcome\nInstalled candidate.\n',
                                     text=True, capture_output=True, cwd=target)

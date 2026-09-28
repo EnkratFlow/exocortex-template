@@ -71,13 +71,6 @@ live evidence and handwritten notes, then make the reviewed edits within the
 approved task. No script automatically changes PROJECT_MEMORY, LESSONS, TODO,
 OPEN_DECISIONS, subconscious_patterns or control/BACKLOG.
 
-## Optional GEPA pilot
-
-See [the pilot guide](../evals/memory/README.md). GEPA may optimize the curation
-prompt against fixed reference answers. It does not decide whether source
-events are fresh or grant approval to write memory. The shipped fictional
-fixtures and fake-model tests verify the infrastructure, not model quality.
-
 ## Rollout and owner instruction replacement
 
 This is a template change. Existing projects need their normal reviewed upgrade

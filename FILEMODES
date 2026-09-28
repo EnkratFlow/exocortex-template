@@ -151,12 +151,6 @@
 0644  .exocortex/docs/status.md
 0644  .exocortex/docs/user-guide.md
 0644  .exocortex/docs/vision.md
-0644  .exocortex/evals/memory/README.md
-0644  .exocortex/evals/memory/holdout.json
-0644  .exocortex/evals/memory/local-pilot-2026-09-28.md
-0644  .exocortex/evals/memory/requirements.txt
-0644  .exocortex/evals/memory/train.json
-0644  .exocortex/evals/memory/validation.json
 0644  .exocortex/examples/EXECUTOR_REGISTRY.read-only.json
 0644  .exocortex/examples/EXTERNAL_SYNC_POLICY.deny.json
 0644  .exocortex/key-registry.json
@@ -212,7 +206,6 @@
 0644  .exocortex/scripts/launchd/com.exocortex.autosave.plist.template
 0755  .exocortex/scripts/launchd/install_autosave.sh
 0755  .exocortex/scripts/launchd/uninstall_autosave.sh
-0644  .exocortex/scripts/memory_gepa.py
 0644  .exocortex/scripts/model_registry.py
 0644  .exocortex/scripts/onboard_evidence.py
 0644  .exocortex/scripts/orchestrate_work_item.py
@@ -291,7 +284,6 @@
 0644  tests/test_documentation_contract.py
 0644  tests/test_init_project_windows.py
 0644  tests/test_installer_security.py
-0644  tests/test_memory_gepa.py
 0644  tests/test_memory_install.py
 0644  tests/test_memory_refresh.py
 0644  tests/test_onboard_contract.py

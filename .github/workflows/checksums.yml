@@ -195,10 +195,7 @@ jobs:
         run: python3 tests/test_documentation_contract.py
       - name: Verify generated provider adapters
         run: python3 .exocortex/scripts/generate_command_adapters.py --check
-      - name: Verify memory refresh and GEPA pilot offline
+      - name: Verify memory refresh offline
         run: |
           python3 -m unittest discover -s tests -p 'test_memory_*.py'
-          python3 -m venv /tmp/memory-gepa-test
-          /tmp/memory-gepa-test/bin/pip install --no-deps -r .exocortex/evals/memory/requirements.txt
-          /tmp/memory-gepa-test/bin/python -m unittest discover -s tests -p 'test_memory_gepa.py'
           bash .exocortex/scripts/tests/test_event_tooling.sh

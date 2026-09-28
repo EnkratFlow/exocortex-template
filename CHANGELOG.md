@@ -20,11 +20,8 @@ Unreleased candidate; no publication or project rollout has occurred.
   separately so retries do not duplicate events.
 - Detect additions, edits and deletions using event content hashes, with
   read-only checks at session entry and in work, preflight and onboarding.
-- Add source-bound durable-memory proposal previews and an optional GEPA 0.1.4
-  pilot with separate training, selection and held-out fictional fixtures.
-  No model calls, automatic permanent-memory edits or cross-project upgrades
-  happen by default. A small local-model trial found no usable improvement; its findings and
-  evaluator corrections are documented, and the baseline prompt is retained.
+- Add source-bound durable-memory proposal previews. No model calls,
+  automatic permanent-memory edits or cross-project upgrades happen by default.
 
 ## [3.3.5] - 2026-09-16
 
