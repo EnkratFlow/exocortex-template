@@ -40,13 +40,13 @@ class InitProjectWindowsTests(unittest.TestCase):
         original = handwritten.stat()
 
         first = self.initialize()
-        self.assertEqual(first.returncode, 0, first.stderr)
+        self.assertEqual(first.returncode, 0, first.stdout + first.stderr)
         project_name = self.root / ".exocortex" / ".project-name"
         self.assertEqual(project_name.read_bytes(), b"fixture-project\n")
         created = project_name.stat()
 
         second = self.initialize()
-        self.assertEqual(second.returncode, 0, second.stderr)
+        self.assertEqual(second.returncode, 0, second.stdout + second.stderr)
         self.assertEqual(project_name.read_bytes(), b"fixture-project\n")
         self.assertEqual(project_name.stat().st_mtime_ns, created.st_mtime_ns)
         self.assertEqual(handwritten.read_bytes(), b"Handwritten project notes.\n")
@@ -56,10 +56,10 @@ class InitProjectWindowsTests(unittest.TestCase):
         for fault in ("write", "file-fsync", "directory-fsync"):
             with self.subTest(fault=fault):
                 result = self.initialize(fault)
-                self.assertNotEqual(result.returncode, 0)
+                self.assertNotEqual(result.returncode, 0, result.stdout + result.stderr)
                 self.assertIn(
                     "injected test-only project-name " + fault + " failure",
-                    result.stderr,
+                    result.stdout + result.stderr,
                 )
                 self.assertEqual(list((self.root / ".exocortex").iterdir()), [])
 
