@@ -4588,11 +4588,15 @@ class EntryAndPrivacyTests(unittest.TestCase):
             " ".join(save["steps"][1]["options"]).lower(),
         )
         self.assertIn(
-            "internal reservation and capability mechanics are not separate "
-            "human approvals",
+            "Manual saves are ordinary local project work",
             save["steps"][0]["context"],
         )
-        self.assertIn("Never synchronize automatically", save["steps"][2]["context"])
+        self.assertIn(
+            "do not request internal capability approval",
+            save["steps"][0]["context"],
+        )
+        self.assertIn("never resave the event", save["steps"][2]["context"])
+        self.assertIn("synchronize automatically", save["steps"][2]["context"])
         self.assertNotIn(
             "sync",
             " ".join(save["steps"][1]["options"]).lower(),
