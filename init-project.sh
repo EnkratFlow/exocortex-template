@@ -115,7 +115,10 @@ else:
         created_identity = (opened.st_dev, opened.st_ino)
         if not stat.S_ISREG(opened.st_mode) or opened.st_nlink != 1:
             raise OSError("project-name temporary file is not a single-link regular file")
-        os.fchmod(fd, 0o644)
+        # Python added os.fchmod on Windows only in 3.13. Windows file modes
+        # represent the read-only attribute, not POSIX 0644 permissions.
+        if os.name != "nt":
+            os.fchmod(fd, 0o644)
         payload = project_name.encode("utf-8") + b"\n"
         while payload:
             write_payload = payload[:1] if test_fault == "write" else payload
