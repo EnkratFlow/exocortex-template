@@ -26,7 +26,7 @@ class InitProjectWindowsTests(unittest.TestCase):
                 EXOCORTEX_TEST_MODE="1", EXOCORTEX_TEST_INIT_FAULT=fault
             )
         return subprocess.run(
-            ["bash", "init-project.sh", "fixture-project"],
+            [os.environ.get("EXOCORTEX_TEST_BASH", "bash"), "init-project.sh", "fixture-project"],
             cwd=self.root,
             env=environment,
             capture_output=True,

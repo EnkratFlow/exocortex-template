@@ -24,7 +24,8 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - name: Test project initialization on Windows
-        run: python tests/test_init_project_windows.py
+        shell: bash
+        run: EXOCORTEX_TEST_BASH="$(cygpath -w "$BASH")" python tests/test_init_project_windows.py
 
   # Keep this identifier stable: the main-branch rule requires `phase-b`.
   phase-b:
