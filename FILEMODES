@@ -289,6 +289,7 @@
 0644  tests/phase-b/verify_evidence.py
 0644  tests/run_tests.sh
 0644  tests/test_documentation_contract.py
+0644  tests/test_init_project_windows.py
 0644  tests/test_installer_security.py
 0644  tests/test_memory_gepa.py
 0644  tests/test_memory_install.py

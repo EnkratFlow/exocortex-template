@@ -19,6 +19,52 @@ import stat
 import sys
 import tempfile
 
+
+def _flush_directory(directory):
+    """Durably flush a directory entry change (create/replace/unlink).
+
+    os.open() cannot open a directory at all on Windows (PermissionError:
+    the CRT-level _wsopen_s this goes through has no concept of it), so
+    this needs the Win32 API directly: a directory handle requires
+    FILE_FLAG_BACKUP_SEMANTICS, and the flush itself is FlushFileBuffers
+    rather than fsync. FlushFileBuffers on a directory handle also fails
+    with ERROR_ACCESS_DENIED unless the handle was opened with
+    GENERIC_WRITE, not just GENERIC_READ, even though nothing is actually
+    written through it -- confirmed empirically. See the matching fix in
+    scripts/safe-update.sh and .exocortex/scripts/authority_guard.py.
+    """
+
+    if os.name == "nt":
+        import ctypes
+        from ctypes import wintypes
+
+        kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+        create_file_w = kernel32.CreateFileW
+        create_file_w.argtypes = [
+            wintypes.LPCWSTR, wintypes.DWORD, wintypes.DWORD, wintypes.LPVOID,
+            wintypes.DWORD, wintypes.DWORD, wintypes.HANDLE,
+        ]
+        create_file_w.restype = wintypes.HANDLE
+        invalid_handle_value = wintypes.HANDLE(-1).value
+        handle = create_file_w(
+            str(directory), 0x80000000 | 0x40000000, 0x00000001 | 0x00000002 | 0x00000004,
+            None, 3, 0x02000000, None,
+        )
+        if handle == invalid_handle_value:
+            raise OSError(f"could not open directory for durability flush: {directory}")
+        try:
+            if not kernel32.FlushFileBuffers(handle):
+                raise OSError(f"could not flush directory: {directory}")
+        finally:
+            kernel32.CloseHandle(handle)
+    else:
+        directory_fd = os.open(directory, os.O_RDONLY)
+        try:
+            os.fsync(directory_fd)
+        finally:
+            os.close(directory_fd)
+
+
 project_name = sys.argv[1]
 home_input = sys.argv[2]
 test_fault = os.environ.get("EXOCORTEX_TEST_INIT_FAULT", "")
@@ -69,7 +115,10 @@ else:
         created_identity = (opened.st_dev, opened.st_ino)
         if not stat.S_ISREG(opened.st_mode) or opened.st_nlink != 1:
             raise OSError("project-name temporary file is not a single-link regular file")
-        os.fchmod(fd, 0o644)
+        # Python added os.fchmod on Windows only in 3.13. Windows file modes
+        # represent the read-only attribute, not POSIX 0644 permissions.
+        if os.name != "nt":
+            os.fchmod(fd, 0o644)
         payload = project_name.encode("utf-8") + b"\n"
         while payload:
             write_payload = payload[:1] if test_fault == "write" else payload
@@ -86,7 +135,13 @@ else:
         if (
             not stat.S_ISREG(created.st_mode)
             or created.st_nlink != 1
-            or stat.S_IMODE(created.st_mode) != 0o644
+            # Windows has no representable analog of the POSIX mode bits:
+            # os.fchmod() there cannot produce 0o644 (it synthesizes the
+            # mode purely from the read-only attribute), so this comparison
+            # is skipped only on Windows; every other identity check here
+            # still runs. See the matching skip in install.sh's
+            # verify_file_modes and scripts/safe-update.sh's FILEMODES check.
+            or (os.name != "nt" and stat.S_IMODE(created.st_mode) != 0o644)
             or (created.st_dev, created.st_ino) != created_identity
         ):
             raise OSError("project-name creation failed its safety verification")
@@ -94,29 +149,21 @@ else:
         fd = None
         os.link(temp_path, target, follow_symlinks=False)
         published = True
-        directory_fd = os.open(exocortex, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0))
-        try:
-            if test_fault == "directory-fsync":
-                raise OSError("injected test-only project-name directory-fsync failure")
-            os.fsync(directory_fd)
-        finally:
-            os.close(directory_fd)
+        if test_fault == "directory-fsync":
+            raise OSError("injected test-only project-name directory-fsync failure")
+        _flush_directory(exocortex)
         os.unlink(temp_path)
         temp_path = None
         final = os.lstat(target)
         if (
             not stat.S_ISREG(final.st_mode)
             or final.st_nlink != 1
-            or stat.S_IMODE(final.st_mode) != 0o644
+            or (os.name != "nt" and stat.S_IMODE(final.st_mode) != 0o644)
             or (final.st_dev, final.st_ino) != created_identity
             or target.read_bytes() != project_name.encode("utf-8") + b"\n"
         ):
             raise OSError("published project-name failed its safety verification")
-        directory_fd = os.open(exocortex, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0))
-        try:
-            os.fsync(directory_fd)
-        finally:
-            os.close(directory_fd)
+        _flush_directory(exocortex)
     except BaseException:
         if fd is not None:
             os.close(fd)
@@ -138,11 +185,7 @@ else:
                 os.unlink(temp_path)
                 cleanup_changed = True
         if cleanup_changed:
-            directory_fd = os.open(exocortex, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0))
-            try:
-                os.fsync(directory_fd)
-            finally:
-                os.close(directory_fd)
+            _flush_directory(exocortex)
         raise
 PY
 
