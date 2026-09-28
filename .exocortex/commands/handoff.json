@@ -23,7 +23,7 @@
     {
       "type": "ai",
       "action": "Respect the selected authority boundary",
-      "context": "If A, stop with zero writes. If B, prepare the exact orchestrate_work_item.py handoff arguments and capability request. Record only after the registered guarded executor accepts the exact current capability. Never push, deploy, synchronize, or promote."
+      "context": "If A, stop with zero writes. If B, prepare the exact orchestrate_work_item.py handoff arguments and capability request. Record only after the registered guarded executor accepts the exact current capability. Never push, deploy, synchronize, or promote. After a successful guarded record, report whether generated context coverage is stale. The guarded transaction itself does not refresh context. If ordinary local refresh is included in the task, run refresh_rollups.py --apply separately; never replay the handoff to refresh memory."
     }
   ]
 }

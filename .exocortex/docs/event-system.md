@@ -57,28 +57,32 @@ bash .exocortex/scripts/create_event.sh <<'EVENT'
 EVENT
 ```
 
-The helper records metadata and current Git evidence. It does not regenerate
-`.exocortex/SESSION_CONTEXT.md`, does not accept context-refresh authority, and
-does not create a preview file.
+The helper records metadata and current Git evidence, then refreshes the
+generated section of `.exocortex/SESSION_CONTEXT.md` and the source-hash
+receipt under `.exocortex/local/memory/`. It preserves handwritten context and
+durable memory. It does not accept context-refresh authority as a flag; an
+approved ordinary save includes this local derived view. It creates no preview.
 
 If a caller already owns a body file it may use `--body-file`; the event helper
-never creates a preview/body file itself. A Session Context refresh is a
-separate protected-memory mutation. Only a registered guarded writer may run
-it inside matching local-delivery scope:
+never creates a preview/body file itself. Exit 3 means **the event was saved but
+the refresh failed**. The final stdout line is still the event path. Keep that
+event and retry only the refresh, never the save:
 
 ```bash
 bash .exocortex/scripts/generate_context.sh
 ```
 
-Never add that refresh to event creation or treat an event-recording capability
-as refresh authority.
+The compatibility wrapper invokes `refresh_rollups.py --apply`. Guarded
+completion and handoff transactions remain unchanged: when local refresh is
+in scope, run that refresh separately after success, without another event.
 
 ## Freshness and authority
 
 Events are source evidence. Session Context and other summaries are derived
 views and can become stale. `.exocortex/scripts/read_memory_stack.sh` prints a
-freshness warning when a newer event exists; prefer the event history and live
-Git state until an explicit refresh is requested.
+freshness warning for changed, added or deleted events, a changed generated
+section, a missing receipt, or a new UTC window date. Prefer event history and
+live Git while coverage is stale. Entry checks never write memory.
 
 A retrospective may propose additions to `PROJECT_MEMORY.md`, `LESSONS.md`,
 or `OPEN_DECISIONS.md`. Those proposals require applicable local-delivery

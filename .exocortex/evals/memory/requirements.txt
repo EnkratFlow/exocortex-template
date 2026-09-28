@@ -1,0 +1,2 @@
+# Optional optimizer only. No provider or telemetry extras.
+gepa==0.1.4

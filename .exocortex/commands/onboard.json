@@ -29,6 +29,11 @@
     },
     {
       "type": "ai",
+      "action": "Check generated memory coverage read-only",
+      "context": "Run PYTHONDONTWRITEBYTECODE=1 python3 .exocortex/scripts/refresh_rollups.py --check --json. Exit 1 means stale and exit 2 means inspection failed; report either and continue using source events and live Git. Do not silently regenerate or trust a fresh index as semantic verification. Coverage detects source additions, content edits, deletions, generated-block edits, and UTC window rollover. This step writes nothing."
+    },
+    {
+      "type": "ai",
       "action": "Establish identity and scope",
       "context": "From the collector output, state: the resolved repository root; the branch, or 'detached HEAD' with the commit; the head commit and its date; the working-tree status (clean, or the counts and the checkout-local paths); the installed Exocortex version together with the file it was read from, or 'unknown, no version file found' when the source is absent (never guess a version); and that this session's role is read-only. Scope every later conclusion to this checkout only."
     },

@@ -137,7 +137,7 @@ cp "$PUBLIC_CHECKER" "$APPROVED_PUBLIC_CHECKER"
 chmod 0600 "$APPROVED_PUBLIC_CHECKER"
 [ "$(sha256_file "$APPROVED_PUBLIC_CHECKER")" = "$EXPECTED_CHECKER_HASH" ] \
     || fail "public-release checker does not match the approved manifest"
-run_candidate_python "$APPROVED_PUBLIC_CHECKER" --root "$SOURCE_ROOT" --source-tree "${GIT_CHECKER_ARGS[@]}" \
+run_candidate_python "$APPROVED_PUBLIC_CHECKER" --root "$SOURCE_ROOT" --source-tree ${GIT_CHECKER_ARGS[@]+"${GIT_CHECKER_ARGS[@]}"} \
     || fail "template source violates the public-release boundary"
 
 # Copy without repository metadata or credential files. Source validation above

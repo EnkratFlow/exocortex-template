@@ -1,3 +1,17 @@
+# What's New in 3.3.6 candidate: memory freshness and a GEPA pilot
+
+- Approved manual saves refresh generated Session Context and preserve your
+  handwritten notes. Freshness checks also notice edited or deleted old events.
+- Lessons, decisions and tasks can be proposed with exact source quotations and
+  reviewed before editing permanent memory. Old next steps are not copied into
+  TODO automatically.
+- An optional GEPA pilot can test better curation prompts. It includes separate
+  development and held-out fixtures, budget limits and offline tests. A small
+  real local-model trial found evaluator issues and no usable prompt improvement.
+  The evaluator was corrected; the original prompt remains in place. No paid
+  model run is included in this candidate.
+- This candidate has not been published or installed into existing projects.
+
 # What's New in 3.3.5 — Windows install and update actually finish
 
 - 3.3.4 got Windows past the first wall, but a clean install still could not

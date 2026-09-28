@@ -29,6 +29,9 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
+sys.dont_write_bytecode = True
+import refresh_rollups
+
 MAX_COMMITS = 40
 MAX_PATHS_PER_COMMIT = 25
 MAX_EVENTS_LISTED = 15
@@ -191,12 +194,25 @@ def collect(start: Path) -> dict:
         stamps = sorted(stamps)
         context["newest_event_timestamp_covered"] = stamps[-1] if stamps else None
         context["event_timestamps_covered"] = len(stamps)
+    # Legacy views still use timestamp evidence. New views also bind all source
+    # bytes, so an old event edit or deletion cannot hide behind a fresh mtime.
+    rollup_status = None
+    if context_text and refresh_rollups.START in context_text:
+        try:
+            rollup_status = refresh_rollups.check(root)
+            saved_sources = refresh_rollups.receipt(root).get("sources", {})
+            saved_stamps = [v.get("timestamp") for v in saved_sources.values() if v.get("timestamp")]
+            context["newest_event_timestamp_covered"] = max(saved_stamps, default=None)
+            context["event_timestamps_covered"] = len(saved_stamps)
+        except (ValueError, OSError):
+            rollup_status = {"status": "error", "reasons": ["coverage_unreadable"]}
+        context["rollup_coverage"] = rollup_status
     out["context"] = context
 
     events_dir = exo / "events"
     events: list[dict] = []
     if events_dir.is_dir():
-        names = sorted(p.name for p in events_dir.iterdir() if p.suffix == ".md")
+        names = sorted(p.name for p in events_dir.iterdir() if p.suffix == ".md" and p.name != refresh_rollups.EXAMPLE)
         for name in reversed(names[-max(MAX_EVENTS_LISTED, MAX_EVENTS_SCANNED_FOR_SHAS):]):
             body = read_text(events_dir / name, 400_000)
             events.append({"name": name, "timestamp": event_datetime(name, body), "_body": body})
@@ -304,6 +320,8 @@ def collect(start: Path) -> dict:
 
     # ── discrepancies and readiness blockers ────────────────────────────────
     disc: list[dict] = []
+    if rollup_status and rollup_status["status"] != "fresh":
+        disc.append({"code": "rollup_coverage_stale", "detail": rollup_status})
     if context_text is None:
         disc.append({"code": "context_missing", "detail": "no .exocortex/SESSION_CONTEXT.md; recover coverage from events and Git"})
     if events_newer_than_context:
@@ -342,7 +360,7 @@ def collect(start: Path) -> dict:
         disc.append({"code": "evidence_truncated", "lists": list(out["truncated_lists"]),
                      "detail": "these lists hit their cap; inspect beyond the cap yourself (e.g. git show --stat <sha>, ls .exocortex/events) or report the uncertainty"})
     out["discrepancies"] = disc
-    blockers = [d["code"] for d in disc if d["code"] in ("commits_after_event_coverage", "events_newer_than_context",
+    blockers = [d["code"] for d in disc if d["code"] in ("rollup_coverage_stale", "commits_after_event_coverage", "events_newer_than_context",
                                                           "context_recent_but_uncovered", "evidence_truncated",
                                                           "no_recorded_context")]
     out["readiness"] = {

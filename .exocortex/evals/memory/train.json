@@ -1,0 +1,226 @@
+[
+  {
+    "id": "train-release",
+    "events": [
+      {
+        "name": "e1",
+        "body": "Task cache-release: deploy the cache fix."
+      },
+      {
+        "name": "e2",
+        "body": "Task cache-release: deployment completed."
+      },
+      {
+        "name": "e3",
+        "body": "Task cache-release: deployment was rolled back after errors."
+      }
+    ],
+    "expected": {
+      "items": [
+        {
+          "key": "cache-release",
+          "target": "TODO.md",
+          "status": "rolled_back",
+          "evidence": [
+            {
+              "event": "e3",
+              "quote": "Task cache-release: deployment was rolled back after errors."
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "id": "train-task",
+    "events": [
+      {
+        "name": "e1",
+        "body": "Task export: build the export command."
+      },
+      {
+        "name": "e2",
+        "body": "Task export: export command finished and tests passed."
+      }
+    ],
+    "expected": {
+      "items": [
+        {
+          "key": "export",
+          "target": "TODO.md",
+          "status": "closed",
+          "evidence": [
+            {
+              "event": "e2",
+              "quote": "Task export: export command finished and tests passed."
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "id": "train-decision",
+    "events": [
+      {
+        "name": "e1",
+        "body": "Decision theme: dark or light is undecided."
+      },
+      {
+        "name": "e2",
+        "body": "Decision theme: the owner chose light."
+      }
+    ],
+    "expected": {
+      "items": [
+        {
+          "key": "theme",
+          "target": "OPEN_DECISIONS.md",
+          "status": "resolved",
+          "evidence": [
+            {
+              "event": "e2",
+              "quote": "Decision theme: the owner chose light."
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "id": "train-lesson",
+    "events": [
+      {
+        "name": "e1",
+        "body": "Lesson atomic-write: partial writes caused corrupt files."
+      },
+      {
+        "name": "e2",
+        "body": "Lesson atomic-write: write a temporary file and atomically replace the destination."
+      }
+    ],
+    "expected": {
+      "items": [
+        {
+          "key": "atomic-write",
+          "target": "LESSONS.md",
+          "status": "current",
+          "evidence": [
+            {
+              "event": "e2",
+              "quote": "Lesson atomic-write: write a temporary file and atomically replace the destination."
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "id": "train-fact",
+    "events": [
+      {
+        "name": "e1",
+        "body": "Fact port: the preview uses port 7000."
+      },
+      {
+        "name": "e2",
+        "body": "Fact port: the preview moved to port 7100."
+      }
+    ],
+    "expected": {
+      "items": [
+        {
+          "key": "port",
+          "target": "PROJECT_MEMORY.md",
+          "status": "current",
+          "evidence": [
+            {
+              "event": "e2",
+              "quote": "Fact port: the preview moved to port 7100."
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "id": "train-backlog",
+    "events": [
+      {
+        "name": "e1",
+        "body": "Backlog mobile-export: someone suggested a mobile export."
+      },
+      {
+        "name": "e2",
+        "body": "Backlog mobile-export: the owner deferred it until next quarter."
+      }
+    ],
+    "expected": {
+      "items": [
+        {
+          "key": "mobile-export",
+          "target": "control/BACKLOG.md",
+          "status": "deferred",
+          "evidence": [
+            {
+              "event": "e2",
+              "quote": "Backlog mobile-export: the owner deferred it until next quarter."
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "id": "train-pattern",
+    "events": [
+      {
+        "name": "e1",
+        "body": "Pattern status-check: in this one session an old deployment note caused confusion."
+      }
+    ],
+    "expected": {
+      "items": [
+        {
+          "key": "status-check",
+          "target": "subconscious_patterns.md",
+          "status": "proposed",
+          "evidence": [
+            {
+              "event": "e1",
+              "quote": "Pattern status-check: in this one session an old deployment note caused confusion."
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "id": "train-silence",
+    "events": [
+      {
+        "name": "e1",
+        "body": "Decision cache-choice: the agent recommended caching."
+      },
+      {
+        "name": "e2",
+        "body": "Decision cache-choice: the owner has not answered."
+      }
+    ],
+    "expected": {
+      "items": [
+        {
+          "key": "cache-choice",
+          "target": "OPEN_DECISIONS.md",
+          "status": "open",
+          "evidence": [
+            {
+              "event": "e2",
+              "quote": "Decision cache-choice: the owner has not answered."
+            }
+          ]
+        }
+      ]
+    }
+  }
+]

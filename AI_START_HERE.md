@@ -182,6 +182,14 @@ exclusions remain routing constraints.
   into automatic saves.
 - `create_event.sh` remains the manual `/save` event helper. It is not the
   local-delivery closeout operation and cannot release a writer or accept UAT.
+- An approved ordinary save through `create_event.sh` refreshes the generated
+  Session Context section and its local source-hash receipt. It preserves
+  handwritten context and durable memory. Guarded closeout remains a separate
+  transaction; when local refresh is in scope, follow it with
+  `refresh_rollups.py --apply` without recording another event.
+- At entry, run `refresh_rollups.py --check --json` read-only. Stale coverage
+  requires source-event and live-Git reconciliation, not silent regeneration.
+  A fresh event index does not certify durable memory or current task status.
 - A retrospective may propose a durable change to project memory or lessons,
   but it cannot write that proposal into permanent memory without the
   applicable local-delivery scope.

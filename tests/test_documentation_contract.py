@@ -412,9 +412,9 @@ require(
     ".exocortex/docs/EVENT_SYSTEM_USAGE.md",
     "It remains manual for\nordinary chat",
     "exactly one\nconcise completion event",
-    "never accepts context-refresh\nauthority",
+    "saves the approved event and refreshes only the generated",
     "MEMORY_FRESHNESS_WARNING",
-    "separately authorized guarded writer operation",
+    "Handwritten context\nand durable memory are preserved",
 )
 require(
     ".exocortex/docs/event-system.md",

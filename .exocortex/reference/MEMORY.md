@@ -33,6 +33,12 @@ project root, not to this folder:
 
 **Rule:** If you have not read these, do not make changes.
 
+Before treating Session Context as current, run
+`python3 .exocortex/scripts/refresh_rollups.py --check --json` read-only.
+A stale or missing receipt requires reconciliation with source events and live
+Git. Fresh coverage certifies the generated index only, not the correctness of
+handwritten lessons, decisions, or tasks. Never silently regenerate on entry.
+
 If work discovers new tasks, risks, or follow-ups, report them in chat. Update
 `.exocortex/TODO.md` only when the current task authorizes that local write.
 

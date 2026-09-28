@@ -15,21 +15,21 @@
     },
     {
       "type": "ai",
-    "action": "Draft the event body in chat memory only",
-    "context": "Draft a factual local narrative with accomplishments, decisions, problems, current state, and next work. Show it in chat. Do not create a file in /tmp or anywhere else. A chat draft is not a save or checkpoint."
+      "action": "Draft the event body in chat memory only",
+      "context": "Draft a factual local narrative with accomplishments, decisions, problems, current state, and next work. Show it in chat. Do not create a file in /tmp or anywhere else. A chat draft is not a save or checkpoint."
     },
     {
       "type": "user_choice",
       "options": [
         "A) Keep the draft only",
-        "B) Request a separately scoped guarded local-event recording operation",
+        "B) Save this exact summary as a project-local event",
         "C) Discard the draft"
       ]
     },
     {
       "type": "ai",
       "action": "Respect the selected authority boundary",
-      "context": "Never sync automatically. If recording is requested, prepare the exact local event path and one-time capability request; do not write until the guarded executor accepts it."
+      "context": "If recording is selected, use create_event.sh under the existing ordinary local-save authorization. It saves the exact narrative and refreshes only generated context and its local coverage receipt. Report both results. If exit 3, keep the saved event and retry only refresh_rollups.py --apply. Do not edit durable memory automatically, create a lifecycle checkpoint, or sync automatically."
     }
   ]
 }

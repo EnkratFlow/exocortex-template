@@ -6,6 +6,26 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 ## [Unreleased]
 
+## [3.3.6] - 2026-09-28
+
+Unreleased candidate; no publication or project rollout has occurred.
+
+### Added and fixed
+
+- Preserve empty optional checker argument arrays on Bash 3.2 during install
+  and update; the existing unbound-array failure prevented local rehearsal.
+
+- Refresh generated Session Context after approved manual event saves. Preserve
+  handwritten content and existing backups; report saved-event/refresh-failure
+  separately so retries do not duplicate events.
+- Detect additions, edits and deletions using event content hashes, with
+  read-only checks at session entry and in work, preflight and onboarding.
+- Add source-bound durable-memory proposal previews and an optional GEPA 0.1.4
+  pilot with separate training, selection and held-out fictional fixtures.
+  No model calls, automatic permanent-memory edits or cross-project upgrades
+  happen by default. A small local-model trial found no usable improvement; its findings and
+  evaluator corrections are documented, and the baseline prompt is retained.
+
 ## [3.3.5] - 2026-09-16
 
 ### Fixed
