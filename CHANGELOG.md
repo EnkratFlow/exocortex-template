@@ -6,9 +6,11 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 ## [Unreleased]
 
-## [3.3.6] - 2026-09-28
+## [3.3.6] - 2026-09-29
 
-Unreleased candidate; no publication or project rollout has occurred.
+This entry records the 3.3.6 change set. Publication status and date are on
+[GitHub Releases](https://github.com/EnkratFlow/exocortex-template/releases);
+installation into existing projects is a separate step.
 
 ### Added and fixed
 
