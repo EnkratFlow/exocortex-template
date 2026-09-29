@@ -3797,6 +3797,7 @@ class ReconciliationPlanTests(unittest.TestCase):
         (self.target / command_path).write_text('{"opening":"current"}\n', encoding="utf-8")
         reviewed = self.target / object_path
         reviewed.write_text('{"opening":"reviewed"}\n', encoding="utf-8")
+        os.chmod(reviewed, 0o644)
         prepared = self.prepare("--reviewed", f"{command_path}={object_path}")
         self.assertEqual(prepared.returncode, 0, prepared.stdout + prepared.stderr)
         plan = json.loads(prepared.stdout)
@@ -4225,6 +4226,7 @@ class ReconciliationPlanTests(unittest.TestCase):
         reviewed_path.write_text(
             json.dumps(reviewed_command, indent=2) + "\n", encoding="utf-8"
         )
+        os.chmod(reviewed_path, 0o644)
         guard_digest = run(["python3", str(AUTHORITY), "guard-digest"], check=True).stdout.strip()
         registry = {
             "schema_version": "public-v2",
@@ -4259,6 +4261,7 @@ class ReconciliationPlanTests(unittest.TestCase):
         candidate_digest = file_digest(template_source / "SHA256SUMS")
         backup = self.root / "backups"
         backup.mkdir()
+        os.chmod(backup, 0o700)
         dry = run(
             [
                 "bash",
