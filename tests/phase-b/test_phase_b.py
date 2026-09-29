@@ -3788,6 +3788,77 @@ class ReconciliationPlanTests(unittest.TestCase):
             "target entry\n",
         )
 
+    def test_reviewed_command_collision_requires_exact_path_bytes_and_mode(self) -> None:
+        command_path = ".exocortex/commands/monthly-review.json"
+        object_path = (
+            ".exocortex/local/update-reconciliation/objects/monthly-review.json"
+        )
+        (self.target / command_path).parent.mkdir(parents=True)
+        (self.target / command_path).write_text('{"opening":"current"}\n', encoding="utf-8")
+        reviewed = self.target / object_path
+        reviewed.write_text('{"opening":"reviewed"}\n', encoding="utf-8")
+        prepared = self.prepare("--reviewed", f"{command_path}={object_path}")
+        self.assertEqual(prepared.returncode, 0, prepared.stdout + prepared.stderr)
+        plan = json.loads(prepared.stdout)
+        spec = importlib.util.spec_from_file_location("reconciliation_command_fixture", RECONCILIATION)
+        self.assertIsNotNone(spec)
+        assert spec is not None and spec.loader is not None
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        module.validate_plan(
+            plan, target=self.target, template=self.template,
+            candidate_digest=self.candidate_digest,
+        )
+        rehearsal = self.root / "reviewed-command-rehearsal"
+        shutil.copytree(self.target, rehearsal)
+        module.materialize_plan(
+            plan, destination_root=rehearsal,
+            template=self.template, baseline_target=self.target,
+        )
+        approved_line = (
+            f"EXOCORTEX_COMMAND_AUTHORITY_COLLISION_PRESERVED: {command_path}"
+            " (reviewed reconciliation required before live apply)"
+        )
+        module.validate_reconciled_command_collisions(plan, approved_line, rehearsal)
+        failures = (
+            (
+                approved_line + "\nEXOCORTEX_COMMAND_AUTHORITY_COLLISION_PRESERVED: "
+                ".exocortex/commands/work.json (reviewed reconciliation required before live apply)",
+                "unreviewed_command_collision",
+            ),
+            (
+                approved_line + "\nEXOCORTEX_STALE_COMMAND_GUIDANCE_PRESERVED: "
+                "CLAUDE.md (matching command JSON remains authoritative; reviewed reconciliation required before live apply)",
+                "stale_command_guidance",
+            ),
+            (
+                "EXOCORTEX_COMMAND_AUTHORITY_COLLISION_PRESERVED: AI_START_HERE.md "
+                "(reviewed reconciliation required before live apply)",
+                "unreviewed_command_collision",
+            ),
+            (
+                approved_line.replace(
+                    "reviewed reconciliation required before live apply",
+                    "legacy command authority requires reviewed reconciliation",
+                ),
+                "unreviewed_command_collision",
+            ),
+        )
+        for log, expected_code in failures:
+            with self.subTest(expected_code=expected_code, log=log):
+                with self.assertRaises(module.ReconciliationError) as caught:
+                    module.validate_reconciled_command_collisions(plan, log, rehearsal)
+                self.assertEqual(caught.exception.code, expected_code)
+        (rehearsal / command_path).write_text('{"opening":"tampered"}\n', encoding="utf-8")
+        with self.assertRaises(module.ReconciliationError) as caught:
+            module.validate_reconciled_command_collisions(plan, approved_line, rehearsal)
+        self.assertEqual(caught.exception.code, "reviewed_command_drift")
+        (rehearsal / command_path).write_bytes(reviewed.read_bytes())
+        os.chmod(rehearsal / command_path, 0o755)
+        with self.assertRaises(module.ReconciliationError) as caught:
+            module.validate_reconciled_command_collisions(plan, approved_line, rehearsal)
+        self.assertEqual(caught.exception.code, "reviewed_command_drift")
+
     def test_plan_can_live_in_protected_local_state_without_self_invalidating(self) -> None:
         candidate = self.prepare("--adopt", "AI_START_HERE.md")
         self.assertEqual(candidate.returncode, 0, candidate.stdout + candidate.stderr)
@@ -4139,6 +4210,21 @@ class ReconciliationPlanTests(unittest.TestCase):
         ):
             (target / f".exocortex/{relative}").write_text(content, encoding="utf-8")
         (target / "AI_START_HERE.md").write_text("legacy target entry\n", encoding="utf-8")
+        command_path = ".exocortex/commands/monthly-review.json"
+        command = json.loads((template_source / command_path).read_text(encoding="utf-8"))
+        command["steps"][0]["context"] += " Fictional project review opening."
+        (target / command_path).parent.mkdir(parents=True)
+        (target / command_path).write_text(
+            json.dumps(command, indent=2) + "\n", encoding="utf-8"
+        )
+        reviewed_command = copy.deepcopy(command)
+        reviewed_command["steps"][0]["context"] += " Check the current source-event index."
+        reviewed_rel = ".exocortex/local/update-reconciliation/objects/monthly-review.json"
+        reviewed_path = target / reviewed_rel
+        reviewed_path.parent.mkdir(parents=True)
+        reviewed_path.write_text(
+            json.dumps(reviewed_command, indent=2) + "\n", encoding="utf-8"
+        )
         guard_digest = run(["python3", str(AUTHORITY), "guard-digest"], check=True).stdout.strip()
         registry = {
             "schema_version": "public-v2",
@@ -4222,6 +4308,8 @@ class ReconciliationPlanTests(unittest.TestCase):
                 str(standard_path_file),
                 "--adopt",
                 "AI_START_HERE.md",
+                "--reviewed",
+                f"{command_path}={reviewed_rel}",
             ]
         )
         self.assertEqual(prepared.returncode, 0, prepared.stdout + prepared.stderr)
@@ -4329,6 +4417,8 @@ class ReconciliationPlanTests(unittest.TestCase):
             file_digest(target / "AI_START_HERE.md"),
             file_digest(template_source / "AI_START_HERE.md"),
         )
+        self.assertEqual(file_digest(target / command_path), file_digest(reviewed_path))
+        self.assertIn("Fictional project review opening.", (target / command_path).read_text(encoding="utf-8"))
         self.assertEqual(
             (target / ".exocortex/PROJECT_MEMORY.md").read_text(encoding="utf-8"),
             "KEEP_PROJECT_MEMORY\n",
