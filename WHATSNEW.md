@@ -1,3 +1,12 @@
+# What's New in 3.3.6 candidate: memory freshness
+
+- Approved manual saves refresh generated Session Context and preserve your
+  handwritten notes. Freshness checks also notice edited or deleted old events.
+- Lessons, decisions and tasks can be proposed with exact source quotations and
+  reviewed before editing permanent memory. Old next steps are not copied into
+  TODO automatically.
+- This candidate has not been published or installed into existing projects.
+
 # What's New in 3.3.5 — Windows install and update actually finish
 
 - 3.3.4 got Windows past the first wall, but a clean install still could not

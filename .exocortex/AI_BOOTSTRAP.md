@@ -284,3 +284,14 @@ If orientation is unclear:
 4. Reconcile generated context against live Git and local event evidence.
 5. Stop if authority, base, revision, registry, capability, or writer ownership
    is missing or contradictory.
+
+## Generated memory freshness
+
+Before relying on Session Context, run the read-only
+`python3 .exocortex/scripts/refresh_rollups.py --check --json`. Treat exit 1 as
+stale and exit 2 as an inspection failure. Reconcile source events and live Git
+without silently writing memory. Approved ordinary saves refresh the generated
+section through `create_event.sh`; guarded completion/handoff transactions
+require a separate in-scope `refresh_rollups.py --apply` afterward.
+Durable lessons, decisions, tasks and patterns need reviewed proposals; see
+`.exocortex/docs/memory-system.md`. No provider is called by default.

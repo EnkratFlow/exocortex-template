@@ -297,7 +297,7 @@ cp "$PUBLIC_RELEASE_CHECKER_SOURCE" "$PUBLIC_RELEASE_CHECKER"
 chmod 0600 "$PUBLIC_RELEASE_CHECKER"
 [ "$(sha256_file "$PUBLIC_RELEASE_CHECKER")" = "$EXPECTED_PUBLIC_CHECKER_HASH" ] \
     || fail "private public-release checker copy differs from SHA256SUMS"
-run_candidate_python "$PUBLIC_RELEASE_CHECKER" --root "$TEMPLATE_ROOT" --source-tree "${GIT_CHECKER_ARGS[@]}" \
+run_candidate_python "$PUBLIC_RELEASE_CHECKER" --root "$TEMPLATE_ROOT" --source-tree ${GIT_CHECKER_ARGS[@]+"${GIT_CHECKER_ARGS[@]}"} \
     || fail "template source violates the public-release boundary"
 
 # Retired provider paths and project-owned root Cursor rules remain update

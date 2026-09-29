@@ -42,13 +42,17 @@ Lifecycle checkpoints are different: only an accepted, authorized transition
 marked checkpoint-eligible creates one stable idempotent checkpoint. Chat,
 tests, support lanes, rejected attempts, retries, saves, and handoffs do not.
 
-`create_event.sh` records only the event. It never accepts context-refresh
-authority, refreshes Session Context, or creates a preview as a side effect.
+`create_event.sh` saves the approved event and refreshes only the generated
+Session Context section and local source-hash receipt. Handwritten context
+and durable memory are preserved. No model is called. It never accepts
+context-refresh authority as an extra command-line flag.
 
-Inside a separately authorized guarded writer operation,
-`generate_context.sh` may derive a project-local session view from existing
-events. It is never part of event recording. `read_memory_stack.sh` warns when
-newer events make that view stale.
+An ordinary authorized local refresh can use `generate_context.sh` or
+`refresh_rollups.py --apply`. Guarded completion and handoff transactions need
+that separate followup when refresh is in scope. Do not replay them.
+If event creation exits 3, the event already exists: retry only the refresh.
+`read_memory_stack.sh` warns about source additions, changes, deletions and
+window rollover; `refresh_rollups.py --check --json` explains the discrepancy.
 That warning begins with `MEMORY_FRESHNESS_WARNING:` so every provider can
 surface it without guessing.
 Generated context must be reconciled against live Git, the exact work item,

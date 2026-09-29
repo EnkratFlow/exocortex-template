@@ -156,6 +156,7 @@
 0644  .exocortex/key-registry.json
 0644  .exocortex/model-routing-catalog.json
 0644  .exocortex/model-source-registry.json
+0644  .exocortex/prompts/memory-curator.md
 0644  .exocortex/provider-adapters.json
 0644  .exocortex/reference/CHEAT_SHEET.md
 0644  .exocortex/reference/ESSENTIAL_FILES.md
@@ -182,6 +183,7 @@
 0644  .exocortex/scripts/check_keys.py
 0644  .exocortex/scripts/check_keys.sh
 0755  .exocortex/scripts/create_event.sh
+0644  .exocortex/scripts/curate_memory.py
 0755  .exocortex/scripts/detect_work_state.sh
 0755  .exocortex/scripts/drill_memory.py
 0644  .exocortex/scripts/egress_guard.py
@@ -211,6 +213,8 @@
 0644  .exocortex/scripts/prepare_update_reconciliation.py
 0644  .exocortex/scripts/publish_candidate.py
 0755  .exocortex/scripts/read_memory_stack.sh
+0644  .exocortex/scripts/record_event.py
+0644  .exocortex/scripts/refresh_rollups.py
 0644  .exocortex/scripts/resolve_designated_base.sh
 0755  .exocortex/scripts/run_brief_status.sh
 0755  .exocortex/scripts/run_end_day.sh
@@ -280,6 +284,8 @@
 0644  tests/test_documentation_contract.py
 0644  tests/test_init_project_windows.py
 0644  tests/test_installer_security.py
+0644  tests/test_memory_install.py
+0644  tests/test_memory_refresh.py
 0644  tests/test_onboard_contract.py
 0644  tests/test_public_release.py
 0644  tests/test_publication_workflow.py

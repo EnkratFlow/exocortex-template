@@ -8,6 +8,8 @@ PROJECT="$TMP/project"
 FAKE_BIN="$TMP/bin"
 CURL_LOG="$TMP/curl.log"
 mkdir -p "$PROJECT/.exocortex/scripts" "$PROJECT/.exocortex/control" "$PROJECT/.exocortex/events" "$FAKE_BIN"
+cp "$ROOT/.exocortex/scripts/record_event.py" "$PROJECT/.exocortex/scripts/"
+cp "$ROOT/.exocortex/scripts/refresh_rollups.py" "$PROJECT/.exocortex/scripts/"
 cp "$ROOT/.exocortex/scripts/create_event.sh" "$PROJECT/.exocortex/scripts/"
 cp "$ROOT/.exocortex/scripts/generate_context.sh" "$PROJECT/.exocortex/scripts/"
 cp "$ROOT/.exocortex/scripts/read_memory_stack.sh" "$PROJECT/.exocortex/scripts/"
@@ -33,9 +35,13 @@ context_before="$(shasum -a 256 "$PROJECT/.exocortex/SESSION_CONTEXT.md" | awk '
 [ "$(find "$PROJECT/.exocortex/events" -type f -name '*.md' | wc -l | tr -d ' ')" = "1" ]
 [ ! -e "$CURL_LOG" ]
 context_after="$(shasum -a 256 "$PROJECT/.exocortex/SESSION_CONTEXT.md" | awk '{print $1}')"
-[ "$context_before" = "$context_after" ]
+[ "$context_before" != "$context_after" ]
+grep -Fq "# Session Context" "$PROJECT/.exocortex/SESSION_CONTEXT.md.backup"
 [ ! -e "$PROJECT/.exocortex/SESSION_CONTEXT.regen.md" ]
 
+freshness_output="$(cd "$PROJECT" && bash .exocortex/scripts/read_memory_stack.sh 2>&1 >/dev/null)"
+[ -z "$freshness_output" ]
+printf '\nChanged older evidence\n' >> "$(find "$PROJECT/.exocortex/events" -name '*.md' | head -1)"
 freshness_output="$(cd "$PROJECT" && bash .exocortex/scripts/read_memory_stack.sh 2>&1 >/dev/null)"
 grep -Fq 'MEMORY_FRESHNESS_WARNING:' <<< "$freshness_output"
 
@@ -70,4 +76,4 @@ if (cd "$PROJECT" && PATH="$FAKE_BIN:$PATH" bash .exocortex/scripts/sync_event_t
 fi
 [ ! -e "$CURL_LOG" ]
 
-echo "event tooling: local-only, separate-context, freshness, and reminder-only checks passed"
+echo "event tooling: local-only, automatic-context, freshness, and reminder-only checks passed"

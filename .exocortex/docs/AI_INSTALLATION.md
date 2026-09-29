@@ -1,5 +1,8 @@
 # Install or update Exocortex with a coding AI
 
+> Candidate 3.3.6 is not yet published. Release commands below apply only after
+> its authenticated release exists; do not substitute this working branch.
+
 This is the provider-neutral operator contract for asking a coding AI to
 install or update Exocortex in a local repository. It does not grant authority.
 The AI must have local filesystem and terminal access to the target repository.
@@ -25,7 +28,7 @@ attestation evidence with its documented trust identity. The SHA and digest
 prove byte consistency but do not independently prove owner authenticity when
 the repository, tag, release notes, and digest share one trust domain.
 
-Version 3.3.5 selects GitHub's immutable-release attestation for the exact
+Version 3.3.6 selects GitHub's immutable-release attestation for the exact
 trust identity `github.com/EnkratFlow/exocortex-template`. The release publishes
 `SHA256SUMS` as an attested asset. Public installation remains blocked unless
 both `gh release verify` and `gh release verify-asset` succeed and the attested
@@ -35,23 +38,23 @@ and consistency checks are:
 ```bash
 (
 set -eu
-gh release verify v3.3.5 -R github.com/EnkratFlow/exocortex-template
-mkdir -m 700 /tmp/exocortex-release-verify-v3.3.5
-gh release download v3.3.5 -R github.com/EnkratFlow/exocortex-template \
-  --pattern SHA256SUMS --dir /tmp/exocortex-release-verify-v3.3.5
-gh release verify-asset v3.3.5 \
-  /tmp/exocortex-release-verify-v3.3.5/SHA256SUMS \
+gh release verify v3.3.6 -R github.com/EnkratFlow/exocortex-template
+mkdir -m 700 /tmp/exocortex-release-verify-v3.3.6
+gh release download v3.3.6 -R github.com/EnkratFlow/exocortex-template \
+  --pattern SHA256SUMS --dir /tmp/exocortex-release-verify-v3.3.6
+gh release verify-asset v3.3.6 \
+  /tmp/exocortex-release-verify-v3.3.6/SHA256SUMS \
   -R github.com/EnkratFlow/exocortex-template
-git clone --depth 1 --branch v3.3.5 \
+git clone --depth 1 --branch v3.3.6 \
   https://github.com/EnkratFlow/exocortex-template.git \
-  /tmp/exocortex-template-v3.3.5
-cmp -s /tmp/exocortex-release-verify-v3.3.5/SHA256SUMS \
-  /tmp/exocortex-template-v3.3.5/SHA256SUMS
-git -C /tmp/exocortex-template-v3.3.5 rev-parse HEAD
+  /tmp/exocortex-template-v3.3.6
+cmp -s /tmp/exocortex-release-verify-v3.3.6/SHA256SUMS \
+  /tmp/exocortex-template-v3.3.6/SHA256SUMS
+git -C /tmp/exocortex-template-v3.3.6 rev-parse HEAD
 if command -v shasum >/dev/null 2>&1; then
-  shasum -a 256 /tmp/exocortex-template-v3.3.5/SHA256SUMS
+  shasum -a 256 /tmp/exocortex-template-v3.3.6/SHA256SUMS
 else
-  sha256sum /tmp/exocortex-template-v3.3.5/SHA256SUMS
+  sha256sum /tmp/exocortex-template-v3.3.6/SHA256SUMS
 fi
 )
 ```

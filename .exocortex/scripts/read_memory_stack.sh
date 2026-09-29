@@ -6,14 +6,12 @@ set -u
 
 EXOCORTEX=".exocortex"
 
-if [ -d "$EXOCORTEX/events" ]; then
-  if [ ! -f "$EXOCORTEX/SESSION_CONTEXT.md" ]; then
-    if [ -n "$(find "$EXOCORTEX/events" -maxdepth 1 -type f -name '*.md' -print -quit 2>/dev/null)" ]; then
-      echo "MEMORY_FRESHNESS_WARNING: Session Context is missing; use the events as current evidence and refresh context only if explicitly requested." >&2
-    fi
-  elif [ -n "$(find "$EXOCORTEX/events" -maxdepth 1 -type f -name '*.md' -newer "$EXOCORTEX/SESSION_CONTEXT.md" -print -quit 2>/dev/null)" ]; then
-    echo "MEMORY_FRESHNESS_WARNING: newer project events exist; Session Context is derived and stale. Prefer the events and live Git state, and refresh context only if explicitly requested." >&2
-  fi
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# A read-only failure is a warning, not authority to mutate or skip orientation.
+PYTHONDONTWRITEBYTECODE=1 python3 "$SCRIPT_DIR/refresh_rollups.py" --check --project-root "$PWD" >/dev/null 2>&1
+freshness_status=$?
+if [ "$freshness_status" -ne 0 ]; then
+  echo "MEMORY_FRESHNESS_WARNING: generated context coverage is stale or unverified; inspect refresh_rollups.py --check --json and reconcile source events with live Git." >&2
 fi
 
 # Count files and lines
