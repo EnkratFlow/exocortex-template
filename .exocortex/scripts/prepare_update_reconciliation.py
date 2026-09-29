@@ -70,6 +70,9 @@ PROTECTED_PATHS = (
 )
 LEGACY_SESSION_CONTEXT_BACKUP_PREFIX = ".exocortex/SESSION_CONTEXT_BACKUP_"
 REVIEWED_OBJECT_PREFIX = ".exocortex/local/update-reconciliation/objects/"
+COMMAND_COLLISION_PREFIX = "EXOCORTEX_COMMAND_AUTHORITY_COLLISION_PRESERVED: "
+STALE_GUIDANCE_PREFIX = "EXOCORTEX_STALE_COMMAND_GUIDANCE_PRESERVED: "
+REVIEWED_COMMAND_COLLISION_SUFFIX = " (reviewed reconciliation required before live apply)"
 # Protected project data is preserved and verified separately by safe-update.
 # It is not part of the mutable template code-plane surface. In particular, a
 # reviewed plan stored under .exocortex/local must not invalidate itself.
@@ -545,6 +548,46 @@ def validate_plan(
     if document["effect_paths_digest"] != path_list_digest(effect_paths):
         raise ReconciliationError("path_digest_mismatch", "effect_paths_digest is invalid")
     return document
+
+
+def validate_reconciled_command_collisions(
+    plan: Dict[str, Any],
+    install_log: str,
+    rehearsal_root: Path,
+) -> None:
+    """Accept only exact reviewed command JSON collisions in the final install pass.
+
+    The caller has already validated the digest-bound plan and materialized it
+    into the disposable rehearsal. Any other command or stale guidance
+    diagnostic still blocks the update before live capability consumption.
+    """
+    rehearsal_root = resolve_root(rehearsal_root, "reconciled rehearsal")
+    reviewed = {
+        entry["path"]: entry
+        for entry in plan["entries"]
+        if entry["action"] == "use_reviewed_object"
+        and re.fullmatch(r"\.exocortex/commands/[^/]+\.json", entry["path"])
+    }
+    seen: set[str] = set()
+    for line in install_log.splitlines():
+        if line.startswith(STALE_GUIDANCE_PREFIX):
+            raise ReconciliationError("stale_command_guidance", "stale command guidance remains after reconciliation")
+        if not line.startswith(COMMAND_COLLISION_PREFIX):
+            continue
+        if not line.endswith(REVIEWED_COMMAND_COLLISION_SUFFIX):
+            raise ReconciliationError("unreviewed_command_collision", "command collision has an unrecognized diagnostic")
+        path = line[len(COMMAND_COLLISION_PREFIX):-len(REVIEWED_COMMAND_COLLISION_SUFFIX)]
+        entry = reviewed.get(path)
+        if entry is None or path in seen:
+            raise ReconciliationError("unreviewed_command_collision", "command collision is not an exact reviewed command JSON path")
+        seen.add(path)
+        actual = regular_file_digest_or_none(rehearsal_root, path, "reconciled command path")
+        if actual != entry["object_sha256"]:
+            raise ReconciliationError("reviewed_command_drift", "reconciled command bytes differ from the reviewed object")
+        source = resolve_file(rehearsal_root, path, "reconciled command path")
+        assert source is not None
+        if normalized_file_mode(source, f"reconciled command {path}") != entry["expected_mode"]:
+            raise ReconciliationError("reviewed_command_drift", "reconciled command mode differs from the reviewed object")
 
 
 def build_entry(

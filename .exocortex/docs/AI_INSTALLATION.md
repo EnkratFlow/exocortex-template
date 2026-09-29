@@ -1,7 +1,7 @@
 # Install or update Exocortex with a coding AI
 
-> Candidate 3.3.6 is not yet published. Release commands below apply only after
-> its authenticated release exists; do not substitute this working branch.
+> Version 3.3.6 is published. This working branch contains an unpublished
+> updater correction; do not substitute it for an authenticated release.
 
 This is the provider-neutral operator contract for asking a coding AI to
 install or update Exocortex in a local repository. It does not grant authority.
@@ -663,9 +663,14 @@ systems remain outside the effect set.
 
 This path is for reviewed target-specific convergence, not automatic conflict
 resolution. The standard updater remains the default for collision-free
-targets. After materializing the reviewed objects, the final rehearsal
-installer pass must emit no command-authority or stale-command-guidance drift;
-otherwise reconciliation fails before live mutation.
+targets. In the corrected updater, the final rehearsal installer pass may
+report a preserved command-authority collision only for an exact
+`.exocortex/commands/*.json` path with a `use_reviewed_object` entry in the
+validated plan. The materialized command bytes and mode must still match the
+reviewed object. Any unplanned command collision, legacy command authority,
+or stale root guidance fails before live capability consumption. Version
+3.3.6 does not have this correction; use a later authenticated release for
+this case.
 
 ## WSL evidence required before support
 

@@ -1175,7 +1175,37 @@ if [ -n "$RECONCILIATION_PLAN" ]; then
     # rehearsed exact effect and must not add paths outside the plan.
     run_installer_logged "$REHEARSAL" "$RECONCILED_INSTALL_LOG"
     if command_reconciliation_required "$RECONCILED_INSTALL_LOG"; then
-        fail "reviewed reconciliation left command authority or stale command-guidance drift"
+        run_candidate_python - \
+            "$RECONCILIATION_HELPER" "$RECONCILIATION_PLAN" "$RECONCILED_INSTALL_LOG" \
+            "$REHEARSAL" "$TEMPLATE_ROOT" "$PROJECT_ROOT" "$PLAN_DIGEST" <<'PY' \
+            || fail "reviewed reconciliation left unapproved command authority or stale command-guidance drift"
+import hashlib
+import importlib.util
+import sys
+from pathlib import Path
+
+helper, plan_name, log_name, rehearsal, template, baseline = map(Path, sys.argv[1:7])
+expected_digest = sys.argv[7]
+spec = importlib.util.spec_from_file_location("exocortex_update_reconciliation", helper)
+if spec is None or spec.loader is None:
+    raise SystemExit("reconciliation helper could not be loaded")
+module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(module)
+raw_plan = plan_name.read_bytes()
+if hashlib.sha256(raw_plan).hexdigest() != expected_digest:
+    raise SystemExit("reconciliation plan changed before final collision check")
+try:
+    plan = module.parse_plan_bytes(raw_plan)
+    module.validate_plan(
+        plan, target=baseline, template=template,
+        candidate_digest=plan["candidate_digest"], require_current_target=False,
+    )
+    module.validate_reconciled_command_collisions(
+        plan, log_name.read_text(encoding="utf-8"), rehearsal,
+    )
+except module.ReconciliationError as exc:
+    raise SystemExit(exc.code)
+PY
     fi
     COMMAND_RECONCILIATION_REQUIRED=false
 fi
