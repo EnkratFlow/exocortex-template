@@ -1,3 +1,12 @@
+# What's New in 3.3.7 — Preserve reviewed project commands
+
+- An Exocortex update can now retain a project-specific command instruction
+  when its exact replacement is reviewed and bound to the update plan. This
+  addresses the Trading Journal monthly-review collision found during the
+  v3.3.6 pilot.
+- Other command conflicts and stale root guidance still stop the update.
+  Existing projects are updated separately after the authenticated release.
+
 # What's New in 3.3.6 — Memory freshness
 
 - Approved manual saves refresh generated Session Context and preserve your

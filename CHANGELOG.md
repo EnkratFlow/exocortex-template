@@ -6,6 +6,21 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 ## [Unreleased]
 
+## [3.3.7] - 2026-09-29
+
+This patch packages the reviewed-command updater correction merged in PR #40.
+Installation into existing projects remains a separate, named update.
+
+### Fixed
+
+- Allow the guarded updater to preserve a project-customized command JSON only
+  when an exact reviewed reconciliation plan binds that command's path, bytes,
+  and mode and the disposable rehearsal produces that reviewed result. Unplanned
+  command collisions, legacy command authority, and stale root guidance still
+  stop the update before live capability consumption.
+- Normalize reviewed-command and backup fixture modes so the complete safety
+  suite passes under differing CI runner umasks.
+
 ## [3.3.6] - 2026-09-29
 
 This entry records the 3.3.6 change set. Publication status and date are on
