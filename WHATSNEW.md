@@ -1,11 +1,12 @@
-# What's New in 3.3.6 candidate: memory freshness
+# What's New in 3.3.6 — Memory freshness
 
 - Approved manual saves refresh generated Session Context and preserve your
   handwritten notes. Freshness checks also notice edited or deleted old events.
 - Lessons, decisions and tasks can be proposed with exact source quotations and
   reviewed before editing permanent memory. Old next steps are not copied into
   TODO automatically.
-- This candidate has not been published or installed into existing projects.
+- See [GitHub Releases](https://github.com/EnkratFlow/exocortex-template/releases)
+  for publication status. Existing projects are updated separately.
 
 # What's New in 3.3.5 — Windows install and update actually finish
 

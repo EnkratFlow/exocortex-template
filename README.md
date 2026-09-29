@@ -1,13 +1,16 @@
 # Exocortex
 
-> Candidate 3.3.6 is not yet published. Release commands below apply only after
-> its authenticated release exists; do not substitute this working branch.
+> Install or update from v3.3.6 only after its authenticated GitHub release
+> exists. Do not substitute a branch checkout for that release.
 
 Exocortex is a project-local memory, delivery, and multi-AI entry protocol for
 software repositories. The repository owns its history and gates; AI providers
 are interchangeable workers.
 
 This template is public beta. Read `VERSION` for the packaged version.
+
+For changes in each version, see the detailed [Changelog](CHANGELOG.md), the
+plain-language [What's New](WHATSNEW.md), and published [GitHub Releases](https://github.com/EnkratFlow/exocortex-template/releases).
 
 > **Public releases are authenticity-gated.** Version 3.3.6 selects GitHub's
 > immutable-release attestation for the trust identity
