@@ -6,6 +6,20 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 ## [Unreleased]
 
+## [3.3.10] - 2026-09-30
+
+### Fixed
+
+- Allow ordinary ignored project dependencies, build output and documents outside
+  the Exocortex update surface without blocking guarded updates.
+- Restore Git sharing of installed project memory, events, lessons and context;
+  migrate installer-owned legacy ignore rules while preserving owner rules.
+- Keep secrets, backups and machine-local authority state excluded. Public
+  template memory exclusions and release privacy checks remain in place.
+- Test an existing-install update with ignored project folders, then commit,
+  push and clone into a second checkout to verify shared memory arrives intact.
+
+
 ## [3.3.9] - 2026-09-30
 
 ### Fixed

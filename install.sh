@@ -985,14 +985,12 @@ if ! grep -Fq '# BEGIN EXOCORTEX' "$GITIGNORE" 2>/dev/null; then
         [ ! -s "$GITIGNORE" ] || echo
         echo '# BEGIN EXOCORTEX'
         echo '.exocortex/.env'
-        echo '.exocortex/events/*.md'
-        echo '!.exocortex/events/.gitkeep'
         echo '.exocortex/local/'
         echo '# END EXOCORTEX'
     } >> "$GITIGNORE"
 fi
 # This separate versioned block upgrades existing installations whose original
-# managed block predates the complete project-data boundary. The entries are
+# managed block predates the machine-local data boundary. The entries are
 # intentionally duplicated by the nested .exocortex/.gitignore as defense in
 # depth if either ignore file is later customized.
 if ! grep -Fq '# BEGIN EXOCORTEX PROJECT DATA' "$GITIGNORE" 2>/dev/null; then
@@ -1004,36 +1002,47 @@ if ! grep -Fq '# BEGIN EXOCORTEX PROJECT DATA' "$GITIGNORE" 2>/dev/null; then
         echo '.exocortex/.envrc'
         echo '.exocortex/local/'
         echo '.exocortex/work-items/'
-        echo '.exocortex/planning/'
         echo '.exocortex/archive/'
         echo '.exocortex/hub/'
-        echo '.exocortex/.project-name'
         echo '.exocortex/.install-manifest'
         echo '.exocortex/.hub_enabled'
         echo '.exocortex/.hub_disabled'
-        echo '.exocortex/SESSION_CONTEXT.md'
         echo '.exocortex/SESSION_CONTEXT.local.md'
         echo '.exocortex/SESSION_CONTEXT.md.backup'
         echo '.exocortex/SESSION_CONTEXT_BACKUP_*.md'
-        echo '.exocortex/TODO.md'
-        echo '.exocortex/LESSONS.md'
-        echo '.exocortex/PROJECT_MEMORY.md'
-        echo '.exocortex/OPEN_DECISIONS.md'
-        echo '.exocortex/subconscious_patterns.md'
-        echo '.exocortex/control/ACTIVE_WORK.md'
-        echo '.exocortex/control/BRANCH_POLICY.md'
-        echo '.exocortex/control/REPO_STATE.md'
         echo '.exocortex/control/EXECUTOR_REGISTRY.json'
         echo '.exocortex/control/EXTERNAL_SYNC_POLICY.json'
-        echo '.exocortex/control/INTERRUPTS.md'
-        echo '.exocortex/control/BACKLOG.md'
-        echo '.exocortex/control/ROADMAP.md'
-        echo '.exocortex/control/ARCH_OVERVIEW.md'
-        echo '.exocortex/control/REPO_ORGANIZATION_REPORT.md'
-        echo '.exocortex/events/'
         echo '# END EXOCORTEX PROJECT DATA'
     } >> "$GITIGNORE"
 fi
+# Remove only installer-owned memory exclusions from older managed blocks.
+# Never rewrite owner rules outside those blocks; the legacy installer used
+# a short unmarked block headed exactly "# Exocortex".
+run_trusted_python - "$TARGET_ROOT/$GITIGNORE" <<'PYIGNORE'
+from pathlib import Path
+import sys
+path = Path(sys.argv[1])
+shared = ['.project-name', 'LESSONS.md', 'OPEN_DECISIONS.md', 'PROJECT_MEMORY.md', 'SESSION_CONTEXT.md', 'TODO.md', 'control/ACTIVE_WORK.md', 'control/ARCH_OVERVIEW.md', 'control/BACKLOG.md', 'control/BRANCH_POLICY.md', 'control/INTERRUPTS.md', 'control/REPO_ORGANIZATION_REPORT.md', 'control/REPO_STATE.md', 'control/ROADMAP.md', 'events/', 'events/*', 'events/*.md', 'planning/', 'subconscious_patterns.md']
+rules = {".exocortex/" + item for item in shared}
+rules.add("!.exocortex/events/.gitkeep")
+lines = path.read_bytes().decode("utf-8").splitlines(keepends=True)
+result = []
+managed = False
+legacy = False
+for line in lines:
+    value = line.strip()
+    if value in ("# BEGIN EXOCORTEX", "# BEGIN EXOCORTEX PROJECT DATA"):
+        managed = True
+    elif value == "# Exocortex":
+        legacy = True
+    elif legacy and (not value or value.startswith("#")):
+        legacy = False
+    if not ((managed or legacy) and value in rules):
+        result.append(line)
+    if value in ("# END EXOCORTEX", "# END EXOCORTEX PROJECT DATA"):
+        managed = False
+path.write_bytes("".join(result).encode("utf-8"))
+PYIGNORE
 if [ "$gitignore_existed" = false ]; then
     chmod 0644 "$GITIGNORE"
 fi

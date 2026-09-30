@@ -1242,41 +1242,23 @@ def decode_git_paths(raw: bytes, field: str) -> List[str]:
 
 
 def require_no_unapproved_ignored_paths(project_root: Path) -> None:
-    ignored = decode_git_paths(
-        git_output(
-            project_root,
-            "ls-files",
-            "--others",
-            "--ignored",
-            "--exclude-standard",
-            "--directory",
-            "--no-empty-directory",
-            "-z",
-            "--",
-        ),
-        "ignored Git changes",
+    # Dependencies, build output and other ignored project files outside the
+    # update surface are not source edits and must remain untouched. Restrict
+    # the metadata-only collision check to paths the updater can manage.
+    surfaces = (
+        ".exocortex", ".agents", ".cursor", ".claude", ".github", ".windsurf",
+        "AI_START_HERE.md", "AGENTS.md", "CLAUDE.md", ".cursorrules",
+        ".windsurfrules", ".rules", ".gitignore",
     )
-    # Git may collapse an ignored directory even when only a known runtime file
-    # inside it is ignored (for example, the executor registry). Expand only
-    # summaries that are not themselves an approved local/sensitive path. This
-    # remains metadata-only: no ignored file is ever opened or fingerprinted.
-    if any(not is_local_runtime_path(path) and not is_sensitive_path(path) for path in ignored):
-        ignored = decode_git_paths(
-            git_output(
-                project_root,
-                "ls-files",
-                "--others",
-                "--ignored",
-                "--exclude-standard",
-                "-z",
-                "--",
-            ),
-            "ignored Git changes",
-        )
+    ignored = decode_git_paths(
+        git_output(project_root, "ls-files", "--others", "--ignored",
+                   "--exclude-standard", "-z", "--", *surfaces),
+        "ignored update-surface paths",
+    )
     if any(not is_local_runtime_path(path) and not is_sensitive_path(path) for path in ignored):
         raise ProtocolError(
             "ignored_path_outside_scope",
-            "ignored files outside protected Exocortex data and credential-shaped paths require explicit review",
+            "ignored files inside the Exocortex update surface require explicit review",
         )
 
 

@@ -44,9 +44,18 @@ PROTECTED_CONTROL = {
     "control/ARCH_OVERVIEW.md",
     "control/REPO_ORGANIZATION_REPORT.md",
 }
+DOWNSTREAM_LOCAL_DATA = {
+    "SESSION_CONTEXT.md.backup", "SESSION_CONTEXT.local.md", ".install-manifest",
+    ".hub_enabled", ".hub_disabled", "control/EXECUTOR_REGISTRY.json",
+    "control/EXTERNAL_SYNC_POLICY.json",
+}
 DOWNSTREAM_IGNORED_DATA = tuple(
-    sorted(f".exocortex/{relative}" for relative in PROTECTED_FILES | PROTECTED_CONTROL)
+    sorted(f".exocortex/{relative}" for relative in DOWNSTREAM_LOCAL_DATA)
 )
+DOWNSTREAM_SHARED_DATA = tuple(
+    sorted(f".exocortex/{relative}" for relative in
+           (PROTECTED_FILES | PROTECTED_CONTROL) - DOWNSTREAM_LOCAL_DATA)
+) + (".exocortex/events/fixture.md", ".exocortex/planning/fixture.md")
 
 
 def run(
@@ -234,6 +243,13 @@ def main() -> None:
                 cwd=clean_target, check=False,
             )
             assert ignored.returncode == 0, f"downstream data path is not ignored: {relative}"
+
+        for relative in DOWNSTREAM_SHARED_DATA:
+            ignored = run(
+                "git", "check-ignore", "--no-index", "-q", "--", relative,
+                cwd=clean_target, check=False,
+            )
+            assert ignored.returncode == 1, f"shared project memory is ignored: {relative}"
 
         forbidden = source / ".exocortex/.env.production"
         forbidden.write_text("FICTIONAL_ENV_CANARY\n", encoding="utf-8")

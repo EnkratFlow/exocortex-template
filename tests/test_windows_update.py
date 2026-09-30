@@ -16,6 +16,14 @@ import prepare_update_reconciliation as reconciliation
 
 
 def run(args, cwd):
+    if args[0] == '__shared_launcher__':
+        digest = hashlib.sha256((ROOT/'SHA256SUMS').read_bytes()).hexdigest()
+        if args[1] == 'install':
+            args = ['env', f'EXOCORTEX_LOCAL_SOURCE={ROOT}', f'EXOCORTEX_CANDIDATE_DIGEST={digest}',
+                    'bash', ROOT/'install.sh', *args[2:]]
+        else:
+            args = ['bash', ROOT/'scripts/safe-update.sh', '--template', ROOT,
+                    '--candidate-digest', digest, *args[2:]]
     result = subprocess.run([str(a) for a in args], cwd=cwd, text=True, capture_output=True)
     if result.returncode:
         raise AssertionError(f'{args[0]} failed ({result.returncode})\n{result.stdout}\n{result.stderr}')
@@ -27,13 +35,14 @@ def write(path, value):
     path.write_bytes((json.dumps(value, indent=2) + '\n').encode())
 
 
-@unittest.skipUnless(os.name == 'nt', 'native Windows integration')
 class WindowsUpdateTests(unittest.TestCase):
+    @unittest.skipUnless(os.name == 'nt', 'native Windows integration')
     def test_windows_filename_aliases_are_rejected_before_open(self):
         for name in ('credentials.', '.env ', 'value.json:stream', 'NUL.json', 'COM1', 'folder./value.json'):
             with self.subTest(name=name), self.assertRaises(guard.ProtocolError):
                 orchestrator.canonical_local_protocol_input(Path('.exocortex/local/protocol/inbox')/name, 'fixture')
 
+    @unittest.skipUnless(os.name == 'nt', 'native Windows integration')
     def test_reconciliation_candidate_modes_and_copy(self):
         digest = hashlib.sha256((ROOT/'SHA256SUMS').read_bytes()).hexdigest()
         checksums = reconciliation.checksum_map(ROOT, digest)
@@ -44,6 +53,7 @@ class WindowsUpdateTests(unittest.TestCase):
             reconciliation.atomic_copy(ROOT/'install.sh', destination, '0755', checksums['install.sh'])
             self.assertEqual(destination.read_bytes(), (ROOT/'install.sh').read_bytes())
 
+    @unittest.skipUnless(os.name == 'nt', 'native Windows integration')
     def test_protocol_input_binary_and_junction_rejection(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
@@ -82,8 +92,19 @@ class WindowsUpdateTests(unittest.TestCase):
             run(['git', 'commit', '-qm', 'fixture'], primary)
             run(['git', 'worktree', 'add', '-b', 'fixture-update', target], primary)
             launcher = ['powershell.exe', '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', ROOT / 'scripts/windows.ps1']
+            if os.name != 'nt': launcher = ['__shared_launcher__']
             print('INSTALL', flush=True)
             run(launcher + ['install', 'fictional-project'], target)
+            # Reproduce an older installation's two layers of memory exclusions.
+            old_ignore = run(['git', 'show', 'v3.3.9:.exocortex/.gitignore'], ROOT)
+            (target/'.exocortex/.gitignore').write_bytes(old_ignore.encode())
+            with (target/'.gitignore').open('a') as stream:
+                stream.write('\n# BEGIN EXOCORTEX PROJECT DATA\n.exocortex/PROJECT_MEMORY.md\n.exocortex/events/\n# END EXOCORTEX PROJECT DATA\n')
+                stream.write('\n# Exocortex\n.exocortex/events/*.md\n\n# Owner rules\nnode_modules/\nbuild/\n.next/\ndocs/reference/\n')
+            for name in ('node_modules/package/data', 'build/output', '.next/cache', 'docs/reference/sample.pdf'):
+                path = target/name
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_bytes(b'Ignored project data must remain unchanged.\n')
             handwritten = target / '.exocortex/PROJECT_MEMORY.md'
             handwritten.write_bytes(b'# Handwritten memory\nKeep these local notes.\n')
             event = target / '.exocortex/events/2026-01-01_00-00-00_fixture.md'
@@ -97,6 +118,8 @@ class WindowsUpdateTests(unittest.TestCase):
             text = manifest.read_text()
             lines = []
             for line in text.splitlines():
+                if line.startswith('.exocortex/.gitignore '):
+                    line = '.exocortex/.gitignore ' + hashlib.sha256((target/'.exocortex/.gitignore').read_bytes()).hexdigest()
                 if line.startswith('.exocortex/scripts/read_memory_stack.sh '):
                     line = '.exocortex/scripts/read_memory_stack.sh ' + hashlib.sha256(script.read_bytes()).hexdigest()
                 lines.append(line)
@@ -157,6 +180,29 @@ class WindowsUpdateTests(unittest.TestCase):
             result=run([sys.executable,target/'.exocortex/scripts/refresh_rollups.py','--check','--json'],target)
             self.assertEqual(json.loads(result)['status'],'fresh')
             self.assertIn(b'Keep these local notes.',handwritten.read_bytes())
+            for name in ('node_modules/package/data', 'build/output', '.next/cache', 'docs/reference/sample.pdf'):
+                self.assertEqual((target/name).read_bytes(), b'Ignored project data must remain unchanged.\n')
+            for name in ('.exocortex/local/private', '.exocortex/.env', '.exocortex/SESSION_CONTEXT.md.backup'):
+                check = subprocess.run(['git','check-ignore','-q','--',name],cwd=target)
+                self.assertEqual(check.returncode, 0, name)
+            run(['git','add','.'],target)
+            run(['git','commit','-qm','shared project memory'],target)
+            remote = base/'remote.git'
+            run(['git','init','--bare',remote],base)
+            run(['git','remote','add','origin',remote],target)
+            run(['git','push','origin','HEAD:main'],target)
+            clone = base/'second computer'
+            run(['git','clone','--branch','main',remote,clone],base)
+            for path,content in preserved.items():
+                relative = path.relative_to(target)
+                self.assertEqual((clone/relative).read_text(), content.decode().replace('\r\n', '\n'))
+                self.assertEqual(subprocess.check_output(['git','show','HEAD:'+relative.as_posix()],cwd=clone),content)
+            self.assertEqual((clone/'.exocortex/SESSION_CONTEXT.md').read_text(),
+                             (target/'.exocortex/SESSION_CONTEXT.md').read_text())
+            self.assertGreaterEqual(len(list((clone/'.exocortex/events').glob('*.md'))), 2)
+            self.assertFalse((clone/'node_modules').exists())
+            self.assertFalse((clone/'.exocortex/local').exists())
+            print('SHARED MEMORY PUSH AND FRESH CLONE PASSED',flush=True)
 
 if __name__ == '__main__':
     unittest.main()

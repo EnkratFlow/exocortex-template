@@ -1,3 +1,12 @@
+# What's New in 3.3.10 — Share project memory across computers
+
+- Project memory, saved events, lessons and context can be committed and pushed
+  with the project, then read by collaborators after pulling or cloning.
+- Updates remove the old installer-owned memory exclusions while preserving
+  secrets, backups, machine-local permissions and owner-authored ignore rules.
+- Ordinary ignored dependencies and build output no longer block updates.
+- The public template remains generic and excludes real development memory.
+
 # What's New in 3.3.9 — Update directly on Windows
 
 - Install and update on the same Windows computer using Git for Windows and
