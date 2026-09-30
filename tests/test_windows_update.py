@@ -194,9 +194,11 @@ class WindowsUpdateTests(unittest.TestCase):
             clone = base/'second computer'
             run(['git','clone','--branch','main',remote,clone],base)
             for path,content in preserved.items():
-                self.assertEqual((clone/path.relative_to(target)).read_bytes(),content)
-            self.assertEqual((clone/'.exocortex/SESSION_CONTEXT.md').read_bytes(),
-                             (target/'.exocortex/SESSION_CONTEXT.md').read_bytes())
+                relative = path.relative_to(target)
+                self.assertEqual((clone/relative).read_text(), content.decode().replace('\r\n', '\n'))
+                self.assertEqual(subprocess.check_output(['git','show','HEAD:'+relative.as_posix()],cwd=clone),content)
+            self.assertEqual((clone/'.exocortex/SESSION_CONTEXT.md').read_text(),
+                             (target/'.exocortex/SESSION_CONTEXT.md').read_text())
             self.assertGreaterEqual(len(list((clone/'.exocortex/events').glob('*.md'))), 2)
             self.assertFalse((clone/'node_modules').exists())
             self.assertFalse((clone/'.exocortex/local').exists())
