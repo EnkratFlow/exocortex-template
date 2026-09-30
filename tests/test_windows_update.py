@@ -29,6 +29,11 @@ def write(path, value):
 
 @unittest.skipUnless(os.name == 'nt', 'native Windows integration')
 class WindowsUpdateTests(unittest.TestCase):
+    def test_windows_filename_aliases_are_rejected_before_open(self):
+        for name in ('credentials.', '.env ', 'value.json:stream', 'NUL.json', 'COM1', 'folder./value.json'):
+            with self.subTest(name=name), self.assertRaises(guard.ProtocolError):
+                orchestrator.canonical_local_protocol_input(Path('.exocortex/local/protocol/inbox')/name, 'fixture')
+
     def test_reconciliation_candidate_modes_and_copy(self):
         digest = hashlib.sha256((ROOT/'SHA256SUMS').read_bytes()).hexdigest()
         checksums = reconciliation.checksum_map(ROOT, digest)

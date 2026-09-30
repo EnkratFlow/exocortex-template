@@ -626,6 +626,11 @@ def canonical_local_protocol_input(value: Path, field: str) -> str:
             "unsafe_input_path",
             f"{field} must be a project-relative file inside {LOCAL_PROTOCOL_INBOX_PREFIX}",
         )
+    if os.name == "nt":
+        for part in PurePosixPath(raw).parts:
+            if (part.endswith((" ", ".")) or any(character in part for character in ':<>"|?*')
+                    or re.fullmatch(r"(?:CON|PRN|AUX|NUL|COM[1-9¹²³]|LPT[1-9¹²³])", part.split(".", 1)[0], re.IGNORECASE)):
+                raise ProtocolError("unsafe_input_path", f"{field} contains a Windows filename alias")
     relative = canonical_relative_path(raw)
     if not relative.startswith(LOCAL_PROTOCOL_INBOX_PREFIX):
         raise ProtocolError(
