@@ -12,6 +12,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / '.exocortex/scripts'))
 import authority_guard as guard
 import orchestrate_work_item as orchestrator
+import prepare_update_reconciliation as reconciliation
 
 
 def run(args, cwd):
@@ -28,6 +29,16 @@ def write(path, value):
 
 @unittest.skipUnless(os.name == 'nt', 'native Windows integration')
 class WindowsUpdateTests(unittest.TestCase):
+    def test_reconciliation_candidate_modes_and_copy(self):
+        digest = hashlib.sha256((ROOT/'SHA256SUMS').read_bytes()).hexdigest()
+        checksums = reconciliation.checksum_map(ROOT, digest)
+        modes = reconciliation.candidate_mode_map(ROOT, checksums)
+        self.assertEqual(modes['install.sh'], '0755')
+        with tempfile.TemporaryDirectory() as temporary:
+            destination = Path(temporary)/'copied.sh'
+            reconciliation.atomic_copy(ROOT/'install.sh', destination, '0755', checksums['install.sh'])
+            self.assertEqual(destination.read_bytes(), (ROOT/'install.sh').read_bytes())
+
     def test_protocol_input_binary_and_junction_rejection(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

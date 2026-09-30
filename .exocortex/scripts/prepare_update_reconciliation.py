@@ -320,7 +320,7 @@ def candidate_mode_map(template: Path, checksums: Dict[str, str]) -> Dict[str, s
     for relative in paths:
         source = resolve_file(template, relative, "file-mode-bound candidate file")
         assert source is not None
-        if normalized_file_mode(source, f"candidate file {relative}") != records[relative]:
+        if os.name != "nt" and normalized_file_mode(source, f"candidate file {relative}") != records[relative]:
             raise ReconciliationError("candidate_mode_mismatch", f"candidate file mode mismatch: {relative}")
     return records
 
