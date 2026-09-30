@@ -791,6 +791,60 @@ def proposed_local_delivery_registry(envelope: Dict[str, Any], guard_digest: str
     )
 
 
+def reconcile_local_delivery_registry(
+    existing: Dict[str, Any], envelope: Dict[str, Any], guard_digest: str
+) -> Dict[str, Any]:
+    """Bind only the approved local writer and read-only reviewer to this guard.
+
+    The existing registry may be Git-tracked. Bootstrap must inspect a clean
+    checkout first, then publish this exact registry change inside its own
+    recoverable transaction rather than requiring an unguarded preparatory edit.
+    """
+    registry = copy.deepcopy(validate_registry(existing))
+    changed = False
+    for actor, roles in (
+        (envelope["writer"], {"read_only", "writer"}),
+        (envelope["reviewer"], {"read_only"}),
+    ):
+        matches = [
+            entry for entry in registry["executors"]
+            if (entry["surface_id"], entry["executor_id"])
+            == (actor["surface_id"], actor["executor_id"])
+        ]
+        if matches:
+            entry = matches[0]
+            if (
+                entry["adapter_version"] != actor["adapter_version"]
+                or set(entry["roles"]) != roles
+                or entry["status"] != "active"
+                or entry["revoked_at"] is not None
+                or parse_timestamp(entry["expires_at"], "expires_at") <= utc_now()
+            ):
+                raise ProtocolError(
+                    "registry_actor_conflict",
+                    "existing local-delivery actor cannot be rebound safely",
+                )
+            if entry["guard_digest"] != guard_digest:
+                entry["guard_digest"] = guard_digest
+                changed = True
+        else:
+            registry["executors"].append(
+                {
+                    **actor,
+                    "guard_digest": guard_digest,
+                    "roles": sorted(roles),
+                    "status": "active",
+                    "registered_at": envelope["approval"]["accepted_at"],
+                    "expires_at": envelope["approval"]["expires_at"],
+                    "revoked_at": None,
+                }
+            )
+            changed = True
+    if changed:
+        registry["registry_version"] += 1
+    return validate_registry(registry)
+
+
 def require_local_delivery_registry_actors(
     registry: Dict[str, Any],
     envelope: Dict[str, Any],
@@ -819,6 +873,7 @@ def build_local_delivery_bootstrap(
     identity_digest: str,
     registry: Dict[str, Any],
     registry_preexisting: bool,
+    original_registry_digest: Optional[str],
 ) -> Tuple[Dict[str, Any], Dict[str, Dict[str, Any]], Dict[str, Any], str, str]:
     envelope_relpath = f"{ENVELOPE_PREFIX}{envelope['envelope_id']}.json"
     work_item_relpath = f"{WORK_ITEM_PREFIX}{envelope['work_item_id']}.json"
@@ -884,6 +939,7 @@ def build_local_delivery_bootstrap(
         "envelope_digest": envelope_digest,
         "registry_digest": registry_digest,
         "registry_preexisting": registry_preexisting,
+        "original_registry_digest": original_registry_digest,
         "registry_document": registry,
         "documents": documents,
         "status": "intent",
@@ -921,7 +977,8 @@ def bootstrap_local_delivery(args: argparse.Namespace) -> Dict[str, Any]:
                 existing_journal,
                 [
                     "schema_version", "kind", "request_id", "result_id", "envelope_digest",
-                    "registry_digest", "registry_preexisting", "registry_document", "documents",
+                    "registry_digest", "registry_preexisting", "original_registry_digest",
+                    "registry_document", "documents",
                     "status", "created_at",
                 ],
                 ["finalized_at"],
@@ -933,10 +990,13 @@ def bootstrap_local_delivery(args: argparse.Namespace) -> Dict[str, Any]:
                 or existing_journal["request_id"] != request_id
                 or existing_journal["envelope_digest"] != envelope_digest
                 or not isinstance(existing_journal["registry_preexisting"], bool)
+                or (not existing_journal["registry_preexisting"] and existing_journal["original_registry_digest"] is not None)
                 or existing_journal["status"] not in {"intent", "finalized"}
                 or existing_journal["created_at"] != envelope["approval"]["accepted_at"]
             ):
                 raise ProtocolError("transaction_conflict", "existing bootstrap transaction does not match this envelope")
+            if existing_journal["registry_preexisting"]:
+                require_digest(existing_journal["original_registry_digest"], "original_registry_digest")
             if existing_journal["status"] == "finalized":
                 parse_timestamp(existing_journal.get("finalized_at"), "finalized_at")
             elif "finalized_at" in existing_journal:
@@ -956,17 +1016,28 @@ def bootstrap_local_delivery(args: argparse.Namespace) -> Dict[str, Any]:
                 identity_digest=identity_digest,
                 registry=registry,
                 registry_preexisting=existing_journal["registry_preexisting"],
+                original_registry_digest=existing_journal["original_registry_digest"],
             )
             for field in (
                 "result_id", "envelope_digest", "registry_digest", "registry_preexisting",
+                "original_registry_digest",
                 "registry_document", "documents", "created_at",
             ):
                 if existing_journal[field] != expected_journal[field]:
                     raise ProtocolError("transaction_conflict", "existing bootstrap transaction semantics differ from the envelope")
             finalized = existing_journal["status"] == "finalized"
             if registry_path.exists() or registry_path.is_symlink():
-                if json_digest(validate_registry(load_safe_json(registry_path, "executor registry"))) != existing_journal["registry_digest"]:
-                    raise ProtocolError("registry_digest_mismatch", "executor registry changed during bootstrap recovery")
+                current_registry = validate_registry(load_safe_json(registry_path, "executor registry"))
+                if json_digest(current_registry) != existing_journal["registry_digest"]:
+                    if (
+                        finalized
+                        or not existing_journal["registry_preexisting"]
+                        or json_digest(current_registry) != existing_journal["original_registry_digest"]
+                    ):
+                        raise ProtocolError("registry_digest_mismatch", "executor registry changed during bootstrap recovery")
+                    atomic_write_json(
+                        registry_path, registry, mode=stat.S_IMODE(registry_path.lstat().st_mode)
+                    )
             elif existing_journal["registry_preexisting"] or finalized:
                 raise ProtocolError("bootstrap_state_missing", "finalized or pre-existing bootstrap registry is missing")
             else:
@@ -1022,9 +1093,11 @@ def bootstrap_local_delivery(args: argparse.Namespace) -> Dict[str, Any]:
             raise ProtocolError("unsafe_registry", "executor registry cannot be a symlink")
         registry_preexisting = registry_path.exists()
         if registry_preexisting:
-            registry = validate_registry(load_safe_json(registry_path, "executor registry"))
-            require_local_delivery_registry_actors(registry, envelope, guard_digest, now=utc_now())
+            original_registry = validate_registry(load_safe_json(registry_path, "executor registry"))
+            original_registry_digest = json_digest(original_registry)
+            registry = reconcile_local_delivery_registry(original_registry, envelope, guard_digest)
         else:
+            original_registry_digest = None
             registry = proposed_local_delivery_registry(envelope, guard_digest)
         work_item, documents, journal, work_item_relpath, result_id = build_local_delivery_bootstrap(
             envelope=envelope,
@@ -1032,6 +1105,7 @@ def bootstrap_local_delivery(args: argparse.Namespace) -> Dict[str, Any]:
             identity_digest=identity_digest,
             registry=registry,
             registry_preexisting=registry_preexisting,
+            original_registry_digest=original_registry_digest,
         )
         envelope_path = resolve_repo_path(project_root, f"{ENVELOPE_PREFIX}{envelope['envelope_id']}.json")
         work_item_path = resolve_repo_path(project_root, work_item_relpath)
@@ -1048,9 +1122,10 @@ def bootstrap_local_delivery(args: argparse.Namespace) -> Dict[str, Any]:
         validate_local_delivery_source_paths(project_root, envelope)
         if registry_preexisting:
             current_registry = validate_registry(load_safe_json(registry_path, "executor registry"))
-            if json_digest(current_registry) != json_digest(registry):
+            if json_digest(current_registry) != original_registry_digest:
                 raise ProtocolError("registry_digest_mismatch", "executor registry changed before bootstrap")
-            require_local_delivery_registry_actors(current_registry, envelope, guard_digest, now=utc_now())
+            if json_digest(reconcile_local_delivery_registry(current_registry, envelope, guard_digest)) != json_digest(registry):
+                raise ProtocolError("registry_digest_mismatch", "executor registry migration changed before bootstrap")
         elif registry_path.exists() or registry_path.is_symlink():
             raise ProtocolError("bootstrap_state_exists", "executor registry appeared before bootstrap")
         validate_local_delivery_envelope(copy.deepcopy(envelope), require_active=True)
@@ -1059,7 +1134,11 @@ def bootstrap_local_delivery(args: argparse.Namespace) -> Dict[str, Any]:
         maybe_fault("after_bootstrap_intent")
         exclusive_write_json(envelope_path, envelope)
         maybe_fault("after_bootstrap_envelope")
-        if not registry_preexisting:
+        if registry_preexisting and original_registry_digest != json_digest(registry):
+            atomic_write_json(
+                registry_path, registry, mode=stat.S_IMODE(registry_path.lstat().st_mode)
+            )
+        elif not registry_preexisting:
             exclusive_write_json(registry_path, registry)
         maybe_fault("after_bootstrap_registry")
         exclusive_write_json(work_item_path, work_item)
@@ -1206,6 +1285,9 @@ def require_current_seal(
     completion = binding.get("completion")
     if completion is not None:
         ignored.add(completion["event_path"])
+    # A Git-tracked registry may be changed by the guarded bootstrap itself.
+    # Its exact bytes are already bound and checked by load_local_delivery_binding.
+    ignored.add(REGISTRY_RELPATH)
     paths = [path for path in current_changed_paths(project_root) if path not in ignored]
     if not paths:
         raise ProtocolError("sealed_candidate_changed", "sealed source changes are no longer present")
@@ -1417,7 +1499,12 @@ def seal_local_edit(args: argparse.Namespace) -> Dict[str, Any]:
         or args.adapter_version != writer["adapter_version"]
     ):
         raise ProtocolError("writer_mismatch", "current executor is not the envelope-bound writer")
-    paths = current_changed_paths(project_root)
+    paths = [
+        path for path in current_changed_paths(project_root)
+        if path != REGISTRY_RELPATH
+    ]
+    if not paths:
+        raise ProtocolError("no_local_changes", "there are no source changes to seal")
     outside = sorted(set(paths) - set(work_item["lane"]["allowed_paths"]))
     if outside:
         raise ProtocolError("path_not_allowed", "one or more changed source paths are outside the accepted local-delivery scope")

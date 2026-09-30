@@ -1,6 +1,6 @@
 # Install or update Exocortex with a coding AI
 
-> Candidate 3.3.7 includes the reviewed-command updater correction. Use it
+> Candidate 3.3.8 includes the reviewed-command updater correction. Use it
 > only after its authenticated release exists; never install from this branch.
 
 This is the provider-neutral operator contract for asking a coding AI to
@@ -28,7 +28,7 @@ attestation evidence with its documented trust identity. The SHA and digest
 prove byte consistency but do not independently prove owner authenticity when
 the repository, tag, release notes, and digest share one trust domain.
 
-Version 3.3.7 selects GitHub's immutable-release attestation for the exact
+Version 3.3.8 selects GitHub's immutable-release attestation for the exact
 trust identity `github.com/EnkratFlow/exocortex-template`. The release publishes
 `SHA256SUMS` as an attested asset. Public installation remains blocked unless
 both `gh release verify` and `gh release verify-asset` succeed and the attested
@@ -38,23 +38,23 @@ and consistency checks are:
 ```bash
 (
 set -eu
-gh release verify v3.3.7 -R github.com/EnkratFlow/exocortex-template
-mkdir -m 700 /tmp/exocortex-release-verify-v3.3.7
-gh release download v3.3.7 -R github.com/EnkratFlow/exocortex-template \
-  --pattern SHA256SUMS --dir /tmp/exocortex-release-verify-v3.3.7
-gh release verify-asset v3.3.7 \
-  /tmp/exocortex-release-verify-v3.3.7/SHA256SUMS \
+gh release verify v3.3.8 -R github.com/EnkratFlow/exocortex-template
+mkdir -m 700 /tmp/exocortex-release-verify-v3.3.8
+gh release download v3.3.8 -R github.com/EnkratFlow/exocortex-template \
+  --pattern SHA256SUMS --dir /tmp/exocortex-release-verify-v3.3.8
+gh release verify-asset v3.3.8 \
+  /tmp/exocortex-release-verify-v3.3.8/SHA256SUMS \
   -R github.com/EnkratFlow/exocortex-template
-git clone --depth 1 --branch v3.3.7 \
+git clone --depth 1 --branch v3.3.8 \
   https://github.com/EnkratFlow/exocortex-template.git \
-  /tmp/exocortex-template-v3.3.7
-cmp -s /tmp/exocortex-release-verify-v3.3.7/SHA256SUMS \
-  /tmp/exocortex-template-v3.3.7/SHA256SUMS
-git -C /tmp/exocortex-template-v3.3.7 rev-parse HEAD
+  /tmp/exocortex-template-v3.3.8
+cmp -s /tmp/exocortex-release-verify-v3.3.8/SHA256SUMS \
+  /tmp/exocortex-template-v3.3.8/SHA256SUMS
+git -C /tmp/exocortex-template-v3.3.8 rev-parse HEAD
 if command -v shasum >/dev/null 2>&1; then
-  shasum -a 256 /tmp/exocortex-template-v3.3.7/SHA256SUMS
+  shasum -a 256 /tmp/exocortex-template-v3.3.8/SHA256SUMS
 else
-  sha256sum /tmp/exocortex-template-v3.3.7/SHA256SUMS
+  sha256sum /tmp/exocortex-template-v3.3.8/SHA256SUMS
 fi
 )
 ```
@@ -482,13 +482,20 @@ decision authorizes only the internal bootstrap required for its exact target,
 candidate digest, changed paths or reconciliation plan, verification, local
 completion record, handoff, and writer release.
 
-The changed-path list is not final while the registry is absent. The earlier
+The changed-path list is not final while the registry is absent or stale. The earlier
 missing-default bootstrap creates a deny-by-default read-only registry but
 grants no writer. After the first dry run, and still inside the unchanged
-accepted local-update decision,
-internally create the next registry version with one time-bounded local writer,
-read-only and writer roles, no egress role, and the pinned guard digest. Rerun
-the dry run after that writer registry exists, and use only the stable
+accepted local-update decision, `bootstrap-local-delivery` checks the clean
+worktree first, then transactionally registers the exact approved writer and
+read-only reviewer with the pinned guard digest. If an existing registry is
+Git-tracked, do not edit it before bootstrap to work around the clean check.
+Bootstrap may advance its version and update only those approved actor entries;
+it preserves every unrelated entry and recovers an interrupted registry write
+from the exact bootstrap transaction. The resulting registry change is
+protected authority state, bound by the work item and excluded from the source
+edit seal. It remains a visible Git change if the project already tracked the
+registry; removing it from Git tracking is a separate reviewed cleanup, never
+part of this update. Rerun the dry run after bootstrap and use only the stable
 post-registry path list and digest when materializing apply authority.
 
 Do not expose this internal section as another approval checklist. After the
@@ -669,8 +676,8 @@ report a preserved command-authority collision only for an exact
 validated plan. The materialized command bytes and mode must still match the
 reviewed object. Any unplanned command collision, legacy command authority,
 or stale root guidance fails before live capability consumption. Version
-3.3.6 does not have this correction; v3.3.7 includes it. Use only the
-authenticated v3.3.7 release for this case.
+3.3.6 does not have this correction; v3.3.8 includes it. Use only the
+authenticated v3.3.8 release for this case.
 
 ## WSL evidence required before support
 
