@@ -6,6 +6,21 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 ## [Unreleased]
 
+## [3.3.8] - 2026-09-30
+
+This patch lets guarded local-delivery bootstrap update a clean checkout whose
+executor registry is already tracked by Git. Installation into existing
+projects remains a separate, named update after authenticated publication.
+
+### Fixed
+
+- After checking the clean worktree, reconcile only the approved writer and
+  read-only reviewer in the tracked executor registry. Preserve unrelated
+  registrations, bind the original and resulting registry digests for safe
+  recovery, and keep the registry outside the approved source-edit seal.
+- Refuse interrupted-bootstrap recovery if the registry changed after the
+  transaction began.
+
 ## [3.3.7] - 2026-09-29
 
 This patch packages the reviewed-command updater correction merged in PR #40.

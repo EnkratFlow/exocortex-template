@@ -1,3 +1,14 @@
+# What's New in 3.3.8 — Update projects with tracked registries
+
+- The guarded updater can now finish in an existing project whose executor
+  registry is tracked by Git. It checks for a clean checkout first, then updates
+  only the approved local writer and reviewer entries.
+- Interrupted work recovers only if the registry is still exactly as it was
+  when the update began, or already matches the intended result. A later
+  registry change stops the update instead of being overwritten.
+- Existing project notes, memory, and customized commands remain protected.
+  Projects are updated separately after the authenticated release.
+
 # What's New in 3.3.7 — Preserve reviewed project commands
 
 - An Exocortex update can now retain a project-specific command instruction

@@ -1137,6 +1137,118 @@ class LocalDeliveryProtocolTests(unittest.TestCase):
         self.assertFalse((fixture.root / ".exocortex/control/EXECUTOR_REGISTRY.json").exists())
         self.assertFalse((fixture.root / ".exocortex/work-items/LOCAL-DELIVERY-WORK-001.json").exists())
 
+    def tracked_stale_registry(self, fixture: LocalDeliveryFixture) -> dict:
+        registry = fixture.install_matching_registry()
+        registry["registry_version"] = 2
+        registry["executors"][0]["guard_digest"] = "a" * 64
+        registry["executors"].pop()  # The approved read-only reviewer is not registered yet.
+        unrelated = {
+            **fixture.reviewer,
+            "surface_id": "unrelated-surface",
+            "executor_id": "unrelated-executor",
+            "guard_digest": "b" * 64,
+            "roles": ["read_only", "writer"],
+            "status": "active",
+            "registered_at": "2026-01-01T00:00:00Z",
+            "expires_at": "2099-01-01T00:00:00Z",
+            "revoked_at": None,
+        }
+        registry["executors"].append(unrelated)
+        write_json(fixture.root / REGISTRY_REL, registry)
+        run(["git", "-C", str(fixture.root), "add", "-f", REGISTRY_REL], check=True)
+        run([
+            "git", "-C", str(fixture.root), "commit", "--quiet",
+            "-m", "tracked registry fixture", "-m", "Agent: codex",
+        ], check=True)
+        fixture.base = run(
+            ["git", "-C", str(fixture.root), "rev-parse", "HEAD"], check=True
+        ).stdout.strip()
+        return registry
+
+    def test_bootstrap_migrates_tracked_registry_after_clean_check(self) -> None:
+        fixture = self.fixture()
+        original = self.tracked_stale_registry(fixture)
+        source = fixture.write_envelope()
+        self.assertEqual(run(
+            ["git", "-C", str(fixture.root), "status", "--porcelain"], check=True
+        ).stdout, "")
+        first = fixture.bootstrap(source)
+        self.assertEqual(first.returncode, 0, first.stdout + first.stderr)
+        registry = json.loads((fixture.root / REGISTRY_REL).read_text(encoding="utf-8"))
+        self.assertEqual(registry["registry_version"], 3)
+        self.assertEqual(registry["executors"][0]["guard_digest"], file_digest(AUTHORITY))
+        self.assertEqual(registry["executors"][1], original["executors"][1])
+        self.assertEqual(registry["executors"][2]["roles"], ["read_only"])
+        self.assertEqual(
+            run(["git", "-C", str(fixture.root), "status", "--porcelain"], check=True).stdout.strip(),
+            "M .exocortex/control/EXECUTOR_REGISTRY.json",
+        )
+        no_edit = fixture.seal()
+        self.assertNotEqual(no_edit.returncode, 0)
+        self.assertIn("no_local_changes", no_edit.stdout)
+        (fixture.root / "allowed.txt").write_text("approved source edit\n", encoding="utf-8")
+        sealed = fixture.seal()
+        self.assertEqual(sealed.returncode, 0, sealed.stdout + sealed.stderr)
+        work = json.loads((fixture.root / ".exocortex/work-items/LOCAL-DELIVERY-WORK-001.json").read_text())
+        self.assertEqual(work["local_delivery"]["seal"]["changed_paths"], ["allowed.txt"])
+        replay = fixture.bootstrap(source)
+        self.assertEqual(replay.returncode, 0, replay.stdout + replay.stderr)
+        self.assertTrue(json.loads(replay.stdout)["replay"])
+
+    def test_tracked_registry_migration_recovers_only_exact_intent(self) -> None:
+        fixture = self.fixture()
+        self.tracked_stale_registry(fixture)
+        source = fixture.write_envelope()
+        fault = fixture.bootstrap(
+            source,
+            env={"EXOCORTEX_TEST_MODE": "1", "EXOCORTEX_FAULT_POINT": "after_bootstrap_envelope"},
+        )
+        self.assertNotEqual(fault.returncode, 0)
+        recovered = fixture.bootstrap(source)
+        self.assertEqual(recovered.returncode, 0, recovered.stdout + recovered.stderr)
+        self.assertTrue(json.loads(recovered.stdout)["replay"])
+        self.assertTrue((fixture.root / ".exocortex/work-items/LOCAL-DELIVERY-WORK-001.json").exists())
+
+        tampered = self.fixture()
+        registry = self.tracked_stale_registry(tampered)
+        source = tampered.write_envelope()
+        self.assertNotEqual(tampered.bootstrap(
+            source,
+            env={"EXOCORTEX_TEST_MODE": "1", "EXOCORTEX_FAULT_POINT": "after_bootstrap_envelope"},
+        ).returncode, 0)
+        registry["executors"][1]["guard_digest"] = "c" * 64
+        write_json(tampered.root / REGISTRY_REL, registry)
+        rejected = tampered.bootstrap(source)
+        self.assertNotEqual(rejected.returncode, 0)
+        self.assertIn("registry_digest_mismatch", rejected.stdout)
+        self.assertFalse((tampered.root / ".exocortex/work-items/LOCAL-DELIVERY-WORK-001.json").exists())
+
+        changed_writer = self.fixture()
+        registry = self.tracked_stale_registry(changed_writer)
+        source = changed_writer.write_envelope()
+        self.assertNotEqual(changed_writer.bootstrap(
+            source,
+            env={"EXOCORTEX_TEST_MODE": "1", "EXOCORTEX_FAULT_POINT": "after_bootstrap_envelope"},
+        ).returncode, 0)
+        registry["executors"][0]["guard_digest"] = "c" * 64
+        write_json(changed_writer.root / REGISTRY_REL, registry)
+        rejected = changed_writer.bootstrap(source)
+        self.assertNotEqual(rejected.returncode, 0)
+        self.assertIn("registry_digest_mismatch", rejected.stdout)
+        self.assertEqual(json.loads((changed_writer.root / REGISTRY_REL).read_text()), registry)
+
+        written = self.fixture()
+        self.tracked_stale_registry(written)
+        source = written.write_envelope()
+        self.assertNotEqual(written.bootstrap(
+            source,
+            env={"EXOCORTEX_TEST_MODE": "1", "EXOCORTEX_FAULT_POINT": "after_bootstrap_registry"},
+        ).returncode, 0)
+        migrated = (written.root / REGISTRY_REL).read_bytes()
+        recovered = written.bootstrap(source)
+        self.assertEqual(recovered.returncode, 0, recovered.stdout + recovered.stderr)
+        self.assertEqual((written.root / REGISTRY_REL).read_bytes(), migrated)
+
     def test_bootstrap_binds_exact_clean_identity_and_replays(self) -> None:
         fixture = self.fixture()
         source = fixture.write_envelope()

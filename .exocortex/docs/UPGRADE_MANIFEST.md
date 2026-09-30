@@ -162,6 +162,11 @@ destination/method approval. Project memory never flows sideways.
     before live mutation. Version 3.3.6 lacks this correction; it is packaged
     in 3.3.7 and requires the authenticated release before installation.
 11. Require a separate exact approval before applying to the real target.
+    For a Git-tracked stale executor registry, guarded local-delivery bootstrap
+    checks the clean worktree first and then migrates only the approved writer
+    and read-only reviewer inside its recoverable transaction. The registry is
+    bound protected state, not an allowed source edit; do not hide its Git
+    change or commit it as part of the template update.
 12. Run twice to prove idempotency. Inject a live-only failure after capability
    consumption and at least one target copy. On a disposable copy of that
    partially mutated target, remove the mutable code plane while preserving the
