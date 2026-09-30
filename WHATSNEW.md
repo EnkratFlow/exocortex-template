@@ -2,8 +2,8 @@
 
 - An Exocortex update can now retain a project-specific command instruction
   when its exact replacement is reviewed and bound to the update plan. This
-  addresses the Trading Journal monthly-review collision found during the
-  v3.3.6 pilot.
+  addresses a customized monthly-review command collision found during a
+  v3.3.6 update rehearsal.
 - Other command conflicts and stale root guidance still stop the update.
   Existing projects are updated separately after the authenticated release.
 
