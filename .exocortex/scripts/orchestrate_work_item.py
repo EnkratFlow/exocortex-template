@@ -11,12 +11,14 @@ import os
 from pathlib import Path, PurePosixPath
 import re
 import stat
+import shutil
 import subprocess
 import sys
 from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple
 
 from authority_guard import (
     ProtocolError,
+    _flush_directory,
     atomic_write_json,
     canonical_relative_path,
     check_authority,
@@ -225,8 +227,20 @@ def git_output(project_root: Path, *arguments: str) -> bytes:
         "GIT_TERMINAL_PROMPT": "0",
         "PYTHONDONTWRITEBYTECODE": "1",
     }
+    git_executable = "git"
+    if os.name == "nt":
+        git_executable = shutil.which("git") or ""
+        if not git_executable or not Path(git_executable).is_absolute():
+            raise ProtocolError("git_unavailable", "Git for Windows must be installed and on PATH")
+        environment["PATH"] = str(Path(git_executable).parent) + os.pathsep + os.defpath
+        import ctypes
+        windows_directory = ctypes.create_unicode_buffer(32768)
+        size = ctypes.windll.kernel32.GetWindowsDirectoryW(windows_directory, len(windows_directory))
+        if not size or size >= len(windows_directory):
+            raise ProtocolError("git_unavailable", "Windows system directory is unavailable")
+        environment["SystemRoot"] = windows_directory.value
     result = subprocess.run(
-        ["git", "-c", "core.fsmonitor=false", "-c", f"core.hooksPath={os.devnull}", "-C", str(project_root), *arguments],
+        [git_executable, "-c", "core.fsmonitor=false", "-c", f"core.hooksPath={os.devnull}", "-C", str(project_root), *arguments],
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         check=False,
@@ -573,7 +587,7 @@ def load_local_delivery_binding(
 
 
 def read_safe_regular_bytes(path: Path, field: str, *, max_bytes: int = 1024 * 1024) -> bytes:
-    flags = os.O_RDONLY
+    flags = os.O_RDONLY | getattr(os, "O_BINARY", 0)
     if hasattr(os, "O_NOFOLLOW"):
         flags |= os.O_NOFOLLOW
     try:
@@ -606,12 +620,17 @@ def read_safe_regular_bytes(path: Path, field: str, *, max_bytes: int = 1024 * 1
 
 
 def canonical_local_protocol_input(value: Path, field: str) -> str:
-    raw = os.fspath(value)
+    raw = Path(value).as_posix() if os.name == "nt" else os.fspath(value)
     if not isinstance(raw, str) or not raw or "\\" in raw or Path(raw).is_absolute():
         raise ProtocolError(
             "unsafe_input_path",
             f"{field} must be a project-relative file inside {LOCAL_PROTOCOL_INBOX_PREFIX}",
         )
+    if os.name == "nt":
+        for part in PurePosixPath(raw).parts:
+            if (part.endswith((" ", ".")) or any(character in part for character in ':<>"|?*')
+                    or re.fullmatch(r"(?:CON|PRN|AUX|NUL|COM[1-9¹²³]|LPT[1-9¹²³])", part.split(".", 1)[0], re.IGNORECASE)):
+                raise ProtocolError("unsafe_input_path", f"{field} contains a Windows filename alias")
     relative = canonical_relative_path(raw)
     if not relative.startswith(LOCAL_PROTOCOL_INBOX_PREFIX):
         raise ProtocolError(
@@ -623,6 +642,68 @@ def canonical_local_protocol_input(value: Path, field: str) -> str:
     return relative
 
 
+def read_windows_protocol_input(project_root: Path, relative: str, field: str, *, max_bytes: int) -> bytes:
+    """Pin every directory and the file against rename; reject Windows reparse points."""
+    import ctypes
+    import msvcrt
+    from ctypes import wintypes
+
+    kernel = ctypes.WinDLL("kernel32", use_last_error=True)
+    create = kernel.CreateFileW
+    create.argtypes = [wintypes.LPCWSTR, wintypes.DWORD, wintypes.DWORD,
+                       wintypes.LPVOID, wintypes.DWORD, wintypes.DWORD, wintypes.HANDLE]
+    create.restype = wintypes.HANDLE
+    close = kernel.CloseHandle
+    close.argtypes = [wintypes.HANDLE]
+    close.restype = wintypes.BOOL
+    info = kernel.GetFileInformationByHandleEx
+    info.argtypes = [wintypes.HANDLE, ctypes.c_int, wintypes.LPVOID, wintypes.DWORD]
+    info.restype = wintypes.BOOL
+    class AttributeInfo(ctypes.Structure):
+        _fields_ = [("attributes", wintypes.DWORD), ("tag", wintypes.DWORD)]
+
+    handles = []
+    descriptor = None
+    try:
+        parts = PurePosixPath(relative).parts
+        current = project_root
+        paths = [project_root]
+        for part in parts:
+            current = current / part
+            paths.append(current)
+        for index, path in enumerate(paths):
+            # Omitting FILE_SHARE_DELETE pins each parent while opening its child.
+            directory = index < len(paths) - 1
+            handle = create(str(path), 0x80000000, 3 if directory else 1, None, 3,
+                            0x00200000 | (0x02000000 if directory else 0), None)
+            if handle == wintypes.HANDLE(-1).value:
+                raise ProtocolError("unsafe_file", f"{field} cannot be opened through the local protocol inbox")
+            handles.append(handle)
+            attributes = AttributeInfo()
+            if not info(handle, 9, ctypes.byref(attributes), ctypes.sizeof(attributes)):
+                raise ProtocolError("unsafe_file", f"{field} metadata is unavailable")
+            if attributes.attributes & 0x400 or bool(attributes.attributes & 0x10) != directory:
+                raise ProtocolError("unsafe_file", f"{field} contains a reparse point or wrong path type")
+        descriptor = msvcrt.open_osfhandle(handles[-1], os.O_RDONLY | os.O_BINARY)
+        handles.pop()  # The descriptor now owns the final handle.
+        metadata = os.fstat(descriptor)
+        if not stat.S_ISREG(metadata.st_mode) or metadata.st_nlink != 1:
+            raise ProtocolError("unsafe_file", f"{field} must be a single-link regular file")
+        if metadata.st_size > max_bytes:
+            raise ProtocolError("file_too_large", f"{field} exceeds the local protocol size limit")
+        with os.fdopen(descriptor, "rb") as stream:
+            descriptor = None
+            content = stream.read(max_bytes + 1)
+        if len(content) > max_bytes:
+            raise ProtocolError("file_too_large", f"{field} exceeds the local protocol size limit")
+        return content
+    finally:
+        if descriptor is not None:
+            os.close(descriptor)
+        for handle in reversed(handles):
+            close(handle)
+
+
 def read_local_protocol_input(
     project_root: Path,
     value: Path,
@@ -632,9 +713,11 @@ def read_local_protocol_input(
 ) -> bytes:
     """Read only a single-link regular file reached through the ignored local inbox."""
     relative = canonical_local_protocol_input(value, field)
+    if os.name == "nt":
+        return read_windows_protocol_input(project_root, relative, field, max_bytes=max_bytes)
     components = PurePosixPath(relative).parts
     directory_flags = os.O_RDONLY | getattr(os, "O_DIRECTORY", 0)
-    file_flags = os.O_RDONLY
+    file_flags = os.O_RDONLY | getattr(os, "O_BINARY", 0)
     if hasattr(os, "O_NOFOLLOW"):
         directory_flags |= os.O_NOFOLLOW
         file_flags |= os.O_NOFOLLOW
@@ -705,7 +788,7 @@ def load_safe_json(path: Path, field: str) -> Dict[str, Any]:
 
 def exclusive_write_bytes(path: Path, content: bytes, *, mode: int = 0o600) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL
+    flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_BINARY", 0)
     if hasattr(os, "O_NOFOLLOW"):
         flags |= os.O_NOFOLLOW
     try:
@@ -728,11 +811,7 @@ def exclusive_write_bytes(path: Path, content: bytes, *, mode: int = 0o600) -> N
         raise
     finally:
         os.close(descriptor)
-    directory_fd = os.open(str(path.parent), os.O_RDONLY)
-    try:
-        os.fsync(directory_fd)
-    finally:
-        os.close(directory_fd)
+    _flush_directory(path.parent)
 
 
 def exclusive_write_json(path: Path, value: Dict[str, Any]) -> None:
@@ -1214,7 +1293,7 @@ def current_changed_paths(project_root: Path) -> List[str]:
 
 
 def source_file_fingerprint(path: Path) -> Optional[Dict[str, str]]:
-    flags = os.O_RDONLY
+    flags = os.O_RDONLY | getattr(os, "O_BINARY", 0)
     if hasattr(os, "O_NOFOLLOW"):
         flags |= os.O_NOFOLLOW
     try:

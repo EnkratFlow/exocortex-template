@@ -6,6 +6,18 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 ## [Unreleased]
 
+## [3.3.9] - 2026-09-30
+
+### Fixed
+
+- Restore native Windows guarded updates: resolve Git for Windows, read local
+  protocol inputs with Windows handles, preserve binary bytes, and flush
+  directories using the Windows API.
+- Make reviewed reconciliation file writes portable to Windows.
+- Add a PowerShell launcher for the shared installer and updater, plus Windows
+  integration coverage for installation, registration, update and memory preservation.
+- Correct outdated instructions that blocked Windows because of `fcntl`.
+
 ## [3.3.8] - 2026-09-30
 
 This patch lets guarded local-delivery bootstrap update a clean checkout whose
