@@ -159,8 +159,8 @@ destination/method approval. Project memory never flows sideways.
     that exact command path has a validated `use_reviewed_object` entry and
     the rehearsal bytes and mode match its reviewed object. Unplanned command
     collisions, legacy command authority, and stale root guidance still fail
-    before live mutation. This correction is unpublished after 3.3.6 until
-    included in a later release.
+    before live mutation. Version 3.3.6 lacks this correction; it is packaged
+    in 3.3.7 and requires the authenticated release before installation.
 11. Require a separate exact approval before applying to the real target.
 12. Run twice to prove idempotency. Inject a live-only failure after capability
    consumption and at least one target copy. On a disposable copy of that
