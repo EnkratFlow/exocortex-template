@@ -1484,7 +1484,7 @@ class LocalDeliveryProtocolTests(unittest.TestCase):
         outside = self.fixture()
         self.assertEqual(outside.bootstrap(outside.write_envelope()).returncode, 0)
         (outside.root / "allowed.txt").write_text("approved source edit\n", encoding="utf-8")
-        (outside.root / "unreviewed.scratch").write_text("ignored output\n", encoding="utf-8")
+        (outside.root / ".exocortex/unreviewed.scratch").write_text("ignored output\n", encoding="utf-8")
         rejected = outside.seal()
         self.assertNotEqual(rejected.returncode, 0)
         self.assertIn("ignored_path_outside_scope", rejected.stdout)

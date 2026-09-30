@@ -1,4 +1,4 @@
-# What's New in 3.3.9 — Update directly on Windows
+# What's New in 3.3.10 — Update directly on Windows
 
 - Install and update on the same Windows computer using Git for Windows and
   native Python. PowerShell can launch the shared updater with `scripts/windows.ps1`.

@@ -1,6 +1,6 @@
 # Exocortex
 
-> Install or update from v3.3.9 only after its authenticated GitHub release
+> Install or update from v3.3.10 only after its authenticated GitHub release
 > exists. Do not substitute a branch checkout for that release.
 
 Exocortex is a project-local memory, delivery, and multi-AI entry protocol for
@@ -12,10 +12,10 @@ This template is public beta. Read `VERSION` for the packaged version.
 For changes in each version, see the detailed [Changelog](CHANGELOG.md), the
 plain-language [What's New](WHATSNEW.md), and published [GitHub Releases](https://github.com/EnkratFlow/exocortex-template/releases).
 
-> **Public releases are authenticity-gated.** Version 3.3.9 selects GitHub's
+> **Public releases are authenticity-gated.** Version 3.3.10 selects GitHub's
 > immutable-release attestation for the trust identity
 > `github.com/EnkratFlow/exocortex-template`. Before executing downloaded code,
-> require `gh release verify v3.3.9 -R github.com/EnkratFlow/exocortex-template`
+> require `gh release verify v3.3.10 -R github.com/EnkratFlow/exocortex-template`
 > to pass and
 > verify the downloaded `SHA256SUMS` release asset with
 > `gh release verify-asset`. Stop if the release is not immutable, either
@@ -48,7 +48,7 @@ before it executes any candidate-owned script.
 
 ```text
 Prepare a read-only Exocortex clean-install preflight for the repository I
-currently have open. Use only the official GitHub release v3.3.9 from
+currently have open. Use only the official GitHub release v3.3.10 from
 https://github.com/EnkratFlow/exocortex-template.
 
 Require GitHub CLI verification of the immutable release for the exact trust
@@ -79,12 +79,12 @@ external systems.
 ```text
 Prepare a read-only Exocortex safe-update preflight for the repository I
 currently have open. Update it from its installed version to the official
-GitHub release v3.3.9 from
+GitHub release v3.3.10 from
 https://github.com/EnkratFlow/exocortex-template.
 
 This existing repository and its project-local data are the target. Do not
 treat a fresh template clone or a bare Git snapshot that omits local data as a
-replacement. A temporary clone of v3.3.9 is the update source only. An approved
+replacement. A temporary clone of v3.3.10 is the update source only. An approved
 disposable rehearsal or isolated worktree is allowed, but it must preserve and
 verify the target's protected data. Require GitHub CLI verification of the
 immutable release for the exact trust identity
@@ -137,36 +137,36 @@ below.
 ```bash
 (
 set -eu
-gh release verify v3.3.9 -R github.com/EnkratFlow/exocortex-template
-mkdir -m 700 /tmp/exocortex-release-verify-v3.3.9
-gh release download v3.3.9 -R github.com/EnkratFlow/exocortex-template \
-  --pattern SHA256SUMS --dir /tmp/exocortex-release-verify-v3.3.9
-gh release verify-asset v3.3.9 \
-  /tmp/exocortex-release-verify-v3.3.9/SHA256SUMS \
+gh release verify v3.3.10 -R github.com/EnkratFlow/exocortex-template
+mkdir -m 700 /tmp/exocortex-release-verify-v3.3.10
+gh release download v3.3.10 -R github.com/EnkratFlow/exocortex-template \
+  --pattern SHA256SUMS --dir /tmp/exocortex-release-verify-v3.3.10
+gh release verify-asset v3.3.10 \
+  /tmp/exocortex-release-verify-v3.3.10/SHA256SUMS \
   -R github.com/EnkratFlow/exocortex-template
-git clone --depth 1 --branch v3.3.9 \
+git clone --depth 1 --branch v3.3.10 \
   https://github.com/EnkratFlow/exocortex-template.git \
-  /tmp/exocortex-template-v3.3.9
-cmp -s /tmp/exocortex-release-verify-v3.3.9/SHA256SUMS \
-  /tmp/exocortex-template-v3.3.9/SHA256SUMS
-git -C /tmp/exocortex-template-v3.3.9 rev-parse HEAD
+  /tmp/exocortex-template-v3.3.10
+cmp -s /tmp/exocortex-release-verify-v3.3.10/SHA256SUMS \
+  /tmp/exocortex-template-v3.3.10/SHA256SUMS
+git -C /tmp/exocortex-template-v3.3.10 rev-parse HEAD
 )
 ```
 
 On macOS:
 
 ```bash
-shasum -a 256 /tmp/exocortex-template-v3.3.9/SHA256SUMS
+shasum -a 256 /tmp/exocortex-template-v3.3.10/SHA256SUMS
 ```
 
 On Linux or inside WSL:
 
 ```bash
-sha256sum /tmp/exocortex-template-v3.3.9/SHA256SUMS
+sha256sum /tmp/exocortex-template-v3.3.10/SHA256SUMS
 ```
 
 Compare both outputs with the peeled commit and candidate digest in the
-v3.3.9 GitHub release notes. Stop if either differs. Do not substitute `main`,
+v3.3.10 GitHub release notes. Stop if either differs. Do not substitute `main`,
 `latest`, another checkout, or an unattested manifest. The immutable-release
 attestation and verified asset establish the selected repository identity; the
 peeled commit and digest checks establish exact byte consistency. Use the
@@ -182,12 +182,12 @@ the retained asset and exact tag clone:
 ```bash
 (
 set -eu
-gh release verify v3.3.9 -R github.com/EnkratFlow/exocortex-template
-gh release verify-asset v3.3.9 \
-  /tmp/exocortex-release-verify-v3.3.9/SHA256SUMS \
+gh release verify v3.3.10 -R github.com/EnkratFlow/exocortex-template
+gh release verify-asset v3.3.10 \
+  /tmp/exocortex-release-verify-v3.3.10/SHA256SUMS \
   -R github.com/EnkratFlow/exocortex-template
-cmp -s /tmp/exocortex-release-verify-v3.3.9/SHA256SUMS \
-  /tmp/exocortex-template-v3.3.9/SHA256SUMS
+cmp -s /tmp/exocortex-release-verify-v3.3.10/SHA256SUMS \
+  /tmp/exocortex-template-v3.3.10/SHA256SUMS
 )
 ```
 
@@ -204,9 +204,9 @@ The underlying installation command is:
 ```bash
 cd /path/to/approved-isolated-worktree
 HOME=<new-empty-owner-only-disposable-home> \
-EXOCORTEX_LOCAL_SOURCE=/tmp/exocortex-template-v3.3.9 \
+EXOCORTEX_LOCAL_SOURCE=/tmp/exocortex-template-v3.3.10 \
 EXOCORTEX_CANDIDATE_DIGEST=<sha256-computed-from-verified-release-asset> \
-  bash /tmp/exocortex-template-v3.3.9/install.sh "project-name"
+  bash /tmp/exocortex-template-v3.3.10/install.sh "project-name"
 ```
 
 ### 2B. Existing-repository update
@@ -218,8 +218,8 @@ fresh owner-only backup directory outside both the target and template first.
 ```bash
 cd /path/to/existing-project
 mkdir -m 700 /tmp/exocortex-restore
-bash /tmp/exocortex-template-v3.3.9/scripts/safe-update.sh \
-  --template /tmp/exocortex-template-v3.3.9 \
+bash /tmp/exocortex-template-v3.3.10/scripts/safe-update.sh \
+  --template /tmp/exocortex-template-v3.3.10 \
   --candidate-digest <sha256-computed-from-verified-release-asset> \
   --backup-dir /tmp/exocortex-restore \
   --dry-run
@@ -532,7 +532,7 @@ independently prove repository-owner authenticity when the repository, tag,
 release notes, and digest share one trust domain. Public installation must stop
 unless the release also carries the owner-selected signature or attestation
 evidence and the operator verifies it against its documented trust identity.
-Version 3.3.9 selects GitHub's immutable-release attestation for
+Version 3.3.10 selects GitHub's immutable-release attestation for
 `github.com/EnkratFlow/exocortex-template` and publishes `SHA256SUMS` as an
 attested release asset. Verify both with `gh release verify` and
 `gh release verify-asset`; an absent, mutable, mismatched, or unverifiable
@@ -551,3 +551,25 @@ that external trust-root risk remains open until such a broker is integrated.
 ## License
 
 MIT. See `LICENSE`.
+
+## Shared project memory
+
+Installed projects keep `.exocortex/PROJECT_MEMORY.md`, `SESSION_CONTEXT.md`,
+`TODO.md`, `LESSONS.md`, decisions, and `events/` in their own Git repository.
+Save records memory locally; explicitly commit and push it with the project so
+another person or computer receives it on pull or clone. Only publish project
+memory to the intended project repository and its authorized collaborators.
+Secrets, local capabilities, executor registrations, caches and backup copies
+remain ignored. A Git clone does not carry those machine-local capabilities.
+
+Version 3.3.10 removes obsolete memory exclusions from installer-owned root
+ignore blocks and updates the managed `.exocortex/.gitignore`. Owner-authored
+ignore rules outside those blocks are preserved; if memory is still excluded,
+use `git check-ignore -v` on the named memory path and review that owner rule.
+Stage the newly visible memory explicitly with the project update; the updater
+does not commit or push. Commit pending project work before guarded bootstrap.
+Ordinary ignored dependencies/build output outside the update surface need no
+cleanup. Never delete ignored project files to make an update proceed.
+
+The public Exocortex template retains separate root exclusions and release
+checks so real development memory is never distributed as template payload.
