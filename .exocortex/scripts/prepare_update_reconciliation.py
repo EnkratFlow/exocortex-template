@@ -102,7 +102,23 @@ def file_digest(path: Path) -> str:
     return digest_bytes(path.read_bytes())
 
 
+def _flush_directory(directory: Path) -> None:
+    if os.name == "nt":
+        from authority_guard import _flush_directory as windows_flush
+        windows_flush(directory)
+        return
+    descriptor = os.open(directory, os.O_RDONLY)
+    try:
+        os.fsync(descriptor)
+    finally:
+        os.close(descriptor)
+
+
 def normalized_file_mode(path: Path, label: str) -> str:
+    if os.name == "nt":
+        # NTFS does not expose POSIX execute bits. Candidate modes remain
+        # bound to FILEMODES; reviewed objects use portable data-file mode.
+        return "0644"
     mode = stat.S_IMODE(path.stat().st_mode)
     value = f"{mode:04o}"
     if FILE_MODE_RE.fullmatch(value) is None:
@@ -718,7 +734,7 @@ def atomic_copy(source: Path, destination: Path, expected_mode: str, expected_di
     try:
         with source.open("rb") as reader, temporary.open("xb") as writer:
             source_mode = f"{stat.S_IMODE(os.fstat(reader.fileno()).st_mode):04o}"
-            if source_mode != expected_mode:
+            if os.name != "nt" and source_mode != expected_mode:
                 raise ReconciliationError("source_mode_mismatch", "materialization source mode changed after planning")
             copied_digest = hashlib.sha256()
             while True:
@@ -732,17 +748,16 @@ def atomic_copy(source: Path, destination: Path, expected_mode: str, expected_di
                     "source_digest_mismatch",
                     "materialization source bytes changed after planning",
                 )
-            os.fchmod(writer.fileno(), int(expected_mode, 8))
+            if hasattr(os, "fchmod"):
+                os.fchmod(writer.fileno(), int(expected_mode, 8))
+            else:
+                os.chmod(temporary, int(expected_mode, 8))
             writer.flush()
             os.fsync(writer.fileno())
         os.replace(temporary, destination)
-        if normalized_file_mode(destination, "materialized destination") != expected_mode:
+        if os.name != "nt" and normalized_file_mode(destination, "materialized destination") != expected_mode:
             raise ReconciliationError("destination_mode_mismatch", "materialized destination mode is incorrect")
-        directory_fd = os.open(destination.parent, os.O_RDONLY)
-        try:
-            os.fsync(directory_fd)
-        finally:
-            os.close(directory_fd)
+        _flush_directory(destination.parent)
     finally:
         if temporary.exists() and not temporary.is_symlink():
             temporary.unlink()
@@ -775,11 +790,7 @@ def materialize_plan(
                         f"retirement target changed after planning: {relative}",
                     )
                 destination.unlink()
-                directory_fd = os.open(destination.parent, os.O_RDONLY)
-                try:
-                    os.fsync(directory_fd)
-                finally:
-                    os.close(directory_fd)
+                _flush_directory(destination.parent)
             continue
         destination = ensure_destination_parent(destination_root, relative)
         if action == "adopt_candidate":

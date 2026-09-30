@@ -248,6 +248,7 @@
 0644  .github/skills/ux-designer/SKILL.md
 0644  .github/workflows/checksums.yml
 0644  .github/workflows/test.yml
+0644  .github/workflows/windows-update.yml
 0644  .gitignore
 0644  .rules
 0644  AGENTS.md
@@ -269,6 +270,7 @@
 0755  scripts/install-cursor-skills.sh
 0755  scripts/safe-update.sh
 0755  scripts/update-all-repos.sh
+0644  scripts/windows.ps1
 0644  tests/helpers.sh
 0644  tests/install-pre-commit-hook.sh
 0644  tests/phase-b/assert_tree_delta.py
@@ -290,3 +292,4 @@
 0644  tests/test_public_release.py
 0644  tests/test_publication_workflow.py
 0755  tests/test_release_state.py
+0644  tests/test_windows_update.py

@@ -1,6 +1,6 @@
 # Install or update Exocortex with a coding AI
 
-> Candidate 3.3.8 includes the reviewed-command updater correction. Use it
+> Candidate 3.3.9 includes the reviewed-command updater correction. Use it
 > only after its authenticated release exists; never install from this branch.
 
 This is the provider-neutral operator contract for asking a coding AI to
@@ -28,7 +28,7 @@ attestation evidence with its documented trust identity. The SHA and digest
 prove byte consistency but do not independently prove owner authenticity when
 the repository, tag, release notes, and digest share one trust domain.
 
-Version 3.3.8 selects GitHub's immutable-release attestation for the exact
+Version 3.3.9 selects GitHub's immutable-release attestation for the exact
 trust identity `github.com/EnkratFlow/exocortex-template`. The release publishes
 `SHA256SUMS` as an attested asset. Public installation remains blocked unless
 both `gh release verify` and `gh release verify-asset` succeed and the attested
@@ -38,23 +38,23 @@ and consistency checks are:
 ```bash
 (
 set -eu
-gh release verify v3.3.8 -R github.com/EnkratFlow/exocortex-template
-mkdir -m 700 /tmp/exocortex-release-verify-v3.3.8
-gh release download v3.3.8 -R github.com/EnkratFlow/exocortex-template \
-  --pattern SHA256SUMS --dir /tmp/exocortex-release-verify-v3.3.8
-gh release verify-asset v3.3.8 \
-  /tmp/exocortex-release-verify-v3.3.8/SHA256SUMS \
+gh release verify v3.3.9 -R github.com/EnkratFlow/exocortex-template
+mkdir -m 700 /tmp/exocortex-release-verify-v3.3.9
+gh release download v3.3.9 -R github.com/EnkratFlow/exocortex-template \
+  --pattern SHA256SUMS --dir /tmp/exocortex-release-verify-v3.3.9
+gh release verify-asset v3.3.9 \
+  /tmp/exocortex-release-verify-v3.3.9/SHA256SUMS \
   -R github.com/EnkratFlow/exocortex-template
-git clone --depth 1 --branch v3.3.8 \
+git clone --depth 1 --branch v3.3.9 \
   https://github.com/EnkratFlow/exocortex-template.git \
-  /tmp/exocortex-template-v3.3.8
-cmp -s /tmp/exocortex-release-verify-v3.3.8/SHA256SUMS \
-  /tmp/exocortex-template-v3.3.8/SHA256SUMS
-git -C /tmp/exocortex-template-v3.3.8 rev-parse HEAD
+  /tmp/exocortex-template-v3.3.9
+cmp -s /tmp/exocortex-release-verify-v3.3.9/SHA256SUMS \
+  /tmp/exocortex-template-v3.3.9/SHA256SUMS
+git -C /tmp/exocortex-template-v3.3.9 rev-parse HEAD
 if command -v shasum >/dev/null 2>&1; then
-  shasum -a 256 /tmp/exocortex-template-v3.3.8/SHA256SUMS
+  shasum -a 256 /tmp/exocortex-template-v3.3.9/SHA256SUMS
 else
-  sha256sum /tmp/exocortex-template-v3.3.8/SHA256SUMS
+  sha256sum /tmp/exocortex-template-v3.3.9/SHA256SUMS
 fi
 )
 ```
@@ -93,8 +93,7 @@ updater require Bash 3.2+, Python 3.9+, `shasum` or
 required to acquire, pin, and inspect the template revision; the installer and
 updater do not invoke Git. `rsync` is optional because the installer has a
 `tar` fallback, while `tar` remains mandatory for safe-update restore archives.
-The guarded apply uses Python's Unix-only `fcntl` module, which is available on
-the supported macOS/Linux/WSL path but not native Windows Python. Deterministic
+The guarded apply uses `fcntl` on Unix and `msvcrt` on native Windows. Deterministic
 repository verification additionally uses `rg` and the dependencies of the
 target application's own tests; `rg` is not an install/update runtime
 dependency.
@@ -110,13 +109,52 @@ the AI to install packages or substitute an untested tool.
 | macOS with Bash and the documented Unix tools | `verified` | Current local deterministic and disposable-target evidence |
 | Linux | `compatible` | The complete GitHub safety suite passed on Ubuntu for the merged 3.2.9 hardening change; operator-environment rehearsal is still required |
 | Windows through WSL | `human_uat_pending` | Use only after the exact WSL environment passes the same bounded rehearsal |
-| Windows through Git Bash | `unsupported` | Required tools and path behavior have not been verified |
-| Native Windows PowerShell or Command Prompt | `unsupported` | No native shared installer exists; do not translate the security logic ad hoc |
+| Native Windows through Git Bash | `compatible` | Git for Windows and native Python; exercised by Windows CI |
+| PowerShell using `scripts/windows.ps1` | `compatible` | Launches the same shared Git Bash installer and updater |
 
-WSL is not native Windows support. A future native Windows claim requires one
-shared cross-platform implementation, deterministic Windows CI, rollback
-verification, and Human UAT. An AI must report an unsupported platform rather
-than silently improvising.
+Native Windows support uses Git for Windows, not WSL. The PowerShell launcher
+forwards the same update arguments and preserves every approval and preservation
+check. Do not stop merely because `fcntl` is absent on Windows. It is not the
+Windows locking backend. Python's Windows file handles protect protocol input
+paths, and Windows directory flushing replaces Unix directory `fsync` calls.
+
+### Windows PowerShell and Git Bash
+
+Keep the target project and its existing GitHub remote on this computer. Clone
+only the public Exocortex template from `EnkratFlow/exocortex-template` as the
+update source. There is no need to move a project to another account or machine.
+Use the release verification steps above with Windows paths. Clone with LF
+line endings so the release checksums match:
+
+```powershell
+git -c core.autocrlf=false clone --branch v3.3.9 --depth 1 https://github.com/EnkratFlow/exocortex-template.git "$env:TEMP/exocortex-v3.3.9"
+```
+
+After verifying the published release and its `SHA256SUMS` asset, open PowerShell
+in the **existing target project** and preview the update:
+
+```powershell
+& "$env:TEMP/exocortex-v3.3.9/scripts/windows.ps1" update --backup-dir "$env:LOCALAPPDATA/Exocortex/backups" --dry-run
+```
+
+For the approved apply, use the same command with `--apply` and the exact
+capability, work item, request and executor arguments from the guarded apply
+section below. The coding agent prepares those records under the already
+accepted update decision; do not require another decision for each internal
+record. Run Python protocol commands with `python` if that is the installed
+Windows executable name. Git Bash must also resolve `python3` for the shared
+shell scripts; the official Python installation normally provides it.
+
+For a **new project with no Exocortex installation**, use:
+
+```powershell
+& "$env:TEMP/exocortex-v3.3.9/scripts/windows.ps1" install "your-project-name"
+```
+
+PowerShell execution policy remains under the computer owner's or organization's
+control. If it blocks this local launcher, run the same scripts in Git Bash;
+do not alter a managed execution policy. Existing project customizations still
+require exact reconciliation when the preview reports collisions.
 
 ## Before pasting a prompt
 
@@ -676,8 +714,8 @@ report a preserved command-authority collision only for an exact
 validated plan. The materialized command bytes and mode must still match the
 reviewed object. Any unplanned command collision, legacy command authority,
 or stale root guidance fails before live capability consumption. Version
-3.3.6 does not have this correction; v3.3.8 includes it. Use only the
-authenticated v3.3.8 release for this case.
+3.3.6 does not have this correction; v3.3.9 includes it. Use only the
+authenticated v3.3.9 release for this case.
 
 ## WSL evidence required before support
 
@@ -695,7 +733,7 @@ terminal surface:
 7. complete Human UAT and record the exact environment.
 
 Until all seven pass, WSL remains `human_uat_pending`. Mounted Windows paths,
-Git Bash, PowerShell, and Command Prompt remain separate unsupported surfaces.
+native Windows Git Bash and the PowerShell launcher use the separate Windows procedure above.
 
 ## GitHub is a later gate
 

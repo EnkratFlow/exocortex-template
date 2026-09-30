@@ -1,3 +1,11 @@
+# What's New in 3.3.9 — Update directly on Windows
+
+- Install and update on the same Windows computer using Git for Windows and
+  native Python. PowerShell can launch the shared updater with `scripts/windows.ps1`.
+- Fix Unix-only operations in the newer registration and reconciliation steps.
+- Keep existing handwritten notes and events; the update still previews and
+  checks its exact changes before applying them.
+
 # What's New in 3.3.8 — Update projects with tracked registries
 
 - The guarded updater can now finish in an existing project whose executor
