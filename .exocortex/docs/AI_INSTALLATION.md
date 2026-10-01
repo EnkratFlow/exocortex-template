@@ -1,6 +1,6 @@
 # Install or update Exocortex with a coding AI
 
-> Candidate 3.3.10 includes the reviewed-command updater correction. Use it
+> Candidate 3.3.11 fixes Windows reconciliation under isolated Python. Use it
 > only after its authenticated release exists; never install from this branch.
 
 This is the provider-neutral operator contract for asking a coding AI to
@@ -28,7 +28,7 @@ attestation evidence with its documented trust identity. The SHA and digest
 prove byte consistency but do not independently prove owner authenticity when
 the repository, tag, release notes, and digest share one trust domain.
 
-Version 3.3.10 selects GitHub's immutable-release attestation for the exact
+Version 3.3.11 selects GitHub's immutable-release attestation for the exact
 trust identity `github.com/EnkratFlow/exocortex-template`. The release publishes
 `SHA256SUMS` as an attested asset. Public installation remains blocked unless
 both `gh release verify` and `gh release verify-asset` succeed and the attested
@@ -38,23 +38,23 @@ and consistency checks are:
 ```bash
 (
 set -eu
-gh release verify v3.3.10 -R github.com/EnkratFlow/exocortex-template
-mkdir -m 700 /tmp/exocortex-release-verify-v3.3.10
-gh release download v3.3.10 -R github.com/EnkratFlow/exocortex-template \
-  --pattern SHA256SUMS --dir /tmp/exocortex-release-verify-v3.3.10
-gh release verify-asset v3.3.10 \
-  /tmp/exocortex-release-verify-v3.3.10/SHA256SUMS \
+gh release verify v3.3.11 -R github.com/EnkratFlow/exocortex-template
+mkdir -m 700 /tmp/exocortex-release-verify-v3.3.11
+gh release download v3.3.11 -R github.com/EnkratFlow/exocortex-template \
+  --pattern SHA256SUMS --dir /tmp/exocortex-release-verify-v3.3.11
+gh release verify-asset v3.3.11 \
+  /tmp/exocortex-release-verify-v3.3.11/SHA256SUMS \
   -R github.com/EnkratFlow/exocortex-template
-git clone --depth 1 --branch v3.3.10 \
+git clone --depth 1 --branch v3.3.11 \
   https://github.com/EnkratFlow/exocortex-template.git \
-  /tmp/exocortex-template-v3.3.10
-cmp -s /tmp/exocortex-release-verify-v3.3.10/SHA256SUMS \
-  /tmp/exocortex-template-v3.3.10/SHA256SUMS
-git -C /tmp/exocortex-template-v3.3.10 rev-parse HEAD
+  /tmp/exocortex-template-v3.3.11
+cmp -s /tmp/exocortex-release-verify-v3.3.11/SHA256SUMS \
+  /tmp/exocortex-template-v3.3.11/SHA256SUMS
+git -C /tmp/exocortex-template-v3.3.11 rev-parse HEAD
 if command -v shasum >/dev/null 2>&1; then
-  shasum -a 256 /tmp/exocortex-template-v3.3.10/SHA256SUMS
+  shasum -a 256 /tmp/exocortex-template-v3.3.11/SHA256SUMS
 else
-  sha256sum /tmp/exocortex-template-v3.3.10/SHA256SUMS
+  sha256sum /tmp/exocortex-template-v3.3.11/SHA256SUMS
 fi
 )
 ```
@@ -127,14 +127,14 @@ Use the release verification steps above with Windows paths. Clone with LF
 line endings so the release checksums match:
 
 ```powershell
-git -c core.autocrlf=false clone --branch v3.3.10 --depth 1 https://github.com/EnkratFlow/exocortex-template.git "$env:TEMP/exocortex-v3.3.10"
+git -c core.autocrlf=false clone --branch v3.3.11 --depth 1 https://github.com/EnkratFlow/exocortex-template.git "$env:TEMP/exocortex-v3.3.11"
 ```
 
 After verifying the published release and its `SHA256SUMS` asset, open PowerShell
 in the **existing target project** and preview the update:
 
 ```powershell
-& "$env:TEMP/exocortex-v3.3.10/scripts/windows.ps1" update --backup-dir "$env:LOCALAPPDATA/Exocortex/backups" --dry-run
+& "$env:TEMP/exocortex-v3.3.11/scripts/windows.ps1" update --backup-dir "$env:LOCALAPPDATA/Exocortex/backups" --dry-run
 ```
 
 For the approved apply, use the same command with `--apply` and the exact
@@ -148,7 +148,7 @@ shell scripts; the official Python installation normally provides it.
 For a **new project with no Exocortex installation**, use:
 
 ```powershell
-& "$env:TEMP/exocortex-v3.3.10/scripts/windows.ps1" install "your-project-name"
+& "$env:TEMP/exocortex-v3.3.11/scripts/windows.ps1" install "your-project-name"
 ```
 
 PowerShell execution policy remains under the computer owner's or organization's
@@ -714,8 +714,8 @@ report a preserved command-authority collision only for an exact
 validated plan. The materialized command bytes and mode must still match the
 reviewed object. Any unplanned command collision, legacy command authority,
 or stale root guidance fails before live capability consumption. Version
-3.3.6 does not have this correction; v3.3.10 includes it. Use only the
-authenticated v3.3.10 release for this case.
+3.3.6 does not have this correction; v3.3.11 includes it. Use only the
+authenticated v3.3.11 release for this case.
 
 ## WSL evidence required before support
 

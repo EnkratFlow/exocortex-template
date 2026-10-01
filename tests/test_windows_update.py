@@ -36,6 +36,40 @@ def write(path, value):
 
 
 class WindowsUpdateTests(unittest.TestCase):
+    def test_reconciliation_flush_in_isolated_python(self):
+        # safe-update loads this helper by filename under python -I, not by
+        # importing from a scripts directory added to sys.path by the test host.
+        with tempfile.TemporaryDirectory(prefix='Exocortex isolated ') as temporary:
+            directory = Path(temporary)
+            (directory/'authority_guard.py').write_text('raise AssertionError("shadow guard loaded")\n')
+            program = '''
+import hashlib, importlib.util, os, sys, types
+from pathlib import Path
+helper, destination = map(Path, sys.argv[1:])
+original_path = list(sys.path)
+assert str(helper.parent) not in sys.path
+assert 'authority_guard' not in sys.modules
+spec = importlib.util.spec_from_file_location('exocortex_update_reconciliation', helper)
+module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(module)
+payload = helper.read_bytes()
+module.atomic_copy(helper, destination, '0644', hashlib.sha256(payload).hexdigest())
+assert destination.read_bytes() == payload
+# Exercise the sibling-load branch on Unix too; the actual sibling still
+# uses the host's real directory-flush implementation. Windows above exercises
+# the genuine Win32 write/flush path without mocking it.
+if os.name != 'nt':
+    module.os = types.SimpleNamespace(name='nt')
+    module._flush_directory(destination.parent)
+assert sys.path == original_path
+'''
+            result = subprocess.run(
+                [sys.executable, '-I', '-', str(ROOT/'.exocortex/scripts/prepare_update_reconciliation.py'),
+                 str(directory/'copied.py')], input=program, cwd=directory, text=True, capture_output=True,
+                env=dict(os.environ, PYTHONPATH=str(directory)),
+            )
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
     @unittest.skipUnless(os.name == 'nt', 'native Windows integration')
     def test_windows_filename_aliases_are_rejected_before_open(self):
         for name in ('credentials.', '.env ', 'value.json:stream', 'NUL.json', 'COM1', 'folder./value.json'):
@@ -157,10 +191,23 @@ class WindowsUpdateTests(unittest.TestCase):
                  '--project-root',target,'--envelope-source',inbox,'--request-id','windows-bootstrap'], target)
             registry=json.loads((target/'.exocortex/control/EXECUTOR_REGISTRY.json').read_text())
             digest=hashlib.sha256((ROOT/'SHA256SUMS').read_bytes()).hexdigest()
+            # Exercise actual reconciliation materialization under the updater's
+            # isolated Python process, including Windows directory durability.
+            changed = base/'changed-paths.txt'
+            changed.write_bytes(''.join(path+'\n' for path in paths).encode())
+            plan = base/'reconciliation.json'
+            plan.write_bytes(run([
+                sys.executable, ROOT/'.exocortex/scripts/prepare_update_reconciliation.py', 'prepare',
+                '--target', target, '--template', ROOT, '--candidate-digest', digest,
+                '--plan-id', 'windows-reconciliation', '--work-item-id', 'windows-update',
+                '--work-item-revision', '0', '--created-at', '2026-01-01T00:00:00Z',
+                '--standard-changed-paths', changed, '--adopt', '.exocortex/scripts/read_memory_stack.sh',
+            ], target).encode())
             cap={
                 'schema_version':'public-v2','kind':'approval_capability','capability_id':'windows-apply',
-                'work_item_id':'windows-update','work_item_revision':0,'operation':'apply_template_update',
-                'scope':{'allowed_paths':paths,'target_sha':digest},
+                'work_item_id':'windows-update','work_item_revision':0,'operation':'apply_template_reconciliation',
+                'scope':{'allowed_paths':paths,'target_sha':digest,
+                         'payload_digest':hashlib.sha256(plan.read_bytes()).hexdigest()},
                 'executor':dict(actor,guard_digest=guard.current_guard_digest(),registry_version=registry['registry_version']),
                 'approval':dict(envelope['approval'],one_time=True),
                 'status':{'state':'active','revoked_at':None,'consumed_at':None,'consumed_by_request_id':None}
@@ -169,6 +216,7 @@ class WindowsUpdateTests(unittest.TestCase):
             write(target/capability,cap)
             print('APPLY', flush=True)
             run(launcher+['update','--backup-dir',str(base/'backups'),'--apply','--capability',capability,
+                '--reconciliation-plan',str(plan),
                 '--work-item-id','windows-update','--work-item-revision','0','--request-id','windows-apply',
                 '--surface-id',actor['surface_id'],'--executor-id',actor['executor_id'],'--adapter-version',actor['adapter_version']],target)
             for path,content in preserved.items(): self.assertEqual(path.read_bytes(),content)
