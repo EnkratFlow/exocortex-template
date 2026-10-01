@@ -1,6 +1,6 @@
 # Exocortex release status
 
-Last updated: 2026-09-30
+Last updated: 2026-10-01
 
 This is the living, human-readable maintainer view of the public template. It
 is release-scoped, not a downstream project's status page, approval record,
@@ -8,17 +8,19 @@ release attestation, or replacement for exact test and Git evidence.
 
 ## Published baseline
 
-- The previous reviewed published baseline is `v3.3.10` at peeled commit
-  `d55df4c84bd5509c3810e6607a572deae4b06e25`.
-- The packaged candidate version is `3.3.11`. This tracked file does not prove a
+- The previous reviewed published baseline is `v3.3.12` at peeled commit
+  `0bf4b886c5ba926147a998227bd4add9518a1cf9`.
+- The packaged candidate version is `3.3.12`. This tracked file does not prove a
   branch push, merge, annotated tag, immutable GitHub release, attested asset,
   installation, deployment, or template promotion.
 
 ## Candidate state
 
-Version 3.3.11 fixes the Windows reconciliation helper import under isolated
-Python. The regression checks isolated loading and guarded reconciliation
-through the Windows PowerShell launcher.
+Version 3.3.12 completes upgrades from 3.1.x installs: public template files
+with credential-shaped names update through the guarded lane, stale
+untracked version labels refresh, unsupported reviewed command authority and
+unsupported Windows target locations fail at planning or preflight, and
+executor conflicts name their cause.
 
 | Area | State | Current objective |
 | --- | --- | --- |
@@ -45,11 +47,11 @@ through the Windows PowerShell launcher.
 
 ## Publication gates and residual limitations
 
-Before version 3.3.11 may be used as a public installation or update source:
+Before version 3.3.12 may be used as a public installation or update source:
 
 1. Provision a separately installed, independently reviewed publication
    runtime outside the candidate root. Bind its executor-closure, checker,
-   Python, Git, and GitHub CLI SHA-256 digests; 3.3.11 cannot bootstrap trust
+   Python, Git, and GitHub CLI SHA-256 digests; 3.3.12 cannot bootstrap trust
    from its own new publisher or checker.
 2. Freeze one exact candidate and run the focused checks plus the complete
    Exocortex safety suite once.
@@ -103,7 +105,7 @@ unknown disclosure pattern exists.
 
 ## Local preparation boundary
 
-- The 3.3.11 metadata and integrity inventories are part of the candidate;
+- The 3.3.12 metadata and integrity inventories are part of the candidate;
   changing any candidate byte invalidates earlier evidence and requires a new
   exact-candidate verification and seal.
 - Complete safety evidence, independent review, and Human UAT must bind the

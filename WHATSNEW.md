@@ -1,3 +1,14 @@
+# What's New in 3.3.12 — Upgrade older installs cleanly
+
+- Update 3.1.x installs end to end: the public `.env.example` and
+  `key-registry.json` template files no longer block the guarded update.
+- Refresh a stale `.exocortex/.version` label after upgrading an older install.
+- Learn at planning time that `AI_START_HERE.md` must match the template, and
+  keep project notes in `PROJECT_MEMORY.md` instead.
+- Get a plain explanation on Windows for OneDrive folders and over-long paths
+  before any backup is written.
+- See why an executor registration can't be reused, and retry with a new id.
+
 # What's New in 3.3.11 — Finish Windows reconciliation updates
 
 - Fix the missing `authority_guard` import when a Windows update applies a

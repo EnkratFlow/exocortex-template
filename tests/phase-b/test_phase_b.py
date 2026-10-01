@@ -3793,8 +3793,20 @@ class ReconciliationPlanTests(unittest.TestCase):
             0o755,
         )
         os.chmod(self.template / "AI_START_HERE.md", 0o755)
+        # CLAUDE.md is a reviewable root instruction adapter; AI_START_HERE.md
+        # is command authority and may only be adopted, never reviewed.
+        (self.target / "CLAUDE.md").write_text("target entry\n", encoding="utf-8")
+        (self.target / ".exocortex/local/update-reconciliation/objects/CLAUDE.md").write_text(
+            "reviewed merged entry\n",
+            encoding="utf-8",
+        )
+        (self.template / "CLAUDE.md").write_text("candidate entry\n", encoding="utf-8")
+        os.chmod(self.target / "CLAUDE.md", 0o644)
+        os.chmod(self.target / ".exocortex/local/update-reconciliation/objects/CLAUDE.md", 0o755)
+        os.chmod(self.template / "CLAUDE.md", 0o755)
         (self.template / "FILEMODES").write_text(
             "0755  AI_START_HERE.md\n"
+            "0755  CLAUDE.md\n"
             "0644  FILEMODES\n"
             "0644  SHA256SUMS\n",
             encoding="utf-8",
@@ -3804,6 +3816,7 @@ class ReconciliationPlanTests(unittest.TestCase):
         filemodes_hash = file_digest(self.template / "FILEMODES")
         (self.template / "SHA256SUMS").write_text(
             f"{candidate_hash}  AI_START_HERE.md\n"
+            f"{file_digest(self.template / 'CLAUDE.md')}  CLAUDE.md\n"
             f"{filemodes_hash}  FILEMODES\n",
             encoding="utf-8",
         )
@@ -3844,8 +3857,8 @@ class ReconciliationPlanTests(unittest.TestCase):
 
     def test_plan_is_deterministic_exact_and_materializes_only_rehearsal(self) -> None:
         reviewed_spec = (
-            "AI_START_HERE.md="
-            ".exocortex/local/update-reconciliation/objects/AI_START_HERE.md"
+            "CLAUDE.md="
+            ".exocortex/local/update-reconciliation/objects/CLAUDE.md"
         )
         first = self.prepare("--reviewed", reviewed_spec)
         second = self.prepare("--reviewed", reviewed_spec)
@@ -3874,7 +3887,7 @@ class ReconciliationPlanTests(unittest.TestCase):
         )
         metadata = json.loads(validation.stdout)
         self.assertEqual(metadata["operation"], "apply_template_reconciliation")
-        self.assertEqual(metadata["effect_paths"], ["AI_START_HERE.md"])
+        self.assertEqual(metadata["effect_paths"], ["CLAUDE.md"])
         rehearsal = self.root / "rehearsal"
         shutil.copytree(self.target, rehearsal)
         spec = importlib.util.spec_from_file_location("reconciliation_fixture", RECONCILIATION)
@@ -3891,14 +3904,24 @@ class ReconciliationPlanTests(unittest.TestCase):
             baseline_target=self.target,
         )
         self.assertEqual(
-            (rehearsal / "AI_START_HERE.md").read_text(encoding="utf-8"),
+            (rehearsal / "CLAUDE.md").read_text(encoding="utf-8"),
             "reviewed merged entry\n",
         )
-        self.assertEqual(stat.S_IMODE((rehearsal / "AI_START_HERE.md").stat().st_mode), 0o755)
+        self.assertEqual(stat.S_IMODE((rehearsal / "CLAUDE.md").stat().st_mode), 0o755)
         self.assertEqual(
-            (self.target / "AI_START_HERE.md").read_text(encoding="utf-8"),
+            (self.target / "CLAUDE.md").read_text(encoding="utf-8"),
             "target entry\n",
         )
+
+    def test_reviewed_command_authority_other_than_command_json_is_rejected_at_planning(self) -> None:
+        reviewed = ".exocortex/local/update-reconciliation/objects/AI_START_HERE.md"
+        for path in ("AI_START_HERE.md", ".exocortex/AI_BOOTSTRAP.md", ".claude/skills/save/SKILL.md"):
+            with self.subTest(path=path):
+                prepared = self.prepare("--reviewed", f"{path}={reviewed}")
+                output = prepared.stdout + prepared.stderr
+                self.assertNotEqual(prepared.returncode, 0, output)
+                self.assertIn("unreviewable_command_authority", output)
+                self.assertIn("PROJECT_MEMORY.md", output)
 
     def test_reviewed_command_collision_requires_exact_path_bytes_and_mode(self) -> None:
         command_path = ".exocortex/commands/monthly-review.json"
@@ -4088,15 +4111,15 @@ class ReconciliationPlanTests(unittest.TestCase):
 
     def test_candidate_and_reviewed_object_mode_drift_fail_closed(self) -> None:
         reviewed_spec = (
-            "AI_START_HERE.md="
-            ".exocortex/local/update-reconciliation/objects/AI_START_HERE.md"
+            "CLAUDE.md="
+            ".exocortex/local/update-reconciliation/objects/CLAUDE.md"
         )
         reviewed = self.prepare("--reviewed", reviewed_spec)
         self.assertEqual(reviewed.returncode, 0, reviewed.stdout + reviewed.stderr)
         reviewed_plan = self.root / "reviewed-mode-plan.json"
         reviewed_plan.write_text(reviewed.stdout, encoding="utf-8")
         os.chmod(
-            self.target / ".exocortex/local/update-reconciliation/objects/AI_START_HERE.md",
+            self.target / ".exocortex/local/update-reconciliation/objects/CLAUDE.md",
             0o644,
         )
         validation = run(
@@ -4118,14 +4141,14 @@ class ReconciliationPlanTests(unittest.TestCase):
         self.assertIn("reviewed_object_mode_mismatch", validation.stdout)
 
         os.chmod(
-            self.target / ".exocortex/local/update-reconciliation/objects/AI_START_HERE.md",
+            self.target / ".exocortex/local/update-reconciliation/objects/CLAUDE.md",
             0o755,
         )
-        candidate = self.prepare("--adopt", "AI_START_HERE.md")
+        candidate = self.prepare("--adopt", "CLAUDE.md")
         self.assertEqual(candidate.returncode, 0, candidate.stdout + candidate.stderr)
         candidate_plan = self.root / "candidate-mode-plan.json"
         candidate_plan.write_text(candidate.stdout, encoding="utf-8")
-        os.chmod(self.template / "AI_START_HERE.md", 0o644)
+        os.chmod(self.template / "CLAUDE.md", 0o644)
         validation = run(
             [
                 "python3",

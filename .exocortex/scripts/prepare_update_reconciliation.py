@@ -74,6 +74,15 @@ REVIEWED_OBJECT_PREFIX = ".exocortex/local/update-reconciliation/objects/"
 COMMAND_COLLISION_PREFIX = "EXOCORTEX_COMMAND_AUTHORITY_COLLISION_PRESERVED: "
 STALE_GUIDANCE_PREFIX = "EXOCORTEX_STALE_COMMAND_GUIDANCE_PRESERVED: "
 REVIEWED_COMMAND_COLLISION_SUFFIX = " (reviewed reconciliation required before live apply)"
+# The final reconciled install pass accepts a reviewed object only for exact
+# .exocortex/commands/*.json collisions. Every other command-authority file must
+# match the candidate, so reject a reviewed copy while planning instead of
+# after a full rehearsal (mirrors install.sh is_command_authority_path).
+REVIEWABLE_COMMAND_RE = re.compile(r"\.exocortex/commands/[^/]+\.json")
+COMMAND_AUTHORITY_RE = re.compile(
+    r"AI_START_HERE\.md|\.exocortex/AI_BOOTSTRAP\.md|\.exocortex/COMMAND_SYSTEM\.md"
+    r"|\.exocortex/commands/[^/]+\.json|\.(?:agents|claude|cursor)/skills/[^/]+/SKILL\.md"
+)
 # Protected project data is preserved and verified separately by safe-update.
 # It is not part of the mutable template code-plane surface. In particular, a
 # reviewed plan stored under .exocortex/local must not invalidate itself.
@@ -536,6 +545,12 @@ def validate_plan(
             if entry["expected_mode"] != modes.get(path):
                 raise ReconciliationError("candidate_mode_mismatch", f"candidate adoption mode is not bound: {path}")
         elif action == "use_reviewed_object":
+            if COMMAND_AUTHORITY_RE.fullmatch(path) and not REVIEWABLE_COMMAND_RE.fullmatch(path):
+                raise ReconciliationError(
+                    "unreviewable_command_authority",
+                    f"{path} is template command authority and must match the candidate; adopt it and move "
+                    "project-specific notes into .exocortex/PROJECT_MEMORY.md",
+                )
             if entry["candidate_sha256"] is not None:
                 raise ReconciliationError("invalid_entry_binding", f"reviewed object cannot claim candidate bytes: {path}")
             object_path = canonical_relative_path(entry["object_path"], "reviewed object path")
