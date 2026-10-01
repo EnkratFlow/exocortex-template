@@ -6,6 +6,18 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 ## [Unreleased]
 
+## [3.3.11] - 2026-09-30
+
+### Fixed
+
+- Fix Windows reconciliation apply failing with `ModuleNotFoundError:
+  authority_guard` when the updater runs its helper under Python isolated mode.
+  Load the directory-flush implementation from the verified candidate's sibling
+  file without changing `sys.path` or trusting caller-directory imports.
+- Add an isolated-process regression with a shadow module in the working
+  directory, and exercise guarded reconciliation through the native Windows
+  PowerShell integration test (also run on Ubuntu).
+
 ## [3.3.10] - 2026-09-30
 
 ### Fixed

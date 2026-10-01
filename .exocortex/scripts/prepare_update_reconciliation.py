@@ -11,6 +11,7 @@ from __future__ import annotations
 import argparse
 from datetime import datetime
 import hashlib
+import importlib.util
 import json
 import os
 from pathlib import Path, PurePosixPath
@@ -104,8 +105,16 @@ def file_digest(path: Path) -> str:
 
 def _flush_directory(directory: Path) -> None:
     if os.name == "nt":
-        from authority_guard import _flush_directory as windows_flush
-        windows_flush(directory)
+        # safe-update imports this helper by filename under python -I. Load
+        # only its sibling in the verified candidate snapshot, without adding
+        # the candidate, target or caller directory to Python's search path.
+        guard_path = Path(__file__).resolve().with_name("authority_guard.py")
+        spec = importlib.util.spec_from_file_location("exocortex_reconciliation_guard", guard_path)
+        if spec is None or spec.loader is None:
+            raise ReconciliationError("guard_load_failed", "directory flush helper could not be loaded")
+        guard = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(guard)
+        guard._flush_directory(directory)
         return
     descriptor = os.open(directory, os.O_RDONLY)
     try:

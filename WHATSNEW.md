@@ -1,3 +1,11 @@
+# What's New in 3.3.11 — Finish Windows reconciliation updates
+
+- Fix the missing `authority_guard` import when a Windows update applies a
+  reviewed reconciliation plan under isolated Python.
+- Load the verified sibling helper without trusting the caller's Python path.
+- Add an isolated-import regression and exercise reconciliation through the
+  Windows PowerShell update test.
+
 # What's New in 3.3.10 — Share project memory across computers
 
 - Project memory, saved events, lessons and context can be committed and pushed
