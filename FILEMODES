@@ -292,4 +292,5 @@
 0644  tests/test_public_release.py
 0644  tests/test_publication_workflow.py
 0755  tests/test_release_state.py
+0644  tests/test_upgrade_path_fixes.py
 0644  tests/test_windows_update.py

@@ -968,7 +968,22 @@ retire_legacy_adapters post
 [ ! -e .cursorrules ] || report_preserved_command_drift .cursorrules
 
 if [ -f "$SOURCE_COPY/VERSION" ]; then
-    safe_copy_file "$SOURCE_COPY/VERSION" .exocortex/.version
+    # Installs from before .version was manifest-tracked (3.1.x) would have it
+    # preserved as an unknown owner file, leaving a stale label after an
+    # otherwise complete upgrade. An untracked bare semantic version is
+    # installer-written metadata, never owner content, so refresh it.
+    if [ -f .exocortex/.version ] && [ ! -L .exocortex/.version ] \
+        && [ -z "$(manifest_get .exocortex/.version)" ] \
+        && [ "$(wc -l < .exocortex/.version)" -le 1 ] \
+        && LC_ALL=C grep -Eqx '[0-9]+\.[0-9]+\.[0-9]+[[:space:]]*' .exocortex/.version \
+        && ! cmp -s "$SOURCE_COPY/VERSION" .exocortex/.version; then
+        assert_safe_target_file_path .exocortex/.version
+        assert_no_external_links .exocortex/.version
+        copy_with_bound_mode "$SOURCE_COPY/VERSION" .exocortex/.version
+        record_manifest .exocortex/.version "$(file_hash "$SOURCE_COPY/VERSION")"
+    else
+        safe_copy_file "$SOURCE_COPY/VERSION" .exocortex/.version
+    fi
 fi
 
 # safe_copy_file preserves each reviewed source file's executable bits. Do not

@@ -371,6 +371,48 @@ preflight_surface_paths() {
 # Reject target indirection before inventory, backup, or rehearsal can read it.
 preflight_surface_paths
 
+# Native Windows: fail early, with a plain explanation, on two target
+# locations that otherwise surface as obscure late errors (a backup that
+# "does not reconstruct the exact prior code plane", or FileNotFoundError from
+# protocol temp files beyond MAX_PATH).
+run_trusted_python - "$PROJECT_ROOT" <<'PY' || fail "target location is not supported for a native Windows update (see message above)"
+import os
+import sys
+
+if os.name != "nt":
+    raise SystemExit(0)
+root = os.path.abspath(sys.argv[1])
+# The deepest protocol path the updater writes adds about 120 characters.
+if len(root) + 120 > 259:
+    print(
+        f"EXOCORTEX_TARGET_PATH_TOO_LONG: {root} is {len(root)} characters; Windows update state needs "
+        "about 120 more within the 260-character limit. Clone or move the project to a shorter path, "
+        "for example C:\\Users\\<you>\\Projects\\<name>, and update it there.",
+        file=sys.stderr,
+    )
+    raise SystemExit(2)
+REPARSE_POINT = 0x400
+checked = 0
+for directory, _subdirs, files in os.walk(os.path.join(root, ".exocortex")):
+    for name in files[:20]:
+        try:
+            attributes = os.lstat(os.path.join(directory, name)).st_file_attributes
+        except OSError:
+            continue
+        checked += 1
+        if attributes & REPARSE_POINT:
+            print(
+                "EXOCORTEX_CLOUD_SYNCED_TARGET: files under .exocortex are Windows reparse points, which "
+                "is typical of OneDrive or another cloud-synced folder. The rollback archive cannot be "
+                "verified there. Clone the repository to a local folder outside OneDrive, update and commit "
+                "there, then pull the commit back into this folder.",
+                file=sys.stderr,
+            )
+            raise SystemExit(2)
+    if checked >= 60:
+        break
+PY
+
 RECONCILIATION_HELPER="$TEMPLATE_ROOT/.exocortex/scripts/prepare_update_reconciliation.py"
 PLAN_DIGEST=""
 GUARD_OPERATION="apply_template_update"

@@ -6,6 +6,27 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 ## [Unreleased]
 
+## [3.3.12] - 2026-10-01
+
+### Fixed
+
+- Allow the two public, data-free template files `.exocortex/.env.example` and
+  `.exocortex/key-registry.json` in a local-delivery lane. Previously any release
+  that changed them blocked every older install with `sensitive_allowed_path`.
+  Every other credential-shaped path is still refused.
+- Refresh an untracked bare semantic-version `.exocortex/.version` left by 3.1.x
+  installs instead of preserving a stale label after a complete upgrade. Owner
+  content that is not a bare version stays preserved.
+- Reject a reviewed object for command authority other than
+  `.exocortex/commands/*.json` (for example `AI_START_HERE.md`) while planning,
+  with guidance to adopt the candidate and keep project notes in
+  `.exocortex/PROJECT_MEMORY.md`, instead of failing after a full rehearsal.
+- On native Windows, stop before any backup when the target is cloud-synced
+  (reparse points) or its path is too long for protocol state, with a plain
+  explanation (`EXOCORTEX_CLOUD_SYNCED_TARGET`, `EXOCORTEX_TARGET_PATH_TOO_LONG`).
+- Name the cause of `registry_actor_conflict` and direct retries to a new
+  executor id; existing identities are never silently rebound.
+
 ## [3.3.11] - 2026-09-30
 
 ### Fixed

@@ -145,6 +145,14 @@ SENSITIVE_INPUT_NAMES = {
     "secrets.json",
 }
 SENSITIVE_INPUT_SUFFIXES = (".jks", ".key", ".keystore", ".p12", ".pem", ".pfx")
+# Public, data-free template code-plane files whose names look credential-shaped.
+# install.sh manages both (never project data), and the template documents that
+# neither may hold real values. Without this exact exemption, any release that
+# changes them blocks every older install from updating (sensitive_allowed_path).
+TEMPLATE_PUBLIC_CREDENTIAL_SHAPED_PATHS = frozenset({
+    ".exocortex/.env.example",
+    ".exocortex/key-registry.json",
+})
 
 LOCAL_RUNTIME_FILES = PROTECTED_LOCAL_FILES | {
     ".exocortex/.hub_disabled",
@@ -394,7 +402,7 @@ def validate_local_delivery_envelope(
         path = canonical_relative_path(raw_path)
         if WILDCARD_RE.search(path):
             raise ProtocolError("wildcard_path", "local-delivery paths must be exact and cannot contain wildcards")
-        if is_sensitive_path(path):
+        if is_sensitive_path(path) and path not in TEMPLATE_PUBLIC_CREDENTIAL_SHAPED_PATHS:
             raise ProtocolError(
                 "sensitive_allowed_path",
                 "credential-shaped paths cannot be included in a local-delivery source lane",
@@ -892,16 +900,25 @@ def reconcile_local_delivery_registry(
         ]
         if matches:
             entry = matches[0]
-            if (
-                entry["adapter_version"] != actor["adapter_version"]
-                or set(entry["roles"]) != roles
-                or entry["status"] != "active"
-                or entry["revoked_at"] is not None
-                or parse_timestamp(entry["expires_at"], "expires_at") <= utc_now()
-            ):
+            reasons = [
+                reason for reason, failed in (
+                    ("adapter_version differs", entry["adapter_version"] != actor["adapter_version"]),
+                    ("roles differ", set(entry["roles"]) != roles),
+                    ("registration is not active", entry["status"] != "active"),
+                    ("registration was revoked", entry["revoked_at"] is not None),
+                    ("registration has expired",
+                     parse_timestamp(entry["expires_at"], "expires_at") <= utc_now()),
+                ) if failed
+            ]
+            if reasons:
+                # Never silently reactivate or rebind an existing identity. A
+                # retry (for example after a failed attempt under an earlier
+                # release) registers a fresh executor_id; the old entry stays
+                # as audit history.
                 raise ProtocolError(
                     "registry_actor_conflict",
-                    "existing local-delivery actor cannot be rebound safely",
+                    f"existing local-delivery actor {actor['surface_id']}/{actor['executor_id']} cannot be "
+                    f"rebound safely ({'; '.join(reasons)}); use a new executor_id for this delivery",
                 )
             if entry["guard_digest"] != guard_digest:
                 entry["guard_digest"] = guard_digest
