@@ -190,6 +190,23 @@ class Windows(Commands):
                          dict(self.env, EXOCORTEX_PYTHON=str(python)))
         self.assertEqual(result.returncode, 0, result.stderr)
 
+    def test_native_onboard_work_and_save(self):
+        launcher = self.quote(self.scripts / 'run_exocortex.ps1')
+        body = Path(self.temp.name) / 'approved café narrative.txt'
+        body.write_text('# Approved narrative\nKeep this café fact.\n', encoding='utf-8')
+        before = self.snapshot()
+        prefix = '$env:EXOCORTEX_PYTHON = ' + self.quote(sys.executable) + '\n'
+        result = self.ps(prefix + '\n'.join('& ' + launcher + ' ' + op + '\nif ($LASTEXITCODE) { exit $LASTEXITCODE }'
+                                           for op in ('onboard', 'work', 'onboard', 'work')))
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(before, self.snapshot())
+        result = self.ps(prefix + '& ' + launcher + ' save --body-file ' + self.quote(body) + '\nexit $LASTEXITCODE\n')
+        self.assertEqual(result.returncode, 0, result.stderr)
+        events = list((self.root / '.exocortex/events').glob('*.md'))
+        self.assertEqual(len(events), 1)
+        self.assertIn('Keep this café fact.', events[0].read_text(encoding='utf-8'))
+        self.assertIn('Event saved; generated context refreshed.', result.stdout)
+
 
 if __name__ == '__main__':
     unittest.main()
