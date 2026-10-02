@@ -15,22 +15,14 @@
   "steps": [
     {
       "type": "shell",
-      "command": "python3 .exocortex/scripts/onboard_evidence.py",
-      "description": "Collect read-only identity, provenance and coverage evidence for the active checkout (no writes, no network)",
-      "outputs": {
-        "identity": "repository root, branch or detached HEAD, head commit, working-tree counts and paths, installed Exocortex version and the file it was read from ('absent' when none)",
-        "context": "whether SESSION_CONTEXT.md exists, its mtime, and the newest event timestamp it covers",
-        "events": "event count, newest event, and the events newer than what the context covers",
-        "commits": "the newest commit any recent event records (coverage basis), and every commit after it with changed paths and a substantive/documentation flag",
-        "records": "TODO, handoff and interrupt records and whether each is newer than the context",
-        "discrepancies": "coded findings such as context_missing, events_newer_than_context, commits_after_event_coverage, context_recent_but_uncovered, uncommitted_changes_present, branch_differs_from_default, exocortex_version_unknown, evidence_truncated",
-        "readiness": "the material gaps that must be resolved before 'Ready to work'"
-      }
+      "command": "bash .exocortex/scripts/run_exocortex.sh onboard",
+      "windows_command": "& .\\.exocortex\\scripts\\run_exocortex.ps1 onboard",
+      "description": "Collect identity, provenance and memory coverage once (onboard_evidence.py; read-only, no network)."
     },
     {
       "type": "ai",
       "action": "Check generated memory coverage read-only",
-      "context": "Run PYTHONDONTWRITEBYTECODE=1 python3 .exocortex/scripts/refresh_rollups.py --check --json. Exit 1 means stale and exit 2 means inspection failed; report either and continue using source events and live Git. Do not silently regenerate or trust a fresh index as semantic verification. Coverage detects source additions, content edits, deletions, generated-block edits, and UTC window rollover. This step writes nothing."
+      "context": "Reuse context.rollup_coverage from the collector. Do not run another freshness check. Report stale or error status and reconcile source events and live Git. Coverage certifies the generated index, not semantic correctness. Never regenerate during onboarding."
     },
     {
       "type": "ai",

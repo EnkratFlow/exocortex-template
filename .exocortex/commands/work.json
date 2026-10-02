@@ -9,43 +9,26 @@
   },
   "steps": [
     {
-      "type": "ai",
-      "action": "Check generated memory coverage read-only",
-      "context": "Run PYTHONDONTWRITEBYTECODE=1 python3 .exocortex/scripts/refresh_rollups.py --check --json. Exit 1 means stale and exit 2 means inspection failed; report either and continue using source events and live Git. Do not silently regenerate or trust a fresh index as semantic verification. Coverage detects source additions, content edits, deletions, generated-block edits, and UTC window rollover. This step writes nothing."
-    },
-    {
       "type": "shell",
-      "command": "python3 .exocortex/scripts/get_rightnow_memory.py",
-      "description": "Extract project-local RIGHT NOW memory (0-7 days) deterministically",
-      "outputs": {
-        "right_now_section": "AI-curated episodic memory"
-      }
-    },
-    {
-      "type": "shell",
-      "command": "python3 .exocortex/scripts/get_shortterm_memory.py",
-      "description": "Extract project-local SHORT-TERM memory (7-31 days) deterministically",
-      "outputs": {
-        "shortterm_memory": "AI-curated semantic memory"
-      }
-    },
-    {
-      "type": "shell",
-      "command": "python3 .exocortex/scripts/get_subconscious_nudge.py",
-      "description": "Subconscious nudge — single-sentence pattern probe (DMN activation)",
-      "outputs": {
-        "subconscious_nudge": "One-sentence 💭 insight or empty if insufficient data"
-      }
+      "command": "bash .exocortex/scripts/run_exocortex.sh work",
+      "windows_command": "& .\\.exocortex\\scripts\\run_exocortex.ps1 work",
+      "description": "Collect coverage, recent memory, pattern hint and local Git once in one Python process; no network or writes."
     },
     {
       "type": "ai",
       "action": "Format and display the work brief",
       "inputs": [
-        "right_now_section",
-        "shortterm_memory",
-        "subconscious_nudge"
+        "coverage",
+        "right_now",
+        "shortterm",
+        "subconscious_nudge",
+        "git",
+        "recent_commits",
+        "todo",
+        "interrupts",
+        "open_decisions"
       ],
-      "context": "You are producing a work brief to re-orient the user into this project only. Read project-local Git state and TODO.md before generating the brief. Do not query a cross-project index, hub, vault, or external memory.\n\nGenerate a rich, structured brief in this order:\n\n1. RIGHT NOW - reconcile right_now_section against later events and live Git before describing current state. Quote historical actions as historical; do not promote a completed, cancelled, or rolled-back item into current work. If it contains insufficient recent context, read at most the two newest project-local `.exocortex/events/*.md` files and reconstruct the last work, decisions, next actions, and blockers.\n\n2. SHORT-TERM - summarize shortterm_memory as dated evidence, with source references and unresolved contradictions.\n\n3. SUBCONSCIOUS NUDGE - display subconscious_nudge if non-empty.\n\n4. GIT STATE - run read-only Git status, branch, and recent-log commands. List each modified or untracked path and flag a branch that appears pending integration. A working tree can be shared with another session, so say plainly which listed paths this session did not create; treat every one of them as another writer's work.\n\n5. OPEN ITEMS - read project-local `.exocortex/OPEN_DECISIONS.md` when present and identify unresolved decisions or overdue local actions.\n\n6. NEXT TASK - show the first incomplete task group from the Ready section of `.exocortex/TODO.md`.\n\nThen show the A/B/C choice. Name actual local evidence and identify uncertainty instead of guessing.\n\nIf the human chooses B, stage only the paths this session changed, naming each one explicitly. Never run `git add -A` or `git add .`, and never stage a path this session did not create: in a shared working tree that commits another writer's work under this session's name. If ownership of any listed path is unclear, say so and commit nothing until the human resolves it. Offering B is not authority to commit, and it never authorizes push, merge, deployment, or synchronization."
+      "context": "You are producing a work brief to re-orient the user into this project only. Use the collected project-local Git state and TODO before generating the brief. Do not query a cross-project index, hub, vault, or external memory.\n\nGenerate a rich, structured brief in this order:\n\n1. RIGHT NOW - reconcile right_now against later events and live Git before describing current state. Quote historical actions as historical; do not promote a completed, cancelled, or rolled-back item into current work. If it contains insufficient recent context, read at most the two newest project-local `.exocortex/events/*.md` files and reconstruct the last work, decisions, next actions, and blockers.\n\n2. SHORT-TERM - summarize shortterm as dated evidence, with source references and unresolved contradictions.\n\n3. SUBCONSCIOUS NUDGE - display subconscious_nudge if non-empty.\n\n4. GIT STATE - use the returned Git status/branch and recent commits. List each modified or untracked path and flag a branch that appears pending integration. A working tree can be shared with another session, so say plainly which listed paths this session did not create; treat every one of them as another writer's work.\n\n5. OPEN ITEMS - read project-local `.exocortex/OPEN_DECISIONS.md` when present and identify unresolved decisions or overdue local actions.\n\n6. NEXT TASK - show the first incomplete task group from the Ready section of `.exocortex/TODO.md`.\n\nThen show the A/B/C choice. Name actual local evidence and identify uncertainty instead of guessing.\n\nIf the human chooses B, stage only the paths this session changed, naming each one explicitly. Never run `git add -A` or `git add .`, and never stage a path this session did not create: in a shared working tree that commits another writer's work under this session's name. If ownership of any listed path is unclear, say so and commit nothing until the human resolves it. Offering B is not authority to commit, and it never authorizes push, merge, deployment, or synchronization.\nReuse returned Git and note evidence; do not rerun the helpers or freshness check. Report coverage status, omitted events and truncated excerpts; inspect only source files needed to resolve material uncertainty. Never treat omitted history as reviewed."
     },
     {
       "type": "user_choice",

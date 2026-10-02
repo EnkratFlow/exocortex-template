@@ -10,12 +10,9 @@
   "steps": [
     {
       "type": "shell",
-      "command": "python3 .exocortex/scripts/get_shortterm_memory.py",
-      "description": "Extract project-local 7-31 day memory deterministically",
-      "outputs": {
-        "event_count": "Number of project-local events in period",
-        "analysis_mode": "Local extraction for conversation-model formatting"
-      }
+      "command": "bash .exocortex/scripts/run_exocortex.sh shortterm",
+      "windows_command": "& .\\.exocortex\\scripts\\run_exocortex.ps1 shortterm",
+      "description": "Run the project-local shortterm helper through the shared launcher; pass arguments separately, never interpolate shell text."
     },
     {
       "type": "ai",

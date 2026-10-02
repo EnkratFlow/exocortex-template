@@ -10,9 +10,9 @@
   "steps": [
     {
       "type": "shell",
-      "command": ".exocortex/scripts/run_scrum.sh",
-      "description": "Running daily standup routine",
-      "success_format": "✓ Daily standup complete"
+      "command": "bash .exocortex/scripts/run_exocortex.sh scrum",
+      "windows_command": "& .\\.exocortex\\scripts\\run_exocortex.ps1 scrum",
+      "description": "Run the project-local scrum helper through the shared launcher; pass arguments separately, never interpolate shell text."
     },
     {
       "type": "ai",

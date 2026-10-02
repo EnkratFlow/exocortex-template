@@ -363,6 +363,12 @@ def load_commands(expected_count: int) -> list[dict[str, Any]]:
             raise AdapterError(f"command description is invalid: {path.name}")
         if command.get("protocol") != EXPECTED_PROTOCOL:
             raise AdapterError(f"command protocol is noncanonical: {path.name}")
+        for step in command.get("steps", []):
+            if step.get("type") == "shell":
+                if not isinstance(step.get("windows_command"), str) or not step["windows_command"].startswith("& .\\.exocortex\\scripts\\run_exocortex.ps1 "):
+                    raise AdapterError(f"shell step missing native Windows launcher: {path.name}")
+                if not step.get("command", "").startswith("bash .exocortex/scripts/run_exocortex.sh "):
+                    raise AdapterError(f"shell step missing POSIX launcher: {path.name}")
         commands.append(command | {"command_id": name})
     if names != set(EXPECTED_CANONICAL_COMMANDS):
         raise AdapterError("canonical command-name set mismatch")

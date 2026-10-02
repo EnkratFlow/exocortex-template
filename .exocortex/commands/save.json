@@ -11,7 +11,7 @@
     {
       "type": "ai",
       "action": "Draft a rich local narrative save in chat memory only",
-      "context": "Use the current conversation facts and read-only Git evidence to prepare a comprehensive narrative in chat. Do not create a draft file in /tmp or anywhere else.\n\nRead-only fact gathering may include:\n  git branch --show-current\n  git status --porcelain | wc -l\n  git log --since='24 hours ago' --format='%h %s' | head -10\n\n=== EVENT FORMAT ===\n\n# Narrative save — {YYYY-MM-DD HH:MM}\n\n## What was accomplished\n(5-10 concrete, evidence-backed bullet points)\n\n## Decisions made\n(2-6 specific architectural choices, trade-offs, and reasons)\n\n## Code state\n- Branch: {branch}\n- Uncommitted files: {count}\n- Key files touched: {comma-separated list}\n- Tests: {pass count if known, or 'not run'}\n\n## What's next\n(2-4 immediate next actions)\n\n## Conversation patterns\n(2-5 honest observations that could improve future work)\n\nPresent the complete draft in chat. Manual saves are ordinary local project work under AI_START_HERE section 3. Reuse existing authorization for the exact narrative; do not request internal capability approval."
+      "context": "Use the current conversation facts and read-only Git evidence to prepare a comprehensive narrative in chat. Do not create a draft file in /tmp or anywhere else.\n\nRead-only fact gathering may include:\n  git branch --show-current\n  git status --porcelain\n  git log -10 --since='24 hours ago' --format='%h %s'\n\n=== EVENT FORMAT ===\n\n# Narrative save — {YYYY-MM-DD HH:MM}\n\n## What was accomplished\n(5-10 concrete, evidence-backed bullet points)\n\n## Decisions made\n(2-6 specific architectural choices, trade-offs, and reasons)\n\n## Code state\n- Branch: {branch}\n- Uncommitted files: {count}\n- Key files touched: {comma-separated list}\n- Tests: {pass count if known, or 'not run'}\n\n## What's next\n(2-4 immediate next actions)\n\n## Conversation patterns\n(2-5 honest observations that could improve future work)\n\nPresent the complete draft in chat. Manual saves are ordinary local project work under AI_START_HERE section 3. Reuse existing authorization for the exact narrative; do not request internal capability approval."
     },
     {
       "type": "user_choice",
@@ -23,7 +23,7 @@
     {
       "type": "ai",
       "action": "Respect the local-delivery boundary",
-      "context": "If A, stop with no repository write. If B, save the exact reviewed summary using bash .exocortex/scripts/create_event.sh, via stdin or an owned --body-file. This records one event and refreshes the generated SESSION_CONTEXT section and local coverage receipt. Preserve handwritten memory. Report the event path and refresh status. Exit 3 means the event saved but refresh failed: repair the refresh with refresh_rollups.py --apply; never resave the event. Never create a lifecycle checkpoint or synchronize automatically."
+      "context": "If A, stop with no repository write. If B, save the exact reviewed summary using the shared launcher operation `save --body-file <owned-file>`, via stdin or an owned --body-file. This records one event and refreshes the generated SESSION_CONTEXT section and local coverage receipt. Preserve handwritten memory. Report the event path and refresh status. Exit 3 means the event saved but refresh failed: repair the refresh with the shared launcher operation `refresh --apply`; never resave the event. Never create a lifecycle checkpoint or synchronize automatically."
     }
   ]
 }

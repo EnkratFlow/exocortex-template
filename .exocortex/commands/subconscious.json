@@ -10,13 +10,9 @@
   "steps": [
     {
       "type": "shell",
-      "command": "python3 .exocortex/scripts/get_subconscious_memory.py",
-      "description": "Extract project-local event evidence for cross-cutting pattern review",
-      "outputs": {
-        "event_count": "Number of events scanned",
-        "span_days": "Total days covered",
-        "analysis_mode": "Local extraction for conversation-model formatting"
-      }
+      "command": "bash .exocortex/scripts/run_exocortex.sh subconscious",
+      "windows_command": "& .\\.exocortex\\scripts\\run_exocortex.ps1 subconscious",
+      "description": "Run the project-local subconscious helper through the shared launcher; pass arguments separately, never interpolate shell text."
     },
     {
       "type": "ai",

@@ -26,6 +26,31 @@ as revoked and stop using it. The repository owner must remove the compromised
 release, permanently retire that tag name, and publish a corrected higher patch
 version. Never reuse the compromised version or tag.
 
+## Everyday commands on Windows
+
+Exocortex commands use one native PowerShell launcher. `/work`, `/onboard`,
+`/save` and the other local commands do not need Bash or GitHub CLI. Python
+3.9+ is still required; bundling it is separate planned work.
+
+```powershell
+& .\.exocortex\scripts\run_exocortex.ps1 work
+& .\.exocortex\scripts\run_exocortex.ps1 onboard
+# Only after approving the narrative in an owned UTF-8 file:
+& .\.exocortex\scripts\run_exocortex.ps1 save --body-file .\summary.txt
+```
+
+The launcher checks Python on PATH (`python`, `python3`, then `py -3`), skips
+Microsoft Store aliases, and remembers the executable in this PowerShell
+session. New sessions resolve it again; no disk search or installation occurs.
+An optional `EXOCORTEX_PYTHON` environment variable selects an explicit local
+executable. If Python is unavailable, the command stops with one explanation.
+If your organization blocks PowerShell scripts, use its approved script policy;
+the launcher does not change or bypass that policy.
+
+On macOS/Linux use `bash .exocortex/scripts/run_exocortex.sh work` (or the
+other operation). Installation and release verification retain their separate
+Git/Bash/GitHub CLI requirements. Nothing here installs a background service.
+
 ## Choose your path
 
 | Your repository | Use |

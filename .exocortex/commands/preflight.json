@@ -12,9 +12,10 @@
   "argument_description": "The proposed change or risk to check against project-local memory",
   "steps": [
     {
-      "type": "ai",
-      "action": "Check generated memory coverage read-only",
-      "context": "Run PYTHONDONTWRITEBYTECODE=1 python3 .exocortex/scripts/refresh_rollups.py --check --json. Exit 1 means stale and exit 2 means inspection failed; report either and continue using source events and live Git. Do not silently regenerate or trust a fresh index as semantic verification. Coverage detects source additions, content edits, deletions, generated-block edits, and UTC window rollover. This step writes nothing."
+      "type": "shell",
+      "command": "bash .exocortex/scripts/run_exocortex.sh refresh --check --json",
+      "windows_command": "& .\\.exocortex\\scripts\\run_exocortex.ps1 refresh --check --json",
+      "description": "Check generated memory coverage once for this operation. Exit 1 means stale, 2 means inspection failed; report and use source evidence. Never regenerate."
     },
     {
       "type": "ai",

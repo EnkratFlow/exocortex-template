@@ -85,7 +85,7 @@ Protocol-managed mutations use `.exocortex/scripts/orchestrate_work_item.py` and
 
 ### Guarded local-delivery sequence
 
-For a new bounded local change, use the orchestrator's three cooperative
+For a protocol-managed local-delivery work item, use the orchestrator's three cooperative
 operations in order: `bootstrap-local-delivery`, `seal-local-edit`, and
 `complete-local-delivery`. Bootstrap accepts only an approved, unexpired
 envelope for one clean isolated worktree, exact base and branch, and an exact
@@ -187,9 +187,14 @@ exclusions remain routing constraints.
   handwritten context and durable memory. Guarded closeout remains a separate
   transaction; when local refresh is in scope, follow it with
   `refresh_rollups.py --apply` without recording another event.
-- At entry, run `refresh_rollups.py --check --json` read-only. Stale coverage
-  requires source-event and live-Git reconciliation, not silent regeneration.
-  A fresh event index does not certify durable memory or current task status.
+- Entry is lightweight: read relevant memory and identify the current checkout;
+  do not launch Python, discover CLIs or scan all history just to enter a chat.
+  Commands that need verified coverage collect it once through the shared
+  launcher in AI_BOOTSTRAP.md. Reuse that invocation's result instead of
+  repeating a check. Without a current check, label generated context as dated
+  evidence; do not claim it is fresh. Stale coverage requires source-event and
+  live-Git reconciliation, not silent regeneration. A fresh index does not
+  certify durable memory or current task status.
 - A retrospective may propose a durable change to project memory or lessons,
   but it cannot write that proposal into permanent memory without the
   applicable local-delivery scope.
@@ -219,6 +224,9 @@ for delivery, read credentials, initialize a destination, spawn a transport,
 copy a file, or make a network call.
 
 ## 8. Use business-level approval envelopes
+
+This section scopes protocol-managed operations. It does not require runtime
+records for ordinary project work exempted by section 3.
 
 The human approves understandable business outcomes. Do not make the human
 approve work-item bookkeeping, executor registration, writer

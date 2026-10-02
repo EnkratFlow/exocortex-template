@@ -10,9 +10,9 @@
   "steps": [
     {
       "type": "shell",
-      "command": ".exocortex/scripts/run_brief_status.sh",
-      "description": "Running quick status scan",
-      "success_format": "✓ Status scan complete"
+      "command": "bash .exocortex/scripts/run_exocortex.sh brief",
+      "windows_command": "& .\\.exocortex\\scripts\\run_exocortex.ps1 brief",
+      "description": "Run the project-local brief helper through the shared launcher; pass arguments separately, never interpolate shell text."
     },
     {
       "type": "ai",

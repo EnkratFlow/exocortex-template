@@ -36,16 +36,16 @@ After an explicit invocation:
 3. Validate its `protocol` block points to `AI_START_HERE.md`, defaults to
    read-only, and separates mutation from egress authority.
 4. Execute read-only steps in order.
-5. Treat every requested mutation as a proposal until one applicable
-   human-facing business envelope is accepted and the registered guarded
-   executor accepts the derived current one-time technical capability.
+5. Reuse applicable owner approval for ordinary project edits and saves. Only
+   protocol-managed mutations require registered guarded execution and the
+   exact current capability; follow AI_START_HERE section 3.
 6. Materialize, consume, renew, and audit internal reservations and technical
    capabilities without turning each one into another human prompt, but only
    while the accepted envelope's target, base, digest, path/plan scope,
    operation class, risk, outcome, verification, and expiry still match.
-7. Treat every outward action as a destination-specific
-   `production_egress` gate. Never infer it from a local write, save, handoff,
-   lifecycle transition, publication, rollout, or prior approval.
+7. Guarded payload delivery requires its destination-specific authority.
+   Ordinary Git operations against this project’s remote follow section 3;
+   a local save never implies a push, synchronization or deployment.
 
 Arguments and modifiers following an explicit command invocation are command
 inputs only; they never expand path, mutation, checkpoint, commit, credential,
@@ -94,7 +94,8 @@ Claude and Cursor receive `disable-model-invocation: true` only for the
 hide a user-invocable command from the human slash menu. Model-invocable
 adapters remain read-only by default and grant no additional authority.
 
-Run `python3 .exocortex/scripts/generate_command_adapters.py --check` to verify
+When adapter validation is requested, use the shared launcher operation
+`script generate_command_adapters.py --check` to verify
 the repository mapping. Generic or unidentified hosts use `AI_START_HERE.md`
 and the matching JSON directly. Repository validation does not replace bounded
 Human UAT of a provider's current menu. Provider evidence is version-scoped and
@@ -102,13 +103,44 @@ uses only `verified`, `compatible`, `failed`, `blocked`, or `unavailable`.
 Windsurf is currently `unavailable` and has no active/default adapter; it may
 return only after later version-specific evidence.
 
+## Local command execution
+
+Read this routing rule once per session and reuse it for the same checkout.
+On native Windows use PowerShell and the step's `windows_command`; do not run
+its POSIX `command` as well. On macOS/Linux or an explicitly selected WSL/Git
+Bash shell use `command`. Never infer native PowerShell syntax from Bash text.
+For an operation named in AI steps, use the same launcher:
+
+- Windows: `& .\.exocortex\scripts\run_exocortex.ps1 OPERATION ARGUMENTS`
+- macOS/Linux: `bash .exocortex/scripts/run_exocortex.sh OPERATION ARGUMENTS`
+
+The launcher resolves only configured/PATH Python, never scans disks or installs
+software. `EXOCORTEX_PYTHON` may name an explicit machine-local interpreter.
+Windows remembers its validated executable in the current PowerShell session;
+a new shell resolves it again using at most three bounded probes. No runtime
+path is committed or written by read-only commands. For approved specialist
+helpers, use `script helper_name.py ARGUMENTS` through the same launcher.
+Pass arguments as separate literal values; use `--body-file` for saved prose.
+A missing runtime is one clear stop, not permission to search for unrelated
+CLIs, change execution policy, install tools, or keep trying alternative shells.
+Routine local commands never discover `gh`, check authentication/releases,
+contact providers or invoke install/update verification. Git is used only when
+the command needs repository evidence; report unavailable evidence honestly.
+
+Reuse a helper's evidence within that invocation. Do not rerun entry checks,
+coverage or Git scans already included in its result. Read-only chat/help and
+planning need no blanket runtime preflight. Recheck when a new command requires
+it or the checkout/evidence changes; do not claim old coverage is still fresh.
+Generated context remains dated supporting evidence, never complete truth.
+
 ## Step execution
 
 Command specs may contain:
 
 - `read`: inspect only project-local, non-secret evidence.
-- `shell`: run only when the program is read-only or the exact guarded
-  capability for its effect has already been accepted.
+- `shell`: select exactly one platform command. Read-only programs need no
+  capability; ordinary local writes reuse owner approval. Actual guarded
+  operations still require their exact capability.
 - `ai`: analyze or prepare a proposal. Text saying “create,” “update,” “move,”
   or “send” never grants authority by itself.
 - `user_choice`: wait for the user. A choice may request the next gate, but it
@@ -201,7 +233,7 @@ capability/cost routing, and guarded runtime-work-item mutations. Planning-v1
 records may be oriented through a read-only compatibility view but cannot be
 mutated by that runtime protocol.
 
-For an approved bounded local edit, run its guarded lifecycle in this order:
+For an approved protocol-managed local-delivery work item, run its lifecycle in this order:
 `bootstrap-local-delivery`, `seal-local-edit`, then
 `complete-local-delivery`. Bootstrap requires the exact clean isolated
 worktree, base, branch, expiry, and approved path envelope, then atomically
@@ -279,19 +311,22 @@ still be summarized by the active conversation model.
 If orientation is unclear:
 
 1. Re-read `AI_START_HERE.md`.
-2. Resolve live Git and the exact project-local work item.
-3. Run the read-only orientation command.
+2. Resolve live Git; resolve a runtime work item only for protocol-managed work.
+3. Reuse the current command’s orientation evidence; do not rerun a scan.
 4. Reconcile generated context against live Git and local event evidence.
-5. Stop if authority, base, revision, registry, capability, or writer ownership
-   is missing or contradictory.
+5. For protocol-managed operations, stop if authority, base, revision, registry,
+   capability, or writer ownership is missing or contradictory. Ordinary work
+   follows section 3 without creating these records.
 
 ## Generated memory freshness
 
-Before relying on Session Context, run the read-only
-`python3 .exocortex/scripts/refresh_rollups.py --check --json`. Treat exit 1 as
-stale and exit 2 as an inspection failure. Reconcile source events and live Git
-without silently writing memory. Approved ordinary saves refresh the generated
-section through `create_event.sh`; guarded completion/handoff transactions
-require a separate in-scope `refresh_rollups.py --apply` afterward.
+Use the current command's coverage result; never repeat its scan on entry.
+When a command needs verified coverage and has not collected it, use the
+shared launcher operation `refresh --check --json`. Treat exit 1 as stale and
+exit 2 as inspection failure. Otherwise describe context as dated evidence,
+not verified fresh. Reconcile source events and live Git without silently
+writing memory. Approved saves use the launcher `save --body-file` operation;
+after a saved-event refresh failure, retry only `refresh --apply` if authorized.
+Guarded completion/handoff transactions do not refresh implicitly.
 Durable lessons, decisions, tasks and patterns need reviewed proposals; see
 `.exocortex/docs/memory-system.md`. No provider is called by default.

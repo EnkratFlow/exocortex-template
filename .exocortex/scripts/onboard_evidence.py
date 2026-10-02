@@ -26,6 +26,7 @@ import os
 import re
 import subprocess
 import sys
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -55,17 +56,25 @@ MONTHS = {m: i for i, m in enumerate(("January", "February", "March", "April", "
                                       "September", "October", "November", "December"), start=1)}
 DATE_RE = re.compile(r"(\d{4}-\d{2}-\d{2})[_T](\d{2})[-:](\d{2})[-:](\d{2})")
 SHA_RE = re.compile(r"(?m)^\s*([0-9a-f]{7,40})\b")
+GIT_DEADLINE = 0.0
+GIT_INCOMPLETE = False
 
 
 def git(root: Path, *args: str) -> tuple[int, str]:
+    global GIT_INCOMPLETE
+    remaining = GIT_DEADLINE - time.monotonic()
+    if remaining <= 0:
+        GIT_INCOMPLETE = True
+        return 1, ''
     env = dict(os.environ, GIT_TERMINAL_PROMPT="0", GIT_OPTIONAL_LOCKS="0", LC_ALL="C")
     try:
         proc = subprocess.run(
             ["git", "-C", str(root), *args],
-            capture_output=True, text=True, env=env, timeout=60, check=False,
+            capture_output=True, text=True, env=env, timeout=min(5, remaining), check=False,
         )
     except (OSError, subprocess.TimeoutExpired) as exc:  # pragma: no cover - defensive
-        return 1, str(exc)
+        GIT_INCOMPLETE = True
+        return 1, ''
     return proc.returncode, proc.stdout.strip("\n")
 
 
@@ -117,6 +126,8 @@ def is_documentation(path: str) -> bool:
 
 
 def collect(start: Path) -> dict:
+    global GIT_DEADLINE, GIT_INCOMPLETE
+    GIT_DEADLINE, GIT_INCOMPLETE = time.monotonic() + 15, False
     out: dict = {"ok": True, "schema": "onboard-evidence/1", "errors": [], "truncated": False, "truncated_lists": [],
                  "limits": {"commits": MAX_COMMITS, "paths_per_commit": MAX_PATHS_PER_COMMIT,
                             "events_listed": MAX_EVENTS_LISTED, "worktree_paths": MAX_WORKTREE_PATHS}}
@@ -196,10 +207,13 @@ def collect(start: Path) -> dict:
         context["event_timestamps_covered"] = len(stamps)
     # Legacy views still use timestamp evidence. New views also bind all source
     # bytes, so an old event edit or deletion cannot hide behind a fresh mtime.
-    rollup_status = None
+    try:
+        rollup_status = refresh_rollups.check(root)
+    except (ValueError, OSError):
+        rollup_status = {"status": "error", "reasons": ["coverage_unreadable"]}
+    context["rollup_coverage"] = rollup_status
     if context_text and refresh_rollups.START in context_text:
         try:
-            rollup_status = refresh_rollups.check(root)
             saved_sources = refresh_rollups.receipt(root).get("sources", {})
             saved_stamps = [v.get("timestamp") for v in saved_sources.values() if v.get("timestamp")]
             context["newest_event_timestamp_covered"] = max(saved_stamps, default=None)
@@ -320,7 +334,9 @@ def collect(start: Path) -> dict:
 
     # ── discrepancies and readiness blockers ────────────────────────────────
     disc: list[dict] = []
-    if rollup_status and rollup_status["status"] != "fresh":
+    if GIT_INCOMPLETE:
+        disc.append({"code": "git_inspection_incomplete", "detail": "Git unavailable or the bounded inspection time elapsed; do not retry automatically or infer clean/current state"})
+    if rollup_status and rollup_status["status"] != "fresh" and context_text and refresh_rollups.START in context_text:
         disc.append({"code": "rollup_coverage_stale", "detail": rollup_status})
     if context_text is None:
         disc.append({"code": "context_missing", "detail": "no .exocortex/SESSION_CONTEXT.md; recover coverage from events and Git"})
@@ -362,7 +378,7 @@ def collect(start: Path) -> dict:
     out["discrepancies"] = disc
     blockers = [d["code"] for d in disc if d["code"] in ("rollup_coverage_stale", "commits_after_event_coverage", "events_newer_than_context",
                                                           "context_recent_but_uncovered", "evidence_truncated",
-                                                          "no_recorded_context")]
+                                                          "no_recorded_context", "git_inspection_incomplete")]
     out["readiness"] = {
         "material_gaps": blockers,
         "note": ("Each gap must be resolved by reading the named events and inspecting the named commits' "

@@ -11,6 +11,8 @@ mkdir -p "$PROJECT/.exocortex/scripts" "$PROJECT/.exocortex/control" "$PROJECT/.
 cp "$ROOT/.exocortex/scripts/record_event.py" "$PROJECT/.exocortex/scripts/"
 cp "$ROOT/.exocortex/scripts/refresh_rollups.py" "$PROJECT/.exocortex/scripts/"
 cp "$ROOT/.exocortex/scripts/create_event.sh" "$PROJECT/.exocortex/scripts/"
+cp "$ROOT/.exocortex/scripts/run_exocortex.sh" "$PROJECT/.exocortex/scripts/"
+cp "$ROOT/.exocortex/scripts/command_runtime.py" "$PROJECT/.exocortex/scripts/"
 cp "$ROOT/.exocortex/scripts/generate_context.sh" "$PROJECT/.exocortex/scripts/"
 cp "$ROOT/.exocortex/scripts/read_memory_stack.sh" "$PROJECT/.exocortex/scripts/"
 cp "$ROOT/.exocortex/scripts/capture_interrupt.sh" "$PROJECT/.exocortex/scripts/"

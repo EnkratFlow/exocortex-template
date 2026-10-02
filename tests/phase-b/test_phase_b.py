@@ -5080,22 +5080,21 @@ class EntryAndPrivacyTests(unittest.TestCase):
         self.assertEqual(production["migration"]["collision_code"], "EXOCORTEX_ADAPTER_COLLISION_PRESERVED")
         self.assertEqual(production["migration"]["reactivated_paths"], [".cursor/skills/onboard/SKILL.md"])
 
-    def test_drill_topic_stdin_contract_treats_substitution_canary_literally(self) -> None:
+    def test_drill_literal_argument_contract_does_not_execute_substitution(self) -> None:
         drill = json.loads((TEMPLATE / ".exocortex/commands/drill.json").read_text(encoding="utf-8"))
         shell_step = drill["steps"][0]
         self.assertEqual(
             shell_step["command"],
-            "python3 .exocortex/scripts/drill_memory.py --topic-stdin",
+            "bash .exocortex/scripts/run_exocortex.sh drill <literal-topic>",
         )
-        self.assertEqual(shell_step["stdin"], "{topic}\n")
-        self.assertNotIn("{topic}", shell_step["command"])
+        self.assertIn("run_exocortex.ps1 drill <literal-topic>", shell_step["windows_command"])
+        self.assertIn("one safely quoted argument", shell_step["description"])
 
         with tempfile.TemporaryDirectory(prefix="exo-drill-canary-") as temp:
             canary = Path(temp) / "substitution-ran"
             topic = f"canary $(touch {canary})"
             result = subprocess.run(
-                ["python3", str(TEMPLATE / ".exocortex/scripts/drill_memory.py"), "--topic-stdin"],
-                input=topic + "\n",
+                ["python3", str(TEMPLATE / ".exocortex/scripts/command_runtime.py"), "drill", topic],
                 text=True,
                 capture_output=True,
                 check=False,

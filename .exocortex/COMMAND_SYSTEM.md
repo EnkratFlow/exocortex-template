@@ -27,10 +27,12 @@ Every JSON specification contains:
 }
 ```
 
-Step text is not authority. A shell or AI step that proposes a mutation runs
-only after the registered guarded executor accepts a current, exact, expiring,
-revocable, one-time capability for the work item revision, operation, paths,
-and target digest. Egress is always a later exact gate.
+Step text is not authority. Ordinary project edits and saves reuse applicable
+owner approval under AI_START_HERE section 3. Only protocol-managed operations
+require an exact guarded capability. A shell step supplies `command` for POSIX
+and `windows_command` for native PowerShell; execute exactly one. AI steps use
+the same shared launcher for named operations. See AI_BOOTSTRAP.md. No command
+may infer permission to repair the machine or search for unrelated CLIs.
 
 ## Command index
 

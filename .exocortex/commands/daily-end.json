@@ -29,7 +29,7 @@
     {
       "type": "ai",
       "action": "Respect the selected authority boundary",
-      "context": "If recording is selected, use create_event.sh under the existing ordinary local-save authorization. It saves the exact narrative and refreshes only generated context and its local coverage receipt. Report both results. If exit 3, keep the saved event and retry only refresh_rollups.py --apply. Do not edit durable memory automatically, create a lifecycle checkpoint, or sync automatically."
+      "context": "If recording is selected, use the shared launcher operation `save --body-file <owned-file>` under the existing ordinary local-save authorization. It saves the exact narrative and refreshes only generated context and its local coverage receipt. Report both results. If exit 3, keep the saved event and retry only the shared launcher operation `refresh --apply`. Do not edit durable memory automatically, create a lifecycle checkpoint, or sync automatically."
     }
   ]
 }
