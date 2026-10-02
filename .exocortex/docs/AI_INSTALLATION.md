@@ -98,6 +98,11 @@ repository verification additionally uses `rg` and the dependencies of the
 target application's own tests; `rg` is not an install/update runtime
 dependency.
 
+Python is a runtime dependency of Exocortex's memory and update tools, regardless
+of the target project's language. The current release does not include a Python
+runtime or maintain the computer's Python installation. Bundled-runtime delivery
+is planned but is not part of this installation procedure.
+
 The AI must inventory these command names and versions during read-only
 preflight. A missing prerequisite blocks installation; it does not authorize
 the AI to install packages or substitute an untested tool.
@@ -121,40 +126,171 @@ paths, and Windows directory flushing replaces Unix directory `fsync` calls.
 ### Windows PowerShell and Git Bash
 
 Keep the target project and its existing GitHub remote on this computer. Clone
-only the public Exocortex template from `EnkratFlow/exocortex-template` as the
-update source. There is no need to move a project to another account or machine.
-Use the release verification steps above with Windows paths. Clone with LF
-line endings so the release checksums match:
+only the public Exocortex template as the update source. There is no need to
+move a project to another account or machine. Use Windows PowerShell 5.1 or
+PowerShell 7, Git for Windows, Python 3.9+ and GitHub CLI with `release verify`
+and `release verify-asset`. Check their versions before proceeding. Run Python
+protocol commands with `python` if that is the installed Windows executable
+name; Git Bash must also resolve `python3` for the shared scripts.
+
+#### Windows download and verification
+
+Run the following blocks in the **same PowerShell window**. They acquire a
+source and verification evidence only; they do not install or update a project.
+Use a short, private local staging directory outside both your target project
+and cloud-synced folders. The example creates a fresh directory in local app
+storage and never reuses a previous download. Do not share or modify it while
+verification or installation is running.
+
+Read the [v3.3.12 release notes](https://github.com/EnkratFlow/exocortex-template/releases/tag/v3.3.12)
+and copy the **peeled commit SHA** and **SHA-256 of SHA256SUMS** when prompted.
+Those comparisons supplement the required cryptographic release/asset checks;
+release-note text alone is not proof of authenticity.
 
 ```powershell
-git -c core.autocrlf=false clone --branch v3.3.12 --depth 1 https://github.com/EnkratFlow/exocortex-template.git "$env:TEMP/exocortex-v3.3.12"
+$ErrorActionPreference = 'Stop'
+$ExoRepo = 'github.com/EnkratFlow/exocortex-template'
+$ExoTag = 'v3.3.12'
+$ExoExpectedCommit = (Read-Host 'Peeled commit SHA from the release notes').Trim()
+$ExoExpectedDigest = (Read-Host 'SHA-256 of SHA256SUMS from the release notes').Trim()
+if ($ExoExpectedCommit -notmatch '^[0-9a-fA-F]{40}$' -or
+    $ExoExpectedDigest -notmatch '^[0-9a-fA-F]{64}$') {
+    throw 'Supply the complete commit SHA and manifest SHA-256.'
+}
+
+# PowerShell 5.1 does not throw for every failed native command automatically.
+function Invoke-ExoNative {
+    param([string]$Program, [string[]]$Arguments)
+    & $Program @Arguments
+    if ($LASTEXITCODE -ne 0) { throw "$Program failed; stop here." }
+}
+
+Invoke-ExoNative -Program 'gh' -Arguments @('release', 'verify', $ExoTag, '-R', $ExoRepo)
+$ExoStage = Join-Path $env:LOCALAPPDATA ('Exocortex/verify-' + [guid]::NewGuid().ToString('N'))
+$ExoAssets = Join-Path $ExoStage 'assets'
+$ExoSource = Join-Path $ExoStage 'source'
+New-Item -ItemType Directory -Path $ExoAssets | Out-Null
+Invoke-ExoNative -Program 'gh' -Arguments @('release', 'download', $ExoTag, '-R', $ExoRepo, '--pattern', 'SHA256SUMS', '--dir', $ExoAssets)
+$ExoAsset = Join-Path $ExoAssets 'SHA256SUMS'
+Invoke-ExoNative -Program 'gh' -Arguments @('release', 'verify-asset', $ExoTag, $ExoAsset, '-R', $ExoRepo)
+Invoke-ExoNative -Program 'git' -Arguments @('-c', 'core.autocrlf=false', 'clone', '--branch', $ExoTag, '--depth', '1', 'https://github.com/EnkratFlow/exocortex-template.git', $ExoSource)
+
+function Assert-ExoRelease {
+    # Repeat live verification immediately before every candidate-owned command.
+    Invoke-ExoNative -Program 'gh' -Arguments @('release', 'verify', $ExoTag, '-R', $ExoRepo)
+    Invoke-ExoNative -Program 'gh' -Arguments @('release', 'verify-asset', $ExoTag, $ExoAsset, '-R', $ExoRepo)
+    $assetBytes = [System.IO.File]::ReadAllBytes($ExoAsset)
+    $sourceBytes = [System.IO.File]::ReadAllBytes((Join-Path $ExoSource 'SHA256SUMS'))
+    if ([Convert]::ToBase64String($assetBytes) -cne [Convert]::ToBase64String($sourceBytes)) {
+        throw 'Source manifest differs from the attested release asset.'
+    }
+    $digest = (Get-FileHash -LiteralPath $ExoAsset -Algorithm SHA256).Hash.ToLowerInvariant()
+    if ($digest -ne $ExoExpectedDigest.ToLowerInvariant()) { throw 'Manifest digest differs from release notes.' }
+    $head = Invoke-ExoNative -Program 'git' -Arguments @('-C', $ExoSource, 'rev-parse', 'HEAD')
+    $tagCommit = Invoke-ExoNative -Program 'git' -Arguments @('-C', $ExoSource, 'rev-parse', ($ExoTag + '^{commit}'))
+    if ($head -ne $ExoExpectedCommit -or $tagCommit -ne $ExoExpectedCommit) {
+        throw 'Source HEAD/tag differs from the selected release commit.'
+    }
+    Write-Host "Verified $ExoTag; manifest SHA-256: $digest"
+}
+Assert-ExoRelease
 ```
 
-After verifying the published release and its `SHA256SUMS` asset, open PowerShell
-in the **existing target project** and preview the update:
+The LF-only clone avoids Windows line-ending changes invalidating release
+checksums. Any failed native command, missing file or mismatch stops this block.
+Do not continue to an install/update block after an error. Do not substitute a
+mutable branch for the release. A later session must repeat the acquisition and
+verification procedure rather than infer success from a saved console message.
+
+#### Windows existing-project update
+
+In that same window, select the **existing project** (not `$ExoSource`). The
+recovery directory must remain outside both source and target. A preview writes
+a recovery archive and rehearsal, but leaves the real target unchanged:
 
 ```powershell
-& "$env:TEMP/exocortex-v3.3.12/scripts/windows.ps1" update --backup-dir "$env:LOCALAPPDATA/Exocortex/backups" --dry-run
+Set-Location -LiteralPath (Read-Host 'Full path to the existing target project')
+$ExoBackups = Join-Path $ExoStage 'backups'
+Assert-ExoRelease
+& "$ExoSource/scripts/windows.ps1" update --backup-dir $ExoBackups --dry-run
+if ($LASTEXITCODE -ne 0) { throw 'Preview failed; do not apply.' }
 ```
 
-For the approved apply, use the same command with `--apply` and the exact
-capability, work item, request and executor arguments from the guarded apply
-section below. The coding agent prepares those records under the already
-accepted update decision; do not require another decision for each internal
-record. Run Python protocol commands with `python` if that is the installed
-Windows executable name. Git Bash must also resolve `python3` for the shared
-shell scripts; the official Python installation normally provides it.
+For the approved apply, repeat `Assert-ExoRelease` immediately before invoking
+the same launcher with `--apply` and the exact capability, work item, request and
+executor arguments from the **Guarded apply contract** below. A preview does not
+supply those values or authorize apply. The coding agent prepares the records
+under the accepted update decision; do not require another human decision for
+each internal record. Existing customizations require exact reconciliation when
+the preview reports collisions. Installation never commits or pushes changes.
 
-For a **new project with no Exocortex installation**, use:
+#### Windows new-project installation
+
+For a **new project with no Exocortex installation**, choose the approved clean
+isolated Git worktree and a fresh disposable HOME under the private staging
+folder. Restore the original process HOME even if installation fails:
 
 ```powershell
-& "$env:TEMP/exocortex-v3.3.12/scripts/windows.ps1" install "your-project-name"
+Set-Location -LiteralPath (Read-Host 'Full path to the approved new-project worktree')
+$ExoProjectName = Read-Host 'Project name'
+$ExoInstallHome = Join-Path $ExoStage ('install-home-' + [guid]::NewGuid().ToString('N'))
+New-Item -ItemType Directory -Path $ExoInstallHome | Out-Null
+$ExoPreviousHome = $env:HOME
+try {
+    $env:HOME = $ExoInstallHome
+    Assert-ExoRelease
+    & "$ExoSource/scripts/windows.ps1" install $ExoProjectName
+    if ($LASTEXITCODE -ne 0) { throw 'Installation failed; preserve evidence and stop.' }
+} finally {
+    if ($null -eq $ExoPreviousHome) { Remove-Item Env:HOME -ErrorAction SilentlyContinue }
+    else { $env:HOME = $ExoPreviousHome }
+}
 ```
+
+This uses a temporary process environment; it does not change your account's
+home directory or authorize publication. Follow the clean-install rehearsal
+and acceptance requirements later in this guide before using the result.
+
+#### Windows Git Bash alternative
 
 PowerShell execution policy remains under the computer owner's or organization's
-control. If it blocks this local launcher, run the same scripts in Git Bash;
-do not alter a managed execution policy. Existing project customizations still
-require exact reconciliation when the preview reports collisions.
+control. If it blocks the local launcher, use the same shared scripts from an
+approved Git Bash terminal; do not alter or bypass a managed execution policy.
+The [README CLI fallback](../../README.md#cli-fallback) contains the Bash sequence.
+On Windows, add `-c core.autocrlf=false` to its `git clone` command, use
+`sha256sum` for the digest step, and express drive paths as `/c/...` rather than
+PowerShell's `$env:...` syntax. Use a local short target path outside OneDrive.
+WSL is a separate, still-pending support path; it is not required for native Windows.
+
+### Corporate networks and Zscaler
+
+If release verification fails on a managed network, stop acquisition/installation
+at that step and retain a **redacted** error. Ordinary work in an already installed
+project can continue; a network failure does not establish that its version is
+current or that a downloaded update is authentic. This guide does not install a
+proxy, change certificate stores, disable Zscaler or enable an offline trust mode.
+
+| Symptom | Next step |
+|---|---|
+| Certificate-chain or unknown-authority error | Ask IT for the approved inspection CA and configuration for the failing tool's trust store. Browser success does not prove Git, GitHub CLI and Python share its trust configuration. |
+| Proxy authentication required (407) | Use IT's approved proxy/authentication setup. Do not paste proxy credentials into commands, logs, this repository or a support chat. |
+| Access denied (403), block page, or timeout | Distinguish GitHub permissions/rate limits from network policy. Give IT the failing command and destination hostname, with sensitive details removed; request access through the approved route. |
+| `release verify` is unavailable | Check GitHub CLI supports both verification commands; upgrade it through the approved software process. |
+| Release/asset attestation or checksum fails after connectivity works | Stop. Diagnose the exact release and asset; certificate changes do not repair an invalid attestation. |
+
+Zscaler's [application trust-store guidance](https://help.zscaler.com/zia/adding-custom-certificate-application-specific-trust-store)
+explains how organization-approved CA certificates are configured for different
+tools. Ask IT which procedure applies; keep company certificates, proxy addresses
+and credentials out of the public template. Do not turn off TLS verification or
+substitute a bare checksum for release authentication.
+
+If direct access is prohibited, discuss an IT-approved distribution channel.
+GitHub documents [offline artifact-attestation verification](https://docs.github.com/en/actions/how-tos/secure-your-work/use-artifact-attestations/verify-attestations-offline),
+but that needs signed bundles and trusted roots acquired through a trusted route.
+It is **not supported as a replacement** for this template's live immutable-release
+verification contract. Offline checks cannot establish current revocation status.
+A future offline installer needs its own reviewed trust design; do not skip the
+existing checks to improvise one.
 
 ### Windows target locations and retries
 
