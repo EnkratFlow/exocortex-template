@@ -37,6 +37,61 @@ The recommended path is a coding AI with local filesystem and terminal access.
 The CLI fallback is documented below. A chat-only assistant can explain the
 process but cannot install or update local files.
 
+| Your computer | Start here |
+|---|---|
+| Windows | [Windows quick start](#windows-quick-start), including PowerShell commands |
+| macOS or Linux | [Coding AI instructions](#install-or-update-with-a-coding-ai) or [Bash CLI instructions](#cli-fallback) |
+| Corporate network | Also read [Zscaler and network troubleshooting](.exocortex/docs/AI_INSTALLATION.md#corporate-networks-and-zscaler) |
+
+**Using a company-managed computer?** Your network may block installation
+downloads or update checks. If this happens, follow the
+[corporate-network troubleshooting guide](.exocortex/docs/AI_INSTALLATION.md#corporate-networks-and-zscaler)
+or contact your IT team. Do not disable security checks. A failed update check
+does not prevent ordinary local work in an existing installation, but it does
+not confirm that your installed version is current.
+
+### Requirements for the current release
+
+Exocortex v3.3.12 requires Git, Python 3.9+, Bash 3.2+ and GitHub CLI with
+`release verify` and `release verify-asset`. Windows uses the Bash included in
+Git for Windows. See the [full prerequisites](.exocortex/docs/AI_INSTALLATION.md#local-prerequisites)
+for the accompanying command-line tools.
+
+Python runs Exocortex's memory and update tools; your own project can use any
+language, and you do not need to write Python code. **This release does not
+bundle Python.** A bundled runtime managed through Exocortex updates is planned;
+it is not available in these installation steps yet.
+
+## Windows quick start
+
+Use **PowerShell with Git for Windows, Python 3.9+ and GitHub CLI**. WSL and
+another computer are not required. Keep your project in a short local path
+outside OneDrive or other cloud-synced folders.
+
+1. Check prerequisites in PowerShell:
+   ```powershell
+   git --version
+   python --version
+   gh --version
+   gh release verify --help
+   gh release verify-asset --help
+   ```
+   In Git Bash, also run `python3 --version`; it must resolve Python 3.9+.
+   If a command is missing, install or update that tool through your
+   organization's approved process.
+2. Follow the complete [PowerShell download and verification steps](.exocortex/docs/AI_INSTALLATION.md#windows-download-and-verification).
+   These authenticate v3.3.12, compare its manifest, and check its exact commit
+   before any downloaded script runs. Keep that PowerShell window open.
+3. Choose the [existing-project update preview](.exocortex/docs/AI_INSTALLATION.md#windows-existing-project-update)
+   or [new-project installation](.exocortex/docs/AI_INSTALLATION.md#windows-new-project-installation).
+   Run from your target project; the downloaded template is only the source.
+
+A coding AI can carry out these same steps using the prompts below. Prefer
+Git Bash? Use the [Git Bash route](.exocortex/docs/AI_INSTALLATION.md#windows-git-bash-alternative).
+For certificate errors or blocked verification behind Zscaler, see
+[Corporate networks and Zscaler](.exocortex/docs/AI_INSTALLATION.md#corporate-networks-and-zscaler).
+Keep certificate and release-authenticity checks enabled.
+
 ## Install or update with a coding AI
 
 Open the repository you want to change in Codex, Claude, Cursor, Copilot, Zed,
@@ -131,6 +186,13 @@ checking what the AI did. Never pipe an unpinned remote script into a shell.
 The commands that execute `install.sh` or `safe-update.sh` must not be run until
 the exact immutable release and downloaded manifest asset pass the checks
 below.
+
+These blocks use **Bash syntax**. For PowerShell, follow the
+[Windows instructions](.exocortex/docs/AI_INSTALLATION.md#windows-download-and-verification).
+Before starting in Bash, check `git --version`, `python3 --version`,
+`gh --version`, `gh release verify --help` and `gh release verify-asset --help`.
+Stop if a prerequisite is missing. Use fresh source and verification directories;
+if the example paths already exist, choose new paths consistently in every block.
 
 ### 1. Download and verify the exact release
 
