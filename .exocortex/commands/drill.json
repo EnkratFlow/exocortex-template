@@ -13,13 +13,9 @@
   "steps": [
     {
       "type": "shell",
-      "command": "python3 .exocortex/scripts/drill_memory.py --topic-stdin",
-      "stdin": "{topic}\n",
-      "stdin_description": "Pass the topic as literal standard input; never interpolate it into the command string.",
-      "description": "Search ALL events for topic-relevant content, then do 2-pass AI reconstruction for deep detail",
-      "outputs": {
-        "detailed_memory": "Full detailed reconstruction of the topic across all time periods"
-      }
+      "command": "bash .exocortex/scripts/run_exocortex.sh drill <literal-topic>",
+      "windows_command": "& .\\.exocortex\\scripts\\run_exocortex.ps1 drill <literal-topic>",
+      "description": "Search local events for the supplied literal topic. Replace <literal-topic> with one safely quoted argument; no stdin prompt and no provider call."
     },
     {
       "type": "ai",

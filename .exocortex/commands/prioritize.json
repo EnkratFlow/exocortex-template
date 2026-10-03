@@ -15,8 +15,8 @@
     },
     {
       "type": "ai",
-      "action": "Prepare the exact guarded mutation request",
-      "context": "Show the complete proposed project-local diff. If the user wants it recorded, identify exact paths, current work-item revision, executor, and content for a one-time capability. Do not write until the registered guarded executor accepts it."
+      "action": "Apply only the approved ordinary local edits",
+      "context": "Show the exact proposed diff. Reuse owner approval when it covers these local paths and changes; otherwise ask once. Ordinary TODO, backlog and memory edits need no work-item registration or capability under AI_START_HERE section 3. Preserve unrelated work. Guarded runtime transitions, template updates and external delivery remain separate; never invoke them as bookkeeping for this edit."
     }
   ]
 }

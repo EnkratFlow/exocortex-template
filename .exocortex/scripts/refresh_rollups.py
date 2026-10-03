@@ -236,8 +236,12 @@ def receipt(root: Path) -> dict:
 
 
 def check(root: Path, as_of: date | None = None) -> dict:
+    return check_events(root, read_events(root), as_of)
+
+
+def check_events(root: Path, events: list[dict], as_of: date | None = None) -> dict:
+    """Check a snapshot already read by this operation; never cache across calls."""
     as_of = as_of or datetime.now(timezone.utc).date()
-    events = read_events(root)
     old = receipt(root)
     before, block, after = split_block(current_context(root))
     now = sources(events)

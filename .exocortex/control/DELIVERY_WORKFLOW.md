@@ -1,5 +1,12 @@
 # Minute-scale delivery workflow
 
+## Scope
+
+This runtime lifecycle applies to protocol-managed work items. Ordinary edits,
+tests, saves and Git work use owner approval under AI_START_HERE section 3;
+do not create registrations, reservations or capabilities merely to perform
+them. Apply proportionate review and checks without manufacturing runtime gates.
+
 ## Lifecycle
 
 `captured → triaged → refined → ready → reserved → developing → developer_verified → independent_review → qa_sit → uat_ready → human_uat → release_ready → awaiting_release → deployment_approved → deployed → hypercare → done`

@@ -12,7 +12,7 @@
     {
       "type": "ai",
       "action": "Ask the user what they want to search for",
-      "context": "Ask: 'What are you looking for?' Options: (A) Keyword search, (B) Date range, (C) Browse recent 50. Then execute the appropriate search against .exocortex/events/ directory using grep, find, or ls."
+      "context": "Ask what to search for: keyword, date range, or recent 50. Then use the shared launcher operation `history` with separate literal arguments: --keyword TEXT, --since YYYY-MM-DD and/or --until YYYY-MM-DD, or no arguments for recent 50. No grep/find/ls dependency. Report omitted results; never interpolate search text into executable shell syntax."
     },
     {
       "type": "ai",

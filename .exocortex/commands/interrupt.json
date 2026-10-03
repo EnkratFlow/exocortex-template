@@ -17,13 +17,13 @@
       "type": "user_choice",
       "options": [
         "A) Keep proposal only",
-        "B) Request a one-time guarded interrupt-recording capability"
+        "B) Record this exact interrupt locally"
       ]
     },
     {
       "type": "ai",
       "action": "Respect the recording gate",
-      "context": "If B, prepare the exact target path, work-item revision, executor, request ID, and content for a guarded append. Do not call capture_interrupt.sh without accepted authority."
+      "context": "If B, append only the reviewed text to .exocortex/control/INTERRUPTS.md under ordinary local-write approval. No runtime work item, registry or capability is required. Use the editor/file tool; do not locate Bash or use capture_interrupt.sh. No external sync or lifecycle transition."
     }
   ]
 }

@@ -33,8 +33,10 @@ project root, not to this folder:
 
 **Rule:** If you have not read these, do not make changes.
 
-Before treating Session Context as current, run
-`python3 .exocortex/scripts/refresh_rollups.py --check --json` read-only.
+Before claiming verified Session Context coverage, use the current command's
+coverage result. If no check was collected and verification is needed, run
+`refresh --check --json` once through the platform launcher in AI_BOOTSTRAP.md.
+Simply reading memory does not require interpreter discovery or a full scan.
 A stale or missing receipt requires reconciliation with source events and live
 Git. Fresh coverage certifies the generated index only, not the correctness of
 handwritten lessons, decisions, or tasks. Never silently regenerate on entry.

@@ -17,13 +17,13 @@
       "type": "user_choice",
       "options": [
         "A) Keep the report read-only",
-        "B) Request a separately scoped guarded local recording operation"
+        "B) Apply the reviewed project-local edits under the owner’s applicable approval"
       ]
     },
     {
       "type": "ai",
-      "action": "Respect the selected authority boundary",
-      "context": "If A, stop with zero writes. If B, produce the exact operation, paths, work-item revision, and proposed content needed for a one-time capability; do not write or sync yet."
+      "action": "Apply only the approved ordinary local edits",
+      "context": "Show the exact proposed diff. Reuse owner approval when it covers these local paths and changes; otherwise ask once. Ordinary TODO, backlog and memory edits need no work-item registration or capability under AI_START_HERE section 3. Preserve unrelated work. Guarded runtime transitions, template updates and external delivery remain separate; never invoke them as bookkeeping for this edit."
     }
   ]
 }

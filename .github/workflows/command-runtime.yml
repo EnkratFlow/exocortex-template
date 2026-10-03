@@ -1,0 +1,28 @@
+name: Everyday command runtime
+on:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  windows-commands:
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - python: '3.9'
+            shell: powershell.exe
+          - python: '3.13'
+            shell: pwsh.exe
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Repeated daily commands, runtime discovery, Unicode and exit statuses
+        shell: pwsh
+        env:
+          EXOCORTEX_TEST_POWERSHELL: ${{ matrix.shell }}
+          PYTHONDONTWRITEBYTECODE: '1'
+        run: python tests/test_command_runtime.py

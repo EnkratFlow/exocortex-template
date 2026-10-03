@@ -12,20 +12,31 @@ import platform
 import subprocess
 import sys
 import tempfile
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 
 sys.dont_write_bytecode = True
 import refresh_rollups as memory
+GIT_DEADLINE = 0.0
 
 
 def git(root: Path, *args: str) -> str:
-    result = subprocess.run(["git", "-C", str(root), *args], capture_output=True, text=True,
-                            timeout=20, env=dict(os.environ, GIT_OPTIONAL_LOCKS="0", GIT_TERMINAL_PROMPT="0"))
+    remaining = GIT_DEADLINE - time.monotonic()
+    if remaining <= 0:
+        return "(unavailable: Git inspection time limit)"
+    try:
+        result = subprocess.run(["git", "-C", str(root), *args], capture_output=True, text=True,
+                                encoding="utf-8", errors="replace", timeout=min(3, remaining),
+                                env=dict(os.environ, GIT_OPTIONAL_LOCKS="0", GIT_TERMINAL_PROMPT="0"))
+    except (OSError, subprocess.TimeoutExpired):
+        return "(unavailable: Git missing or timed out)"
     return result.stdout.strip() if result.returncode == 0 else "(unavailable)"
 
 
 def record(root: Path, body: str) -> Path:
+    global GIT_DEADLINE
+    GIT_DEADLINE = time.monotonic() + 10
     if not body.strip():
         raise memory.MemoryError("event body is empty")
     folder = memory.safe_path(root, ".exocortex/events")

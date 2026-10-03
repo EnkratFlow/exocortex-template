@@ -184,7 +184,7 @@ class RefreshTests(unittest.TestCase):
     def test_saved_event_survives_refresh_failure(self):
         dest = self.root / ".exocortex/scripts"
         dest.mkdir()
-        for name in ("create_event.sh", "record_event.py", "refresh_rollups.py"):
+        for name in ("create_event.sh", "record_event.py", "refresh_rollups.py", "run_exocortex.sh", "command_runtime.py"):
             shutil.copy(SCRIPTS / name, dest / name)
         (self.root / memory.CONTEXT).write_text(memory.START)  # malformed managed block
         result = subprocess.run(["bash", str(dest / "create_event.sh")], input="# Handoff\nSaved once.",

@@ -249,7 +249,8 @@ def case_command_contract() -> None:
     print("case: the canonical command pins the conditional completion")
     cmd = json.loads(COMMAND.read_text(encoding="utf-8"))
     steps = cmd["steps"]
-    check(steps[0]["type"] == "shell" and "onboard_evidence.py" in steps[0]["command"], "first step runs the read-only collector")
+    check(steps[0]["type"] == "shell" and steps[0]["command"].endswith("run_exocortex.sh onboard")
+          and steps[0]["windows_command"].endswith("run_exocortex.ps1 onboard"), "first step runs the collector through the platform launcher")
     final = steps[-1]["context"]
     check("Onboarding incomplete:" in final and "Ready to work. What do you need?" in final, "final step carries both outcomes")
     check("only" in cmd["constraints"]["completion"] and "never silently" in cmd["constraints"]["completion"], "completion is conditional and missing required evidence never becomes success")

@@ -15,9 +15,9 @@
   "steps": [
     {
       "type": "shell",
-      "command": "bash .exocortex/scripts/check_keys.sh",
-      "description": "Checking all API keys (values never shown)",
-      "success_format": "✓ Key check complete"
+      "command": "bash .exocortex/scripts/run_exocortex.sh check-keys",
+      "windows_command": "& .\\.exocortex\\scripts\\run_exocortex.ps1 check-keys",
+      "description": "Run the project-local check-keys helper through the shared launcher; pass arguments separately, never interpolate shell text."
     },
     {
       "type": "ai",

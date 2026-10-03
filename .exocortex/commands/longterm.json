@@ -10,13 +10,9 @@
   "steps": [
     {
       "type": "shell",
-      "command": "python3 .exocortex/scripts/get_longterm_memory.py",
-      "description": "Extract project-local 31-365 day memory deterministically",
-      "outputs": {
-        "event_count": "Number of events in period",
-        "months": "Number of unique months covered",
-        "analysis_mode": "Local extraction for conversation-model formatting"
-      }
+      "command": "bash .exocortex/scripts/run_exocortex.sh longterm",
+      "windows_command": "& .\\.exocortex\\scripts\\run_exocortex.ps1 longterm",
+      "description": "Run the project-local longterm helper through the shared launcher; pass arguments separately, never interpolate shell text."
     },
     {
       "type": "ai",
