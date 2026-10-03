@@ -1,3 +1,17 @@
+# What's New in 3.3.13 — Smoother everyday commands on Windows and Mac
+
+- Use one command launcher with bounded Python discovery. Everyday Windows
+  commands no longer search for Bash or GitHub CLI.
+- Read work evidence once and avoid duplicate onboarding freshness scans.
+- Keep saves reliable when Git is unavailable, with handwritten memory intact.
+- Handle Unicode paths and command output in PowerShell 5.1 and PowerShell 7.
+- Follow complete Windows setup and corporate-network instructions. Python
+  remains required; self-contained packaging is separate work.
+
+This candidate does not prove publication or installation. Update existing
+projects only from the authenticated release, then check the commands in the
+assistant and checkout you actually use.
+
 # What's New in 3.3.12 — Upgrade older installs cleanly
 
 - Update 3.1.x installs end to end: the public `.env.example` and

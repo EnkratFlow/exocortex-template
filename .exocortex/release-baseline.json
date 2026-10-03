@@ -1,6 +1,6 @@
 {
   "schema_version": "public-v1",
   "kind": "exocortex_release_baseline",
-  "previous_published_tag": "v3.3.11",
-  "previous_published_commit": "0bf4b886c5ba926147a998227bd4add9518a1cf9"
+  "previous_published_tag": "v3.3.12",
+  "previous_published_commit": "8047599571e5d0a316e032a2711de5de9f7928c9"
 }

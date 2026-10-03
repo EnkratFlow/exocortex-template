@@ -1,6 +1,6 @@
 # Exocortex release status
 
-Last updated: 2026-10-01
+Last updated: 2026-10-03
 
 This is the living, human-readable maintainer view of the public template. It
 is release-scoped, not a downstream project's status page, approval record,
@@ -9,18 +9,20 @@ release attestation, or replacement for exact test and Git evidence.
 ## Published baseline
 
 - The previous reviewed published baseline is `v3.3.12` at peeled commit
-  `0bf4b886c5ba926147a998227bd4add9518a1cf9`.
-- The packaged candidate version is `3.3.12`. This tracked file does not prove a
+  `8047599571e5d0a316e032a2711de5de9f7928c9`.
+- The packaged candidate version is `3.3.13`. This tracked file does not prove a
   branch push, merge, annotated tag, immutable GitHub release, attested asset,
   installation, deployment, or template promotion.
 
 ## Candidate state
 
-Version 3.3.12 completes upgrades from 3.1.x installs: public template files
-with credential-shaped names update through the guarded lane, stale
-untracked version labels refresh, unsupported reviewed command authority and
-unsupported Windows target locations fail at planning or preflight, and
-executor conflicts name their cause.
+Version 3.3.13 packages the shared native PowerShell and POSIX command
+launchers, bounded Python discovery, consolidated work evidence and reliable
+local saves. Routine Windows commands no longer need Bash or GitHub CLI.
+Installation and update prerequisites remain unchanged; Python is not bundled.
+Native Windows command tests and local macOS checks cover the implementation.
+The final release candidate still requires its own exact-commit CI, and a
+consumer's assistant session must be checked after that checkout is updated.
 
 | Area | State | Current objective |
 | --- | --- | --- |
@@ -47,11 +49,11 @@ executor conflicts name their cause.
 
 ## Publication gates and residual limitations
 
-Before version 3.3.12 may be used as a public installation or update source:
+Before version 3.3.13 may be used as a public installation or update source:
 
 1. Provision a separately installed, independently reviewed publication
    runtime outside the candidate root. Bind its executor-closure, checker,
-   Python, Git, and GitHub CLI SHA-256 digests; 3.3.12 cannot bootstrap trust
+   Python, Git, and GitHub CLI SHA-256 digests; 3.3.13 cannot bootstrap trust
    from its own new publisher or checker.
 2. Freeze one exact candidate and run the focused checks plus the complete
    Exocortex safety suite once.
@@ -105,7 +107,7 @@ unknown disclosure pattern exists.
 
 ## Local preparation boundary
 
-- The 3.3.12 metadata and integrity inventories are part of the candidate;
+- The 3.3.13 metadata and integrity inventories are part of the candidate;
   changing any candidate byte invalidates earlier evidence and requires a new
   exact-candidate verification and seal.
 - Complete safety evidence, independent review, and Human UAT must bind the

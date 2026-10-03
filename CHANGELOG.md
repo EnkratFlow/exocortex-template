@@ -6,6 +6,29 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 ## [Unreleased]
 
+## [3.3.13] - 2026-10-03
+
+### Fixed
+
+- Route local commands through shared native PowerShell and POSIX launchers.
+  Bound Python discovery, reuse the interpreter within a PowerShell session,
+  and avoid disk searches or automatic runtime installation.
+- Remove unnecessary Bash and GitHub CLI requirements from everyday Windows
+  commands. Installation and update prerequisites remain unchanged.
+- Collect `/work` evidence once and reuse `/onboard` freshness evidence; avoid
+  blanket runtime and history scans at entry without hiding stale context.
+- Preserve saved narratives when Git is unavailable or times out, maintain
+  exact save/refresh exit status, and preserve handwritten memory.
+- Handle Unicode paths, literal command arguments and captured output in
+  native Windows PowerShell 5.1 and PowerShell 7.
+- Clarify ordinary local edits and saves versus guarded update, lifecycle and
+  external-delivery operations; retain the existing guarded boundaries.
+
+### Documentation
+
+- Complete the Windows quick start and corporate-network troubleshooting;
+  release authenticity checks still require an approved connection.
+
 ## [3.3.12] - 2026-10-01
 
 ### Fixed
