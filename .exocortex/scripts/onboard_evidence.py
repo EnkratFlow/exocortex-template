@@ -32,6 +32,9 @@ from pathlib import Path
 
 sys.dont_write_bytecode = True
 import refresh_rollups
+import project_state
+import brief_work
+import release_awareness
 
 MAX_COMMITS = 40
 MAX_PATHS_PER_COMMIT = 25
@@ -69,7 +72,7 @@ def git(root: Path, *args: str) -> tuple[int, str]:
     env = dict(os.environ, GIT_TERMINAL_PROMPT="0", GIT_OPTIONAL_LOCKS="0", LC_ALL="C")
     try:
         proc = subprocess.run(
-            ["git", "-C", str(root), *args],
+            ["git", "-c", "core.fsmonitor=false", "-c", "core.untrackedCache=false", "-C", str(root), *args],
             capture_output=True, text=True, env=env, timeout=min(5, remaining), check=False,
         )
     except (OSError, subprocess.TimeoutExpired) as exc:  # pragma: no cover - defensive
@@ -78,10 +81,24 @@ def git(root: Path, *args: str) -> tuple[int, str]:
     return proc.returncode, proc.stdout.strip("\n")
 
 
+def ordinary_path(path: Path) -> bool:
+    absolute = path.absolute()
+    current = Path(absolute.anchor)
+    for part in absolute.parts[1:]:
+        current /= part
+        if not project_state.ordinary(current):
+            return False
+    return True
+
+
 def read_text(path: Path, limit: int = 2_000_000) -> str | None:
+    # Refuse linked ancestors and special files before opening memory/version data.
     try:
-        with path.open("r", encoding="utf-8", errors="replace") as handle:
-            return handle.read(limit)
+        if not ordinary_path(path) or not path.is_file():
+            return None
+        with path.open('r', encoding='utf-8', errors='replace') as handle:
+            text = handle.read(limit + 1)
+        return text if len(text) <= limit else None
     except OSError:
         return None
 
@@ -125,19 +142,24 @@ def is_documentation(path: str) -> bool:
     return path.startswith(DOC_PREFIXES) or path.endswith(DOC_SUFFIXES)
 
 
+@project_state.bounded
 def collect(start: Path) -> dict:
     global GIT_DEADLINE, GIT_INCOMPLETE
     GIT_DEADLINE, GIT_INCOMPLETE = time.monotonic() + 15, False
     out: dict = {"ok": True, "schema": "onboard-evidence/1", "errors": [], "truncated": False, "truncated_lists": [],
                  "limits": {"commits": MAX_COMMITS, "paths_per_commit": MAX_PATHS_PER_COMMIT,
                             "events_listed": MAX_EVENTS_LISTED, "worktree_paths": MAX_WORKTREE_PATHS}}
+    out['task_brief'] = brief_work.context(start.resolve())
+    out['release_awareness'] = release_awareness.status(start.resolve())
     rc, top = git(start, "rev-parse", "--show-toplevel")
     if rc != 0 or not top:
         out["ok"] = False
         out["errors"].append("not_a_git_repository")
         out["identity"] = {"repository_root": str(start.resolve())}
         return out
-    root = Path(top)
+    root = Path(top).resolve()
+    out['task_brief'] = brief_work.context(root)
+    out['release_awareness'] = release_awareness.status(root)
 
     # ── identity ────────────────────────────────────────────────────────────
     _, head = git(root, "rev-parse", "HEAD")
@@ -225,10 +247,19 @@ def collect(start: Path) -> dict:
 
     events_dir = exo / "events"
     events: list[dict] = []
-    if events_dir.is_dir():
-        names = sorted(p.name for p in events_dir.iterdir() if p.suffix == ".md" and p.name != refresh_rollups.EXAMPLE)
+    events_available = ordinary_path(events_dir) and events_dir.is_dir()
+    if events_dir.is_symlink() or (events_dir.exists() and not events_available):
+        out["errors"].append("events_inspection_unavailable")
+    if events_available:
+        try:
+            names = sorted(p.name for p in events_dir.iterdir() if p.suffix == ".md" and p.name != refresh_rollups.EXAMPLE)
+        except OSError:
+            names = []
+            out["errors"].append("events_inspection_unavailable")
         for name in reversed(names[-max(MAX_EVENTS_LISTED, MAX_EVENTS_SCANNED_FOR_SHAS):]):
             body = read_text(events_dir / name, 400_000)
+            if body is None:
+                out["errors"].append("events_inspection_unavailable")
             events.append({"name": name, "timestamp": event_datetime(name, body), "_body": body})
         total_events = len(names)
     else:
@@ -237,7 +268,7 @@ def collect(start: Path) -> dict:
     covered_ts = context.get("newest_event_timestamp_covered") if context_text is not None else None
     events_newer_than_context = [e for e in events if e["timestamp"] and (covered_ts is None or e["timestamp"] > covered_ts)]
     out["events"] = {
-        "directory": ".exocortex/events", "exists": events_dir.is_dir(), "count": total_events,
+        "directory": ".exocortex/events", "exists": events_available, "count": total_events,
         "newest_timestamp": newest_event,
         "newer_than_context": [{"name": e["name"], "timestamp": e["timestamp"]} for e in events_newer_than_context[:MAX_EVENTS_LISTED]],
         "newer_than_context_truncated": len(events_newer_than_context) > MAX_EVENTS_LISTED,
@@ -304,14 +335,32 @@ def collect(start: Path) -> dict:
     candidates = [exo / "TODO.md", exo / "control" / "HANDOFF.md", exo / "control" / "INTERRUPTS.md"]
     for sub in ("control", "planning", "work-items", "handoffs"):
         d = exo / sub
-        if d.is_dir():
-            candidates.extend(sorted(p for p in d.iterdir() if p.is_file() and re.search(r"handoff|todo|task|work", p.name, re.I)))
+        if ordinary_path(d) and d.is_dir():
+            try:
+                candidates.extend(sorted(p for p in d.iterdir() if re.search(r"handoff|todo|task|work", p.name, re.I)))
+            except OSError:
+                out["errors"].append("records_inspection_unavailable")
+        elif d.is_symlink() or d.exists():
+            out["errors"].append("records_inspection_unavailable")
     seen = set()
     for p in candidates:
-        if p in seen or not p.is_file():
+        if p in seen:
             continue
         seen.add(p)
-        mtime = datetime.fromtimestamp(p.stat().st_mtime, timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+        if not ordinary_path(p):
+            if p.is_symlink() or p.exists():
+                out["errors"].append("records_inspection_unavailable")
+            continue
+        if not p.is_file():
+            continue
+        try:
+            if read_text(p) is None:
+                out["errors"].append("records_inspection_unavailable")
+                continue
+            mtime = datetime.fromtimestamp(p.stat().st_mtime, timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+        except OSError:
+            out["errors"].append("records_inspection_unavailable")
+            continue
         records.append({"path": str(p.relative_to(root)), "mtime": mtime,
                         "newer_than_context": bool(context_text is not None and mtime > context["mtime"])})
     out["records"] = {"items": records[:MAX_RECORDS], "truncated": len(records) > MAX_RECORDS}
@@ -319,17 +368,17 @@ def collect(start: Path) -> dict:
         out["truncated"] = True
         out["truncated_lists"].append("records.items")
 
-    # ── default branch relation, local refs only ────────────────────────────
-    relation: dict = {"note": "local refs only; remote-tracking refs are cached, not freshly verified"}
-    for base in ("main", "master"):
-        if git(root, "rev-parse", "--verify", "--quiet", base)[0] == 0:
-            _, counts = git(root, "rev-list", "--left-right", "--count", f"{base}...HEAD")
-            behind, ahead = (counts.split() + ["0", "0"])[:2]
-            relation.update({"default_branch": base, "ahead": int(ahead), "behind": int(behind),
-                             "differs": ahead != "0" or behind != "0"})
-            break
-    else:
-        relation["default_branch"] = None
+    # Shared local facts; remote refs remain cached observations.
+    trunk = project_state.resolve_trunk(root)
+    relation = {"note": "local refs only; remote-tracking refs are cached, not freshly verified",
+                "default_branch": trunk['ref'], **project_state.relation(root, trunk['sha'])}
+    relation['differs'] = bool(relation['ahead'] or relation['behind'])
+    if relation['default_branch']:
+        relation['default_branch'] = relation['default_branch'].removeprefix('refs/heads/').removeprefix('refs/remotes/')
+    try:
+        out['location'] = project_state.current_report(root)
+    except (project_state.Unavailable, OSError):
+        out['location'] = {'verdict': 'Checkout inventory unavailable; preserve existing work.', 'warnings': ['Inspection unavailable']}
     out["default_branch_relation"] = relation
 
     # ── discrepancies and readiness blockers ────────────────────────────────
@@ -375,10 +424,17 @@ def collect(start: Path) -> dict:
     if out["truncated"]:
         disc.append({"code": "evidence_truncated", "lists": list(out["truncated_lists"]),
                      "detail": "these lists hit their cap; inspect beyond the cap yourself (e.g. git show --stat <sha>, ls .exocortex/events) or report the uncertainty"})
+    for item in out['location'].get('checkouts', []):
+        if item.get('current') and item.get('version_differs_from_trunk'):
+            disc.append({'code': 'template_version_differs_from_trunk', 'installed': item['version'], 'trunk': item['trunk_version']})
+    if any("inspection_unavailable" in error for error in out["errors"]):
+        disc.append({"code": "memory_inspection_unavailable", "detail": "Linked or unavailable memory records were not inspected"})
+    if out['task_brief']['status'] == 'selection_required':
+        disc.append({'code': 'task_selection_required', 'detail': out['task_brief']['reason']})
     out["discrepancies"] = disc
     blockers = [d["code"] for d in disc if d["code"] in ("rollup_coverage_stale", "commits_after_event_coverage", "events_newer_than_context",
                                                           "context_recent_but_uncovered", "evidence_truncated",
-                                                          "no_recorded_context", "git_inspection_incomplete")]
+                                                          "no_recorded_context", "memory_inspection_unavailable", "task_selection_required", "git_inspection_incomplete")]
     out["readiness"] = {
         "material_gaps": blockers,
         "note": ("Each gap must be resolved by reading the named events and inspecting the named commits' "

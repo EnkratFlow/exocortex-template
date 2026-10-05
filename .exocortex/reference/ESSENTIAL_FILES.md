@@ -4,9 +4,9 @@
 
 - `AI_START_HERE.md` — provider-neutral entry and authority contract
 - `.exocortex/AI_BOOTSTRAP.md` — command discovery/execution
-- `.exocortex/commands/` — 26 JSON command specifications
+- `.exocortex/commands/` — 30 JSON command specifications
 - `.exocortex/provider-adapters.json` — provider invocation and migration matrix
-- `.exocortex/scripts/generate_command_adapters.py` — deterministic 78-adapter generator/check
+- `.exocortex/scripts/generate_command_adapters.py` — deterministic 90-adapter generator/check
 - `.agents/skills/` — portable generated Agent Skills
 - `.claude/skills/` — generated Claude command skills
 - `.cursor/skills/` — generated Cursor command skills alongside preserved persona skills
@@ -30,8 +30,12 @@
 - `.exocortex/local/protocol/` — protected runtime state
 - `.exocortex/local/model-routing/` — protected availability, evaluation, and quarantine evidence
 
+- `.exocortex/scripts/project_state.py` — shared offline project/checkout facts
+- `.exocortex/docs/work-organization.md` — working folders and portable history
+
 ## Project-local truth
 
+- `.exocortex/planning/MASTER_BRIEF.md` — optional program scope/status reference; reread on resume and before substantial phases
 - `.exocortex/PROJECT_MEMORY.md`
 - `.exocortex/LESSONS.md`
 - `.exocortex/OPEN_DECISIONS.md`
@@ -68,3 +72,24 @@ every criterion passed and still contains the exact Human-UAT transition
 marker and evidence. This is cooperative local evidence, not cryptographic
 proof of a person's identity. Completion also verifies the Human-UAT transition
 against its consumed one-time capability and finalized guarded transaction.
+
+## Optional task briefs
+
+- `.exocortex/commands/brief-work.json` — sole command-flow source.
+- `.exocortex/docs/brief-work.md` — generic lifecycle and CLI reference.
+- `.exocortex/planning/briefs/` — project-owned requirements revisions and approval evidence; never template payload.
+- `.exocortex/local/briefs/` — checkout selection and transient writer lock; never shared.
+
+Task records and project events travel only through deliberate Git synchronization
+in a consuming project. The public template ships the helper and blank input
+template, never a consumer brief or its event history.
+
+## Release awareness and help
+
+- `.exocortex/reference/QUICK_REFERENCE.md` — compact `/help` guide to every command.
+- `.exocortex/scripts/release_awareness.py` — opt-in checker and offline status.
+- `.exocortex/docs/release-awareness.md` — source, cache and consent boundaries.
+- `.exocortex/local/release-awareness/` — protected project opt-in/reminders; not a template asset.
+
+- `.exocortex/docs/selected-updates.md`: explicit project selection, guarded update receipts and recovery.
+- `.exocortex/docs/next-major-release.md`: proposed major-version migration and release gates.

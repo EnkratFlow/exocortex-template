@@ -1,13 +1,19 @@
-# Exocortex Command Quick Reference
+# Exocortex help
 
-The canonical registry contains exactly 26 commands. Each command begins
-read-only, and its JSON specification beneath `.exocortex/commands/` is the
-single behavior source. A command name, argument, model statement, or adapter
-never grants mutation or egress authority.
+A compact guide to all 30 commands. Use `/help command-name` for more detail.
 
-For delegation, use `.exocortex/control/MODEL_ROUTING.md`. The public catalog
-is advisory; discovery quarantines new entries, and only fresh, digest-bound,
-measured, current-surface evidence can admit a model to routing.
+## Start here
+
+- New to a project? `/onboard` explains its code, memory and unfinished work.
+- Returning to a task? `/work` resumes the selected brief and current context.
+- New request? `/brief-work` turns it into a brief before implementation.
+- Unsure which folder? `/where` identifies this project and its working folders.
+- Ready to preserve progress? `/save` prepares a local narrative for saving.
+- Want Exocortex versions? `/updates` inspects versions; `release status` reads the cache.
+- Need one command explained? `/help command-name` gives focused help.
+
+Local saves do not push to GitHub. Update notices do not install software.
+Write actions reuse applicable owner approval; help itself only reads this guide.
 
 ## Daily
 
@@ -16,8 +22,8 @@ measured, current-surface evidence can admit a model to routing.
 | `/work` | Load current context and identify the next bounded task |
 | `/scrum` | Prepare a daily standup from project-local evidence |
 | `/save` | Draft a local narrative save; it is not a lifecycle checkpoint |
-| `/daily-end` | Review the day and prepare a guarded local record request |
-| `/interrupt` | Capture an idea, bug, or concern through the guarded workflow |
+| `/daily-end` | Reflect on the day and prepare a summary to save |
+| `/interrupt` | Capture an idea, bug or concern for later triage |
 | `/brief` | Produce a short read-only status view |
 
 ## Memory
@@ -34,6 +40,7 @@ measured, current-surface evidence can admit a model to routing.
 
 | Command | Purpose |
 |---|---|
+| `/brief-work` | Draft, revise, select and review a task brief with explicit local approval |
 | `/preflight <topic>` | Check relevant project lessons and incidents before work |
 | `/orchestrate` | Draft a bounded plan with cost-aware model routing |
 | `/groom` | Process captured interrupts |
@@ -47,13 +54,16 @@ measured, current-surface evidence can admit a model to routing.
 
 | Command | Purpose |
 |---|---|
+| `/help [command]` | List commands or explain one command without running it |
 | `/onboard` | Build a read-only mental model of the repository |
 | `/system-scan` | Run a read-only system health analysis |
-| `/ai-export` | Prepare a guarded system-understanding export request |
+| `/ai-export` | Prepare a comprehensive system-understanding document |
 | `/ecosystem` | Prepare a read-only cross-project activity view |
-| `/init-exocortex` | Propose a guarded Exocortex bootstrap |
-| `/check-keys` | Report guarded key-validation requirements without reading values |
-| `/handoff` | Prepare or record a strict project-local cross-provider handoff |
+| `/init-exocortex` | Set up Exocortex for a chosen project |
+| `/check-keys` | Review API-key validation requirements without exposing values |
+| `/handoff` | Prepare context and next steps for another assistant |
+| `/where` | Show this project and its working folders; optionally inspect memory preservation |
+| `/updates` | Inspect project versions; `release` manages opt-in notices; `selected` plans and previews chosen projects, then uses per-project guarded approval to apply |
 
 ## Provider invocation
 
@@ -68,10 +78,5 @@ measured, current-surface evidence can admit a model to routing.
 | Windsurf | Unavailable; no active/default adapter |
 | Generic or unidentified host | Read `AI_START_HERE.md`, then the matching JSON |
 
-Run `python3 .exocortex/scripts/generate_command_adapters.py --check` to verify
-the exact 26-name/78-adapter repository mapping. Native provider-menu visibility
-still requires bounded Human UAT for the installed provider version. Evidence
-statuses are `verified`, `compatible`, `failed`, `blocked`, or `unavailable`.
-
-For the complete protocol, read `AI_START_HERE.md`,
-`.exocortex/AI_BOOTSTRAP.md`, and `.exocortex/COMMAND_SYSTEM.md`.
+Menu availability depends on the host and installed version. For workflow
+details, use the matching command or read `.exocortex/COMMAND_SYSTEM.md`.

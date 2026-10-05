@@ -1,0 +1,33 @@
+{
+  "name": "/where",
+  "description": "Show this project, its working folders and scoped work status without changing anything",
+  "protocol": {
+    "entry_contract": "AI_START_HERE.md",
+    "authority": "exact_capability_required_for_mutation",
+    "egress": "separate_destination_specific_authorization",
+    "default_role": "read_only"
+  },
+  "steps": [
+    {
+      "type": "ai",
+      "action": "Resolve this project and the inspection scope",
+      "context": "Use the current Git project only. Linked worktrees belong to this inspection; do not scan sibling projects or another computer. Default inspection reads metadata only. Use --memory only when the user requests preservation inspection; it hashes declared portable notes and events without printing their contents. No credentials or arbitrary project files are read. Git registered worktrees are included regardless of whether Claude, Codex or another tool created them, including nested or externally located working folders. Separate clones are not discovered by this command."
+    },
+    {
+      "type": "shell",
+      "command": "bash .exocortex/scripts/run_exocortex.sh script project_state.py --format json",
+      "description": "Collect the shared offline project and checkout model; use an explicitly resolved --project-root if the shell is elsewhere",
+      "windows_command": "& .\\.exocortex\\scripts\\run_exocortex.ps1 script project_state.py --format json"
+    },
+    {
+      "type": "ai",
+      "action": "Identify task context without changing selection",
+      "context": "Read the shared launcher operation script brief_work.py context in this project. Report the selected ID and revision, none, or selection required. This optional task layer uses the same checkout binding as project_state.py. Never infer task ownership from provider folder names or silently activate a brief."
+    },
+    {
+      "type": "ai",
+      "action": "Show the verdict then working folders",
+      "context": "Show one project entry and its working folders, observed time, current checkout, branch/HEAD, installed version, ahead/behind trunk and staged/modified/untracked counts. Remote refs are cached, not live GitHub evidence. Show template-version differences and checkout divergence prominently. Process use, pushed status and deployment remain unknown unless separately observed. Missing information never means safe to retire. When --memory was requested, report unique note/event files and incomplete inspection; do not copy, deduplicate or delete anything. Distinguish saved locally, committed, pushed, merged and deployed. This command never fetches, refreshes context, writes an event, registers a checkout, commits, pushes, cleans up or deploys. Report the observed machine and project root explicitly. Other machines and separate clones remain uninspected. Folder and branch names never prove assistant ownership."
+    }
+  ]
+}

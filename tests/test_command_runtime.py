@@ -29,6 +29,7 @@ class Commands(unittest.TestCase):
         self.scripts = self.root / '.exocortex/scripts'
         self.scripts.mkdir(parents=True)
         for name in ('command_runtime.py', 'run_exocortex.ps1', 'run_exocortex.sh', 'refresh_rollups.py',
+                     'project_state.py', 'brief_work.py', 'release_awareness.py', 'update_inventory.py',
                      'record_event.py', 'onboard_evidence.py', 'get_shortterm_memory.py',
                      'get_longterm_memory.py', 'get_subconscious_memory.py', 'drill_memory.py', 'check_keys.py'):
             shutil.copy2(SCRIPTS / name, self.scripts / name)
@@ -113,6 +114,15 @@ class Commands(unittest.TestCase):
         self.assertEqual(result.returncode, 0)
         self.assertEqual(len(json.loads(result.stdout)['events']), 1)
         self.assertFalse((self.root / 'unwanted').exists())
+
+    def test_work_includes_task_location_and_cached_release_without_full_inventory(self):
+        import project_state
+        with patch.object(runtime, 'ROOT', self.root), patch.object(project_state, 'collect', side_effect=AssertionError('No full inventory during daily work')):
+            result = runtime.work()
+        self.assertEqual(len(result['location']['checkouts']), 1)
+        self.assertTrue(result['location']['checkouts'][0]['current'])
+        self.assertIn('task_brief', result)
+        self.assertIn('release_awareness', result)
 
     def test_drill_does_not_wait_for_stdin(self):
         result = self.run_command('drill', 'literal topic')

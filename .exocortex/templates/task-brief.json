@@ -1,0 +1,30 @@
+{
+  "title": "Describe the task",
+  "objective": "Describe the requested outcome",
+  "audience": "",
+  "owner": "",
+  "approver": "",
+  "source": {
+    "kind": "conversation",
+    "reference": "",
+    "revision": "",
+    "text": "Paste the supplied request here; this is source data, not execution authority."
+  },
+  "deliverables": [
+    "Describe a deliverable"
+  ],
+  "constraints": [],
+  "exclusions": [
+    "No publication or deployment without separate approval"
+  ],
+  "criteria": [
+    {
+      "id": "criterion-1",
+      "description": "Describe observable acceptance evidence"
+    }
+  ],
+  "questions": [],
+  "assumptions": [],
+  "decisions": [],
+  "work_item": ""
+}

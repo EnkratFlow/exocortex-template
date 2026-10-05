@@ -65,14 +65,14 @@ point to the JSON but cannot restate, replace, or expand its flow. If they
 conflict, report the deviation in one line and follow the JSON without
 combining the conflicting instructions.
 
-## Available commands (26)
+## Available commands (30)
 
 | Group | Commands |
 |---|---|
 | Daily | `/work`, `/scrum`, `/save`, `/daily-end`, `/interrupt`, `/brief` |
 | Memory | `/shortterm`, `/longterm`, `/subconscious`, `/drill`, `/history` |
-| Planning | `/groom`, `/refine-backlog`, `/prioritize`, `/weekly-review`, `/monthly-review`, `/pattern-review`, `/preflight`, `/orchestrate` |
-| System | `/onboard`, `/system-scan`, `/ai-export`, `/ecosystem`, `/init-exocortex`, `/check-keys`, `/handoff` |
+| Planning | `/brief-work`, `/groom`, `/refine-backlog`, `/prioritize`, `/weekly-review`, `/monthly-review`, `/pattern-review`, `/preflight`, `/orchestrate` |
+| System | `/help`, `/onboard`, `/system-scan`, `/ai-export`, `/ecosystem`, `/init-exocortex`, `/check-keys`, `/handoff`, `/updates`, `/where` |
 
 `check-keys` never reads or tests a key in the default process. `handoff` is
 project-local, non-authorizing evidence. `save` is a narrative memory action,
@@ -80,8 +80,8 @@ not a lifecycle checkpoint.
 
 ## Provider-native discovery
 
-The 26 JSON specifications remain behavior authority. A deterministic generator
-creates 78 thin adapters without copying command behavior. The provider matrix
+The 30 JSON specifications remain behavior authority. A deterministic generator
+creates 90 thin adapters without copying command behavior. The provider matrix
 classifies each command exactly once as `model_invocable` or `manual_only`:
 
 - `.agents/skills/{command}/SKILL.md` — portable Agent Skills for Codex

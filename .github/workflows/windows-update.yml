@@ -22,6 +22,23 @@ jobs:
       - name: Install, register, update and preserve memory from PowerShell
         shell: pwsh
         run: python tests/test_windows_update.py
+      - name: Read-only repository inventory
+        shell: pwsh
+        run: python tests/test_update_inventory.py
+      - name: Verify shared project state and portable memory
+        shell: pwsh
+        run: python tests/test_project_state.py
+      - name: Verify generic task briefs and scoped saves
+        shell: pwsh
+        run: python tests/test_brief_work.py
+      - name: Verify opt-in release awareness without network
+        shell: pwsh
+        run: python tests/test_release_awareness.py
+      - name: Selected update orchestration
+        run: python tests/test_update_selected.py
+      - name: Selected guarded update integration
+        run: python tests/test_selected_update_integration.py
+
       - name: Upgrade-path regressions (credential-shaped template files, legacy version label, Windows targets)
         shell: bash
         run: EXOCORTEX_TEST_BASH="$(cygpath -w "$BASH" 2>/dev/null || command -v bash)" python tests/test_upgrade_path_fixes.py -v

@@ -2,13 +2,14 @@
   "schema_version": "public-v2",
   "kind": "provider_adapter_matrix",
   "canonical_registry": ".exocortex/commands",
-  "expected_command_count": 26,
+  "expected_command_count": 30,
   "generator": ".exocortex/scripts/generate_command_adapters.py",
   "command_invocation_policy": {
     "model_invocable": [
       "ai-export",
       "brief",
       "drill",
+      "help",
       "history",
       "longterm",
       "onboard",
@@ -18,9 +19,11 @@
       "shortterm",
       "subconscious",
       "system-scan",
+      "where",
       "work"
     ],
     "manual_only": [
+      "brief-work",
       "check-keys",
       "daily-end",
       "ecosystem",
@@ -33,6 +36,7 @@
       "prioritize",
       "refine-backlog",
       "save",
+      "updates",
       "weekly-review"
     ]
   },
@@ -85,7 +89,7 @@
       "evidence_adapter_family": "portable-agent-skills",
       "default_install": true,
       "revalidation_required": true,
-      "evidence": "The repository command catalog contains 26 canonical commands; discovery of the two new commands requires candidate Human UAT.",
+      "evidence": "The repository command catalog contains 27 canonical commands; discovery of newly added commands requires candidate Human UAT.",
       "limitation": "Literal desktop skill-selector visibility remains Human-UAT-pending. The new preflight and orchestrate commands have not yet passed provider-menu Human UAT."
     },
     {

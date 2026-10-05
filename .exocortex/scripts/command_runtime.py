@@ -19,7 +19,7 @@ SCRIPTS = Path(__file__).resolve().parent
 
 def git(*arguments: str) -> dict:
     try:
-        result = subprocess.run(['git', '-C', str(ROOT), *arguments], capture_output=True,
+        result = subprocess.run(['git', '-c', 'core.fsmonitor=false', '-c', 'core.untrackedCache=false', '-C', str(ROOT), *arguments], capture_output=True,
                                 text=True, encoding='utf-8', errors='replace', timeout=5,
                                 env=dict(os.environ, GIT_OPTIONAL_LOCKS='0', GIT_TERMINAL_PROMPT='0'))
         return {'status': 'ok' if result.returncode == 0 else 'unavailable',
@@ -43,6 +43,16 @@ def status() -> dict:
 
 def work() -> dict:
     import refresh_rollups as memory
+    import project_state
+    with project_state.inspection_budget():
+        return work_evidence()
+
+
+def work_evidence() -> dict:
+    import refresh_rollups as memory
+    import project_state
+    import brief_work
+    import release_awareness
     events = memory.read_events(ROOT)
     today = datetime.now(timezone.utc).date()
     windows = {'right_now': [], 'shortterm': []}
@@ -57,6 +67,8 @@ def work() -> dict:
     nudge = next((line.strip() for event in events for line in event['body'].splitlines()
                   if any(word in line.lower() for word in ('friction', 'recurring', 'context gap'))), '')
     return dict(status(), coverage=memory.check_events(ROOT, events, today),
+                location=project_state.current_report(ROOT), task_brief=brief_work.context(ROOT),
+                release_awareness=release_awareness.status(ROOT),
                 right_now=windows['right_now'][:10], shortterm=windows['shortterm'][:15],
                 omitted={key: max(0, len(value) - (10 if key == 'right_now' else 15)) for key, value in windows.items()},
                 subconscious_nudge=nudge, recent_commits=git('log', '-5', '--oneline'))

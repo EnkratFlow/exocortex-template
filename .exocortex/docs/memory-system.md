@@ -86,3 +86,18 @@ Suggested replacement for an owner's global `/save` instruction:
 > and patterns require source-backed review before they change. Session entry
 > checks freshness read-only and reconciles stale views against events and live
 > Git. A save never creates a lifecycle checkpoint or synchronizes externally.
+
+
+## Working-folder scope (unreleased)
+
+New saves include an event ID and structured project/branch/commit metadata.
+Automatic metadata contains no absolute checkout path. The event starts as a
+local file; committing, pushing, merging and deployment are separate actions.
+Historical excerpts identify their source branch and never certify integration.
+
+The ignored coverage receipt binds the generated view to the current checkout,
+branch and HEAD as well as event bytes and UTC date. A checkout change makes
+`--check` stale without writing anything. An approved `--apply` or save refreshes
+the view; it never copies notes from another checkout. Portable history must
+travel through the consuming project's Git. For grouping, privacy boundaries
+and preservation checks, see [the working standard](work-organization.md).

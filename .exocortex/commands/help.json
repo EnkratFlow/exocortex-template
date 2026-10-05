@@ -1,0 +1,24 @@
+{
+  "name": "/help",
+  "description": "Show all Exocortex commands with concise purposes and guidance on where to start",
+  "protocol": {
+    "entry_contract": "AI_START_HERE.md",
+    "authority": "exact_capability_required_for_mutation",
+    "egress": "separate_destination_specific_authorization",
+    "default_role": "read_only"
+  },
+  "steps": [
+    {
+      "type": "read",
+      "files": [
+        ".exocortex/reference/QUICK_REFERENCE.md"
+      ],
+      "description": "Load the compact command guide; no project scan or command execution"
+    },
+    {
+      "type": "ai",
+      "action": "Show a useful, compact help page",
+      "context": "With no argument, show the guide’s start-here section and grouped command table, with one short description per command. Include every canonical command once; keep the whole answer about 500 words or less. Explain that commands can inspect, draft, or request approved actions; help never invokes them. For /help COMMAND, read only .exocortex/commands/COMMAND.json after validating COMMAND against existing canonical filenames. Explain its purpose, typical use and read-only/write boundaries in a few paragraphs. Do not interpolate user text into a shell command. Do not read local memory, credentials or account state. Display host-appropriate command syntax where known; do not claim menu installation or visibility from this guide alone."
+    }
+  ]
+}

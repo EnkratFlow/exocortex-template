@@ -4714,7 +4714,7 @@ class EntryAndPrivacyTests(unittest.TestCase):
         missing = [str(path.relative_to(TEMPLATE)) for path in paths if "AI_START_HERE.md" not in path.read_text(encoding="utf-8")]
         self.assertEqual(missing, [])
         specs = sorted((TEMPLATE / ".exocortex/commands").glob("*.json"))
-        self.assertEqual(len(specs), 26)
+        self.assertEqual(len(specs), 30)
         for path in specs:
             doc = json.loads(path.read_text(encoding="utf-8"))
             self.assertEqual(doc["protocol"]["entry_contract"], "AI_START_HERE.md")
@@ -4839,8 +4839,8 @@ class EntryAndPrivacyTests(unittest.TestCase):
         invocation_policy = production["command_invocation_policy"]
         self.assertEqual(invocation_policy, golden["command_invocation_policy"])
         self.assertEqual(set(invocation_policy), {"model_invocable", "manual_only"})
-        self.assertEqual(len(invocation_policy["model_invocable"]), 13)
-        self.assertEqual(len(invocation_policy["manual_only"]), 13)
+        self.assertEqual(len(invocation_policy["model_invocable"]), 15)
+        self.assertEqual(len(invocation_policy["manual_only"]), 15)
         self.assertFalse(set(invocation_policy["model_invocable"]) & set(invocation_policy["manual_only"]))
         self.assertEqual(
             set(invocation_policy["model_invocable"]) | set(invocation_policy["manual_only"]),
@@ -5063,12 +5063,12 @@ class EntryAndPrivacyTests(unittest.TestCase):
     def test_provider_adapter_schema_records_closed_migration_contract(self) -> None:
         schema = json.loads((TEMPLATE / ".exocortex/schemas/provider-adapter-matrix.schema.json").read_text(encoding="utf-8"))
         production = json.loads(ADAPTER_MATRIX.read_text(encoding="utf-8"))
-        self.assertEqual(schema["properties"]["expected_command_count"]["const"], 26)
+        self.assertEqual(schema["properties"]["expected_command_count"]["const"], 30)
         policy_schema = schema["properties"]["command_invocation_policy"]["properties"]
-        self.assertEqual(policy_schema["model_invocable"]["minItems"], 13)
-        self.assertEqual(policy_schema["model_invocable"]["maxItems"], 13)
-        self.assertEqual(policy_schema["manual_only"]["minItems"], 13)
-        self.assertEqual(policy_schema["manual_only"]["maxItems"], 13)
+        self.assertEqual(policy_schema["model_invocable"]["minItems"], 15)
+        self.assertEqual(policy_schema["model_invocable"]["maxItems"], 15)
+        self.assertEqual(policy_schema["manual_only"]["minItems"], 15)
+        self.assertEqual(policy_schema["manual_only"]["maxItems"], 15)
         self.assertEqual(schema["properties"]["legacy_retirements"]["minItems"], 55)
         self.assertEqual(schema["properties"]["legacy_retirements"]["maxItems"], 55)
         self.assertEqual(schema["properties"]["windsurf_retirements"]["minItems"], 25)

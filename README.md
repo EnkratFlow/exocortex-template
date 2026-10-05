@@ -352,7 +352,7 @@ spaces and checks that existing notes and events survive.
 ## Core model
 
 - `AI_START_HERE.md` is the canonical provider-neutral entry point.
-- `.exocortex/AI_BOOTSTRAP.md` discovers the 26 command specifications.
+- `.exocortex/AI_BOOTSTRAP.md` discovers the 30 command specifications.
 - `.exocortex/control/MODEL_ROUTING.md` selects by capability, risk,
   exact current-session availability, a route timestamp within 60 seconds of
   current UTC, and measured cost per successful completion—not latency claims
@@ -498,7 +498,7 @@ authority. Recursive improvement therefore compounds safely:
 - Planning: `/groom`, `/refine-backlog`, `/prioritize`, `/weekly-review`,
   `/monthly-review`, `/pattern-review`, `/preflight`, `/orchestrate`
 - System: `/onboard`, `/system-scan`, `/ai-export`, `/ecosystem`,
-  `/init-exocortex`, `/check-keys`, `/handoff`
+  `/init-exocortex`, `/check-keys`, `/handoff`, `/updates`, `/where`
 
 
 ### Prepare work with project memory and cost-aware routing
@@ -522,10 +522,10 @@ its own memories, events, model configuration and private connection details.
 Existing events are not rewritten by either command. Provider-menu observations
 below are historical; the two new commands still require candidate Human UAT.
 
-The 26 JSON specifications are retained as the single behavior source; the
+The 30 JSON specifications are retained as the single behavior source; the
 commands are not being removed. The deterministic adapter generator produces
-78 thin repository adapters from them: 26 portable Agent Skills, 26 Claude
-skills, and 26 Cursor skills.
+90 thin repository adapters from them: 30 portable Agent Skills, 30 Claude
+skills, and 30 Cursor skills.
 
 Current evidence is version- and surface-scoped. `verified` means the recorded
 client displayed every Exocortex entry during bounded Human UAT; it does not
@@ -533,7 +533,7 @@ mean a command was executed or that mutation authority was granted.
 
 | Surface | Repository adapter | Native invocation | Recorded evidence |
 |---|---|---|---|
-| Codex | `.agents/skills/{command}/SKILL.md` | `$command` or the skills selector | `compatible`; 26-command repository catalog; desktop selector UAT remains pending |
+| Codex | `.agents/skills/{command}/SKILL.md` | `$command` or the skills selector | `compatible`; 30-command repository catalog; desktop selector UAT remains pending |
 | Claude Desktop 1.24012.1 (0adcae) | `.claude/skills/{command}/SKILL.md` | `/command` | `compatible`; historical 24/24 visibility predates the invocation-policy change, so candidate UAT is required |
 | Cursor Stable 3.12.30 | `.cursor/skills/{command}/SKILL.md` | `/command` | `compatible`; historical 24/24 visibility predates the invocation-policy change, so candidate UAT is required |
 | GitHub Copilot | `.agents/skills/{command}/SKILL.md` | `/command` where repository skills are supported | `compatible`; 24/24 was observed, but the exact client version was not captured |
@@ -660,3 +660,96 @@ cleanup. Never delete ignored project files to make an update proceed.
 
 The public Exocortex template retains separate root exclusions and release
 checks so real development memory is never distributed as template payload.
+
+## Multi-repository update inventory (unreleased)
+
+Use `/updates` with Claude or the generated `updates` skill in Codex to compare
+GitHub and local Exocortex versions. The command is read-only and requires the
+new command adapter to be installed; it is not included in v3.3.11.
+
+From this candidate checkout, the direct CLI is:
+
+```sh
+python3 .exocortex/scripts/update_inventory.py --github
+python3 .exocortex/scripts/update_inventory.py --github --owner example-org --root /path/to/projects
+```
+
+On Windows, use the same command from PowerShell with a quoted Windows folder
+path. Python 3.9+, Git and an authenticated GitHub CLI are required for GitHub
+discovery. Local-only inspection uses `--root` without `--github`; an optional
+`--latest-version 3.3.11` supplies an offline comparison value. `--format json`
+produces structured results; the default is a Markdown table.
+
+Each repository has a GitHub/default-branch row and separate local working-folder
+rows. Only explicitly supplied local roots are scanned, to a bounded depth
+(default 3, configurable with `--depth`). Dependencies and build folders are
+skipped. An incomplete scan must not be interpreted as a complete machine
+inventory. Folders without Git but containing `.exocortex` are reported as
+needing attention. Linked directories and Windows reparse points are skipped.
+
+All repositories start unselected. The helper reads repository metadata and
+version markers, never project memories or credential files. GitHub uses the
+existing GitHub CLI authentication. A missing version marker is different from
+a missing installation, and inaccessible data remains unavailable.
+
+An available version is not proof of update readiness or release authenticity.
+No installation, Git fetch, commit, push, batch apply, automatic migration,
+cache write or background polling occurs. OneDrive synchronization, long-path
+update compatibility and old command migration still require separate update
+coverage. Those belong to the later update-application phase.
+
+
+## Project and working-folder visibility (unreleased)
+
+`/where` shows the current project and its linked working folders. `/updates`
+uses the same collector and now defaults to one row per project; add `--details`
+to expand local folders. Local reports show paths, branches, installed versions,
+and uncommitted work. Remote references are cached; pushed, process-use and
+live-deployment status remain unknown unless separately verified.
+
+Saves carry structured branch/commit scope. Context freshness is bound to the
+current checkout; a branch switch or new commit requires an approved refresh.
+Project history travels through the consuming project's Git. Machine paths and
+runtime observations stay local. The optional `/where --memory` inspection
+identifies unique notes and conflicts without moving or deleting anything.
+
+Read the [working standard](.exocortex/docs/work-organization.md). These changes
+are not installed by merely publishing the template; consumers need a reviewed
+upgrade. No cleanup, scheduling, deployment or automatic Git synchronization is
+included in this first phase.
+
+## Task briefs for any kind of work (unreleased)
+
+`/brief-work` turns a supplied request into a reviewable, revisioned task brief.
+It works for code, a web page, a press release or another deliverable. `/brief`
+remains the quick status command. `/work` reloads the selected task; `/save`
+links progress to its exact revision; `/onboard`, `/where` and `/handoff` carry
+that context forward. Multiple tasks require explicit selection.
+
+Source requirements, approval of the brief, evidence of progress and acceptance
+of the final output remain distinct. The helper does not connect to Jira, run
+a background service, infer acceptance or publish anything. Consumer briefs
+and events belong to their project; the public template contains only generic
+code, documentation and a blank requirements template.
+
+See [the task brief guide](.exocortex/docs/brief-work.md).
+
+## Release awareness and command help (unreleased)
+
+`/help` lists every command with a short purpose and a starting guide.
+`/help save` explains just one command. The [compact guide](.exocortex/reference/QUICK_REFERENCE.md)
+is also available as a file.
+
+`/updates release enable OWNER/REPO` opts one project into public release
+awareness. `release check` fetches metadata only when due, using a shared local
+cache, daily cadence and failed-attempt backoff. `/work` and `/onboard` read
+cached notices without network or writes. Remind-later and disable are explicit
+local actions. No credentials, project-data uploads, installed hook, scheduler
+or update application are included.
+
+See [release awareness](.exocortex/docs/release-awareness.md) for commands, cache
+locations, offline behavior and the optional host-hook boundary.
+
+Selected-project update planning and recovery are described in
+[Selected updates](.exocortex/docs/selected-updates.md). The candidate major-version
+migration proposal is in [Next major release](.exocortex/docs/next-major-release.md).
