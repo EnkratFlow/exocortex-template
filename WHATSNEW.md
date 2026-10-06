@@ -1,3 +1,19 @@
+# What's New in 3.3.14 - Updates that work from any clone
+
+- Update a project from a fresh clone, or on a new computer, without a
+  reconciliation pass. The install manifest is now committed with the project.
+- Projects already cloned without a manifest also update cleanly: the template
+  recognises its own unedited files from every past release.
+- Files the template stops shipping are removed from your project when you
+  haven't edited them.
+- Model routing is gone; `/orchestrate` keeps the same judgment rules in a
+  short guide that never expires. The always-on Cursor rule is removed.
+- On Windows, updates find PortableGit's Bash and a real Python, and explain
+  what to install when either is missing.
+
+This candidate does not prove publication or installation. Update existing
+projects only from the authenticated release.
+
 # What's New in 3.3.13 — Smoother everyday commands on Windows and Mac
 
 - Use one command launcher with bounded Python discovery. Everyday Windows
