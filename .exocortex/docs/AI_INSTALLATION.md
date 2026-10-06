@@ -131,7 +131,20 @@ move a project to another account or machine. Use Windows PowerShell 5.1 or
 PowerShell 7, Git for Windows, Python 3.9+ and GitHub CLI with `release verify`
 and `release verify-asset`. Check their versions before proceeding. Run Python
 protocol commands with `python` if that is the installed Windows executable
-name; Git Bash must also resolve `python3` for the shared scripts.
+name.
+
+`scripts/windows.ps1` finds Git Bash beside `git.exe`, in the usual Git for
+Windows and PortableGit folders, or on PATH. MinGit has no Bash, so install
+Git for Windows or PortableGit, or set `EXOCORTEX_BASH` to its `bin\bash.exe`.
+The launcher also resolves a real Python 3.9+ (`EXOCORTEX_PYTHON`, then
+`python`, `python3`, `py -3`) and passes it to the shared scripts. The
+Microsoft Store `python3` alias never counts.
+
+Git for Windows defaults to `core.autocrlf=true`, which rewrites line endings
+and makes every installed file look edited. Before updating, commit your own
+changes, run `git config core.autocrlf false` in the target project, then run
+`git checkout -- .exocortex` so the files match their committed bytes. A
+`.gitattributes` line `* text=auto eol=lf` achieves the same for every clone.
 
 #### Windows download and verification
 
@@ -859,7 +872,7 @@ rehearsal and guarded apply reconciles candidate adoptions with the install
 manifest and must remain inside the approved effect set. An `apply_template_update` capability cannot authorize this
 operation. A consumed reconciliation capability cannot be replayed; retry
 requires a fresh request and capability. Protected memory, events, work items,
-control records, local model-routing evidence, application files, and outward
+control records, other local evidence, application files, and outward
 systems remain outside the effect set.
 
 This path is for reviewed target-specific convergence, not automatic conflict

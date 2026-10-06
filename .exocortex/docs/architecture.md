@@ -116,10 +116,10 @@ Rejected, invalid, unauthorized, stale, conflicting, read-only, test, support,
 ordinary-chat, and replay activity creates no new lifecycle checkpoint. A
 retry of an accepted transition converges on its existing checkpoint.
 
-## Orchestration and model routing
+## Orchestration and model choice
 
-`.exocortex/control/MODEL_ROUTING.md` defines capability- and cost-aware
-routing. The accountable parent must be capable of interpreting authority,
+`.exocortex/control/ORCHESTRATION.md` defines capability- and cost-aware
+model choice. The accountable parent must be capable of interpreting authority,
 decomposing the task, integrating results, making risk decisions, and
 validating final evidence. Parent judgment is the default; route reporting is
 for visibility and routine model choice is not a human approval gate.
@@ -143,16 +143,6 @@ Provider adapters may map available models to these roles using versioned
 capability, reliability, latency, and cost metadata. Those mappings are
 advisory; no provider, model name, or permanent highest-tier-first rule is part
 of the protocol.
-
-The public source registry defines configured official-source coverage and
-freshness limits. The reviewed catalog normalizes public lifecycle and price
-facts, while protected `.exocortex/local/model-routing/**` evidence records
-current-surface availability and measured evaluation results. This machinery
-is an optional empirical verifier, not an authority or prerequisite. Discovery
-is offline and proposal-only: new models enter quarantine and missing
-observations do not imply deprecation. A formal route requires fresh eligible
-evidence and binds its timestamp to runtime UTC within 60 seconds, so the
-historical validator cannot replay a stale or future live route.
 
 ## Agile delivery lifecycle
 

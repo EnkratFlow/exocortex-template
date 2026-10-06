@@ -353,10 +353,8 @@ spaces and checks that existing notes and events survive.
 
 - `AI_START_HERE.md` is the canonical provider-neutral entry point.
 - `.exocortex/AI_BOOTSTRAP.md` discovers the 26 command specifications.
-- `.exocortex/control/MODEL_ROUTING.md` selects by capability, risk,
-  exact current-session availability, a route timestamp within 60 seconds of
-  current UTC, and measured cost per successful completion—not latency claims
-  or permanent model names.
+- `.exocortex/control/ORCHESTRATION.md` picks the right model for the job at the right cost,
+  by capability and risk rather than permanent model names.
 - `.exocortex/control/DELIVERY_WORKFLOW.md` applies minutes-long Kanban/SDLC
   gates from requirements through hypercare.
 - `.exocortex/scripts/authority_guard.py` and
@@ -440,40 +438,7 @@ vendor or named model is required. Escalate for risk, ambiguity, tool mismatch,
 weak verification, or repeated failure rather than permanently starting at
 either the cheapest or strongest tier.
 
-### Source-backed model freshness
-
-The packaged source registry covers only configured official public sources.
-It does not promise knowledge of every model worldwide. Refreshing those
-sources is an explicit external read with no credentials; the local registry
-tool never fetches, authenticates, or writes.
-
-Discovery compares the catalog-bound baseline registry with a separately
-normalized refreshed snapshot. Stable source definitions must match exactly,
-while retrieval timestamps and content digests may advance. Model, lifecycle,
-and pricing facts are accepted only from sources registered for those roles;
-cross-file duplicates or conflicting facts fail closed.
-
-Newly observed models are quarantined for formal-verifier use. They do not
-become empirical routing evidence merely because they are newer or advertise a
-lower price. The optional formal route requires a current local availability
-observation and fresh, digest-bound, measured capability and cost-per-success
-evidence. Stale or mismatched evidence disables that route, and missing
-observations never silently deprecate a model. The formal route also rejects a
-caller timestamp more than 60 seconds behind or ahead of runtime UTC;
-deterministic historical validation is a separate non-routing operation.
-
-The packaged catalog is advisory and has zero route-eligible models or verified
-evaluation profiles. Therefore the optional verifier cannot select a model as
-shipped. Accountable parent judgment remains the default; an empty catalog is
-not a human approval gate. Formal eligibility requires a reviewed catalog
-update that binds measured evaluation evidence plus fresh availability for the
-exact current surface.
-
-See [the routing policy](.exocortex/control/MODEL_ROUTING.md) for the evidence
-planes, discovery command, admission rules, and deterministic selection
-contract. Project-local observations and availability live under
-`.exocortex/local/model-routing/**`; installation and update never create,
-copy, checksum, or overwrite them.
+The judgment rules are in [the orchestration guide](.exocortex/control/ORCHESTRATION.md).
 
 ## Agile delivery and recursive improvement
 

@@ -57,11 +57,8 @@ security logic ad hoc.
 Memory commands summarize local evidence with the active conversation model.
 They do not discover credentials or call providers directly.
 
-For multi-model delegation, read `.exocortex/control/MODEL_ROUTING.md`.
-Parent judgment is the default and applies equally to subagents. The packaged
-catalog is advisory and has no eligible models, so the optional formal verifier
-cannot route as shipped. New source observations produce quarantine proposals
-only; they never activate a model or become an approval gate.
+For multi-model delegation, read `.exocortex/control/ORCHESTRATION.md`.
+Parent judgment is the default and applies equally to subagents.
 
 ## Safety expectations
 

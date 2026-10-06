@@ -76,18 +76,6 @@ We aim to acknowledge new vulnerability reports within **72 hours**.
   operation. It requires a reviewed immutable plan and its own one-time
   `apply_template_reconciliation` capability; ordinary update authority cannot
   authorize it.
-- The public model registry covers configured official sources only.
-  Acquisition is a separately authorized public external read and must not use
-  credentials. The registry tool has no network or write command.
-- Normalized source observations must not retain raw source text, headers,
-  cookies, authentication material, account identifiers, or free-form notes.
-  Project-specific availability and evaluation evidence stays protected under
-  `.exocortex/local/model-routing/**`.
-- New or cheaper models are quarantined until reviewed and measured. Future,
-  stale, expired, unavailable, or digest-mismatched evidence fails closed;
-  missing observation never silently means deprecation. Routing availability
-  is bound to the caller's exact current surface, version, and non-sensitive
-  session ID with a maximum 15-minute window.
 - A coding AI follows the same rules. Provider identity, a slash-command menu,
   repository access, or a conversational “yes” does not grant mutation, Git,
   deployment, external-sync, or template-promotion authority.

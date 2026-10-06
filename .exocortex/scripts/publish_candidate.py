@@ -134,7 +134,6 @@ TRANSPORT_CONFIG_ENV = ("HOME", "XDG_CONFIG_HOME", "APPDATA", "LOCALAPPDATA")
 IMPLEMENTATION_ROOT = Path(__file__).resolve(strict=True).parents[2]
 TRUSTED_RUNTIME_FILES = (
     ".exocortex/scripts/authority_guard.py",
-    ".exocortex/scripts/model_registry.py",
     ".exocortex/scripts/orchestrate_work_item.py",
     ".exocortex/scripts/publish_candidate.py",
     "scripts/check-public-release.py",

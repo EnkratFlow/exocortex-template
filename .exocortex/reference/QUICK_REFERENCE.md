@@ -5,9 +5,7 @@ read-only, and its JSON specification beneath `.exocortex/commands/` is the
 single behavior source. A command name, argument, model statement, or adapter
 never grants mutation or egress authority.
 
-For delegation, use `.exocortex/control/MODEL_ROUTING.md`. The public catalog
-is advisory; discovery quarantines new entries, and only fresh, digest-bound,
-measured, current-surface evidence can admit a model to routing.
+For delegation and model choice, use `.exocortex/control/ORCHESTRATION.md`.
 
 ## Daily
 

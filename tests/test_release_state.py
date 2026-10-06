@@ -12,6 +12,13 @@ import tempfile
 from pathlib import Path
 
 
+# A pre-commit hook exports Git variables for the outer commit. Inherited,
+# GIT_DIR/GIT_INDEX_FILE redirect scratch-repository calls at the real
+# repository, and GIT_AUTHOR_*/GIT_COMMITTER_* stamp the owner's identity on
+# fixture commits, which the public-boundary check then rejects.
+for _name in [name for name in os.environ if name.startswith("GIT_")]:
+    del os.environ[_name]
+
 TEMPLATE = Path(sys.argv[1] if len(sys.argv) > 1 else ".").resolve()
 CHECKER = TEMPLATE / "scripts/check-release-state.sh"
 PUBLIC_CHECKER = TEMPLATE / "scripts/check-public-release.py"

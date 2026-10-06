@@ -62,8 +62,24 @@ chmod 0600 "$APPROVED_SUMS"
 SOURCE_SUMS_DIGEST="$(sha256_file "$APPROVED_SUMS")"
 [ "$SOURCE_SUMS_DIGEST" = "$CANDIDATE_DIGEST" ] || fail "local template candidate digest does not match the separately approved digest"
 
-command -v python3 >/dev/null 2>&1 || fail "python3 is required to validate the candidate"
-HOST_PYTHON="$(command -v python3)"
+# EXOCORTEX_PYTHON names the interpreter explicitly; scripts/windows.ps1 sets
+# it because Git Bash's python3 is often the Microsoft Store alias, which
+# prints "Python was not found" instead of running. Otherwise use the first
+# python3 or python on PATH that really runs Python 3.9+.
+python_works() {
+    "$1" -c 'import sys; sys.exit(0 if sys.version_info >= (3, 9) else 1)' >/dev/null 2>&1
+}
+HOST_PYTHON="${EXOCORTEX_PYTHON:-}"
+if [ -n "$HOST_PYTHON" ]; then
+    python_works "$HOST_PYTHON" || fail "EXOCORTEX_PYTHON is not a working Python 3.9+: $HOST_PYTHON"
+else
+    for python_name in python3 python; do
+        HOST_PYTHON="$(command -v "$python_name" 2>/dev/null || true)"
+        [ -n "$HOST_PYTHON" ] && python_works "$HOST_PYTHON" && break
+        HOST_PYTHON=""
+    done
+    [ -n "$HOST_PYTHON" ] || fail "python3 is required to validate the candidate (Python 3.9+; on Windows set EXOCORTEX_PYTHON or use scripts/windows.ps1, because the Microsoft Store alias does not run Python)"
+fi
 case "$HOST_PYTHON" in /*) ;; *) fail "python3 must resolve to an absolute host path" ;; esac
 SANITIZED_PATH="$(dirname "$HOST_PYTHON"):/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/opt/homebrew/bin"
 
@@ -373,17 +389,6 @@ RETIREMENTS="$TMP_ROOT/legacy-retirements.tsv"
 [ -f "$ADAPTER_MATRIX" ] || fail "template source is missing the provider-adapter matrix"
 run_candidate_python "$ADAPTER_GENERATOR" --check >/dev/null \
     || fail "generated provider adapters do not match the canonical 24-command registry"
-MODEL_REGISTRY_TOOL="$SOURCE_COPY/.exocortex/scripts/model_registry.py"
-[ -f "$MODEL_REGISTRY_TOOL" ] || fail "template source is missing the offline model-registry validator"
-run_candidate_python "$MODEL_REGISTRY_TOOL" validate-sources \
-    --project-root "$SOURCE_COPY" \
-    --sources .exocortex/model-source-registry.json >/dev/null \
-    || fail "model source registry failed structural validation"
-run_candidate_python "$MODEL_REGISTRY_TOOL" validate-catalog \
-    --project-root "$SOURCE_COPY" \
-    --sources .exocortex/model-source-registry.json \
-    --catalog .exocortex/model-routing-catalog.json >/dev/null \
-    || fail "model routing catalog failed structural validation"
 run_trusted_python - "$ADAPTER_MATRIX" > "$RETIREMENTS" <<'PY'
 import json, re, sys
 from pathlib import PurePosixPath
@@ -420,7 +425,8 @@ for item in legacy_items:
     if legacy in seen or not (
         re.fullmatch(r'\.agents/skills/[a-z0-9-]+/SKILL\.md', replacement)
         or re.fullmatch(r'\.claude/skills/[a-z0-9-]+/SKILL\.md', replacement)
-        or replacement in {'CLAUDE.md', '.cursor/rules/plan-orchestrate.mdc'}
+        or replacement == 'CLAUDE.md'
+        or (replacement == '' and re.fullmatch(r'\.cursor/rules/[0-9a-z-]+\.mdc', legacy))
     ):
         raise SystemExit('invalid legacy retirement mapping')
     seen.add(legacy)
@@ -447,6 +453,22 @@ MANIFEST=".exocortex/.install-manifest"
 manifest_get() {
     local key="$1 "
     [ -f "$MANIFEST" ] && awk -v k="$key" 'index($0,k)==1{print $2;exit}' "$MANIFEST" || true
+}
+
+# Fingerprints ("path sha256") of every installed-path file version the
+# template has committed. A file whose bytes match one of them is unmodified
+# template content even when this checkout has no manifest: a fresh clone, or
+# an install from before the manifest was committed. Such a file may be
+# replaced or retired; anything else is owner content and is preserved.
+TEMPLATE_HISTORY="$SOURCE_COPY/.exocortex/template-file-history.txt"
+
+is_shipped_bytes() {
+    local rel="$1" digest="$2" installed
+    installed="$(manifest_get "$rel")"
+    if [ -n "$installed" ] && [ "$digest" = "$installed" ]; then
+        return 0
+    fi
+    [ -f "$TEMPLATE_HISTORY" ] && grep -Fqx -- "$rel $digest" "$TEMPLATE_HISTORY"
 }
 
 record_manifest() {
@@ -493,8 +515,7 @@ retire_legacy_adapters() {
         fi
         current_hash="$(file_hash "$legacy")"
         current_mode="$(file_mode "$legacy")"
-        if [ -n "$installed_hash" ] \
-            && [ "$current_hash" = "$installed_hash" ] \
+        if is_shipped_bytes "$legacy" "$current_hash" \
             && [ "$current_mode" = "0644" ]; then
             rm -- "$legacy"
             echo "retired template-managed legacy adapter: $legacy"
@@ -753,7 +774,7 @@ safe_copy_file() {
     installed_hash="$(manifest_get "$target_file")"
     if [ "$current_hash" = "$source_hash" ]; then
         record_manifest "$target_file" "$source_hash"
-    elif [ -n "$installed_hash" ] && [ "$current_hash" = "$installed_hash" ]; then
+    elif is_shipped_bytes "$target_file" "$current_hash"; then
         assert_no_external_links "$target_file"
         copy_with_bound_mode "$source_file" "$target_file"
         record_manifest "$target_file" "$source_hash"
@@ -990,6 +1011,53 @@ fi
 # blanket-chmod helpers: that creates unreported mode-only target mutations and
 # turns intentionally non-executable compatibility helpers into executables.
 
+# Files the template used to ship but no longer does are retired when their
+# bytes are still exactly what the template shipped. Edited copies are kept,
+# reported, and left out of the manifest as owner content. Without this step a
+# file removed from the template lingers in every project indefinitely.
+unshipped_template_candidates() {
+    {
+        [ -f "$MANIFEST" ] && awk 'NF >= 2 && $1 !~ /^#/ { print $1 }' "$MANIFEST"
+        [ -f "$TEMPLATE_HISTORY" ] && awk 'NF >= 2 { print $1 }' "$TEMPLATE_HISTORY"
+    } | LC_ALL=C sort -u | while IFS= read -r rel; do
+        case "$rel" in
+            .exocortex/.version) continue ;;
+            .exocortex/*) ! is_data_relpath "${rel#.exocortex/}" || continue ;;
+            .agents/*|.cursor/*|.claude/skills/*|.github/skills/*) ;;
+            .github/copilot-instructions.md|AI_START_HERE.md|AGENTS.md|CLAUDE.md|.rules) ;;
+            *) continue ;;
+        esac
+        case "$rel" in /*|*..*) continue ;; esac
+        [ ! -e "$SOURCE_COPY/$rel" ] || continue
+        awk -v k="$rel" '$1 == k { found = 1; exit } END { exit !found }' "$MANIFEST_NEW" && continue
+        awk -F '\t' -v k="$rel" '$1 == k { found = 1; exit } END { exit !found }' "$RETIREMENTS" && continue
+        printf '%s\n' "$rel"
+    done
+}
+
+retire_unshipped_template_files() {
+    local rel current_hash dir
+    while IFS= read -r rel; do
+        [ -f "$rel" ] && [ ! -L "$rel" ] || continue
+        assert_safe_target_file_path "$rel"
+        current_hash="$(file_hash "$rel")"
+        if is_shipped_bytes "$rel" "$current_hash"; then
+            rm -- "$rel"
+            dir="$(dirname "$rel")"
+            while [ "$dir" != "." ] && rmdir "$dir" 2>/dev/null; do
+                dir="$(dirname "$dir")"
+            done
+            SAFE_ANCESTORS="$NL"
+            LAST_SAFE_REL=""
+            echo "retired template file no longer shipped: $rel"
+        else
+            echo "preserve modified file the template no longer ships: $rel"
+        fi
+    done < <(unshipped_template_candidates)
+}
+
+retire_unshipped_template_files
+
 GITIGNORE=.gitignore
 ensure_target_parent "$GITIGNORE"
 assert_safe_target_file_path "$GITIGNORE"
@@ -1019,7 +1087,6 @@ if ! grep -Fq '# BEGIN EXOCORTEX PROJECT DATA' "$GITIGNORE" 2>/dev/null; then
         echo '.exocortex/work-items/'
         echo '.exocortex/archive/'
         echo '.exocortex/hub/'
-        echo '.exocortex/.install-manifest'
         echo '.exocortex/.hub_enabled'
         echo '.exocortex/.hub_disabled'
         echo '.exocortex/SESSION_CONTEXT.local.md'
@@ -1037,7 +1104,7 @@ run_trusted_python - "$TARGET_ROOT/$GITIGNORE" <<'PYIGNORE'
 from pathlib import Path
 import sys
 path = Path(sys.argv[1])
-shared = ['.project-name', 'LESSONS.md', 'OPEN_DECISIONS.md', 'PROJECT_MEMORY.md', 'SESSION_CONTEXT.md', 'TODO.md', 'control/ACTIVE_WORK.md', 'control/ARCH_OVERVIEW.md', 'control/BACKLOG.md', 'control/BRANCH_POLICY.md', 'control/INTERRUPTS.md', 'control/REPO_ORGANIZATION_REPORT.md', 'control/REPO_STATE.md', 'control/ROADMAP.md', 'events/', 'events/*', 'events/*.md', 'planning/', 'subconscious_patterns.md']
+shared = ['.install-manifest', '.project-name', 'LESSONS.md', 'OPEN_DECISIONS.md', 'PROJECT_MEMORY.md', 'SESSION_CONTEXT.md', 'TODO.md', 'control/ACTIVE_WORK.md', 'control/ARCH_OVERVIEW.md', 'control/BACKLOG.md', 'control/BRANCH_POLICY.md', 'control/INTERRUPTS.md', 'control/REPO_ORGANIZATION_REPORT.md', 'control/REPO_STATE.md', 'control/ROADMAP.md', 'events/', 'events/*', 'events/*.md', 'planning/', 'subconscious_patterns.md']
 rules = {".exocortex/" + item for item in shared}
 rules.add("!.exocortex/events/.gitkeep")
 lines = path.read_bytes().decode("utf-8").splitlines(keepends=True)

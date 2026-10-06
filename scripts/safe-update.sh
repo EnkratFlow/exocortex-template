@@ -87,8 +87,24 @@ TRACKED_LEGACY_SESSION_CONTEXT_BACKUP=false
 
 [ -f "$TEMPLATE_SOURCE_ROOT/SHA256SUMS" ] && [ ! -L "$TEMPLATE_SOURCE_ROOT/SHA256SUMS" ] \
     || fail "template SHA256SUMS must be a regular non-symlink file"
-command -v python3 >/dev/null 2>&1 || fail "python3 is required to validate the candidate"
-HOST_PYTHON="$(command -v python3)"
+# EXOCORTEX_PYTHON names the interpreter explicitly; scripts/windows.ps1 sets
+# it because Git Bash's python3 is often the Microsoft Store alias, which
+# prints "Python was not found" instead of running. Otherwise use the first
+# python3 or python on PATH that really runs Python 3.9+.
+python_works() {
+    "$1" -c 'import sys; sys.exit(0 if sys.version_info >= (3, 9) else 1)' >/dev/null 2>&1
+}
+HOST_PYTHON="${EXOCORTEX_PYTHON:-}"
+if [ -n "$HOST_PYTHON" ]; then
+    python_works "$HOST_PYTHON" || fail "EXOCORTEX_PYTHON is not a working Python 3.9+: $HOST_PYTHON"
+else
+    for python_name in python3 python; do
+        HOST_PYTHON="$(command -v "$python_name" 2>/dev/null || true)"
+        [ -n "$HOST_PYTHON" ] && python_works "$HOST_PYTHON" && break
+        HOST_PYTHON=""
+    done
+    [ -n "$HOST_PYTHON" ] || fail "python3 is required to validate the candidate (Python 3.9+; on Windows set EXOCORTEX_PYTHON or use scripts/windows.ps1, because the Microsoft Store alias does not run Python)"
+fi
 HOST_BASH="$(command -v bash)"
 case "$HOST_PYTHON" in /*) ;; *) fail "python3 must resolve to an absolute host path" ;; esac
 case "$HOST_BASH" in /*) ;; *) fail "bash must resolve to an absolute host path" ;; esac
@@ -1141,6 +1157,7 @@ run_candidate_installer() {
             EXOCORTEX_FORCE_TAR_STAGE="${EXOCORTEX_FORCE_TAR_STAGE:-0}" \
             EXOCORTEX_TEST_MODE="${EXOCORTEX_TEST_MODE:-0}" \
             EXOCORTEX_TEST_INSTALL_FAULT_AFTER_COPIES="$install_fault" \
+            EXOCORTEX_PYTHON="$HOST_PYTHON" \
             EXOCORTEX_GIT_EXECUTABLE="$HOST_GIT_WIN" \
             EXOCORTEX_GIT_EXECUTABLE_SHA256="$HOST_GIT_SHA256" \
             "$HOST_BASH" "$TEMPLATE_ROOT/install.sh" "$(basename "$PROJECT_ROOT")"
