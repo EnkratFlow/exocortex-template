@@ -6,6 +6,41 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 ## [Unreleased]
 
+## [3.3.14] - 2026-10-06
+
+### Fixed
+
+- Commit `.exocortex/.install-manifest` with each project. It was ignored, so
+  a fresh clone treated every file changed between releases as user-modified:
+  a 3.3.12 clone left 38 files stale and blocked 25 on reconciliation.
+- Ship `.exocortex/template-file-history.txt`, fingerprints of every installed
+  file version the template has shipped. Matching files are stock even without
+  a manifest, so existing clones update cleanly.
+- Find Git Bash in Git for Windows and PortableGit locations or on PATH, never
+  WSL's bash, and explain that MinGit has none. Resolve a real Python 3.9+ on
+  Windows instead of the Microsoft Store alias and pass it to the installer
+  and updater through `EXOCORTEX_PYTHON`.
+- Clear inherited Git variables in the test suite so a pre-commit hook cannot
+  redirect or re-identify fixture repositories.
+
+### Changed
+
+- Retire template files the template no longer ships when their bytes are
+  unedited; keep and report edited copies.
+- Replace the model-routing policy with `.exocortex/control/ORCHESTRATION.md`,
+  the parent-judgment, delegation and cost rules only.
+
+### Removed
+
+- The expired model-routing catalog, source registry, their schemas,
+  `model_registry.py` and the work-item `route` command. The catalog had no
+  eligible models and could not select one.
+- The always-on Cursor rule `.cursor/rules/plan-orchestrate.mdc`.
+
+### Documentation
+
+- Explain `core.autocrlf` for Windows consumer projects.
+
 ## [3.3.13] - 2026-10-03
 
 ### Fixed
