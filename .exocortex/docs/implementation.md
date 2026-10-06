@@ -15,24 +15,17 @@ scripts/safe-update.sh                   guarded rehearsal and update wrapper
 .exocortex/
   AI_BOOTSTRAP.md                        command discovery and execution rules
   commands/*.json                        24 command specifications
-  model-source-registry.json             reviewed official-source inventory
-  model-routing-catalog.json             advisory normalized model facts
   control/
     DELIVERY_WORKFLOW.md                 minute-scale delivery lifecycle
-    MODEL_ROUTING.md                     capability/risk/cost routing
+    ORCHESTRATION.md                     right model at the right cost
     EXECUTOR_REGISTRY.json               generated protected project data
     EXTERNAL_SYNC_POLICY.json            generated protected project data
   schemas/
     local-delivery-envelope.schema.json  exact local-only delivery envelope
-    model-source-registry.schema.json    official-source contract
-    model-routing-catalog.schema.json    advisory catalog contract
-    model-observation.schema.json        normalized discovery evidence
-    model-availability.schema.json       current-surface availability
     update-reconciliation-plan.schema.json exact target convergence plan
   scripts/
     authority_guard.py                   executor and capability validation
     orchestrate_work_item.py             orientation and guarded transitions
-    model_registry.py                    offline freshness/discovery validation
     prepare_update_reconciliation.py     exact non-mutating plan preparation
     egress_guard.py                      staged destination-bound external action
     create_event.sh                      project-local narrative handoff/save
@@ -78,11 +71,6 @@ cryptographic proof of a person's identity. Completion also verifies the
 Human-UAT transition against its consumed one-time capability and finalized
 guarded transaction.
 
-The packaged model catalog has no eligible models or verified evaluation
-profiles. Raw availability, evaluation, and quarantine evidence remains
-protected under `.exocortex/local/model-routing/**`; a separately reviewed
-catalog admission is required before routing can select anything.
-
 ## Start every AI surface the same way
 
 Before any action:
@@ -91,7 +79,7 @@ Before any action:
 2. Read `.exocortex/AI_BOOTSTRAP.md`.
 3. Read `.exocortex/reference/MEMORY.md` and its required project files.
 4. Read `.exocortex/control/DELIVERY_WORKFLOW.md` and
-   `.exocortex/control/MODEL_ROUTING.md`.
+   `.exocortex/control/ORCHESTRATION.md`.
 5. Resolve live Git and reconcile generated context with exact work-item and
    event evidence.
 6. Declare `read_only`, `writer`, or `independent_reviewer`.

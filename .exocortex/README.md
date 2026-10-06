@@ -22,8 +22,8 @@ models and providers are interchangeable workers.
 - [**Event System**](docs/event-system.md) — Append-only narrative events
 - [**IDE Integration**](docs/IDE_INTEGRATION_GUIDE.md) — Provider adapters
 - [**Upgrade Manifest**](docs/UPGRADE_MANIFEST.md) — Code/data boundaries
-- [**Model Routing**](control/MODEL_ROUTING.md) — Source freshness,
-  quarantine, availability, and measured cost-per-success
+- [**Orchestration**](control/ORCHESTRATION.md) — Choosing the right model
+  at the right cost
 
 ### Development
 - [**Implementation Guide**](docs/implementation.md) — Installing and evolving

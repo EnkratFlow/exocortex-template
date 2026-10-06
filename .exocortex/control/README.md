@@ -42,9 +42,8 @@ This folder contains the files you use to control project direction, capture ide
 ### `DELIVERY_WORKFLOW.md`
 - Defines the minute-scale Kanban/SDLC lifecycle and its independent gates
 
-### `MODEL_ROUTING.md`
-- Defines source-backed capability, risk, availability, and cost-per-success routing
-- New catalog entries remain quarantined until reviewed and measured
+### `ORCHESTRATION.md`
+- Judgment rules for choosing the right model at the right cost, delegation, and review
 
 ### `END_SESSION_PROMPT.md`
 - Template prompt for triggering end-of-day workflow

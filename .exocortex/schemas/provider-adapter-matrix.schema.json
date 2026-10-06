@@ -273,7 +273,7 @@
           },
           "replacement": {
             "type": "string",
-            "pattern": "^([.]agents/skills/[a-z0-9-]+/SKILL[.]md|[.]claude/skills/[a-z0-9-]+/SKILL[.]md|[.]cursor/rules/plan-orchestrate[.]mdc|CLAUDE[.]md)$"
+            "pattern": "^([.]agents/skills/[a-z0-9-]+/SKILL[.]md|[.]claude/skills/[a-z0-9-]+/SKILL[.]md|CLAUDE[.]md|)$"
           }
         }
       }

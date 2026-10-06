@@ -119,7 +119,7 @@ unknown disclosure pattern exists.
 
 - Read [`AI_START_HERE.md`](../../AI_START_HERE.md) for authority and delivery
   rules.
-- Read [`MODEL_ROUTING.md`](../control/MODEL_ROUTING.md) for routing policy.
+- Read [`ORCHESTRATION.md`](../control/ORCHESTRATION.md) for model choice and delegation.
 - Read [`AI_INSTALLATION.md`](AI_INSTALLATION.md) before installation or
   update rehearsal.
 - Treat this page as stale whenever its date or evidence no longer matches live

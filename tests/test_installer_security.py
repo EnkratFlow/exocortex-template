@@ -45,7 +45,7 @@ PROTECTED_CONTROL = {
     "control/REPO_ORGANIZATION_REPORT.md",
 }
 DOWNSTREAM_LOCAL_DATA = {
-    "SESSION_CONTEXT.md.backup", "SESSION_CONTEXT.local.md", ".install-manifest",
+    "SESSION_CONTEXT.md.backup", "SESSION_CONTEXT.local.md",
     ".hub_enabled", ".hub_disabled", "control/EXECUTOR_REGISTRY.json",
     "control/EXTERNAL_SYNC_POLICY.json",
 }
