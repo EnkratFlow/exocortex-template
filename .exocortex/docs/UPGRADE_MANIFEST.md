@@ -13,18 +13,15 @@ The adapter code plane includes `.agents/skills`, `.claude/skills`, and
 `.cursor/skills`. Their 72 command-adapter files are generated from the 24 canonical JSON
 commands and validated before any install target mutation.
 
-The public model-routing code plane includes the source registry, reviewed
-routing catalog, schemas, validator, and provider-neutral routing policy.
-Those files contain normalized public facts and protocol logic only. They do
-not contain availability for a user's account, raw source responses,
-credentials, or provider-session state. A future reviewed catalog admission
-may contain only the aggregate evaluation status, counts, cost total,
-freshness window, and evidence digest needed for deterministic routing. Raw
-prompts, outputs, project context, and detailed evaluation records remain
-protected project data.
+`.exocortex/template-file-history.txt` records the bytes of every installed
+file version the template has shipped. A project file matching it is stock
+template content even when the project has no manifest, such as a fresh clone,
+so it can be updated or, once the template stops shipping it, retired. Files
+that match nothing are owner content and are preserved and reported.
 
-The packaged 3.2.0 catalog is advisory: all entries are candidates, with zero eligible models
-and zero verified evaluation profiles.
+The install manifest `.exocortex/.install-manifest` is committed with the
+project. It holds only paths and digests of public template files, never
+project data, and lets every clone tell stock files from edited ones.
 
 ### Data plane: protected project truth
 
@@ -71,8 +68,6 @@ The updater preserves already-tracked sidecars and reports them, while any index
 owner-approved action that must never be automated by installation or update.
 
 The `local/**` protection includes
-`.exocortex/local/model-routing/**` observations, availability, evaluations,
-and quarantine evidence, plus
 `.exocortex/local/update-reconciliation/**` reviewed objects and plans.
 Installation and ordinary update never create, copy, checksum, infer, or
 overwrite those paths.

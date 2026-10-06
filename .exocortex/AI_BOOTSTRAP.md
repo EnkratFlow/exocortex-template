@@ -158,7 +158,7 @@ batch mutation.
 
 ## Orchestration
 
-For multi-phase work, follow `.exocortex/control/MODEL_ROUTING.md`,
+For multi-phase work, follow `.exocortex/control/ORCHESTRATION.md`,
 `.exocortex/control/DELIVERY_WORKFLOW.md`, and the provider adapter when one is
 present.
 
@@ -175,14 +175,6 @@ present.
 - Announce route and ETA for visibility, not approval. Re-route when evidence,
   risk, tool access, or repeated failure shows a different tier is better.
 - Never require a named provider or permanently start at the highest tier.
-
-Source-backed model discovery is read-only and advisory. It covers configured
-official public sources only, never uses credentials, and quarantines newly
-observed models. The formal router may be used as an optional empirical
-verifier when its official-source, current-surface availability, and measured
-evaluation evidence are fresh and digest-bound. Its absence is not a human
-approval gate and does not replace parent judgment. See
-`.exocortex/control/MODEL_ROUTING.md`.
 
 The Cursor phase hook is reminder-only. It does not save, checkpoint, select a
 model, transition lifecycle state, or synchronize anything.

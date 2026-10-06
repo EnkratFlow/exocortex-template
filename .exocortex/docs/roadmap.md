@@ -6,7 +6,7 @@
 > behavior is defined by `README.md`, `AI_START_HERE.md`,
 > `.exocortex/provider-adapters.json`,
 > `.exocortex/control/DELIVERY_WORKFLOW.md`, and
-> `.exocortex/control/MODEL_ROUTING.md`. Every prospective item below requires
+> `.exocortex/control/ORCHESTRATION.md`. Every prospective item below requires
 > a separately refined and approved work item, and no external integration or
 > synchronization is automatic.
 

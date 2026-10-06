@@ -62,7 +62,7 @@ EXPECTED_LEGACY_RETIREMENTS = {
     },
     ".claude/commands/CLAUDE.md": "CLAUDE.md",
     **{
-        f".cursor/rules/{name}.mdc": ".cursor/rules/plan-orchestrate.mdc"
+        f".cursor/rules/{name}.mdc": ""
         for name in (
             "00-ide-model-router",
             "01-project-bootstrap",

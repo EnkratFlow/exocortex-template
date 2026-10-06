@@ -13,8 +13,6 @@
     "32-writer reservation race",
     "transition checkpoint idempotency and crash recovery",
     "release and writer reacquisition",
-    "fresh source-backed version-scoped availability, exact expiry, and measured cost-per-success routing",
-    "configured official-source purpose, retrieval digest, refresh planning, scoped discovery quarantine, conflict denial, and no automatic activation",
     "authorized inspection, immutable staging recovery, egress ordering, policy revocation, and audit-chain integrity",
     "fresh install, independently approved candidate digest, ancestor-symlink denial, and idempotency",
     "existing repository protected-path upgrade rehearsal",

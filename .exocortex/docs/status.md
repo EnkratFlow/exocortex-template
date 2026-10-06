@@ -1,6 +1,6 @@
 # Exocortex release status
 
-Last updated: 2026-10-03
+Last updated: 2026-10-06
 
 This is the living, human-readable maintainer view of the public template. It
 is release-scoped, not a downstream project's status page, approval record,
@@ -8,21 +8,21 @@ release attestation, or replacement for exact test and Git evidence.
 
 ## Published baseline
 
-- The previous reviewed published baseline is `v3.3.12` at peeled commit
-  `8047599571e5d0a316e032a2711de5de9f7928c9`.
-- The packaged candidate version is `3.3.13`. This tracked file does not prove a
+- The previous reviewed published baseline is `v3.3.13` at peeled commit
+  `6d96dc0d881213671f6392b2da53865820017ffa`.
+- The packaged candidate version is `3.3.14`. This tracked file does not prove a
   branch push, merge, annotated tag, immutable GitHub release, attested asset,
   installation, deployment, or template promotion.
 
 ## Candidate state
 
-Version 3.3.13 packages the shared native PowerShell and POSIX command
-launchers, bounded Python discovery, consolidated work evidence and reliable
-local saves. Routine Windows commands no longer need Bash or GitHub CLI.
-Installation and update prerequisites remain unchanged; Python is not bundled.
-Native Windows command tests and local macOS checks cover the implementation.
-The final release candidate still requires its own exact-commit CI, and a
-consumer's assistant session must be checked after that checkout is updated.
+Version 3.3.14 commits the install manifest with each project and ships a
+history of every installed file version, so a fresh clone updates without
+reconciliation and files the template stops shipping are retired. It removes
+the expired model-routing catalog and the always-on Cursor orchestration rule,
+and the Windows launcher now finds PortableGit Bash and a real Python. The
+macOS installer suite passes; native Windows launcher changes still need a
+run on Windows, and the final candidate requires its own exact-commit CI.
 
 | Area | State | Current objective |
 | --- | --- | --- |
@@ -49,11 +49,11 @@ consumer's assistant session must be checked after that checkout is updated.
 
 ## Publication gates and residual limitations
 
-Before version 3.3.13 may be used as a public installation or update source:
+Before version 3.3.14 may be used as a public installation or update source:
 
 1. Provision a separately installed, independently reviewed publication
    runtime outside the candidate root. Bind its executor-closure, checker,
-   Python, Git, and GitHub CLI SHA-256 digests; 3.3.13 cannot bootstrap trust
+   Python, Git, and GitHub CLI SHA-256 digests; 3.3.14 cannot bootstrap trust
    from its own new publisher or checker.
 2. Freeze one exact candidate and run the focused checks plus the complete
    Exocortex safety suite once.
@@ -107,7 +107,7 @@ unknown disclosure pattern exists.
 
 ## Local preparation boundary
 
-- The 3.3.13 metadata and integrity inventories are part of the candidate;
+- The 3.3.14 metadata and integrity inventories are part of the candidate;
   changing any candidate byte invalidates earlier evidence and requires a new
   exact-candidate verification and seal.
 - Complete safety evidence, independent review, and Human UAT must bind the
@@ -119,7 +119,7 @@ unknown disclosure pattern exists.
 
 - Read [`AI_START_HERE.md`](../../AI_START_HERE.md) for authority and delivery
   rules.
-- Read [`MODEL_ROUTING.md`](../control/MODEL_ROUTING.md) for routing policy.
+- Read [`ORCHESTRATION.md`](../control/ORCHESTRATION.md) for model choice and delegation.
 - Read [`AI_INSTALLATION.md`](AI_INSTALLATION.md) before installation or
   update rehearsal.
 - Treat this page as stale whenever its date or evidence no longer matches live

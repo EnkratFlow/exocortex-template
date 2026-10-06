@@ -135,8 +135,7 @@ require(
     "human_uat_pending",
     "Native Windows with Git for Windows and Python 3.9+",
     "clean isolated Git worktree",
-    "Source-backed model freshness",
-    "zero route-eligible models",
+    "the orchestration guide",
     "historical CLI result",
     "candidate CLI UAT",
     "four business-level envelopes",
@@ -273,33 +272,14 @@ forbid(
     r"Push and pull-request creation require another explicit approval",
 )
 require(
-    ".exocortex/control/MODEL_ROUTING.md",
+    ".exocortex/control/ORCHESTRATION.md",
     "Use the correct model for the job",
     "expected cost of a correct\noutcome",
     "Routine model selection is not a human approval gate",
     "same full routing judgment\nto each subagent",
     "one accountable parent and no delegate by default",
     "second only for a genuinely separate named discipline",
-    "Luna-class",
-    "Terra- or Sonnet-class",
-    "Sol- or\nOpus-class",
-    "Fable-class",
-    "optional empirical verifier",
-    "formal verifier unavailable",
-    "configured_official_sources_only",
-    "explicit_external_read",
-    "auto_activation=false",
-    "Absence from a complete listing means `not_observed`",
-    "A partial observation\nproduces no missing-model finding",
-    "Only `eligible` models can route",
-    "current_surface_session",
-    "--current-surface-session-id",
-    "at most 15",
-    "normative_model_pin=false",
-    "zero eligible models",
-    "discovery result binds the supplied normalized observation digests",
-    "Do not delegate `/save`",
-    "unchanged exact\n  candidate",
+    "nothing here expires",
 )
 require(
     ".exocortex/docs/UPGRADE_MANIFEST.md",
@@ -318,7 +298,6 @@ require(
     "unique private `0600` code-plane-only restore",
     "Reject every candidate-source symlink",
     "external hard-linked mutable",
-    "maximum 15-minute",
     "presence, bytes, and mode",
 )
 require(
@@ -383,8 +362,6 @@ require(
     "Existing paths are never overwritten",
     "project-specific value supplied and approved",
     "`events`, `control`",
-    "zero eligible models",
-    ".exocortex/local/model-routing/**",
     "apply_template_reconciliation",
 )
 require(
@@ -392,7 +369,6 @@ require(
     "Never pipe a remote installer into a shell",
     "Installation does not require an API key",
     "Native Windows is unsupported",
-    "model registry covers configured official sources only",
 )
 require(
     "CONTRIBUTING.md",
@@ -657,7 +633,7 @@ for relative in ("README.md", ".exocortex/docs/AI_INSTALLATION.md"):
     )
 for relative in (
     "README.md",
-    ".exocortex/control/MODEL_ROUTING.md",
+    ".exocortex/control/ORCHESTRATION.md",
     ".exocortex/docs/AI_INSTALLATION.md",
     ".exocortex/docs/UPGRADE_MANIFEST.md",
 ):
@@ -753,15 +729,9 @@ if not re.search(
 
 for required_integrity_path in (
     "FILEMODES",
-    ".exocortex/model-source-registry.json",
-    ".exocortex/model-routing-catalog.json",
-    ".exocortex/schemas/model-source-registry.schema.json",
-    ".exocortex/schemas/model-routing-catalog.schema.json",
-    ".exocortex/schemas/model-observation.schema.json",
-    ".exocortex/schemas/model-availability.schema.json",
     ".exocortex/schemas/update-reconciliation-plan.schema.json",
-    ".exocortex/scripts/model_registry.py",
     ".exocortex/scripts/prepare_update_reconciliation.py",
+    ".exocortex/template-file-history.txt",
     "scripts/check-public-release.py",
     "scripts/check-release-state.sh",
     "scripts/safe-update.sh",
@@ -818,19 +788,6 @@ if f"# What's New in {version} " not in whatsnew:
     FAILURES.append("WHATSNEW.md: packaged VERSION heading is missing")
 if historical_boundary >= 0 and "does not prove" not in whatsnew[:historical_boundary]:
     FAILURES.append("WHATSNEW.md: candidate publication boundary is missing")
-
-try:
-    catalog = json.loads(read(".exocortex/model-routing-catalog.json"))
-except json.JSONDecodeError:
-    FAILURES.append(".exocortex/model-routing-catalog.json: invalid JSON")
-else:
-    if any(
-        model.get("routing_status") == "eligible"
-        for model in catalog.get("models", [])
-    ):
-        FAILURES.append("model catalog: packaged candidate must have zero eligible models")
-    if any(model.get("evaluation_profiles") for model in catalog.get("models", [])):
-        FAILURES.append("model catalog: packaged candidate must have zero evaluation profiles")
 
 if FAILURES:
     for failure in FAILURES:

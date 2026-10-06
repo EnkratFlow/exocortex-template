@@ -16,7 +16,7 @@
     {
       "type": "read",
       "files": [
-        ".exocortex/control/MODEL_ROUTING.md",
+        ".exocortex/control/ORCHESTRATION.md",
         ".exocortex/control/DELIVERY_WORKFLOW.md"
       ],
       "description": "Read the existing routing and delivery rules; these remain authoritative."
@@ -29,7 +29,7 @@
     {
       "type": "ai",
       "action": "Draft the smallest useful orchestration plan in chat",
-      "context": "State the goal, repository, scope and exclusions, current evidence, bounded phases and dependencies, one accountable parent and write owner, proposed model routing with cost rationale, existing focused checks and expected duration, observable acceptance criteria, approval gates, and rollback. Match the detail to the task; do not impose a fixed collection of expert roles or test layers. Follow MODEL_ROUTING.md: select for capability, availability, privacy, reliability and expected total cost of a correct outcome, not advertised price alone. Include a user-configured local model when its demonstrated capabilities and available tools fit the work. Do not assume any model, endpoint, machine, credentials or worker service exists, and do not require a particular vendor. Keep host details and model configuration project-local. Use one parent and no delegate by default; propose independent bounded lanes only when they materially help. A proposed lane is not a spawned agent or a dispatched job. Identify unknown timing or capability honestly. Reuse existing checks; propose any new test design for approval before implementing it. Stop the plan at the next meaningful owner decision."
+      "context": "State the goal, repository, scope and exclusions, current evidence, bounded phases and dependencies, one accountable parent and write owner, proposed model routing with cost rationale, existing focused checks and expected duration, observable acceptance criteria, approval gates, and rollback. Match the detail to the task; do not impose a fixed collection of expert roles or test layers. Follow ORCHESTRATION.md: select for capability, availability, privacy, reliability and expected total cost of a correct outcome, not advertised price alone. Include a user-configured local model when its demonstrated capabilities and available tools fit the work. Do not assume any model, endpoint, machine, credentials or worker service exists, and do not require a particular vendor. Keep host details and model configuration project-local. Use one parent and no delegate by default; propose independent bounded lanes only when they materially help. A proposed lane is not a spawned agent or a dispatched job. Identify unknown timing or capability honestly. Reuse existing checks; propose any new test design for approval before implementing it. Stop the plan at the next meaningful owner decision."
     },
     {
       "type": "ai",

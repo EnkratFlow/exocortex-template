@@ -347,8 +347,8 @@ def collect(start: Path) -> dict:
                      "substantive": substantive})
     head_date = out["identity"]["head_commit_date"] or ""
     # Accept a trailing "Z": datetime.fromisoformat only learned that spelling in
-    # Python 3.11, and this template supports Python 3.9+. authority_guard.py,
-    # model_registry.py and prepare_update_reconciliation.py already normalize it
+    # Python 3.11, and this template supports Python 3.9+. authority_guard.py and
+    # prepare_update_reconciliation.py already normalize it
     # the same way; this collector was the one that did not.
     head_date_utc = (
         datetime.fromisoformat(head_date.replace("Z", "+00:00"))

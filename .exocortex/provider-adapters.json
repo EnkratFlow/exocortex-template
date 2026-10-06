@@ -421,19 +421,19 @@
     },
     {
       "path": ".cursor/rules/00-ide-model-router.mdc",
-      "replacement": ".cursor/rules/plan-orchestrate.mdc"
+      "replacement": ""
     },
     {
       "path": ".cursor/rules/01-project-bootstrap.mdc",
-      "replacement": ".cursor/rules/plan-orchestrate.mdc"
+      "replacement": ""
     },
     {
       "path": ".cursor/rules/10-context-budget.mdc",
-      "replacement": ".cursor/rules/plan-orchestrate.mdc"
+      "replacement": ""
     },
     {
       "path": ".cursor/rules/20-output-budget.mdc",
-      "replacement": ".cursor/rules/plan-orchestrate.mdc"
+      "replacement": ""
     }
   ],
   "windsurf_retirements": [
