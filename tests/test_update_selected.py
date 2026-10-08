@@ -2,6 +2,7 @@
 from pathlib import Path
 import hashlib
 import json
+import os
 import subprocess
 import sys
 import tempfile
@@ -137,6 +138,25 @@ class SelectedTests(unittest.TestCase):
         _,out=self.fake_run({}, {'id':'target-1'},self.backup)
         with self.assertRaises(update.UpdateError):update.receipt(out.replace('Rehearsal changed paths: 1','Rehearsal changed paths: 2'),self.backup)
         with self.assertRaises(update.UpdateError):update.receipt(out,self.base/'other-backups')
+
+    def test_launcher_archive_drive_translation_is_windows_only(self):
+        for drive in ('c','D'):
+            value=f'/{drive}/project space/backup.tar.gz'
+            self.assertEqual(update.launcher_archive_path(value,windows=True),f'{drive}:/project space/backup.tar.gz')
+            self.assertEqual(update.launcher_archive_path(value,windows=False),value)
+        for value in ('/tmp/backup.tar.gz','//server/share/backup.tar.gz','C:/backup.tar.gz','relative.tar.gz'):
+            self.assertEqual(update.launcher_archive_path(value,windows=True),value)
+
+    @unittest.skipUnless(os.name=='nt','Native Windows path containment')
+    def test_receipt_git_bash_archive_stays_inside_selected_backup(self):
+        _,out=self.fake_run({}, {'id':'target-1'},self.backup)
+        archive=self.backup/'preview.tar.gz'
+        native=str(archive)
+        bash='/'+native[0].lower()+native[2:].replace('\\','/')
+        out=out.replace('Backup: '+native,'Backup: '+bash)
+        self.assertEqual(Path(update.receipt(out,self.backup)['archive']),archive)
+        with self.assertRaisesRegex(update.UpdateError,'outside the selected backup root'):
+            update.receipt(out,self.base/'other-backups')
 
     def test_source_identity_fields_cannot_be_partial_or_redirected(self):
         for r in ({}, {'repository':'../repo','tag':'v1.0.0','commit':'a'*40,'asset':str(self.base/'SHA256SUMS')}):

@@ -296,13 +296,22 @@ def verify_source(source,apply=False):
     return root
 
 
+def launcher_archive_path(value,windows=None):
+    """Translate Git for Windows drive paths before native containment checks."""
+    if windows is None:windows=os.name=='nt'
+    if windows:
+        match=re.fullmatch(r'/([A-Za-z])(/.*)',value)
+        if match:return match[1]+':'+match[2]
+    return value
+
+
 def receipt(output,backup_root,applied=False,request_id=None):
     lines=output.splitlines()
     def only(prefix):
         rows=[x[len(prefix):] for x in lines if x.startswith(prefix)]
         if len(rows)!=1: raise UpdateError('Updater result is incomplete or ambiguous')
         return rows[0]
-    archive=absolute(only('Backup: '));backup=absolute(backup_root)
+    archive=absolute(launcher_archive_path(only('Backup: ')));backup=absolute(backup_root)
     if backup not in archive.parents: raise UpdateError('Recovery archive is outside the selected backup root')
     h=hashlib.sha256();total=0
     with local.safe(archive).open('rb') as f:
