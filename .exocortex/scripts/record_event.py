@@ -53,9 +53,17 @@ def record(root: Path, body: str, *, brief_id=None, brief_sha=None, save_id=None
 
     def replay(expected_request=None):
         raw = memory.decode(memory.read_bytes(stable_path))
-        header = raw.split('\n---', 1)[0]
-        hashes = [line for line in header.splitlines() if line.startswith('event_sha256: ')]
-        if len(hashes) != 1 or memory.digest(raw.replace(hashes[0]+'\n', '', 1).encode()) != hashes[0][14:]:
+        # Consumer repositories own their Git line-ending policy. A clone may
+        # turn the writer's LF event into CRLF without changing its content.
+        # Accept that conversion only if the complete normalized event still
+        # matches the original recorded digest; do not rewrite the saved file.
+        for serialized in (raw, raw.replace('\r\n', '\n')):
+            header = serialized.split('\n---', 1)[0]
+            hashes = [line for line in header.splitlines() if line.startswith('event_sha256: ')]
+            if len(hashes) == 1 and memory.digest(serialized.replace(hashes[0]+'\n', '', 1).encode()) == hashes[0][14:]:
+                raw = serialized
+                break
+        else:
             raise memory.MemoryError('Saved event changed; preserve it and reconcile before retrying')
         stored_task = memory.brief_scope(raw) or None
         if (unscoped and stored_task or brief_id and

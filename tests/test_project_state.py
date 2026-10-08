@@ -144,7 +144,9 @@ class ProjectTests(unittest.TestCase):
 
     def test_shared_history_push_clone_and_scoped_unfinished_notes(self):
         git(self.root, 'switch', '-c', 'unfinished')
-        source = record_event.record(self.root, '# Unfinished task\nImplementation is pending.\n')
+        body = '# Unfinished task\nImplementation is pending.\n'
+        save_id = '00000000-0000-4000-8000-000000000007'
+        source = record_event.record(self.root, body, save_id=save_id)
         event = source.read_text()
         self.assertNotIn(str(self.root), event)
         self.assertIn('work_scope:', event)
@@ -156,8 +158,13 @@ class ProjectTests(unittest.TestCase):
         git(self.root, 'remote', 'add', 'origin', str(remote))
         git(self.root, 'push', '-q', 'origin', 'unfinished')
         clone = self.base/'other computer'
-        git(self.root, 'clone', '-q', '--branch', 'unfinished', str(remote), str(clone))
-        self.assertEqual((clone/source.relative_to(self.root)).read_bytes(), source.read_bytes())
+        git(self.root, 'clone', '-q', '-c', 'core.autocrlf=true', '--branch', 'unfinished', str(remote), str(clone))
+        cloned_event = clone/source.relative_to(self.root)
+        self.assertIn(b'\r\n', cloned_event.read_bytes())
+        self.assertEqual(cloned_event.read_text(), source.read_text())
+        before = cloned_event.read_bytes()
+        self.assertEqual(record_event.record(clone, body, save_id=save_id), cloned_event)
+        self.assertEqual(cloned_event.read_bytes(), before)
         git(clone, 'switch', '-c', 'review')
         memory.apply(clone)
         context = (clone/memory.CONTEXT).read_text()
@@ -165,6 +172,9 @@ class ProjectTests(unittest.TestCase):
         self.assertIn('not proof of merged or deployed changes', context)
         self.assertNotIn(str(clone), context)
         self.assertEqual(memory.check(clone)['status'], 'fresh')
+        cloned_event.write_bytes(before.replace(b'Implementation is pending.', b'Implementation is complete.'))
+        with self.assertRaisesRegex(ValueError, 'Saved event changed'):
+            record_event.record(clone, body, save_id=save_id)
 
     def test_dirty_save_is_allowed_and_portable_metadata_has_no_paths(self):
         (self.root/'unfinished.txt').write_text('Unfinished fixture')
