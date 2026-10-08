@@ -171,6 +171,7 @@ class Windows(Commands):
 
     def test_native_discovery_repeat_no_bash_gh_or_git(self):
         # PATH has Python and Windows only, not Git for Windows/Bash/gh.
+        before = self.snapshot()
         env = dict(self.env, PATH=str(Path(sys.executable).parent) + ';' + os.environ['SystemRoot'] + '\\System32')
         launcher = self.quote(self.scripts / 'run_exocortex.ps1')
         shell = shutil.which(os.environ.get('EXOCORTEX_TEST_POWERSHELL', 'powershell.exe'))
@@ -184,7 +185,9 @@ class Windows(Commands):
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn('project_root', result.stdout)
         self.assertIn('café', result.stdout)
-        self.assertNotIn('__pycache__', str(self.snapshot()))
+        # Compare files and mtimes, not their string representation: source code
+        # legitimately mentions __pycache__ as an excluded directory.
+        self.assertEqual(before, self.snapshot())
 
     def test_native_explicit_missing_python_stops(self):
         result = self.ps('& ' + self.quote(self.scripts / 'run_exocortex.ps1') + ' brief\nexit $LASTEXITCODE\n',

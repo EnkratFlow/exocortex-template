@@ -27,7 +27,7 @@ def run(args,root):
 
 def write(path,value):
     path.parent.mkdir(parents=True,exist_ok=True)
-    path.write_text(json.dumps(value)+'\n')
+    path.write_bytes((json.dumps(value)+'\n').encode('utf-8'))
 
 
 class IntegrationTests(unittest.TestCase):
@@ -38,11 +38,27 @@ class IntegrationTests(unittest.TestCase):
                 name=row.split('  ',1)[1];dest=source/name;dest.parent.mkdir(parents=True,exist_ok=True)
                 shutil.copy2(ROOT/name,dest)
             target=fixture.new_target(base,'target')
-            result=fixture.install(source,target)
-            self.assertEqual(result.returncode,0,result.stderr)
+            run(['git','config','core.autocrlf','false'],target)
+            if os.name=='nt':
+                # Use the real native launcher, which resolves Git Bash and
+                # Python. The POSIX installer fixture may instead find WSL bash
+                # and intentionally omits Windows process-discovery variables.
+                powershell=shutil.which('pwsh') or shutil.which('powershell.exe')
+                self.assertIsNotNone(powershell,'Native PowerShell launcher required')
+                home=base/'fixture home';home.mkdir()
+                temporary=base/'fixture temporary';temporary.mkdir()
+                env={key:os.environ[key] for key in ('PATH','SystemRoot','WINDIR','COMSPEC','PATHEXT',
+                    'EXOCORTEX_BASH','ProgramFiles','ProgramFiles(x86)','ProgramW6432',
+                    'LOCALAPPDATA','USERPROFILE') if key in os.environ}
+                env.update(HOME=str(home),TMP=str(temporary),TEMP=str(temporary),TMPDIR=str(temporary),
+                    EXOCORTEX_PYTHON=sys.executable,PYTHONDONTWRITEBYTECODE='1')
+                result=subprocess.run([powershell,'-NoProfile','-ExecutionPolicy','Bypass','-File',str(source/'scripts/windows.ps1'),
+                    'install','fixture'],cwd=target,env=env,capture_output=True,text=True,timeout=240)
+            else:
+                result=fixture.install(source,target)
+            self.assertEqual(result.returncode,0,'Installer stdout:\n'+result.stdout+'\nInstaller stderr:\n'+result.stderr)
             run(['git','config','user.name','Fixture'],target)
             run(['git','config','user.email','fixture@example.invalid'],target)
-            run(['git','config','core.autocrlf','false'],target)
             run(['git','symbolic-ref','HEAD','refs/heads/fixture-update'],target)
             memory=target/'.exocortex/PROJECT_MEMORY.md';memory.write_bytes(b'# Fictional handwritten memory\nRetain this.\n')
             script=target/'.exocortex/scripts/read_memory_stack.sh';script.write_bytes(b'#!/bin/bash\necho old-fixture\n')

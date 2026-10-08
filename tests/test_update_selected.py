@@ -18,7 +18,8 @@ def git(root,*args):
     return subprocess.check_output(['git','-C',str(root),'-c','core.hooksPath='+str(root/'.no-hooks'),'-c','user.name=Fixture','-c','user.email=fixture@example.invalid',*args],stderr=subprocess.DEVNULL,text=True).strip()
 
 
-def write(path,text):path.parent.mkdir(parents=True,exist_ok=True);path.write_text(text)
+# Integrity fixtures bind explicit UTF-8/LF bytes on every platform.
+def write(path,text):path.parent.mkdir(parents=True,exist_ok=True);path.write_bytes(text.encode('utf-8'))
 
 
 class SelectedTests(unittest.TestCase):
@@ -169,14 +170,14 @@ class SelectedTests(unittest.TestCase):
         installed = self.first/'.exocortex/.install-manifest'
         for rel in update.PUBLIC_TEMPLATE_FILES:
             write(self.first/rel, content.decode())
-        installed.write_text(installed.read_text()+''.join(rel+' '+checksum+'\n' for rel in sorted(update.PUBLIC_TEMPLATE_FILES)))
+        write(installed,installed.read_text()+''.join(rel+' '+checksum+'\n' for rel in sorted(update.PUBLIC_TEMPLATE_FILES)))
         original = update.file_bytes
         def read_manifest(path, *args):
             if path == ROOT/'SHA256SUMS': return public_manifest
             return original(path, *args)
         with patch.object(update, 'file_bytes', side_effect=read_manifest), patch.object(update, 'invoke', side_effect=self.fake_run):
             plan = self.execute(self.create())
-            self.assertEqual(plan['targets'][0]['state'], 'ready')
+            self.assertEqual(plan['targets'][0]['state'], 'ready', plan['targets'][0])
             self.assertEqual(self.calls, [('target-1', False)])
             write(self.first/'.exocortex/key-registry.json', 'Changed fictional example\n')
             with self.assertRaisesRegex(update.UpdateError, 'Modified public-template example'):
@@ -227,7 +228,9 @@ class SelectedTests(unittest.TestCase):
             captured.update(kwargs['env'])
             process=unittest.mock.Mock(returncode=0)
             return process
-        with patch.dict(update.os.environ,{**allowed,**excluded},clear=True), patch.object(update.subprocess,'Popen',side_effect=launch):
+        # Exercise the environment handoff with a mocked process; discovery is
+        # independently tested and must not depend on the fictional PATH.
+        with patch.dict(update.os.environ,{**allowed,**excluded},clear=True), patch.object(update,'launch_command',return_value=['fictional-launcher']), patch.object(update.subprocess,'Popen',side_effect=launch):
             code,output=update.invoke(p['source'],p['targets'][0],self.backup)
         self.assertEqual(code,0)
         for key,value in allowed.items():self.assertEqual(captured[key],value)
@@ -244,7 +247,7 @@ class SelectedTests(unittest.TestCase):
         manifest=self.source/'SHA256SUMS'
         rows=[r for r in manifest.read_text().splitlines() if not r.endswith('  '+rel)]
         rows.append(hashlib.sha256(text.encode()).hexdigest()+'  '+rel)
-        manifest.write_text('\n'.join(rows)+'\n')
+        write(manifest,'\n'.join(rows)+'\n')
         self.digest=hashlib.sha256(manifest.read_bytes()).hexdigest()
 
     def test_three_way_customization_classification(self):
