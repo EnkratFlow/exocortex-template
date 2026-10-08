@@ -31,6 +31,9 @@ jobs:
       - name: Verify generic task briefs and scoped saves
         shell: pwsh
         run: python tests/test_brief_work.py
+      - name: Verify command launchers and runtime
+        shell: pwsh
+        run: python tests/test_command_runtime.py
       - name: Verify opt-in release awareness without network
         shell: pwsh
         run: python tests/test_release_awareness.py
