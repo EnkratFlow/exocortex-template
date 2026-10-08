@@ -274,14 +274,21 @@ class BriefTests(unittest.TestCase):
         git(self.root, 'init', '-q', '-b', 'main')
         (self.root/'.gitignore').write_text('.exocortex/local/\n')
         s = self.selected()
-        event = record_event.record(self.root, '# Unfinished task', save_id=str(uuid.uuid4()))
+        save_id = str(uuid.uuid4())
+        event = record_event.record(self.root, '# Unfinished task', save_id=save_id)
         git(self.root, 'add', '.gitignore', '.exocortex/planning', '.exocortex/events')
         git(self.root, 'commit', '-qm', 'Share task history only')
         with tempfile.TemporaryDirectory() as other:
             clone = Path(other).resolve()/'clone'
-            git(self.root, 'clone', '-q', str(self.root), str(clone))
+            git(self.root, 'clone', '-q', '-c', 'core.autocrlf=true', str(self.root), str(clone))
             self.assertEqual(briefs.status(clone, 'example')['sha256'], s['sha256'])
-            self.assertEqual((clone/event.relative_to(self.root)).read_bytes(), event.read_bytes())
+            cloned_event = clone/event.relative_to(self.root)
+            before = cloned_event.read_bytes()
+            self.assertIn(b'\r\n', before)
+            self.assertEqual(cloned_event.read_text(), event.read_text())
+            self.assertEqual(record_event.record(clone, '# Unfinished task', save_id=save_id,
+                brief_id='example', brief_sha=s['sha256']), cloned_event)
+            self.assertEqual(cloned_event.read_bytes(), before)
             self.assertEqual(briefs.context(clone)['status'], 'selection_required')
             self.assertFalse((clone/briefs.ACTIVE).exists())
 
