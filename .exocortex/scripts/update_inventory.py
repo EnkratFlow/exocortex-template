@@ -27,6 +27,9 @@ sys.dont_write_bytecode = True
 _spec = importlib.util.spec_from_file_location('exocortex_project_state', Path(__file__).with_name('project_state.py'))
 state = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(state)
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import update_policy
+
 Unavailable = state.Unavailable
 run = state.run
 ordinary = state.ordinary
@@ -138,6 +141,13 @@ def local_record(path, latest, template):
             result.update(status='Needs attention', reason='Uncommitted work; version comparison is informational')
     except (Unavailable, OSError, UnicodeError):
         result.update(status='Needs attention', reason='Git state unavailable or folder is not a Git repository')
+    try:
+        rules=update_policy.read(Path(path).resolve())
+        result['update_policy']=rules
+        if rules['mode']!='standard' or rules['protected_paths']:
+            result.update(status='Needs attention',reason='Update policy requires separate review; not eligible for batch update')
+    except (update_policy.PolicyError,OSError,ValueError):
+        result.update(status='Needs attention',reason='Update policy unavailable or unsafe; separate review required',update_policy={'mode':'unavailable'})
     return result
 
 

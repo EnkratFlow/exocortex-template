@@ -236,6 +236,123 @@ class SelectedTests(unittest.TestCase):
         self.assertNotEqual(captured['TMP'],excluded['TMP'])
         self.assertEqual(captured['PYTHONDONTWRITEBYTECODE'],'1')
 
+    def set_policy(self,root,mode='standard',paths=None):
+        write(root/update.policy.POLICY,json.dumps({'mode':mode,'protected_paths':paths or []}))
+
+    def candidate_file(self,text):
+        rel='.exocortex/scripts/example.py';write(self.source/rel,text)
+        manifest=self.source/'SHA256SUMS'
+        rows=[r for r in manifest.read_text().splitlines() if not r.endswith('  '+rel)]
+        rows.append(hashlib.sha256(text.encode()).hexdigest()+'  '+rel)
+        manifest.write_text('\n'.join(rows)+'\n')
+        self.digest=hashlib.sha256(manifest.read_bytes()).hexdigest()
+
+    def test_three_way_customization_classification(self):
+        cases=[('original\n','original\n',None,False),
+               ('custom\n','original\n','local-only',True),
+               ('original\n','upstream\n','upstream-only',False),
+               ('upstream\n','upstream\n','converged',False),
+               ('custom\n','upstream\n','conflict',True),
+               (None,'upstream\n','deleted',True)]
+        for number,(current,incoming,kind,blocked) in enumerate(cases):
+            with self.subTest(kind=kind):
+                path=self.first/'.exocortex/scripts/example.py'
+                if current is None:path.unlink()
+                else:write(path,current)
+                self.candidate_file(incoming)
+                p=self.create(pid='case-'+str(number));row=p['targets'][0]
+                report=row['initial']['customization']
+                self.assertEqual(report['requires_review'],blocked)
+                files=[x for x in report['files'] if x['path']=='.exocortex/scripts/example.py']
+                self.assertEqual(files[0]['classification'] if files else None,kind)
+                self.assertEqual(row['state']=='blocked',blocked)
+
+    def test_policy_modes_and_declared_external_paths_block_without_reading(self):
+        for number,(mode,paths) in enumerate([('excluded',[]),('review_only',[]),('standard',['firebase.json','docs/SDLC.md'])]):
+            self.set_policy(self.first,mode,paths)
+            external=self.first/'firebase.json';write(external,'private deployment details')
+            original=update.file_bytes
+            def checked(path,*args):
+                self.assertNotEqual(path,external)
+                return original(path,*args)
+            with patch.object(update,'file_bytes',side_effect=checked),patch.object(update,'invoke',side_effect=AssertionError('must not invoke')):
+                p=self.create(pid='policy-'+str(number));p=self.execute(p)
+            self.assertEqual(p['targets'][0]['state'],'blocked')
+            self.assertEqual(p['targets'][0]['initial']['customization']['policy']['mode'],mode)
+
+    def test_firebase_presence_alone_is_not_customization(self):
+        write(self.first/'firebase.json','fictional unrelated project configuration')
+        p=self.create()
+        self.assertFalse(p['targets'][0]['initial']['customization']['requires_review'])
+
+    def test_policy_change_after_preview_blocks_apply(self):
+        p=self.create()
+        with patch.object(update,'invoke',side_effect=self.fake_run):p=self.execute(p)
+        self.set_policy(self.first,'excluded')
+        with patch.object(update,'invoke',side_effect=AssertionError('must not invoke')):
+            p=self.execute(p,'apply',{'target-1':self.auth()})
+        self.assertEqual(p['targets'][0]['state'],'blocked')
+        self.assertIn('changed since selection',p['targets'][0]['reason'])
+
+    def test_policy_removal_or_edit_after_selection_blocks_preview(self):
+        for number,remove in enumerate((True,False)):
+            self.set_policy(self.first)
+            p=self.create(pid='drift-'+str(number))
+            path=self.first/update.policy.POLICY
+            if remove:path.unlink()
+            else:write(path,json.dumps({'mode':'standard','protected_paths':[],'reason':'changed'}))
+            with patch.object(update,'invoke',side_effect=AssertionError('must not invoke')):p=self.execute(p)
+            self.assertEqual(p['targets'][0]['state'],'blocked')
+
+    def test_policy_change_during_source_verification_blocks_invocation(self):
+        p=self.create()
+        def verify(*args,**kwargs):self.set_policy(self.first,'excluded')
+        with patch.object(update,'verify_source',side_effect=verify),patch.object(update,'invoke',side_effect=AssertionError('must not invoke')):
+            p=self.execute(p)
+        self.assertEqual(p['targets'][0]['state'],'blocked')
+
+    def test_mixed_customized_batch_allows_only_normal_target(self):
+        other=self.make_target('normal');self.candidate_file('upstream\n')
+        write(self.first/'.exocortex/scripts/example.py','custom\n')
+        p=self.create([self.first,other])
+        with patch.object(update,'invoke',side_effect=self.fake_run):p=self.execute(p)
+        self.assertEqual([x['state'] for x in p['targets']],['blocked','ready'])
+        self.assertEqual(self.calls,[('target-2',False)])
+
+    def test_deeply_nested_policy_blocks_only_its_target(self):
+        other=self.make_target('normal')
+        write(self.first/update.policy.POLICY,'['*1100+'0'+']'*1100)
+        p=self.create([self.first,other])
+        with patch.object(update,'invoke',side_effect=self.fake_run):p=self.execute(p)
+        self.assertEqual([row['state'] for row in p['targets']],['blocked','ready'])
+        self.assertEqual(self.calls,[('target-2',False)])
+
+    def test_malformed_and_linked_policy_fail_closed(self):
+        path=self.first/update.policy.POLICY
+        for number,text in enumerate(['{}','{"mode":"standard","protected_paths":["../escape"]}',
+            '{"mode":"standard","protected_paths":[".env"]}',
+            '{"mode":"standard","protected_paths":[".exocortex/PROJECT_MEMORY.md"]}',
+            '{"mode":"standard","mode":"excluded","protected_paths":[]}']):
+            write(path,text);p=self.create(pid='invalid-'+str(number))
+            self.assertEqual(p['targets'][0]['state'],'blocked')
+        path.unlink();other=self.base/'policy.json';write(other,'{}');path.symlink_to(other)
+        p=self.create(pid='linked');self.assertEqual(p['targets'][0]['state'],'blocked')
+        path.unlink();update.os.link(other,path)
+        p=self.create(pid='hardlinked');self.assertEqual(p['targets'][0]['state'],'blocked')
+
+    def test_project_gitignore_and_template_ci_are_not_installed_file_conflicts(self):
+        report=update.policy.compare({}, {'.gitignore':{'sha256':'a'*64}},
+            {'.gitignore':'b'*64,'.github/workflows/test.yml':'c'*64},
+            {'mode':'standard','protected_paths':[]})
+        self.assertEqual(report['files'],[])
+        self.assertFalse(report['requires_review'])
+
+    def test_unknown_baseline_is_structured_and_requires_review(self):
+        report=update.policy.compare({}, {'.exocortex/scripts/example.py':{'sha256':'a'*64}},
+            {'.exocortex/scripts/example.py':'b'*64}, {'mode':'standard','protected_paths':[]})
+        self.assertEqual(report['files'][0]['classification'],'unknownbaseline')
+        self.assertTrue(report['requires_review'])
+
     def test_zero_change_preview_is_current_not_applied(self):
         p=self.create();self.applied=True
         with patch.object(update,'invoke',side_effect=self.fake_run):p=self.execute(p)

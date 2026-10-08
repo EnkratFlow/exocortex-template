@@ -3,6 +3,8 @@ import base64
 from contextlib import redirect_stdout
 import importlib.util
 import io
+import itertools
+import sys
 import json
 import os
 from pathlib import Path
@@ -18,6 +20,30 @@ spec.loader.exec_module(inventory)
 
 
 class InventoryTests(unittest.TestCase):
+    def test_private_policy_visible_without_application_reads(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp).resolve();folder=root/'.exocortex/local';folder.mkdir(parents=True)
+            (folder/'update-policy.json').write_text(json.dumps({'mode':'excluded','protected_paths':['firebase.json'],'reason':'private rationale'}))
+            row=inventory.local_record(root,'3.3.14','example/template')
+            self.assertEqual(row['update_policy']['mode'],'excluded')
+            self.assertEqual(row['status'],'Needs attention')
+            self.assertNotIn('private rationale',json.dumps(row))
+
+    def test_deeply_nested_policy_is_attention_not_inventory_failure(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp).resolve();folder=root/'.exocortex/local';folder.mkdir(parents=True)
+            (folder/'update-policy.json').write_text('['*1100+'0'+']'*1100)
+            row=inventory.local_record(root,'3.3.14','example/template')
+            self.assertEqual(row['update_policy']['mode'],'unavailable')
+            self.assertEqual(row['status'],'Needs attention')
+
+    def test_canonical_import_orders_in_fresh_processes(self):
+        for names in itertools.permutations(('update_inventory','release_awareness','update_selected')):
+            with self.subTest(order=names):
+                code="import sys; sys.dont_write_bytecode=True; sys.path.insert(0,sys.argv[1]); " + '; '.join('import '+name for name in names)
+                result=subprocess.run([sys.executable,'-c',code,str(ROOT/'.exocortex/scripts')],capture_output=True,text=True,timeout=20)
+                self.assertEqual(result.returncode,0,result.stderr)
+
     def test_numeric_versions(self):
         self.assertEqual(inventory.status('3.3.9', '3.3.11'), 'Update available')
         self.assertEqual(inventory.status('3.3.11', '3.3.11'), 'Current')

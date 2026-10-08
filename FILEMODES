@@ -245,6 +245,7 @@
 0644  .exocortex/scripts/tests/test_event_tooling.sh
 0644  .exocortex/scripts/tests/test_orchestration_protocol.sh
 0644  .exocortex/scripts/update_inventory.py
+0644  .exocortex/scripts/update_policy.py
 0644  .exocortex/scripts/update_selected.py
 0755  .exocortex/scripts/upgrade-exocortex.sh
 0644  .exocortex/skills/exocortex-reminder/SETUP.md

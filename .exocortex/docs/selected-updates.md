@@ -98,3 +98,52 @@ configuration or notes just to force an update through.
 Windows uses the shipped PowerShell launcher with Git for Windows; native Windows
 validation runs in CI. No schedule, background service or consumer update is enabled
 by installing this helper.
+
+## Customized repositories are separate review targets
+
+A repository with local changes to managed Exocortex instructions, commands or
+scripts is blocked before preview or apply. The coordinator reports relative
+paths, hashes and a three-way classification against the installed manifest and
+selected incoming manifest: `local-only`, `upstream-only`, `converged`, `conflict`,
+`deleted` (locally removed), or `unknownbaseline`. Unchanged files are omitted.
+Local-only changes, conflicts, local deletions and unknown baselines require
+separate review. Converged bytes already match the incoming template and are
+allowed, as are upstream-only changes. This compares contents; the existing
+updater still verifies file modes and the complete candidate. No contents are
+included in this report. Unclassified local code is blocked without opening it,
+with an actionable path in the reason. Protected memory and runtime data are
+excluded from this comparison and remain preserved by the updater. Template CI
+workflows are not installed. The project-owned root `.gitignore` is not compared
+with the template repository's `.gitignore`; the installer only appends its managed
+ignore blocks. Declare that path in policy if it needs separate project review.
+
+A project owner may separately create the private, machine-local policy
+`.exocortex/local/update-policy.json`:
+
+```json
+{
+  "mode": "review_only",
+  "protected_paths": ["firebase.json", "docs/SDLC.md"],
+  "reason": "Project-specific deployment and delivery workflow"
+}
+```
+
+`mode` must be `standard`, `review_only` or `excluded`; `protected_paths` is
+required and contains up to 100 unique exact relative paths, without globs,
+traversal, credential paths or protected memory/runtime paths. The optional
+`reason` is private prose and is not copied into inventory or plan output.
+Absent policy defaults to standard inspection. Both `review_only` and `excluded`
+block batch execution. Any declared protected path also requires separate review,
+even in standard mode. Paths can describe deployment or SDLC customizations
+outside Exocortex; their contents are never opened by this policy check, and a
+path need not currently exist. Firebase presence alone does not imply a conflict.
+The coordinator cannot infer the semantics of every application configuration.
+
+Selection binds the policy's presence and exact bytes plus the customization
+report. A changed, removed, malformed or linked policy fails closed before
+execution. The coordinator never creates policies, offers no force override,
+and never interprets a reconciliation capability as approval to sweep a custom
+project into an ordinary batch. Resolve such projects through a separately
+reviewed project-specific update. Other independently selected standard projects
+may continue. Inventory displays declared policy state; it does not perform the
+incoming-template comparison or certify update readiness.

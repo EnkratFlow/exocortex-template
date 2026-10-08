@@ -30,6 +30,7 @@ class Commands(unittest.TestCase):
         self.scripts.mkdir(parents=True)
         for name in ('command_runtime.py', 'run_exocortex.ps1', 'run_exocortex.sh', 'refresh_rollups.py',
                      'project_state.py', 'brief_work.py', 'release_awareness.py', 'update_inventory.py',
+                     'update_policy.py', 'prepare_update_reconciliation.py',
                      'record_event.py', 'onboard_evidence.py', 'get_shortterm_memory.py',
                      'get_longterm_memory.py', 'get_subconscious_memory.py', 'drill_memory.py', 'check_keys.py'):
             shutil.copy2(SCRIPTS / name, self.scripts / name)

@@ -23,6 +23,7 @@ sys.dont_write_bytecode = True
 import project_state as state
 import release_awareness as local
 import prepare_update_reconciliation as reconciliation
+import update_policy as policy
 
 BASE = '.exocortex/local/update-plans'
 SHA = re.compile(r'[0-9a-f]{64}\Z')
@@ -109,15 +110,18 @@ def public_template_digest(path, relative):
     return expected
 
 
-def managed_snapshot(root):
+def managed_snapshot(root, details=False):
     """Hash the bounded code plane, including additions; never inspect data plane."""
     manifest=file_bytes(root/'.exocortex/.install-manifest')
+    baseline={}
     declared={'.exocortex/.install-manifest','.exocortex/.version',*reconciliation.SURFACE_PATHS}
     for row in manifest.decode('utf-8').splitlines():
         if not row.strip() or row.startswith('#'):continue
         fields=row.split()
         if len(fields)!=2: raise UpdateError('Installed manifest is malformed')
-        rel=fields[0]
+        rel=policy.relative(fields[0])
+        if rel in baseline:raise UpdateError('Duplicate installed manifest path')
+        baseline[rel]=sha(fields[1])
         p=Path(rel)
         if p.is_absolute() or '..' in p.parts or '\\' in rel: raise UpdateError('Unsafe installed manifest')
         declared.add(rel)
@@ -148,17 +152,33 @@ def managed_snapshot(root):
         raw=file_bytes(p);total+=len(raw)
         if total>64*1024*1024:raise UpdateError('Managed code exceeds inspection bound')
         result[rel]={'sha256':digest(raw),'mode':stat.S_IMODE(p.stat().st_mode)}
-    return digest(canonical(result))
+    return (digest(canonical(result)),baseline,result) if details else digest(canonical(result))
 
 
-def target(root):
+def candidate_hashes(source):
+    raw=file_bytes(Path(source['path'])/'SHA256SUMS',1024*1024)
+    if digest(raw)!=source['manifest_sha256']:raise UpdateError('Candidate manifest changed')
+    result={}
+    for row in raw.decode('utf-8').splitlines():
+        fields=row.split('  ')
+        if len(fields)!=2:raise UpdateError('Malformed candidate manifest')
+        rel=policy.relative(fields[1])
+        if rel in result or len(result)>=4000:raise UpdateError('Duplicate or oversized candidate manifest')
+        result[rel]=sha(fields[0])
+    return result
+
+
+def target(root,incoming=None):
     root=absolute(root)
     info=state.repository(root)
     if Path(info['root'])!=root: raise UpdateError('Select an exact repository root')
     version,present=state.local_version(root)
     if not present or version is None: raise UpdateError('Installed Exocortex version unavailable')
-    return {'path':str(root),'project_id':info['project_id'],'common_dir':info['common_dir'],
-            'binding':state.context_binding(root),'version':version,'managed_sha256':managed_snapshot(root)}
+    rules=policy.read(root)
+    managed,baseline,current=managed_snapshot(root,details=True)
+    comparison=policy.compare(baseline,current,incoming or {},rules)
+    return {'customization':comparison,'path':str(root),'project_id':info['project_id'],'common_dir':info['common_dir'],
+            'binding':state.context_binding(root),'version':version,'managed_sha256':managed}
 
 
 def plan_path(root,pid): return local.safe(Path(root)/BASE/(identifier(pid)+'.json'))
@@ -200,16 +220,20 @@ def create(root,pid,template,candidate_digest,backup_root,targets,account_scope,
     if not source.is_dir() or not independent(source,backup): raise UpdateError('Source and backup root must be separate')
     if not isinstance(account_scope,str) or not 1<=len(account_scope.strip())<=100: raise UpdateError('Name the explicit account/selection scope')
     if not 1<=len(targets)<=20: raise UpdateError('Select 1 to 20 exact targets')
+    source_pin={'path':str(source),'manifest_sha256':candidate_digest}
+    incoming=candidate_hashes(source_pin)
     rows=[];seen=set()
     for n,path in enumerate(targets,1):
         p=absolute(path)
         if not independent(p,source) or not independent(p,backup): raise UpdateError('Targets, source and backups must be separate')
         if str(p) in seen or any(not independent(p,Path(x)) for x in seen): raise UpdateError('Duplicate or nested targets')
         seen.add(str(p))
-        try: facts=target(p);reason=None
-        except (UpdateError,state.Unavailable,local.ReleaseError,OSError,UnicodeError):
-            facts=None;reason='Target unavailable, not a Git root, or installed version/manifest unsupported'
-        rows.append({'id':f'target-{n}','path':str(p),'selected':True,'initial':facts,'state':'not_attempted' if facts else 'blocked','reason':reason,'receipt':None})
+        try:
+            facts=target(p,incoming);reason=None
+            if facts['customization']['requires_review']:reason='Customization or update policy requires separate review; updater not invoked'
+        except (UpdateError,policy.PolicyError,state.Unavailable,local.ReleaseError,OSError,UnicodeError) as exc:
+            facts=None;reason=str(exc) if isinstance(exc,(UpdateError,policy.PolicyError)) else 'Target unavailable, not a Git root, or installed version/manifest unsupported'
+        rows.append({'id':f'target-{n}','path':str(p),'selected':True,'initial':facts,'state':'not_attempted' if facts and not reason else 'blocked','reason':reason,'receipt':None})
     families={r['initial']['common_dir'] for r in rows if r['initial']}
     for family in families:
         group=[r for r in rows if r['initial'] and r['initial']['common_dir']==family]
@@ -379,13 +403,15 @@ def execute(root,pid,expected,action,authorities=None,lock_root=None):
             if action=='apply' and row['state']!='ready':continue
             before=None;backup=Path(p['backup_root'])/pid/row['id'];marker=None
             try:
-                before=target(row['path'])
+                before=target(row['path'],candidate_hashes(p['source']))
                 if before!=row['initial']:raise UpdateError('Target identity, HEAD or installed code changed since selection')
+                if before['customization']['requires_review']:raise UpdateError('Customization or update policy requires separate review; updater not invoked')
                 marker=family_path(before,lock_root)
                 with local.lock(marker.with_suffix('.lock')):
                     recovery=local.load(marker)
                     if recovery and not recovery.get('resolved'):raise UpdateError('This Git family requires recovery before another update')
                     verify_source(p['source'],apply=action=='apply')
+                    if target(row['path'],candidate_hashes(p['source']))!=before:raise UpdateError('Target or policy changed before preview')
                     code,output=invoke(p['source'],row,backup)
                     log=plan_path(root,pid).parent/pid/(row['id']+'-preview-'+str(p['revision'])+'.json')
                     local.write(log,{'exit_code':code,'output':output[-200000:]})
@@ -398,11 +424,12 @@ def execute(root,pid,expected,action,authorities=None,lock_root=None):
                     else:
                         old_paths=row.get('approved_effect')
                         if old_paths!=fresh['changed_paths_sha256']:raise UpdateError('Rehearsed effect changed; review a new preview')
-                        if target(row['path'])!=before:raise UpdateError('Target changed during preview')
+                        if target(row['path'],candidate_hashes(p['source']))!=before:raise UpdateError('Target changed during preview')
                         # Persistent marker survives process crashes and blocks other plans.
                         local.write(marker,{'plan':pid,'target':row['id'],'before':before,'resolved':False,'archive':fresh['archive'],'archive_sha256':fresh['archive_sha256']})
                         row.update(state='applying',reason='Updater outcome pending');p['revision']+=1;local.write(plan_path(root,pid),p)
                         verify_source(p['source'],apply=True)
+                        if target(row['path'],candidate_hashes(p['source']))!=before:raise UpdateError('Target or policy changed before apply')
                         code,output=invoke(p['source'],row,backup,authorities[row['id']])
                         log=plan_path(root,pid).parent/pid/(row['id']+'-apply-'+str(p['revision'])+'.json')
                         local.write(log,{'exit_code':code,'output':output[-200000:]})
@@ -453,7 +480,7 @@ def confirm_restored(root,pid,tid,expected,evidence,lock_root=None):
         with local.lock(marker.with_suffix('.lock')):
             m=local.load(marker)
             if not m or m.get('plan')!=pid or m.get('target')!=tid or m.get('resolved'):raise UpdateError('Recovery marker does not match this target')
-            if target(row['path'])!=before:raise UpdateError('Prior target code and Git identity have not been restored exactly')
+            if target(row['path'],candidate_hashes(p['source']))!=before:raise UpdateError('Prior target code and Git identity have not been restored exactly')
             local.write(marker,dict(m,resolved=True,outcome='restored',evidence=evidence.strip()))
             row.update(state='restored',reason='Prior managed code restored; new preview and fresh authority required')
             p['revision']+=1;local.write(plan_path(root,pid),p)
