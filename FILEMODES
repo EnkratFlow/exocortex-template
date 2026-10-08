@@ -60,7 +60,6 @@
 0644  .claude/skills/work/SKILL.md
 0644  .cursor/hooks.json
 0755  .cursor/hooks/auto-save-phase.sh
-0644  .cursor/rules/plan-orchestrate.mdc
 0644  .cursor/skills/ai-architect/SKILL.md
 0644  .cursor/skills/ai-export/SKILL.md
 0644  .cursor/skills/architect/SKILL.md
@@ -148,7 +147,7 @@
 0644  .exocortex/control/DAILY_WORKFLOW.md
 0644  .exocortex/control/DELIVERY_WORKFLOW.md
 0644  .exocortex/control/END_SESSION_PROMPT.md
-0644  .exocortex/control/MODEL_ROUTING.md
+0644  .exocortex/control/ORCHESTRATION.md
 0644  .exocortex/control/QA_STRATEGY.md
 0644  .exocortex/control/README.md
 0644  .exocortex/control/SNIPPETS.md
@@ -175,8 +174,6 @@
 0644  .exocortex/examples/EXECUTOR_REGISTRY.read-only.json
 0644  .exocortex/examples/EXTERNAL_SYNC_POLICY.deny.json
 0644  .exocortex/key-registry.json
-0644  .exocortex/model-routing-catalog.json
-0644  .exocortex/model-source-registry.json
 0644  .exocortex/prompts/memory-curator.md
 0644  .exocortex/provider-adapters.json
 0644  .exocortex/reference/CHEAT_SHEET.md
@@ -188,10 +185,6 @@
 0644  .exocortex/schemas/executor-registry.schema.json
 0644  .exocortex/schemas/external-sync-policy.schema.json
 0644  .exocortex/schemas/local-delivery-envelope.schema.json
-0644  .exocortex/schemas/model-availability.schema.json
-0644  .exocortex/schemas/model-observation.schema.json
-0644  .exocortex/schemas/model-routing-catalog.schema.json
-0644  .exocortex/schemas/model-source-registry.schema.json
 0644  .exocortex/schemas/orchestration.schema.json
 0644  .exocortex/schemas/provider-adapter-matrix.schema.json
 0644  .exocortex/schemas/publication-envelope.schema.json
@@ -230,7 +223,6 @@
 0644  .exocortex/scripts/launchd/com.exocortex.autosave.plist.template
 0755  .exocortex/scripts/launchd/install_autosave.sh
 0755  .exocortex/scripts/launchd/uninstall_autosave.sh
-0644  .exocortex/scripts/model_registry.py
 0644  .exocortex/scripts/onboard_evidence.py
 0644  .exocortex/scripts/orchestrate_work_item.py
 0755  .exocortex/scripts/post_to_hub.sh
@@ -257,6 +249,7 @@
 0755  .exocortex/scripts/upgrade-exocortex.sh
 0644  .exocortex/skills/exocortex-reminder/SETUP.md
 0644  .exocortex/skills/exocortex-reminder/SKILL.md
+0644  .exocortex/template-file-history.txt
 0644  .exocortex/templates/task-brief.json
 0644  .gitattributes
 0644  .github/copilot-instructions.md
@@ -297,6 +290,7 @@
 0644  WHATSNEW.md
 0755  init-project.sh
 0755  install.sh
+0755  scripts/build-template-history.py
 0755  scripts/check-public-release.py
 0755  scripts/check-release-state.sh
 0755  scripts/install-cursor-skills.sh

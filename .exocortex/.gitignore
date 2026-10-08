@@ -11,7 +11,6 @@
 SESSION_CONTEXT.local.md
 SESSION_CONTEXT.md.backup
 SESSION_CONTEXT_BACKUP_*.md
-.install-manifest
 .hub_enabled
 .hub_disabled
 local/
@@ -23,7 +22,8 @@ hub/
 control/EXECUTOR_REGISTRY.json
 control/EXTERNAL_SYNC_POLICY.json
 
-# Project memory and events are intentionally NOT ignored.
+# Project memory, events, and the install manifest are intentionally NOT ignored.
+# The manifest lets a fresh clone tell stock template files from edited ones.
 
 # Generated caches
 __pycache__/

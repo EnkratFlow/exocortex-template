@@ -341,7 +341,11 @@ def invoke(source,row,backup,authority=None):
         # On Windows the wrapper derives the same digest from the staged
         # manifest; trailing explicit source overrides its private directory.
         command=launch_command(temp,args,windows=os.name=='nt')
-        env={k:os.environ[k] for k in ('PATH','SystemRoot','WINDIR','COMSPEC','PATHEXT') if k in os.environ}
+        # Forward only launcher configuration and Windows discovery roots.
+        # Credentials, Git overrides and shell startup variables stay excluded.
+        env={k:os.environ[k] for k in ('PATH','SystemRoot','WINDIR','COMSPEC','PATHEXT',
+                'EXOCORTEX_PYTHON','EXOCORTEX_BASH','ProgramFiles','ProgramFiles(x86)',
+                'ProgramW6432','LOCALAPPDATA','USERPROFILE') if k in os.environ}
         env.update(HOME=str(temp/'home'),TMPDIR=str(temp/'tmp'),TMP=str(temp/'tmp'),TEMP=str(temp/'tmp'),LC_ALL='C',LANG='C',PYTHONDONTWRITEBYTECODE='1')
         options={'creationflags':subprocess.CREATE_NEW_PROCESS_GROUP} if os.name=='nt' else {'start_new_session':True}
         with (temp/'output').open('wb') as log:

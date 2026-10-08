@@ -13,10 +13,7 @@ Choose the least-expensive available model capable of the bounded role and
 risk. Escalate on evidence, never on brand. No support lane inherits writer or
 egress authority.
 
-“Available” means current-surface availability plus fresh, digest-bound source
-and measured evaluation evidence. A new or cheaper catalog entry is
-quarantined until reviewed; discovery never activates it. The complete
-evidence and denial rules are in `.exocortex/control/MODEL_ROUTING.md`.
+The full judgment rules are in `.exocortex/control/ORCHESTRATION.md`.
 
 Commands are defined in the 30 JSON files under `.exocortex/commands/` and are
 grouped as daily, memory, planning/review, and system operations. See

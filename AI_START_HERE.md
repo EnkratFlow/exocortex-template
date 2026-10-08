@@ -10,7 +10,7 @@ Read, in order:
 2. `.exocortex/AI_BOOTSTRAP.md`.
 3. `.exocortex/reference/MEMORY.md` and the project files it requires.
 4. `.exocortex/control/DELIVERY_WORKFLOW.md`.
-5. `.exocortex/control/MODEL_ROUTING.md`.
+5. `.exocortex/control/ORCHESTRATION.md`.
 
 Then resolve live Git state and project-local authority. Generated context and prior chat are supporting evidence, never authority.
 
@@ -132,7 +132,7 @@ Use the lifecycle and acceptance gates in `.exocortex/control/DELIVERY_WORKFLOW.
 
 ## 5. Route by capability, risk, and cost
 
-Follow `.exocortex/control/MODEL_ROUTING.md`.
+Follow `.exocortex/control/ORCHESTRATION.md`.
 
 Use parent judgment to choose the correct model for the complete job while
 keeping the expected cost of a correct outcome in mind. Make the same judgment
@@ -146,12 +146,8 @@ context quality, or review quality. Escalate on risk, ambiguity, tool mismatch,
 weak verification, or repeated failure, and return all results to the parent
 for integration and deterministic verification.
 
-Formal source, catalog, availability, and evaluation routing is optional
-empirical evidence. When maintained, it must be fresh and digest-bound; new
-models remain quarantined and discovery never activates one. An empty or stale
-formal catalog disables that verifier but does not prevent accountable parent
-judgment. No provider or named model is mandatory, and explicit owner model
-exclusions remain routing constraints.
+No provider or named model is mandatory, and explicit owner model exclusions
+remain routing constraints.
 
 ## 6. Separate saves, checkpoints, and handoffs
 

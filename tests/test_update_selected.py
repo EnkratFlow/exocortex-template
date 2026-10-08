@@ -209,6 +209,33 @@ class SelectedTests(unittest.TestCase):
         with patch.object(update.subprocess,'Popen',side_effect=AssertionError('must not execute')),self.assertRaises(update.UpdateError):
             update.invoke(p['source'],p['targets'][0],self.backup)
 
+    def test_launcher_environment_preserves_discovery_without_credentials(self):
+        p=self.create()
+        allowed={'PATH':'/fixture/bin','SystemRoot':'C:/Windows',
+                 'WINDIR':'C:/Windows','COMSPEC':'C:/Windows/cmd.exe','PATHEXT':'.EXE',
+                 'EXOCORTEX_PYTHON':'C:/Runtime/python.exe',
+                 'EXOCORTEX_BASH':'C:/PortableGit/bin/bash.exe',
+                 'ProgramFiles':'C:/Program Files','ProgramFiles(x86)':'C:/Program Files (x86)',
+                 'ProgramW6432':'C:/Program Files','LOCALAPPDATA':'C:/Profiles/fixture/AppData/Local',
+                 'USERPROFILE':'C:/Profiles/fixture'}
+        excluded={'OPENAI_API_KEY':'fictional','GITHUB_TOKEN':'fictional',
+                  'GIT_CONFIG_GLOBAL':'/fixture/gitconfig','BASH_ENV':'/fixture/startup',
+                  'PYTHONPATH':'/fixture/imports','EXOCORTEX_LOCAL_SOURCE':'/fixture/other',
+                  'HOME':'/fixture/home','TMP':'/fixture/tmp'}
+        captured={}
+        def launch(command,**kwargs):
+            captured.update(kwargs['env'])
+            process=unittest.mock.Mock(returncode=0)
+            return process
+        with patch.dict(update.os.environ,{**allowed,**excluded},clear=True), patch.object(update.subprocess,'Popen',side_effect=launch):
+            code,output=update.invoke(p['source'],p['targets'][0],self.backup)
+        self.assertEqual(code,0)
+        for key,value in allowed.items():self.assertEqual(captured[key],value)
+        for key in set(excluded)-{'HOME','TMP'}:self.assertNotIn(key,captured)
+        self.assertNotEqual(captured['HOME'],excluded['HOME'])
+        self.assertNotEqual(captured['TMP'],excluded['TMP'])
+        self.assertEqual(captured['PYTHONDONTWRITEBYTECODE'],'1')
+
     def test_zero_change_preview_is_current_not_applied(self):
         p=self.create();self.applied=True
         with patch.object(update,'invoke',side_effect=self.fake_run):p=self.execute(p)

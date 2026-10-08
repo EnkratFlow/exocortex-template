@@ -89,7 +89,7 @@
       "evidence_adapter_family": "portable-agent-skills",
       "default_install": true,
       "revalidation_required": true,
-      "evidence": "The repository command catalog contains 27 canonical commands; discovery of newly added commands requires candidate Human UAT.",
+      "evidence": "The repository command catalog contains 30 canonical commands; discovery of newly added commands requires candidate Human UAT.",
       "limitation": "Literal desktop skill-selector visibility remains Human-UAT-pending. The new preflight and orchestrate commands have not yet passed provider-menu Human UAT."
     },
     {
@@ -425,19 +425,19 @@
     },
     {
       "path": ".cursor/rules/00-ide-model-router.mdc",
-      "replacement": ".cursor/rules/plan-orchestrate.mdc"
+      "replacement": ""
     },
     {
       "path": ".cursor/rules/01-project-bootstrap.mdc",
-      "replacement": ".cursor/rules/plan-orchestrate.mdc"
+      "replacement": ""
     },
     {
       "path": ".cursor/rules/10-context-budget.mdc",
-      "replacement": ".cursor/rules/plan-orchestrate.mdc"
+      "replacement": ""
     },
     {
       "path": ".cursor/rules/20-output-budget.mdc",
-      "replacement": ".cursor/rules/plan-orchestrate.mdc"
+      "replacement": ""
     }
   ],
   "windsurf_retirements": [

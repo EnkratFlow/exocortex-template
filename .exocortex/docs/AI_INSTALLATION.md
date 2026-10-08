@@ -1,6 +1,6 @@
 # Install or update Exocortex with a coding AI
 
-> Candidate 3.3.13 streamlines everyday commands on Windows and macOS. Use it
+> Candidate 3.3.14 makes updates work from any clone and retires model routing. Use it
 > only after its authenticated release exists; never install from this branch.
 
 This is the provider-neutral operator contract for asking a coding AI to
@@ -28,7 +28,7 @@ attestation evidence with its documented trust identity. The SHA and digest
 prove byte consistency but do not independently prove owner authenticity when
 the repository, tag, release notes, and digest share one trust domain.
 
-Version 3.3.13 selects GitHub's immutable-release attestation for the exact
+Version 3.3.14 selects GitHub's immutable-release attestation for the exact
 trust identity `github.com/EnkratFlow/exocortex-template`. The release publishes
 `SHA256SUMS` as an attested asset. Public installation remains blocked unless
 both `gh release verify` and `gh release verify-asset` succeed and the attested
@@ -38,23 +38,23 @@ and consistency checks are:
 ```bash
 (
 set -eu
-gh release verify v3.3.13 -R github.com/EnkratFlow/exocortex-template
-mkdir -m 700 /tmp/exocortex-release-verify-v3.3.13
-gh release download v3.3.13 -R github.com/EnkratFlow/exocortex-template \
-  --pattern SHA256SUMS --dir /tmp/exocortex-release-verify-v3.3.13
-gh release verify-asset v3.3.13 \
-  /tmp/exocortex-release-verify-v3.3.13/SHA256SUMS \
+gh release verify v3.3.14 -R github.com/EnkratFlow/exocortex-template
+mkdir -m 700 /tmp/exocortex-release-verify-v3.3.14
+gh release download v3.3.14 -R github.com/EnkratFlow/exocortex-template \
+  --pattern SHA256SUMS --dir /tmp/exocortex-release-verify-v3.3.14
+gh release verify-asset v3.3.14 \
+  /tmp/exocortex-release-verify-v3.3.14/SHA256SUMS \
   -R github.com/EnkratFlow/exocortex-template
-git clone --depth 1 --branch v3.3.13 \
+git clone --depth 1 --branch v3.3.14 \
   https://github.com/EnkratFlow/exocortex-template.git \
-  /tmp/exocortex-template-v3.3.13
-cmp -s /tmp/exocortex-release-verify-v3.3.13/SHA256SUMS \
-  /tmp/exocortex-template-v3.3.13/SHA256SUMS
-git -C /tmp/exocortex-template-v3.3.13 rev-parse HEAD
+  /tmp/exocortex-template-v3.3.14
+cmp -s /tmp/exocortex-release-verify-v3.3.14/SHA256SUMS \
+  /tmp/exocortex-template-v3.3.14/SHA256SUMS
+git -C /tmp/exocortex-template-v3.3.14 rev-parse HEAD
 if command -v shasum >/dev/null 2>&1; then
-  shasum -a 256 /tmp/exocortex-template-v3.3.13/SHA256SUMS
+  shasum -a 256 /tmp/exocortex-template-v3.3.14/SHA256SUMS
 else
-  sha256sum /tmp/exocortex-template-v3.3.13/SHA256SUMS
+  sha256sum /tmp/exocortex-template-v3.3.14/SHA256SUMS
 fi
 )
 ```
@@ -131,7 +131,20 @@ move a project to another account or machine. Use Windows PowerShell 5.1 or
 PowerShell 7, Git for Windows, Python 3.9+ and GitHub CLI with `release verify`
 and `release verify-asset`. Check their versions before proceeding. Run Python
 protocol commands with `python` if that is the installed Windows executable
-name; Git Bash must also resolve `python3` for the shared scripts.
+name.
+
+`scripts/windows.ps1` finds Git Bash beside `git.exe`, in the usual Git for
+Windows and PortableGit folders, or on PATH. MinGit has no Bash, so install
+Git for Windows or PortableGit, or set `EXOCORTEX_BASH` to its `bin\bash.exe`.
+The launcher also resolves a real Python 3.9+ (`EXOCORTEX_PYTHON`, then
+`python`, `python3`, `py -3`) and passes it to the shared scripts. The
+Microsoft Store `python3` alias never counts.
+
+Git for Windows defaults to `core.autocrlf=true`, which rewrites line endings
+and makes every installed file look edited. Before updating, commit your own
+changes, run `git config core.autocrlf false` in the target project, then run
+`git checkout -- .exocortex` so the files match their committed bytes. A
+`.gitattributes` line `* text=auto eol=lf` achieves the same for every clone.
 
 #### Windows download and verification
 
@@ -142,7 +155,7 @@ and cloud-synced folders. The example creates a fresh directory in local app
 storage and never reuses a previous download. Do not share or modify it while
 verification or installation is running.
 
-Read the [v3.3.13 release notes](https://github.com/EnkratFlow/exocortex-template/releases/tag/v3.3.13)
+Read the [v3.3.14 release notes](https://github.com/EnkratFlow/exocortex-template/releases/tag/v3.3.14)
 and copy the **peeled commit SHA** and **SHA-256 of SHA256SUMS** when prompted.
 Those comparisons supplement the required cryptographic release/asset checks;
 release-note text alone is not proof of authenticity.
@@ -150,7 +163,7 @@ release-note text alone is not proof of authenticity.
 ```powershell
 $ErrorActionPreference = 'Stop'
 $ExoRepo = 'github.com/EnkratFlow/exocortex-template'
-$ExoTag = 'v3.3.13'
+$ExoTag = 'v3.3.14'
 $ExoExpectedCommit = (Read-Host 'Peeled commit SHA from the release notes').Trim()
 $ExoExpectedDigest = (Read-Host 'SHA-256 of SHA256SUMS from the release notes').Trim()
 if ($ExoExpectedCommit -notmatch '^[0-9a-fA-F]{40}$' -or
@@ -859,7 +872,7 @@ rehearsal and guarded apply reconciles candidate adoptions with the install
 manifest and must remain inside the approved effect set. An `apply_template_update` capability cannot authorize this
 operation. A consumed reconciliation capability cannot be replayed; retry
 requires a fresh request and capability. Protected memory, events, work items,
-control records, local model-routing evidence, application files, and outward
+control records, other local evidence, application files, and outward
 systems remain outside the effect set.
 
 This path is for reviewed target-specific convergence, not automatic conflict
@@ -870,8 +883,8 @@ report a preserved command-authority collision only for an exact
 validated plan. The materialized command bytes and mode must still match the
 reviewed object. Any unplanned command collision, legacy command authority,
 or stale root guidance fails before live capability consumption. Version
-3.3.6 does not have this correction; v3.3.13 includes it. Use only the
-authenticated v3.3.13 release for this case.
+3.3.6 does not have this correction; v3.3.14 includes it. Use only the
+authenticated v3.3.14 release for this case.
 
 ## WSL evidence required before support
 

@@ -15,6 +15,8 @@ A compact guide to all 30 commands. Use `/help command-name` for more detail.
 Local saves do not push to GitHub. Update notices do not install software.
 Write actions reuse applicable owner approval; help itself only reads this guide.
 
+For delegation and model choice, use `.exocortex/control/ORCHESTRATION.md`.
+
 ## Daily
 
 | Command | Purpose |
