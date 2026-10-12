@@ -1,9 +1,9 @@
 # Selected-project updates
 
-**Candidate status: local integration verified; unpublished.** The disposable
-guarded-update fixture passes preview, apply and installation verification while
-preserving handwritten memory. Independent review and native Windows validation
-of this combined candidate remain pending.
+**Candidate status: unpublished.** The earlier implementation passed native Windows
+and Ubuntu preview, guarded apply and installation verification with handwritten
+memory preserved. Final release checks must bind the exact candidate; prior test
+results do not establish publication, installation or owner acceptance.
 
 Ordinary installations contain two public examples, `.exocortex/.env.example`
 and `.exocortex/key-registry.json`. The coordinator accepts them only when declared

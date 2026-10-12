@@ -71,6 +71,13 @@ def absolute(path):
 
 
 PUBLIC_TEMPLATE_FILES = {'.exocortex/.env.example', '.exocortex/key-registry.json'}
+# Part of the shipped, integrity-checked helper: installed projects do not carry
+# the template repository's root SHA256SUMS. Never derive this authorization
+# from a consumer's editable install manifest. Tests bind these to package hashes.
+PUBLIC_TEMPLATE_DIGESTS = {
+    '.exocortex/.env.example': 'f7b31458dd5095a7fe2d07d093dc7c0e9702d3693faa76af4addad88168601bf',
+    '.exocortex/key-registry.json': 'b1d352104c6479f87ca9040ab2ae0558c8d82bcc0df452cd7a2bdea2faaea7d7',
+}
 
 
 def public_template_digest(path, relative):
@@ -80,15 +87,7 @@ def public_template_digest(path, relative):
     Hash them without decoding or logging. Any byte difference blocks the
     coordinator before the updater or backup code can inspect them.
     """
-    package = Path(__file__).resolve().parents[2]
-    hashes = {}
-    for line in file_bytes(package/'SHA256SUMS').decode('utf-8').splitlines():
-        fields = line.split('  ', 1)
-        if len(fields) == 2 and fields[1] in PUBLIC_TEMPLATE_FILES:
-            if fields[1] in hashes:
-                raise UpdateError('Duplicate public-template manifest entry')
-            hashes[fields[1]] = sha(fields[0])
-    expected = hashes.get(relative)
+    expected = PUBLIC_TEMPLATE_DIGESTS.get(relative)
     if expected is None:
         raise UpdateError('Public-template example is not declared')
     # The generic state-path guard intentionally rejects .env names. This exact

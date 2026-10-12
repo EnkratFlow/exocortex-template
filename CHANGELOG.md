@@ -6,11 +6,18 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 ## [Unreleased]
 
-### Selected-project updates (local candidate)
+## [4.0.0] - 2026-10-12
+
+Candidate only; publication and consumer installation are separate gates.
+
+### Selected-project updates
 - Add explicit machine-local update plans, per-project guarded apply, retained recovery evidence, and zero-change verification. Discovery never selects targets for mutation.
-- Integrate with the 3.3.13 native command launchers and bounded daily context collection. Accept declared, unchanged public configuration examples during selected updates; modified examples still require separate review.
+- Integrate with the 3.3.14 native command launchers and bounded daily context collection. Accept declared, unchanged public configuration examples during selected updates; modified examples still require separate review.
 - Preserve saved narratives when Git inspection becomes unavailable during a save, including task-linked saves; report incomplete checkout verification while continuing to reject confirmed checkout or task changes.
-- Document a proposed 4.0 migration for scoped task memory and brief selection; version and publication remain unchanged.
+- Introduce the 4.0 scoped event/task-selection contract; historical events remain readable, while external readers must accept the new metadata.
+- Run selected updates from installed controllers without requiring the template repository manifest; keep public-example authorization bound to shipped digest data.
+- Compare installed, local and incoming managed files before batch execution. Require individual review for customizations or uncertain baselines, and honor checkout-local review-only/excluded policies and protected deployment paths.
+- Preserve idempotent saves across Git CRLF conversion without accepting edited event content. Resolve Git Bash archive paths before native Windows backup containment checks.
 
 
 ### Added

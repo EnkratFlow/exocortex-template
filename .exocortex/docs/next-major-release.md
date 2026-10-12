@@ -1,8 +1,8 @@
-# Proposed next major release
+# Exocortex 4.0 migration and acceptance
 
-**Recommendation: Exocortex 4.0.0 for the completed, validated program.** This is a
-release proposal, not a version bump or published release. `VERSION` remains the
-current baseline until release scope and migration checks are accepted.
+**Candidate: Exocortex 4.0.0.** This release scope covers project/checkout discovery,
+scoped task briefs and saves, optional release awareness, and selected guarded
+updates. Candidate metadata is not a published release or consumer installation.
 
 Semantic versioning calls for a major release when supported public behavior is
 incompatible. Adding `/help`, `/where` and optional release notices alone would fit
@@ -40,5 +40,30 @@ memory refresh and application deployment remain separate observable steps.
 
 The broader program still includes deeper shared-history/worktree lifecycle work and
 optional operations/connectors. This proposal does not claim those phases complete.
-GEPA remains deferred. If the final release excludes the incompatible changes or adds
-full compatibility, reassess a minor release instead of assigning 4.0 by feature count.
+GEPA is a separate experiment and is excluded from this release.
+
+## Customized repositories and multiple checkouts
+
+Before a rollout, record the policy for each exact target checkout. The private
+`.exocortex/local/update-policy.json` does not travel through Git. A fresh clone
+or sibling worktree has no inherited exclusion and defaults to standard inspection.
+Do not treat that default as the owner's decision that an application is standard.
+Managed-file comparison detects template changes; it cannot infer external Firebase,
+SDLC, infrastructure or non-application requirements. Declare protected exact paths
+or use `review_only`/`excluded` and handle that target separately. Other independently
+selected standard targets may continue. No force override is provided.
+
+## Evidence and owner acceptance
+
+| Case | Automated evidence required | Owner check before rollout |
+| --- | --- | --- |
+| Installed controller | Run create, preview, guarded apply and zero-change verification from installed helpers, without the template root manifest | Selection and blocked-target explanations are understandable |
+| Legacy installation | Legacy version, leftover commands, manifest/history and protected-memory migration regressions | Review actual project-specific instructions |
+| Custom project | Local changes, modified public examples, policy exclusion and policy drift stop execution; standard target remains independent | Declare deployment/SDLC exceptions in every target checkout |
+| Shared memory | Old and scoped events, multiple worktrees, fresh clone and CRLF save retry | Open the intended task revision; do not mistake branch history for deployed work |
+| Platforms | Complete safety suite, native Windows installation/update and Python3.9/3.13 command runtime | Check provider command menus in the environments actually used |
+
+CI results must identify the exact candidate. Human acceptance is still required;
+tests cannot accept the product for its owner. A named OneDrive fixture is not proof
+of real synchronized-folder behavior, and WSL retains its separate Human UAT gate.
+No real project is enrolled or updated by these fictional rehearsals.

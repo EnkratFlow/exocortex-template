@@ -8,13 +8,11 @@ import subprocess
 import sys
 import tempfile
 import unittest
-from unittest.mock import patch
 
 sys.dont_write_bytecode=True
 ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/'.exocortex/scripts'))
 sys.path.insert(0,str(ROOT/'tests'))
-import update_selected as update
 import authority_guard as guard
 import test_installer_security as fixture
 
@@ -66,12 +64,45 @@ class IntegrationTests(unittest.TestCase):
             rows=[('.exocortex/scripts/read_memory_stack.sh '+hashlib.sha256(script.read_bytes()).hexdigest()) if x.startswith('.exocortex/scripts/read_memory_stack.sh ') else x for x in manifest.read_text().splitlines()]
             manifest.write_bytes(('\n'.join(rows)+'\n').encode())
             run(['git','add','.'],target);run(['git','commit','-qm','Fictional installed baseline'],target)
-            controller=base/'controller';controller.mkdir();locks=base/'locks'
-            update.target(target)
+            controller=base/'controller';locks=base/'locks'
+            run(['git','clone','--no-local','-q','-c','core.autocrlf=false',target,controller],base)
+            self.assertFalse((controller/'SHA256SUMS').exists())
+            installed_scripts=controller/'.exocortex/scripts'
+            # Every coordinator invocation is a fresh isolated process importing
+            # only the installed helper and siblings, never the template module.
+            def installed_call(action,expected=None,authorities=None):
+                payload=dict(action=action,controller=str(controller),source=str(source),
+                    target=str(target),backup=str(base/'backups'),locks=str(locks),
+                    digest=sha,expected=expected,authorities=authorities)
+                program="""
+import json,sys
+from pathlib import Path
+from unittest.mock import patch
+sys.path.insert(0,sys.argv[1])
+import update_selected as update
+p=json.load(sys.stdin);root=Path(p['controller']);source=Path(p['source'])
+assert Path(update.__file__).resolve().parent == Path(sys.argv[1]).resolve()
+assert not (root/'SHA256SUMS').exists()
+if p['action']=='create':
+    result=update.create(root,'fixture',source,p['digest'],Path(p['backup']),[Path(p['target'])],'fictional')
+elif p['action']=='apply':
+    # Unpublished source: replace only public-release lookup, retain real code
+    # authentication, launcher, authority consumption and post-verification.
+    verify_source=update.verify_source
+    with patch.object(update,'verify_source',side_effect=lambda candidate,apply=False: verify_source(candidate,apply=False)):
+        result=update.execute(root,'fixture',p['expected'],'apply',p['authorities'],Path(p['locks']))
+else:
+    result=update.execute(root,'fixture',p['expected'],'preview',lock_root=Path(p['locks']))
+print(json.dumps(result))
+"""
+                result=subprocess.run([sys.executable,'-I','-B','-c',program,str(installed_scripts)],
+                    input=json.dumps(payload),cwd=controller,capture_output=True,text=True,timeout=720)
+                self.assertEqual(result.returncode,0,result.stdout+result.stderr)
+                return json.loads(result.stdout)
             sha=hashlib.sha256((source/'SHA256SUMS').read_bytes()).hexdigest()
-            plan=update.create(controller,'fixture',source,sha,base/'backups',[target],'fictional')
+            plan=installed_call('create')
             self.assertEqual(plan['targets'][0]['state'],'not_attempted',plan)
-            plan=update.execute(controller,'fixture',plan['plan_sha256'],'preview',lock_root=locks)
+            plan=installed_call('preview',plan['plan_sha256'])
             self.assertEqual(plan['targets'][0]['state'],'ready',plan)
             paths=plan['targets'][0]['receipt']['changed_paths']
             actor={'surface_id':'fixture-surface','executor_id':'fixture-writer','adapter_version':'fixture-v1'}
@@ -98,8 +129,7 @@ class IntegrationTests(unittest.TestCase):
             authority=dict(actor,capability=capability,work_item_id='fixture-update',work_item_revision=0,request_id='fixture-apply')
             # This candidate is deliberately unpublished. Source bytes, real
             # launcher, guard, capability consumption and post-check still run.
-            with patch.object(update,'verify_source',return_value=source):
-                plan=update.execute(controller,'fixture',plan['plan_sha256'],'apply',{'target-1':authority},locks)
+            plan=installed_call('apply',plan['plan_sha256'],{'target-1':authority})
             self.assertEqual(plan['targets'][0]['state'],'applied',plan)
             self.assertEqual(memory.read_bytes(),b'# Fictional handwritten memory\nRetain this.\n')
             self.assertEqual(script.read_bytes(),(source/'.exocortex/scripts/read_memory_stack.sh').read_bytes())

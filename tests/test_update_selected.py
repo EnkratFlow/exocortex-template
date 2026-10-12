@@ -186,16 +186,11 @@ class SelectedTests(unittest.TestCase):
     def test_declared_public_examples_allow_preview_but_modified_example_blocks(self):
         content = b'Fictional public example without private values\n'
         checksum = hashlib.sha256(content).hexdigest()
-        public_manifest = ''.join(checksum+'  '+rel+'\n' for rel in sorted(update.PUBLIC_TEMPLATE_FILES)).encode()
         installed = self.first/'.exocortex/.install-manifest'
         for rel in update.PUBLIC_TEMPLATE_FILES:
             write(self.first/rel, content.decode())
         write(installed,installed.read_text()+''.join(rel+' '+checksum+'\n' for rel in sorted(update.PUBLIC_TEMPLATE_FILES)))
-        original = update.file_bytes
-        def read_manifest(path, *args):
-            if path == ROOT/'SHA256SUMS': return public_manifest
-            return original(path, *args)
-        with patch.object(update, 'file_bytes', side_effect=read_manifest), patch.object(update, 'invoke', side_effect=self.fake_run):
+        with patch.dict(update.PUBLIC_TEMPLATE_DIGESTS,{rel:checksum for rel in update.PUBLIC_TEMPLATE_FILES}), patch.object(update, 'invoke', side_effect=self.fake_run):
             plan = self.execute(self.create())
             self.assertEqual(plan['targets'][0]['state'], 'ready', plan['targets'][0])
             self.assertEqual(self.calls, [('target-1', False)])
@@ -206,6 +201,11 @@ class SelectedTests(unittest.TestCase):
             self.assertEqual(blocked['targets'][0]['state'], 'blocked')
             self.assertNotIn('Changed fictional example', json.dumps(blocked))
             self.assertEqual(self.calls, [('target-1', False)])
+
+    def test_public_example_allowlist_matches_shipped_manifest(self):
+        hashes={row.split('  ',1)[1]:row.split('  ',1)[0] for row in (ROOT/'SHA256SUMS').read_text().splitlines()}
+        self.assertEqual(set(update.PUBLIC_TEMPLATE_DIGESTS),update.PUBLIC_TEMPLATE_FILES)
+        self.assertEqual(update.PUBLIC_TEMPLATE_DIGESTS,{rel:hashes[rel] for rel in update.PUBLIC_TEMPLATE_FILES})
 
     def test_opaque_runtime_directory_blocks_without_opening(self):
         write(self.first/'.exocortex/__pycache__/fixture.pyc','opaque fictional bytes')

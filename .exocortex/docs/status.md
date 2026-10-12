@@ -1,6 +1,6 @@
 # Exocortex release status
 
-Last updated: 2026-10-06
+Last updated: 2026-10-12
 
 This is the living, human-readable maintainer view of the public template. It
 is release-scoped, not a downstream project's status page, approval record,
@@ -8,21 +8,21 @@ release attestation, or replacement for exact test and Git evidence.
 
 ## Published baseline
 
-- The previous reviewed published baseline is `v3.3.13` at peeled commit
-  `6d96dc0d881213671f6392b2da53865820017ffa`.
-- The packaged candidate version is `3.3.14`. This tracked file does not prove a
+- The previous reviewed published baseline is `v3.3.14` at peeled commit
+  `1b35a4721f6e53727093b754a8d115c3cf99f964`.
+- The packaged candidate version is `4.0.0`. This tracked file does not prove a
   branch push, merge, annotated tag, immutable GitHub release, attested asset,
   installation, deployment, or template promotion.
 
 ## Candidate state
 
-Version 3.3.14 commits the install manifest with each project and ships a
-history of every installed file version, so a fresh clone updates without
-reconciliation and files the template stops shipping are retired. It removes
-the expired model-routing catalog and the always-on Cursor orchestration rule,
-and the Windows launcher now finds PortableGit Bash and a real Python. The
-macOS installer suite passes; native Windows launcher changes still need a
-run on Windows, and the final candidate requires its own exact-commit CI.
+Version 4.0.0 prepares scoped task memory, project/checkout discovery, optional
+release awareness, and explicitly selected guarded updates. Customized targets
+require separate review; declared exclusion policies remain checkout-local.
+GEPA and automatic deployment are outside this release. Historical events remain
+readable, but external readers and selected task context require migration review.
+The earlier implementation passed native Windows and Ubuntu verification; release
+metadata and any subsequent fixes require their own exact-candidate CI.
 
 | Area | State | Current objective |
 | --- | --- | --- |
@@ -31,7 +31,7 @@ run on Windows, and the final candidate requires its own exact-commit CI.
 | Recovery and replay | Implemented; exact-candidate verification required | Reject altered or missing transition and completion records while preserving exact interrupted recovery and idempotent replay. |
 | Public-template privacy | Implemented; focused and complete verification required | Apply the bound checker and declared rules to the complete tagged tree, exact reviewed release slice, merge message, and annotated tag without displaying matched values; this scoped evidence is not proof that older public history is clean or that no undiscovered disclosure pattern exists. |
 | Credential-blind handling | Implemented; focused and complete verification required | Reject credential-shaped paths before content access while accounting for ordinary untracked source and safe ignored dirt. |
-| Model routing | Retained | Use provider-neutral, capability-, risk-, and cost-aware parent judgment; the formal catalog remains optional evidence and activates nothing by default. |
+| Model routing | Retained | Use provider-neutral, capability-, risk-, and cost-aware parent judgment; the retired formal catalog is not part of the package. |
 | Install and update | Compatibility verification required | Preserve project memory, events, decisions, customizations, protected local state, credentials, and rollback boundaries during future named-target rehearsals. |
 | Release authenticity | Selected; publication verification required | Bind canonical GitHub `OWNER/REPO`, immutable REST repository ID, an external trusted executor closure, its checker, and exact Python/Git/GitHub CLI executable digests before using immutable-release verification plus an attested `SHA256SUMS` asset. |
 
@@ -49,11 +49,11 @@ run on Windows, and the final candidate requires its own exact-commit CI.
 
 ## Publication gates and residual limitations
 
-Before version 3.3.14 may be used as a public installation or update source:
+Before version 4.0.0 may be used as a public installation or update source:
 
 1. Provision a separately installed, independently reviewed publication
    runtime outside the candidate root. Bind its executor-closure, checker,
-   Python, Git, and GitHub CLI SHA-256 digests; 3.3.14 cannot bootstrap trust
+   Python, Git, and GitHub CLI SHA-256 digests; 4.0.0 cannot bootstrap trust
    from its own new publisher or checker.
 2. Freeze one exact candidate and run the focused checks plus the complete
    Exocortex safety suite once.
@@ -107,13 +107,13 @@ unknown disclosure pattern exists.
 
 ## Local preparation boundary
 
-- The 3.3.14 metadata and integrity inventories are part of the candidate;
+- The 4.0.0 metadata and integrity inventories are part of the candidate;
   changing any candidate byte invalidates earlier evidence and requires a new
   exact-candidate verification and seal.
 - Complete safety evidence, independent review, and Human UAT must bind the
   same candidate before a separate publication decision can be considered.
-- Local preparation stops before staging or any outward action. Publication is
-  never implied by a prepared or locally accepted candidate.
+- Ordinary project branches and pull requests follow `AI_START_HERE.md` section 3.
+  A prepared pull request does not authorize merge, release or consumer rollout.
 
 ## Start here
 

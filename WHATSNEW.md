@@ -1,3 +1,24 @@
+# What's New in 4.0.0 — Scoped memory and selected project updates
+
+- Keep task briefs, their exact revisions, and saved work context together.
+  Historical events remain readable; external event readers must accept the new
+  scope, brief and save-ID metadata before migration.
+- Find projects and working folders with `/where` and `/updates`, and get a
+  compact command guide with `/help`.
+- Opt in to release notices with local caching and offline daily commands.
+- Explicitly select projects to update, inspect changes, retain backups, apply
+  under each project's authority, and verify the result.
+- Route customized repositories to separate review. Local managed-file changes,
+  conflicts, uncertain baselines and declared protected paths stop batch apply.
+  Review-only and excluded policies are local to each checkout; establish them
+  on every target before rollout, including deployment and SDLC exceptions.
+- Preserve saves through Git CRLF conversion and use native Windows archive paths
+  without weakening backup containment checks.
+
+This candidate does not prove publication or installation. GEPA experiments,
+automatic deployment, shared policy distribution and worktree cleanup are excluded.
+See the [migration and acceptance guide](.exocortex/docs/next-major-release.md).
+
 # What's New in 3.3.14 - Updates that work from any clone
 
 - Update a project from a fresh clone, or on a new computer, without a
