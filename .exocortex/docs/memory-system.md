@@ -135,3 +135,5 @@ branch and HEAD as well as event bytes and UTC date. A checkout change makes
 the view; it never copies notes from another checkout. Portable history must
 travel through the consuming project's Git. For grouping, privacy boundaries
 and preservation checks, see [the working standard](work-organization.md).
+
+Session entry optionally reads the bounded knowledge map; `/work` shows counts and recent entities/concepts as historical evidence, never authority, without blocking on missing or stale knowledge.

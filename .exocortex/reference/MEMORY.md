@@ -27,12 +27,13 @@ project root, not to this folder:
 
 1. **`.exocortex/PROJECT_MEMORY.md`** — System purpose, philosophy, and non-obvious constraints.
 2. **`.exocortex/SESSION_CONTEXT.md`** (if exists) — Current focus, open questions, and frozen areas.
-3. **`.exocortex/reference/ESSENTIAL_FILES.md`** — Where core truth lives vs reference vs tests.
-4. **`.exocortex/LESSONS.md`** — Project-specific lessons learned and anti-patterns to avoid.
-5. **`.exocortex/OPEN_DECISIONS.md`** (if exists) — Unresolved decisions affecting architecture, logic, QA strategy, or product direction.
-6. **`.exocortex/planning/MASTER_BRIEF.md`** (if exists) — The active program's full objective, workstreams, decisions, status and approval boundaries. Read any project-local execution record it names as well.
+3. **`.exocortex/knowledge/KNOWLEDGE.md`** (if exists) — Portable map of key entities, relationships and concepts from reviewed saves; historical, verify against live state. Read at most 4 MiB; report truncation and never treat the map as authority.
+4. **`.exocortex/reference/ESSENTIAL_FILES.md`** — Where core truth lives vs reference vs tests.
+5. **`.exocortex/LESSONS.md`** — Project-specific lessons learned and anti-patterns to avoid.
+6. **`.exocortex/OPEN_DECISIONS.md`** (if exists) — Unresolved decisions affecting architecture, logic, QA strategy, or product direction.
+7. **`.exocortex/planning/MASTER_BRIEF.md`** (if exists) — The active program's full objective, workstreams, decisions, status and approval boundaries. Read any project-local execution record it names as well.
 
-7. **Selected task brief**, when present — run `brief_work.py context`, then `show <id>` from `.exocortex/scripts/`. Load its objective, constraints, criteria and unresolved questions. A stale or ambiguous selection requires explicit reconciliation; missing optional briefs are normal.
+8. **Selected task brief**, when present — run `brief_work.py context`, then `show <id>` from `.exocortex/scripts/`. Load its objective, constraints, criteria and unresolved questions. A stale or ambiguous selection requires explicit reconciliation; missing optional briefs are normal.
 
 **Rule:** If you have not read these, do not make changes.
 

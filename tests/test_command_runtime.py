@@ -125,6 +125,98 @@ class Commands(unittest.TestCase):
         self.assertIn('task_brief', result)
         self.assertIn('release_awareness', result)
 
+    def test_work_does_not_hide_unrelated_coverage_failure(self):
+        (self.root / memory.CONTEXT).write_text(memory.START + '\n' + memory.START + '\n')
+        result = self.run_command('work')
+        self.assertEqual(result.returncode, 2)
+        self.assertIn('EXOCORTEX_READ_FAILED', result.stderr)
+
+    def test_work_knowledge_absent_is_normal_and_read_only(self):
+        before = self.snapshot()
+        result = self.run_command('work')
+        self.assertEqual(result.returncode, 0, result.stderr)
+        knowledge = json.loads(result.stdout)['knowledge']
+        self.assertFalse(knowledge['present'])
+        self.assertEqual(knowledge['status'], 'absent')
+        self.assertEqual(knowledge['counts'], {'entities': 0, 'relationships': 0, 'concepts': 0})
+        self.assertEqual(before, self.snapshot())
+
+    def test_work_knowledge_counts_recency_caps_and_staleness(self):
+        for day in range(1, 19):
+            event = self.root / f'.exocortex/events/2026-01-{day:02d}_00-00-00_fixture.md'
+            event.write_text(f'# Save\n## Knowledge\n### Entities\n- `Entity {day}` (tool): Tool {day}\n'
+                             f'### Relationships\n- `Entity {day}` -> uses -> `Concept {day}`\n'
+                             f'### Concepts\n- `Concept {day}`: Definition {day}\n')
+        memory.apply(self.root)
+        before = self.snapshot()
+        with patch.object(runtime, 'ROOT', self.root), patch.object(memory, 'check_events', wraps=memory.check_events) as check:
+            data = runtime.work()
+            self.assertEqual(check.call_count, 1)
+        k = data['knowledge']
+        self.assertEqual(k['status'], 'available')
+        self.assertTrue(k['present'])
+        self.assertEqual(k['counts'], {'entities': 18, 'relationships': 18, 'concepts': 18})
+        self.assertEqual(len(k['recent_entities']), 15)
+        self.assertEqual(len(k['recent_concepts']), 15)
+        self.assertEqual(k['recent_entities'][0]['name'], 'Entity 18')
+        self.assertEqual(k['recent_concepts'][-1]['name'], 'Concept 4')
+        self.assertFalse(k['knowledge_view_changed'])
+        self.assertLess(len(json.dumps(k)), 20000)
+        self.assertEqual(before, self.snapshot())
+        event.write_text(event.read_text() + '- `Another`: New evidence\n')
+        before = self.snapshot()
+        result = self.run_command('work')
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertTrue(json.loads(result.stdout)['knowledge']['knowledge_view_changed'])
+        self.assertEqual(before, self.snapshot())
+
+    def test_work_knowledge_recency_uses_latest_source_and_bounds_text(self):
+        import knowledge_map
+        folder = self.root / '.exocortex/knowledge'
+        folder.mkdir()
+        model = knowledge_map.build([
+            {'name': 'old.md', 'timestamp': '2026-01-01T00:00:00Z',
+             'body': '## Knowledge\n### Entities\n- `First` (tool): Old\n### Concepts\n- `First`: Old'},
+            {'name': 'middle.md', 'timestamp': '2026-01-02T00:00:00Z',
+             'body': '## Knowledge\n### Entities\n- `Middle` (tool): Middle'},
+            {'name': 'new.md', 'timestamp': '2026-01-03T00:00:00Z',
+             'body': '## Knowledge\n### Entities\n- `First` (tool): Updated\n### Concepts\n- `First`: Updated'}])
+        model['entities'][0]['notes'][-1]['text'] = 'x' * 20000
+        (folder / 'knowledge.jsonl').write_text(knowledge_map.render_jsonl(model))
+        with patch.object(runtime, 'ROOT', self.root):
+            k = runtime.knowledge_evidence({'status': 'stale', 'reasons': ['knowledge_view_changed']})
+        self.assertEqual(k['recent_entities'][0]['name'], 'First')
+        self.assertEqual(k['recent_entities'][0]['updated_at'], '2026-01-03T00:00:00+00:00')
+        self.assertEqual(len(k['recent_entities'][0]['text']), knowledge_map.MAX_TEXT)
+        self.assertEqual(k['recent_concepts'][0]['text'], 'Updated')
+        self.assertTrue(k['knowledge_view_changed'])
+
+    def test_work_oversized_map_does_not_block_or_write(self):
+        folder = self.root / '.exocortex/knowledge'
+        folder.mkdir()
+        (folder / 'knowledge.jsonl').write_bytes(b'x' * (runtime.KNOWLEDGE_MAX_BYTES + 1))
+        before = self.snapshot()
+        result = self.run_command('work')
+        self.assertEqual(result.returncode, 0, result.stderr)
+        data = json.loads(result.stdout)
+        self.assertEqual(data['coverage']['status'], 'error')
+        self.assertEqual(data['knowledge']['status'], 'unavailable')
+        self.assertIsNone(data['knowledge']['counts'])
+        self.assertIsNone(data['knowledge']['knowledge_view_changed'])
+        self.assertEqual(data['knowledge']['recent_entities'], [])
+        self.assertEqual(before, self.snapshot())
+
+    def test_work_malformed_map_does_not_expose_content_or_block(self):
+        folder = self.root / '.exocortex/knowledge'
+        folder.mkdir()
+        (folder / 'knowledge.jsonl').write_text('not-json-private-marker')
+        before = self.snapshot()
+        result = self.run_command('work')
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(json.loads(result.stdout)['knowledge']['status'], 'unavailable')
+        self.assertNotIn('not-json-private-marker', result.stdout + result.stderr)
+        self.assertEqual(before, self.snapshot())
+
     def test_drill_does_not_wait_for_stdin(self):
         result = self.run_command('drill', 'literal topic')
         self.assertEqual(result.returncode, 0, result.stderr)

@@ -44,13 +44,14 @@
       "files": [
         ".exocortex/PROJECT_MEMORY.md",
         ".exocortex/SESSION_CONTEXT.md",
+        ".exocortex/knowledge/KNOWLEDGE.md",
         ".exocortex/LESSONS.md",
         ".exocortex/TODO.md",
         ".exocortex/reference/ESSENTIAL_FILES.md"
       ],
       "description": "Load project memory and the generated context",
       "on_error": "record_gap",
-      "on_error_note": "A file that is missing or unreadable is recorded as a gap for the reconciliation step, never treated as read. Generated context is supporting evidence about the past, not authority about the present."
+      "on_error_note": "A file that is missing or unreadable is recorded as a gap for the reconciliation step, never treated as read. Generated context is supporting evidence about the past, not authority about the present. Exception: .exocortex/knowledge/KNOWLEDGE.md is optional; a missing map is not a gap because projects with no Knowledge saves have none. Read at most 4 MiB; disclose unavailable or truncated map evidence without blocking onboarding on the optional map alone. Treat its entities, relationships and concepts as historical evidence, never authority; verify against live state."
     },
     {
       "type": "ai",
