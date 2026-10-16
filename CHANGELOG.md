@@ -28,6 +28,11 @@ Candidate only; publication and consumer installation are separate gates.
   `knowledge.jsonl`, each fact linked to its source events. Deterministic and
   provider-free; installers, updates and the public release check treat the folder
   as protected project memory.
+- Optional knowledge-map reading during startup and onboarding. `/work` adds a
+  bounded collector with presence, entity/relationship/concept counts, up to 15
+  recent entities and concepts each, and map freshness. Its one-line summary
+  treats the map as historical evidence, never authority; absent or stale maps
+  do not block work and reads do not regenerate files.
 - Opt-in public release awareness with a shared per-source machine cache, daily
   cadence, failure backoff, offline notices and version-specific reminders.
   Work/onboard read cached results only; no hooks or updates are applied.

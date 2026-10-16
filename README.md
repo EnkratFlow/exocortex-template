@@ -26,6 +26,39 @@ as revoked and stop using it. The repository owner must remove the compromised
 release, permanently retire that tag name, and publish a corrected higher patch
 version. Never reuse the compromised version or tag.
 
+## What is included in 4.0
+
+The 4.0 code is merged; an authenticated 4.0 release is still required before
+consumer installation or updates. The main additions are:
+
+- Project and working-folder discovery with `/where` and `/updates`.
+- Revisioned task briefs and saves that retain their project and checkout context.
+- Optional cached release notices and compact `/help` guidance.
+- Explicitly selected updates with customization review, exclusions and recovery.
+- A portable knowledge map from reviewed saves, read at startup and by `/work`.
+
+See [What's New](WHATSNEW.md) and the
+[migration and acceptance guide](.exocortex/docs/next-major-release.md).
+The separately hosted update-manager UAT dashboard and GEPA experiment are not
+part of this template package.
+
+## Knowledge from reviewed saves
+
+`/save` drafts key entities, relationships and concepts alongside the narrative
+for review. Saving approved Knowledge produces `.exocortex/knowledge/KNOWLEDGE.md`
+and `knowledge.jsonl` through the local refresh. No extra provider call is needed.
+Projects with no Knowledge saves have no map; this is normal.
+
+Startup reading and `/onboard` include the optional map. `/work` shows one short
+summary using map presence, entity/relationship/concept counts and freshness;
+its bounded collector includes up to 15 recent entities and 15 recent concepts.
+Missing or stale maps do not block `/work`, and reading never refreshes files.
+The map is historical evidence, never authority: verify claims against live state.
+
+Commit the map with intentionally shared project memory. Correct facts through a
+later reviewed save rather than editing generated files. See the
+[memory guide](.exocortex/docs/memory-system.md) for format, provenance and limits.
+
 ## Everyday commands on Windows
 
 Exocortex commands use one native PowerShell launcher. `/work`, `/onboard`,
@@ -658,10 +691,12 @@ existing GitHub CLI authentication. A missing version marker is different from
 a missing installation, and inaccessible data remains unavailable.
 
 An available version is not proof of update readiness or release authenticity.
-No installation, Git fetch, commit, push, batch apply, automatic migration,
-cache write or background polling occurs. OneDrive synchronization, long-path
-update compatibility and old command migration still require separate update
-coverage. Those belong to the later update-application phase.
+The inventory operation performs no installation, Git fetch, commit, push, batch
+apply, automatic migration, cache write or background polling. Update execution
+is a separate explicit `/updates selected` workflow with per-project authority,
+customization checks and recovery; see [Selected updates](.exocortex/docs/selected-updates.md).
+OneDrive synchronization and project-specific migration still need their own
+acceptance checks.
 
 
 ## Project and working-folder visibility (unreleased)
