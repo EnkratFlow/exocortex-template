@@ -22,6 +22,12 @@ Candidate only; publication and consumer installation are separate gates.
 
 ### Added
 
+- Knowledge map from saves. `/save` drafts a reviewed Knowledge section (key
+  entities, relationships and concepts) with the narrative, and the refresh merges
+  every save's Knowledge into generated `.exocortex/knowledge/KNOWLEDGE.md` and
+  `knowledge.jsonl`, each fact linked to its source events. Deterministic and
+  provider-free; installers, updates and the public release check treat the folder
+  as protected project memory.
 - Opt-in public release awareness with a shared per-source machine cache, daily
   cadence, failure backoff, offline notices and version-specific reminders.
   Work/onboard read cached results only; no hooks or updates are applied.

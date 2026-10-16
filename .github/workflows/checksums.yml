@@ -157,7 +157,7 @@ jobs:
               'PROJECT_MEMORY.md','OPEN_DECISIONS.md','subconscious_patterns.md','.env',
               '.project-name','.install-manifest','.hub_enabled','.hub_disabled',
           }
-          protected_prefixes = ('events/','archive/','hub/','local/','planning/','work-items/')
+          protected_prefixes = ('events/','archive/','hub/','local/','planning/','work-items/','knowledge/')
           protected_control = {
               'control/ACTIVE_WORK.md','control/BRANCH_POLICY.md','control/REPO_STATE.md',
               'control/EXECUTOR_REGISTRY.json','control/EXTERNAL_SYNC_POLICY.json',

@@ -33,7 +33,7 @@ class InstallTests(unittest.TestCase):
             target = fixture.new_target(root, 'target')
             result = fixture.install(source, target)
             self.assertEqual(result.returncode, 0, result.stderr)
-            for name in ['refresh_rollups.py', 'record_event.py', 'curate_memory.py', 'brief_work.py', 'release_awareness.py', 'update_selected.py']:
+            for name in ['refresh_rollups.py', 'knowledge_map.py', 'record_event.py', 'curate_memory.py', 'brief_work.py', 'release_awareness.py', 'update_selected.py']:
                 self.assertTrue((target / '.exocortex/scripts' / name).is_file(), result.stderr)
             self.assertTrue((target / '.exocortex/prompts/memory-curator.md').is_file())
             release_script = target / '.exocortex/scripts/release_awareness.py'

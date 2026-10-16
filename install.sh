@@ -221,7 +221,7 @@ is_data_relpath() {
     case "$1" in
         SESSION_CONTEXT.md|SESSION_CONTEXT.md.backup|SESSION_CONTEXT.local.md|TODO.md|LESSONS.md|PROJECT_MEMORY.md|OPEN_DECISIONS.md|subconscious_patterns.md|.env|.env.*|.envrc|*/.env|*/.env.*|*/.envrc|.project-name|.install-manifest|.hub_enabled|.hub_disabled)
             return 0 ;;
-        events/*|archive/*|hub/*|local/*|planning/*|work-items/*)
+        events/*|archive/*|hub/*|local/*|planning/*|work-items/*|knowledge/*)
             return 0 ;;
         control/ACTIVE_WORK.md|control/BRANCH_POLICY.md|control/REPO_STATE.md|control/EXECUTOR_REGISTRY.json|control/EXTERNAL_SYNC_POLICY.json|control/INTERRUPTS.md|control/BACKLOG.md|control/ROADMAP.md|control/ARCH_OVERVIEW.md|control/REPO_ORGANIZATION_REPORT.md)
             return 0 ;;

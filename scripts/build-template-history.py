@@ -32,7 +32,7 @@ DATA_FILES = {
     "control/INTERRUPTS.md", "control/BACKLOG.md", "control/ROADMAP.md",
     "control/ARCH_OVERVIEW.md", "control/REPO_ORGANIZATION_REPORT.md",
 }
-DATA_DIRS = ("events/", "archive/", "hub/", "local/", "planning/", "work-items/")
+DATA_DIRS = ("events/", "archive/", "hub/", "local/", "planning/", "work-items/", "knowledge/")
 
 
 def git(*args: str) -> bytes:

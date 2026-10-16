@@ -765,6 +765,8 @@ def path_rule(path: str) -> str | None:
         return "WORK_ITEM_DATA"
     if path.startswith(".exocortex/local/"):
         return "LOCAL_PROTOCOL_DATA"
+    if path.startswith(".exocortex/knowledge/"):
+        return "KNOWLEDGE_DATA"
     if path.startswith(".exocortex/planning/"):
         return "PLANNING_RUNTIME_DATA"
     if path.startswith((".exocortex/archive/", ".exocortex/hub/")):
@@ -1553,6 +1555,7 @@ def path_class(finding: Finding) -> str:
         "EVENT_DATA": "event",
         "LOCAL_PROTOCOL_DATA": "local-protocol",
         "PLANNING_RUNTIME_DATA": "planning",
+        "KNOWLEDGE_DATA": "knowledge",
         "PROJECT_RUNTIME_DATA": "project-runtime",
         "RUNTIME_CONTROL_REGISTRY": "runtime-control",
         "SESSION_CONTEXT": "session-context",

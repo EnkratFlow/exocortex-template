@@ -109,6 +109,7 @@ PROTECTED_LOCAL_PREFIXES = (
     ".exocortex/hub/",
     ".exocortex/local/",
     ".exocortex/planning/",
+    ".exocortex/knowledge/",
     ".exocortex/secrets/",
     ".exocortex/work-items/",
 )

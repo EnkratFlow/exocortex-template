@@ -55,6 +55,7 @@ PROTECTED_PATHS = (
     ".exocortex/hub",
     ".exocortex/local",
     ".exocortex/planning",
+    ".exocortex/knowledge",
     ".exocortex/work-items",
     ".exocortex/control/ACTIVE_WORK.md",
     ".exocortex/control/BRANCH_POLICY.md",

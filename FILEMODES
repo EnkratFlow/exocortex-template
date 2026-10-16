@@ -219,6 +219,7 @@
 0644  .exocortex/scripts/git_event_crosscheck.sh
 0755  .exocortex/scripts/groom_interrupts.sh
 0755  .exocortex/scripts/install_openclaw_reminder.sh
+0644  .exocortex/scripts/knowledge_map.py
 0644  .exocortex/scripts/launchd/README.md
 0644  .exocortex/scripts/launchd/com.exocortex.autosave.plist.template
 0755  .exocortex/scripts/launchd/install_autosave.sh
@@ -316,6 +317,7 @@
 0644  tests/test_init_project_windows.py
 0644  tests/test_installer_security.py
 0644  tests/test_memory_install.py
+0644  tests/test_memory_knowledge.py
 0644  tests/test_memory_refresh.py
 0644  tests/test_onboard_contract.py
 0644  tests/test_project_state.py

@@ -15,6 +15,7 @@ a minor release. The proposed task-memory contract changes existing integrations
 | Ambiguous or stale brief selection can block saves and context refresh | Resolve the selection first; do not silently save against another task |
 | `/work` and `/onboard` focus the selected task and current checkout | Treat project history as scoped evidence; unfinished work is not present everywhere |
 | Portable project history travels through Git; runtime state stays local | Review ignore rules, preserved history and synchronization before rollout |
+| Saves may end with a reviewed Knowledge section; the refresh generates `.exocortex/knowledge/` | Commit the generated folder with other shared project memory; event readers must tolerate the new body section; correct facts with a new save, never by editing the map |
 
 ## Migration sequence
 

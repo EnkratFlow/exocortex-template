@@ -178,6 +178,7 @@ Never modify user data files in template update logic:
 - `LESSONS.md`
 - `PROJECT_MEMORY.md`
 - `events/`
+- `knowledge/` (the generated knowledge map)
 
 ## Reporting Bugs
 

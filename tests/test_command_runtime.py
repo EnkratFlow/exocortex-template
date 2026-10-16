@@ -28,7 +28,7 @@ class Commands(unittest.TestCase):
         self.root = Path(self.temp.name) / 'project space café'
         self.scripts = self.root / '.exocortex/scripts'
         self.scripts.mkdir(parents=True)
-        for name in ('command_runtime.py', 'run_exocortex.ps1', 'run_exocortex.sh', 'refresh_rollups.py',
+        for name in ('command_runtime.py', 'run_exocortex.ps1', 'run_exocortex.sh', 'refresh_rollups.py', 'knowledge_map.py',
                      'project_state.py', 'brief_work.py', 'release_awareness.py', 'update_inventory.py',
                      'update_policy.py', 'prepare_update_reconciliation.py',
                      'record_event.py', 'onboard_evidence.py', 'get_shortterm_memory.py',

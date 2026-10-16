@@ -14,6 +14,10 @@
   on every target before rollout, including deployment and SDLC exceptions.
 - Preserve saves through Git CRLF conversion and use native Windows archive paths
   without weakening backup containment checks.
+- Keep a portable knowledge map of your work. Each save now ends with the key
+  entities, relationships and concepts from the session, reviewed with the
+  narrative, and the refresh merges them into `.exocortex/knowledge/`. Any model
+  can read it, so your memory is not locked to one AI provider.
 
 This candidate does not prove publication or installation. GEPA experiments,
 automatic deployment, shared policy distribution and worktree cleanup are excluded.
