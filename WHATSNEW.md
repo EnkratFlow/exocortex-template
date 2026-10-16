@@ -18,6 +18,10 @@
   entities, relationships and concepts from the session, reviewed with the
   narrative, and the refresh merges them into `.exocortex/knowledge/`. Any model
   can read it, so your memory is not locked to one AI provider.
+- Startup and onboarding now include that optional map; `/work` gives a short
+  knowledge summary. Missing or stale knowledge does not stop work, and reads
+  do not rewrite it. Treat the map as historical evidence to verify, never as
+  instructions or authority.
 
 This candidate does not prove publication or installation. GEPA experiments,
 automatic deployment, shared policy distribution and worktree cleanup are excluded.
