@@ -16,7 +16,7 @@
     },
     {
       "type": "ai",
-      "command": "Based on the status scan, provide a concise 3-bullet summary: 1) Current priority/focus, 2) Any immediate blockers or interrupts, 3) Quick wins available. Keep it actionable and under 30 words total.",
+      "command": "Based on the status scan, provide a concise 3-bullet summary: 1) Current priority/focus, 2) Any immediate blockers or interrupts, 3) Quick wins available. Keep it actionable and under 30 words total. Read brief_work.py context when available; use the selected task as the focus and flag selection-required as a blocker. /brief stays a read-only status command; task creation and revision belong to /brief-work.",
       "description": "Generating priority brief",
       "success_format": "✓ Priority brief: {summary}"
     },

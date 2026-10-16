@@ -19,7 +19,7 @@ SCRIPTS = Path(__file__).resolve().parent
 
 def git(*arguments: str) -> dict:
     try:
-        result = subprocess.run(['git', '-C', str(ROOT), *arguments], capture_output=True,
+        result = subprocess.run(['git', '-c', 'core.fsmonitor=false', '-c', 'core.untrackedCache=false', '-C', str(ROOT), *arguments], capture_output=True,
                                 text=True, encoding='utf-8', errors='replace', timeout=5,
                                 env=dict(os.environ, GIT_OPTIONAL_LOCKS='0', GIT_TERMINAL_PROMPT='0'))
         return {'status': 'ok' if result.returncode == 0 else 'unavailable',
@@ -41,8 +41,98 @@ def status() -> dict:
             'open_decisions': note('.exocortex/OPEN_DECISIONS.md')}
 
 
+
+KNOWLEDGE_MAX_BYTES = 4 * 1024 * 1024
+KNOWLEDGE_RECENT = 15
+
+
+def knowledge_evidence(coverage: dict) -> dict:
+    """Bounded historical summary, never authority or a reason to stop /work."""
+    import refresh_rollups as memory
+    import knowledge_map
+    result = {'present': False, 'status': 'absent', 'counts': None,
+              'recent_entities': [], 'recent_concepts': [],
+              'knowledge_view_changed': ('knowledge_view_changed' in coverage.get('reasons', [])
+                                         if coverage.get('status') in ('fresh', 'stale') else None)}
+    try:
+        md = memory.safe_path(ROOT, memory.KNOWLEDGE_MD)
+        path = memory.safe_path(ROOT, memory.KNOWLEDGE_JSONL)
+        result['present'] = md.exists() or path.exists()
+        if not result['present']:
+            result['counts'] = {'entities': 0, 'relationships': 0, 'concepts': 0}
+            return result
+        raw = memory.decode(memory.read_bytes(path, KNOWLEDGE_MAX_BYTES))
+        lines = raw.splitlines()
+        if not lines or len(lines) > knowledge_map.MAX_TOTAL + 1:
+            raise ValueError('knowledge bound')
+        header = json.loads(lines[0])
+        if (not isinstance(header, dict) or header.get('generator') != knowledge_map.GENERATOR
+                or header.get('type') != 'header' or header.get('schema') != knowledge_map.SCHEMA):
+            raise ValueError('knowledge header')
+        counts = {'entities': 0, 'relationships': 0, 'concepts': 0}
+        recent = {'entity': [], 'concept': []}
+        for line in lines[1:]:
+            record = json.loads(line)
+            if not isinstance(record, dict):
+                raise ValueError('knowledge record')
+            kind = record.get('type')
+            if kind == 'unparsed':
+                continue
+            if kind not in ('entity', 'relationship', 'concept'):
+                raise ValueError('knowledge kind')
+            counts[{'entity': 'entities', 'relationship': 'relationships', 'concept': 'concepts'}[kind]] += 1
+            if kind == 'relationship':
+                continue
+            sources = record.get('sources', [])
+            notes = record.get('notes', [])
+            if not isinstance(sources, list) or not isinstance(notes, list):
+                raise ValueError('knowledge provenance')
+            def timestamp(source):
+                value = source.get('timestamp')
+                if value is None:
+                    return ''
+                if not isinstance(value, str) or len(value) > 64:
+                    raise ValueError('knowledge timestamp')
+                stamp = datetime.fromisoformat(value.replace('Z', '+00:00'))
+                if stamp.tzinfo is None:
+                    raise ValueError('knowledge timestamp')
+                return stamp.astimezone(timezone.utc).isoformat()
+            if any(not isinstance(x, dict) for x in sources + notes):
+                raise ValueError('knowledge provenance')
+            updated = max((timestamp(x) for x in sources), default='')
+            latest = max(notes, key=timestamp, default={})
+            def bounded(value, limit):
+                if not isinstance(value, str):
+                    raise ValueError('knowledge text')
+                return ' '.join(value.split())[:limit]
+            row = {'name': bounded(record.get('name'), knowledge_map.MAX_NAME),
+                   'text': bounded(latest.get('text', ''), knowledge_map.MAX_TEXT),
+                   'updated_at': updated or None}
+            if kind == 'entity':
+                row['entity_type'] = bounded(record.get('entity_type', ''), knowledge_map.MAX_TYPE)
+            recent[kind].append(row)
+        for kind, key in (('entity', 'recent_entities'), ('concept', 'recent_concepts')):
+            result[key] = sorted(recent[kind], key=lambda r: (r['updated_at'] or '', r['name']),
+                                 reverse=True)[:KNOWLEDGE_RECENT]
+        result.update(status='available', counts=counts)
+    except (OSError, ValueError, TypeError, RecursionError):
+        # Do not echo untrusted map contents or invalidate otherwise useful work evidence.
+        result.update(status='unavailable', counts=None, recent_entities=[], recent_concepts=[])
+    return result
+
+
 def work() -> dict:
     import refresh_rollups as memory
+    import project_state
+    with project_state.inspection_budget():
+        return work_evidence()
+
+
+def work_evidence() -> dict:
+    import refresh_rollups as memory
+    import project_state
+    import brief_work
+    import release_awareness
     events = memory.read_events(ROOT)
     today = datetime.now(timezone.utc).date()
     windows = {'right_now': [], 'shortterm': []}
@@ -56,7 +146,18 @@ def work() -> dict:
                                    'excerpt': event['body'][:2400], 'truncated': len(event['body']) > 2400})
     nudge = next((line.strip() for event in events for line in event['body'].splitlines()
                   if any(word in line.lower() for word in ('friction', 'recurring', 'context gap'))), '')
-    return dict(status(), coverage=memory.check_events(ROOT, events, today),
+    try:
+        coverage = memory.check_events(ROOT, events, today)
+    except (OSError, ValueError, RecursionError):
+        coverage = {'status': 'error', 'reasons': ['coverage_unavailable'], 'semantic_review': 'not_performed'}
+        knowledge = knowledge_evidence(coverage)
+        if knowledge['status'] != 'unavailable':
+            raise  # Preserve existing failures unrelated to optional knowledge.
+    else:
+        knowledge = knowledge_evidence(coverage)
+    return dict(status(), coverage=coverage, knowledge=knowledge,
+                location=project_state.current_report(ROOT), task_brief=brief_work.context(ROOT),
+                release_awareness=release_awareness.status(ROOT),
                 right_now=windows['right_now'][:10], shortterm=windows['shortterm'][:15],
                 omitted={key: max(0, len(value) - (10 if key == 'right_now' else 15)) for key, value in windows.items()},
                 subconscious_nudge=nudge, recent_commits=git('log', '-5', '--oneline'))

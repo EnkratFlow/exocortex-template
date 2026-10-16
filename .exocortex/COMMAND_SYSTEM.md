@@ -2,7 +2,7 @@
 
 `AI_START_HERE.md` is the sole entry/authority contract.
 `.exocortex/AI_BOOTSTRAP.md` defines command discovery and execution.
-`.exocortex/commands/*.json` defines the 26 individual command behaviors.
+`.exocortex/commands/*.json` defines the 30 individual command behaviors.
 
 For each manual command, its matching JSON is the sole command-flow behavior
 source beneath `AI_START_HERE.md`. Project and provider instruction files may
@@ -49,7 +49,7 @@ guarded validation is required without reading credential values.
 
 ## Adapter parity
 
-All 26 JSON commands generate into each of three repository adapter families:
+All 30 JSON commands generate into each of three repository adapter families:
 
 - `.agents/skills/{command}/SKILL.md` for portable Agent Skills consumers;
 - `.claude/skills/{command}/SKILL.md` for Claude;
@@ -57,7 +57,7 @@ All 26 JSON commands generate into each of three repository adapter families:
 
 `.exocortex/provider-adapters.json` records provider-specific invocation truth,
 and `.exocortex/scripts/generate_command_adapters.py --check` proves the exact
-26-name/78-file repository mapping. The matrix classifies every command exactly
+30-name/90-file repository mapping. The matrix classifies every command exactly
 once as `model_invocable` or `manual_only`. Generated adapters are thin
 delegates to `AI_START_HERE.md`, this bootstrap, and exactly one matching JSON.
 Invocation policy changes discoverability only; adapters cannot add command

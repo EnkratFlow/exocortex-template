@@ -256,6 +256,10 @@ def case_command_contract() -> None:
     check("only" in cmd["constraints"]["completion"] and "never silently" in cmd["constraints"]["completion"], "completion is conditional and missing required evidence never becomes success")
     read_steps = [s for s in steps if s["type"] == "read"]
     check(read_steps and read_steps[0].get("on_error") == "record_gap", "memory read errors are recorded as gaps, not continued past")
+    check('.exocortex/knowledge/KNOWLEDGE.md' in read_steps[0]['files'], 'onboard reads the knowledge map')
+    note = read_steps[0]['on_error_note']
+    check('optional' in note and 'missing map is not a gap' in note and 'never authority' in note,
+          'knowledge is optional historical evidence, never authority')
     joined = json.dumps(cmd)
     check("commit titles alone" in joined.lower() or "Commit titles alone" in joined, "commit titles alone are declared insufficient")
     check(all(word in joined for word in ("what remains unfinished", "verify first", "unverified")), "report sections required")

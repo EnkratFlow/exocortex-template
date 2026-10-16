@@ -44,6 +44,40 @@ handoff transactions need an explicit in-scope refresh afterward. Session entry,
 `/onboard`, `/work`, and `/preflight` check coverage without writing. There is no
 new background job or provider-specific startup hook.
 
+## Knowledge map from saves
+
+Each narrative save may end with a reviewed `## Knowledge` section: key
+entities, the relationships between them, and key concepts or decisions. The
+active conversation model drafts those lines with the narrative and the owner
+approves them together, so extraction needs no extra provider call.
+
+```markdown
+## Knowledge
+### Entities
+- `name` (type): what it is, in one line
+### Relationships
+- `subject` -> relation -> `object`
+### Concepts
+- `concept`: what it means or what was decided, in one line
+```
+
+Once any event carries that section, the refresh also writes two generated
+files under `.exocortex/knowledge/`: `KNOWLEDGE.md` for people and
+`knowledge.jsonl` for tools. Facts merge across events by case-insensitive
+name; the newest reviewed wording is shown and up to five distinct notes stay
+in the JSON Lines copy. Every fact links back to its source events. Lines that
+do not match the format are listed for review instead of being dropped, and
+Knowledge text inside fenced code (such as a quoted earlier draft) is ignored.
+The output depends only on event content, so any clone rebuilds an identical
+map with `refresh_rollups.py --apply`.
+
+The map is shared project memory like `SESSION_CONTEXT.md`: commit it with the
+project so every model and machine reads the same skeleton. It is historical
+evidence, not verified current state, and it never changes PROJECT_MEMORY,
+LESSONS, TODO or decisions. Correct a fact with a later save, not by editing the
+generated files; the refresh refuses to replace a map file it did not generate.
+Projects whose saves never carry Knowledge get no map files.
+
 ## Review durable memory separately
 
 Fresh coverage is not proof that a historical next step remains open. A later
@@ -81,8 +115,25 @@ existing backups. Do not automatically upgrade other active checkouts.
 Suggested replacement for an owner's global `/save` instruction:
 
 > An approved project-local save through create_event.sh records the reviewed
-> event and refreshes only the generated Session Context section and its local
-> coverage receipt. Handwritten memory is preserved. Lessons, decisions, tasks
+> event and refreshes only the generated Session Context section, its local
+> coverage receipt and the generated knowledge map. Handwritten memory is preserved. Lessons, decisions, tasks
 > and patterns require source-backed review before they change. Session entry
 > checks freshness read-only and reconciles stale views against events and live
 > Git. A save never creates a lifecycle checkpoint or synchronizes externally.
+
+
+## Working-folder scope (unreleased)
+
+New saves include an event ID and structured project/branch/commit metadata.
+Automatic metadata contains no absolute checkout path. The event starts as a
+local file; committing, pushing, merging and deployment are separate actions.
+Historical excerpts identify their source branch and never certify integration.
+
+The ignored coverage receipt binds the generated view to the current checkout,
+branch and HEAD as well as event bytes and UTC date. A checkout change makes
+`--check` stale without writing anything. An approved `--apply` or save refreshes
+the view; it never copies notes from another checkout. Portable history must
+travel through the consuming project's Git. For grouping, privacy boundaries
+and preservation checks, see [the working standard](work-organization.md).
+
+Session entry optionally reads the bounded knowledge map; `/work` shows counts and recent entities/concepts as historical evidence, never authority, without blocking on missing or stale knowledge.

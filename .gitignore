@@ -20,6 +20,7 @@ __pycache__/
 .exocortex/local/
 .exocortex/work-items/
 .exocortex/planning/
+.exocortex/knowledge/
 .exocortex/archive/
 .exocortex/hub/
 .exocortex/.project-name

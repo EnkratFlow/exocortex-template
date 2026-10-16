@@ -234,7 +234,7 @@ def protected_data(relative):
         "control/ARCH_OVERVIEW.md", "control/REPO_ORGANIZATION_REPORT.md",
     }:
         return True
-    return value.startswith(("events/", "archive/", "hub/", "local/", "planning/", "work-items/"))
+    return value.startswith(("events/", "archive/", "hub/", "local/", "planning/", "work-items/", "knowledge/"))
 
 for line in sums.read_text(encoding="utf-8").splitlines():
     match = re.fullmatch(r"([0-9a-f]{64})  ([^/].*)", line)
@@ -337,6 +337,7 @@ protected_paths=(
     .exocortex/local
     .exocortex/planning
     .exocortex/work-items
+    .exocortex/knowledge
     .exocortex/control/ACTIVE_WORK.md
     .exocortex/control/BRANCH_POLICY.md
     .exocortex/control/REPO_STATE.md
@@ -536,7 +537,7 @@ protected = [
     '.exocortex/TODO.md','.exocortex/LESSONS.md','.exocortex/PROJECT_MEMORY.md',
     '.exocortex/OPEN_DECISIONS.md','.exocortex/subconscious_patterns.md',
     '.exocortex/.env','.exocortex/.project-name','.exocortex/events',
-    '.exocortex/archive','.exocortex/hub','.exocortex/local','.exocortex/planning',
+    '.exocortex/archive','.exocortex/hub','.exocortex/local','.exocortex/planning','.exocortex/knowledge',
     '.exocortex/work-items','.exocortex/control/ACTIVE_WORK.md',
     '.exocortex/control/BRANCH_POLICY.md','.exocortex/control/REPO_STATE.md',
     '.exocortex/control/EXECUTOR_REGISTRY.json',
@@ -1015,7 +1016,7 @@ protected = (
     ".exocortex/OPEN_DECISIONS.md", ".exocortex/subconscious_patterns.md",
     ".exocortex/.env", ".exocortex/.project-name", ".exocortex/events",
     ".exocortex/archive", ".exocortex/hub", ".exocortex/local",
-    ".exocortex/planning", ".exocortex/work-items",
+    ".exocortex/planning", ".exocortex/work-items", ".exocortex/knowledge",
     ".exocortex/control/ACTIVE_WORK.md", ".exocortex/control/BRANCH_POLICY.md",
     ".exocortex/control/REPO_STATE.md", ".exocortex/control/EXECUTOR_REGISTRY.json",
     ".exocortex/control/EXTERNAL_SYNC_POLICY.json",
@@ -1383,7 +1384,7 @@ protected = [
     '.exocortex/TODO.md','.exocortex/LESSONS.md','.exocortex/PROJECT_MEMORY.md',
     '.exocortex/OPEN_DECISIONS.md','.exocortex/subconscious_patterns.md',
     '.exocortex/.env','.exocortex/.project-name','.exocortex/events',
-    '.exocortex/archive','.exocortex/hub','.exocortex/local','.exocortex/planning',
+    '.exocortex/archive','.exocortex/hub','.exocortex/local','.exocortex/planning','.exocortex/knowledge',
     '.exocortex/work-items','.exocortex/control/ACTIVE_WORK.md',
     '.exocortex/control/BRANCH_POLICY.md','.exocortex/control/REPO_STATE.md',
     '.exocortex/control/EXECUTOR_REGISTRY.json',

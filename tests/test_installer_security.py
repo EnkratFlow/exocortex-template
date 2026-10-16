@@ -31,7 +31,7 @@ PROTECTED_FILES = {
     ".hub_enabled",
     ".hub_disabled",
 }
-PROTECTED_PREFIXES = ("events/", "archive/", "hub/", "local/", "planning/", "work-items/")
+PROTECTED_PREFIXES = ("events/", "archive/", "hub/", "local/", "planning/", "work-items/", "knowledge/")
 PROTECTED_CONTROL = {
     "control/ACTIVE_WORK.md",
     "control/BRANCH_POLICY.md",
@@ -55,7 +55,7 @@ DOWNSTREAM_IGNORED_DATA = tuple(
 DOWNSTREAM_SHARED_DATA = tuple(
     sorted(f".exocortex/{relative}" for relative in
            (PROTECTED_FILES | PROTECTED_CONTROL) - DOWNSTREAM_LOCAL_DATA)
-) + (".exocortex/events/fixture.md", ".exocortex/planning/fixture.md")
+) + (".exocortex/events/fixture.md", ".exocortex/planning/fixture.md", ".exocortex/knowledge/KNOWLEDGE.md")
 
 
 def run(

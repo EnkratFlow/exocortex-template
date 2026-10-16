@@ -6,6 +6,46 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 ## [Unreleased]
 
+## [4.0.0] - 2026-10-12
+
+Candidate only; publication and consumer installation are separate gates.
+
+### Selected-project updates
+- Add explicit machine-local update plans, per-project guarded apply, retained recovery evidence, and zero-change verification. Discovery never selects targets for mutation.
+- Integrate with the 3.3.14 native command launchers and bounded daily context collection. Accept declared, unchanged public configuration examples during selected updates; modified examples still require separate review.
+- Preserve saved narratives when Git inspection becomes unavailable during a save, including task-linked saves; report incomplete checkout verification while continuing to reject confirmed checkout or task changes.
+- Introduce the 4.0 scoped event/task-selection contract; historical events remain readable, while external readers must accept the new metadata.
+- Run selected updates from installed controllers without requiring the template repository manifest; keep public-example authorization bound to shipped digest data.
+- Compare installed, local and incoming managed files before batch execution. Require individual review for customizations or uncertain baselines, and honor checkout-local review-only/excluded policies and protected deployment paths.
+- Preserve idempotent saves across Git CRLF conversion without accepting edited event content. Resolve Git Bash archive paths before native Windows backup containment checks.
+
+
+### Added
+
+- Knowledge map from saves. `/save` drafts a reviewed Knowledge section (key
+  entities, relationships and concepts) with the narrative, and the refresh merges
+  every save's Knowledge into generated `.exocortex/knowledge/KNOWLEDGE.md` and
+  `knowledge.jsonl`, each fact linked to its source events. Deterministic and
+  provider-free; installers, updates and the public release check treat the folder
+  as protected project memory.
+- Opt-in public release awareness with a shared per-source machine cache, daily
+  cadence, failure backoff, offline notices and version-specific reminders.
+  Work/onboard read cached results only; no hooks or updates are applied.
+- `/help` and a compact guide to all 30 canonical commands.
+
+- Generic `/brief-work` lifecycle with immutable requirements revisions, explicit
+  task selection, recorded requirements approval, revision-linked saves and
+  evidence review. Supports software and content tasks without a Git dependency;
+  retains `/brief` as quick status. No Jira integration or automatic publication.
+
+- Shared offline project/checkout collector and `/where`, compact grouped `/updates`,
+  branch-scoped saves, checkout-bound context freshness and optional memory
+  preservation inspection. No automatic cleanup or deployment.
+
+- Read-only `/updates` inventory: discover GitHub repositories, compare published
+  and installed Exocortex versions, and group explicitly selected local worktrees
+  beneath their repository. No update, batch apply or background polling occurs.
+
 ## [3.3.14] - 2026-10-06
 
 ### Fixed

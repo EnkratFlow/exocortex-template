@@ -31,7 +31,7 @@
       "const": ".exocortex/commands"
     },
     "expected_command_count": {
-      "const": 26
+      "const": 30
     },
     "generator": {
       "const": ".exocortex/scripts/generate_command_adapters.py"
@@ -46,8 +46,8 @@
       "properties": {
         "model_invocable": {
           "type": "array",
-          "minItems": 13,
-          "maxItems": 13,
+          "minItems": 15,
+          "maxItems": 15,
           "uniqueItems": true,
           "items": {
             "type": "string",
@@ -56,8 +56,8 @@
         },
         "manual_only": {
           "type": "array",
-          "minItems": 13,
-          "maxItems": 13,
+          "minItems": 15,
+          "maxItems": 15,
           "uniqueItems": true,
           "items": {
             "type": "string",

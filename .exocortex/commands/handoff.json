@@ -11,7 +11,7 @@
     {
       "type": "ai",
       "action": "Orient read-only and prepare a strict handoff packet",
-      "context": "Resolve the exact work item, revision, designated base, candidate SHA, reservation state, capability and registry digests, evidence hashes, closed gates, and first verification step. Present the packet without writing. A handoff never grants authority and is local-only by default."
+      "context": "Resolve the exact work item, revision, designated base, candidate SHA, reservation state, capability and registry digests, evidence hashes, closed gates, and first verification step. Present the packet without writing. A handoff never grants authority and is local-only by default. Include the selected task brief ID/revision/SHA, source reference, criteria evidence, pending questions, proposed lessons and next reconciliation step. Keep requirements approval distinct from output acceptance. For ordinary project work with no guarded work item, present those task references and applicable checkout or content-project evidence in a read-only packet; do not fabricate guard records. The guarded recording choice below applies only to a real protocol-managed work item. An authorized ordinary narrative handoff can instead use /save with the exact task reference and stable save ID."
     },
     {
       "type": "user_choice",

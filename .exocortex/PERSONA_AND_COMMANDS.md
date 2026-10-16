@@ -15,7 +15,7 @@ egress authority.
 
 The full judgment rules are in `.exocortex/control/ORCHESTRATION.md`.
 
-Commands are defined in the 26 JSON files under `.exocortex/commands/` and are
+Commands are defined in the 30 JSON files under `.exocortex/commands/` and are
 grouped as daily, memory, planning/review, and system operations. See
 `.exocortex/COMMAND_SYSTEM.md` for the index.
 

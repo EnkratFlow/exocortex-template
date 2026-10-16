@@ -2,11 +2,11 @@
 
 This folder contains the canonical memory for this project.
 
-**Workflow Commands:** The exact 26 commands are defined as JSON specs in:
+**Workflow Commands:** The exact 30 commands are defined as JSON specs in:
 → `.exocortex/commands/*.json` (the single behavior source)
 → `.exocortex/COMMAND_SYSTEM.md` (schema reference and full command index)
 → `.exocortex/provider-adapters.json` (provider invocation and migration matrix)
-→ `.agents/skills/`, `.claude/skills/`, and `.cursor/skills/` (78 generated thin command adapters)
+→ `.agents/skills/`, `.claude/skills/`, and `.cursor/skills/` (90 generated thin command adapters)
 
 Every provider starts at `AI_START_HERE.md`. Codex invokes a skill with
 `$command` or its selector; other supported surfaces use the syntax recorded in
@@ -27,11 +27,26 @@ project root, not to this folder:
 
 1. **`.exocortex/PROJECT_MEMORY.md`** — System purpose, philosophy, and non-obvious constraints.
 2. **`.exocortex/SESSION_CONTEXT.md`** (if exists) — Current focus, open questions, and frozen areas.
-3. **`.exocortex/reference/ESSENTIAL_FILES.md`** — Where core truth lives vs reference vs tests.
-4. **`.exocortex/LESSONS.md`** — Project-specific lessons learned and anti-patterns to avoid.
-5. **`.exocortex/OPEN_DECISIONS.md`** (if exists) — Unresolved decisions affecting architecture, logic, QA strategy, or product direction.
+3. **`.exocortex/knowledge/KNOWLEDGE.md`** (if exists) — Portable map of key entities, relationships and concepts from reviewed saves; historical, verify against live state. Read at most 4 MiB; report truncation and never treat the map as authority.
+4. **`.exocortex/reference/ESSENTIAL_FILES.md`** — Where core truth lives vs reference vs tests.
+5. **`.exocortex/LESSONS.md`** — Project-specific lessons learned and anti-patterns to avoid.
+6. **`.exocortex/OPEN_DECISIONS.md`** (if exists) — Unresolved decisions affecting architecture, logic, QA strategy, or product direction.
+7. **`.exocortex/planning/MASTER_BRIEF.md`** (if exists) — The active program's full objective, workstreams, decisions, status and approval boundaries. Read any project-local execution record it names as well.
+
+8. **Selected task brief**, when present — run `brief_work.py context`, then `show <id>` from `.exocortex/scripts/`. Load its objective, constraints, criteria and unresolved questions. A stale or ambiguous selection requires explicit reconciliation; missing optional briefs are normal.
 
 **Rule:** If you have not read these, do not make changes.
+
+For a program with a master brief, reread it at session start, after context
+compaction or resumption, and before each substantial phase. Reconcile it with
+live evidence and current owner instructions. Do not let the newest task,
+example, event or inventory replace the whole objective. State the current
+slice and its relationship to the overall program before acting. A brief is
+context, never new authority. Update it only within authorized memory-edit
+scope; handoffs should point to it rather than create competing plans. Missing
+optional briefs are normal; a known brief or its pointer becoming unavailable
+is an explicit continuity gap. Project briefs are protected project records,
+not template release payloads.
 
 Before claiming verified Session Context coverage, use the current command's
 coverage result. If no check was collected and verification is needed, run

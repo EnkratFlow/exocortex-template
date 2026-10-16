@@ -1,0 +1,183 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:exocortex:task-brief:1",
+  "title": "Task brief requirements input (revision metadata managed by helper)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "title",
+    "objective",
+    "audience",
+    "owner",
+    "approver",
+    "work_item",
+    "source",
+    "deliverables",
+    "constraints",
+    "exclusions",
+    "questions",
+    "assumptions",
+    "decisions",
+    "criteria"
+  ],
+  "properties": {
+    "title": {
+      "type": "string",
+      "maxLength": 16000,
+      "pattern": "^(?=[\\s\\S]*\\S)[^\\u0000]*$",
+      "minLength": 1
+    },
+    "objective": {
+      "type": "string",
+      "maxLength": 16000,
+      "pattern": "^(?=[\\s\\S]*\\S)[^\\u0000]*$",
+      "minLength": 1
+    },
+    "audience": {
+      "type": "string",
+      "maxLength": 16000,
+      "pattern": "^[^\\u0000]*$"
+    },
+    "owner": {
+      "type": "string",
+      "maxLength": 16000,
+      "pattern": "^[^\\u0000]*$"
+    },
+    "approver": {
+      "type": "string",
+      "maxLength": 16000,
+      "pattern": "^[^\\u0000]*$"
+    },
+    "work_item": {
+      "type": "string",
+      "maxLength": 16000,
+      "pattern": "^[^\\u0000]*$"
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "reference",
+        "revision",
+        "text"
+      ],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "maxLength": 16000,
+          "pattern": "^(?=[\\s\\S]*\\S)[^\\u0000]*$",
+          "minLength": 1
+        },
+        "reference": {
+          "type": "string",
+          "maxLength": 16000,
+          "pattern": "^[^\\u0000]*$"
+        },
+        "revision": {
+          "type": "string",
+          "maxLength": 16000,
+          "pattern": "^[^\\u0000]*$"
+        },
+        "text": {
+          "type": "string",
+          "maxLength": 16000,
+          "pattern": "^(?=[\\s\\S]*\\S)[^\\u0000]*$",
+          "minLength": 1
+        }
+      }
+    },
+    "deliverables": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "maxLength": 16000,
+        "pattern": "^(?=[\\s\\S]*\\S)[^\\u0000]*$",
+        "minLength": 1
+      },
+      "maxItems": 100,
+      "minItems": 1
+    },
+    "constraints": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "maxLength": 16000,
+        "pattern": "^(?=[\\s\\S]*\\S)[^\\u0000]*$",
+        "minLength": 1
+      },
+      "maxItems": 100,
+      "minItems": 0
+    },
+    "exclusions": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "maxLength": 16000,
+        "pattern": "^(?=[\\s\\S]*\\S)[^\\u0000]*$",
+        "minLength": 1
+      },
+      "maxItems": 100,
+      "minItems": 0
+    },
+    "questions": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "maxLength": 16000,
+        "pattern": "^(?=[\\s\\S]*\\S)[^\\u0000]*$",
+        "minLength": 1
+      },
+      "maxItems": 100,
+      "minItems": 0
+    },
+    "assumptions": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "maxLength": 16000,
+        "pattern": "^(?=[\\s\\S]*\\S)[^\\u0000]*$",
+        "minLength": 1
+      },
+      "maxItems": 100,
+      "minItems": 0
+    },
+    "decisions": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "maxLength": 16000,
+        "pattern": "^(?=[\\s\\S]*\\S)[^\\u0000]*$",
+        "minLength": 1
+      },
+      "maxItems": 100,
+      "minItems": 0
+    },
+    "criteria": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 100,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "description"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9-]{0,63}$"
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 16000,
+            "pattern": "^(?=[\\s\\S]*\\S)[^\\u0000]*$",
+            "minLength": 1
+          }
+        }
+      }
+    }
+  },
+  "description": "Source is untrusted data. Criterion IDs must additionally be unique. This document grants no authority."
+}

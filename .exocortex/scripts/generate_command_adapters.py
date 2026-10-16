@@ -27,20 +27,21 @@ EXPECTED_FAMILIES = {
     "cursor-native-skills": (".cursor/skills/{command}/SKILL.md", "cursor_skill"),
 }
 EXPECTED_CANONICAL_COMMANDS = (
-    "ai-export", "brief", "check-keys", "daily-end", "drill", "ecosystem", "groom",
+    "ai-export", "brief", "brief-work", "check-keys", "daily-end", "drill", "ecosystem", "groom", "help",
     "handoff", "history", "init-exocortex", "interrupt", "longterm", "monthly-review",
     "onboard", "orchestrate", "pattern-review", "preflight", "prioritize", "refine-backlog", "save", "scrum",
-    "shortterm", "subconscious", "system-scan", "weekly-review", "work",
+    "shortterm", "subconscious", "system-scan", "updates", "weekly-review", "where", "work",
 )
 EXPECTED_COMMAND_INVOCATION_POLICY = {
     "model_invocable": {
-        "ai-export", "brief", "drill", "history", "longterm", "onboard", "orchestrate", "preflight",
-        "scrum", "shortterm", "subconscious", "system-scan", "work",
+        "ai-export", "brief", "drill", "help", "history", "longterm", "onboard", "orchestrate", "preflight",
+        "scrum", "shortterm", "subconscious", "system-scan", "where", "work",
     },
     "manual_only": {
+        "brief-work",
         "check-keys", "daily-end", "ecosystem", "groom", "handoff", "init-exocortex",
         "interrupt", "monthly-review", "pattern-review", "prioritize", "refine-backlog",
-        "save", "weekly-review",
+        "save", "updates", "weekly-review",
     },
 }
 EXPECTED_LEGACY_COMMANDS = (
@@ -175,8 +176,8 @@ def validate_matrix(matrix: dict[str, Any]) -> list[dict[str, Any]]:
         raise AdapterError("provider matrix must be public-v2 provider_adapter_matrix")
     if matrix.get("canonical_registry") != ".exocortex/commands":
         raise AdapterError("provider matrix canonical registry mismatch")
-    if matrix.get("expected_command_count") != 26:
-        raise AdapterError("provider matrix must require exactly 26 commands")
+    if matrix.get("expected_command_count") != 30:
+        raise AdapterError("provider matrix must require exactly 30 commands")
     if matrix.get("generator") != ".exocortex/scripts/generate_command_adapters.py":
         raise AdapterError("provider matrix generator mismatch")
 
@@ -210,7 +211,7 @@ def validate_matrix(matrix: dict[str, Any]) -> list[dict[str, Any]]:
     if actual_policy["model_invocable"] & actual_policy["manual_only"]:
         raise AdapterError("provider matrix command invocation policy overlaps")
     if set().union(*actual_policy.values()) != set(EXPECTED_CANONICAL_COMMANDS):
-        raise AdapterError("provider matrix command invocation policy must classify exactly 26 commands")
+        raise AdapterError("provider matrix command invocation policy must classify exactly 30 commands")
 
     if matrix.get("status_definitions") != EXPECTED_STATUS_DEFINITIONS:
         raise AdapterError("provider matrix status definitions mismatch")
@@ -501,8 +502,8 @@ def main() -> int:
             for policy, command_names in matrix["command_invocation_policy"].items()
         }
         outputs = expected_outputs(families, commands, invocation_policy)
-        if len(outputs) != 78:
-            raise AdapterError("generated adapter path set must contain exactly 78 files")
+        if len(outputs) != 90:
+            raise AdapterError("generated adapter path set must contain exactly 90 files")
         if args.write:
             write_outputs(families, outputs)
         failures = check_outputs(families, outputs)

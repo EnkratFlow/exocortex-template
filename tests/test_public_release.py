@@ -921,6 +921,7 @@ def main() -> None:
         (".exocortex/work-items/EXO-1.json", "WORK_ITEM_DATA"),
         (".exocortex/local/protocol/capabilities/grant.json", "LOCAL_PROTOCOL_DATA"),
         (".exocortex/planning/private.md", "PLANNING_RUNTIME_DATA"),
+        (".exocortex/knowledge/KNOWLEDGE.md", "KNOWLEDGE_DATA"),
         (".exocortex/SESSION_CONTEXT.md.backup", "SESSION_CONTEXT"),
         (".exocortex/archive/private.md", "PROJECT_RUNTIME_DATA"),
         (".exocortex/control/EXECUTOR_REGISTRY.json", "RUNTIME_CONTROL_REGISTRY"),

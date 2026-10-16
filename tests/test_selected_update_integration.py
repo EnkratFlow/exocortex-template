@@ -1,0 +1,140 @@
+"""One disposable real guarded apply; only public-release lookup is substituted."""
+from pathlib import Path
+import hashlib
+import json
+import os
+import shutil
+import subprocess
+import sys
+import tempfile
+import unittest
+
+sys.dont_write_bytecode=True
+ROOT=Path(__file__).resolve().parents[1]
+sys.path.insert(0,str(ROOT/'.exocortex/scripts'))
+sys.path.insert(0,str(ROOT/'tests'))
+import authority_guard as guard
+import test_installer_security as fixture
+
+
+def run(args,root):
+    p=subprocess.run([str(x) for x in args],cwd=root,capture_output=True,text=True,timeout=120)
+    if p.returncode:raise AssertionError(p.stdout+p.stderr)
+    return p.stdout.strip()
+
+
+def write(path,value):
+    path.parent.mkdir(parents=True,exist_ok=True)
+    path.write_bytes((json.dumps(value)+'\n').encode('utf-8'))
+
+
+class IntegrationTests(unittest.TestCase):
+    def test_guarded_update_preserves_memory_and_verifies_installation(self):
+        with tempfile.TemporaryDirectory(prefix='selected integration ',ignore_cleanup_errors=True) as tmp:
+            base=Path(tmp).resolve();source=base/'source';source.mkdir()
+            for row in (ROOT/'SHA256SUMS').read_text().splitlines()+['  SHA256SUMS']:
+                name=row.split('  ',1)[1];dest=source/name;dest.parent.mkdir(parents=True,exist_ok=True)
+                shutil.copy2(ROOT/name,dest)
+            target=fixture.new_target(base,'target')
+            run(['git','config','core.autocrlf','false'],target)
+            if os.name=='nt':
+                # Use the real native launcher, which resolves Git Bash and
+                # Python. The POSIX installer fixture may instead find WSL bash
+                # and intentionally omits Windows process-discovery variables.
+                powershell=shutil.which('pwsh') or shutil.which('powershell.exe')
+                self.assertIsNotNone(powershell,'Native PowerShell launcher required')
+                home=base/'fixture home';home.mkdir()
+                temporary=base/'fixture temporary';temporary.mkdir()
+                env={key:os.environ[key] for key in ('PATH','SystemRoot','WINDIR','COMSPEC','PATHEXT',
+                    'EXOCORTEX_BASH','ProgramFiles','ProgramFiles(x86)','ProgramW6432',
+                    'LOCALAPPDATA','USERPROFILE') if key in os.environ}
+                env.update(HOME=str(home),TMP=str(temporary),TEMP=str(temporary),TMPDIR=str(temporary),
+                    EXOCORTEX_PYTHON=sys.executable,PYTHONDONTWRITEBYTECODE='1')
+                result=subprocess.run([powershell,'-NoProfile','-ExecutionPolicy','Bypass','-File',str(source/'scripts/windows.ps1'),
+                    'install','fixture'],cwd=target,env=env,capture_output=True,text=True,timeout=240)
+            else:
+                result=fixture.install(source,target)
+            self.assertEqual(result.returncode,0,'Installer stdout:\n'+result.stdout+'\nInstaller stderr:\n'+result.stderr)
+            run(['git','config','user.name','Fixture'],target)
+            run(['git','config','user.email','fixture@example.invalid'],target)
+            run(['git','symbolic-ref','HEAD','refs/heads/fixture-update'],target)
+            memory=target/'.exocortex/PROJECT_MEMORY.md';memory.write_bytes(b'# Fictional handwritten memory\nRetain this.\n')
+            script=target/'.exocortex/scripts/read_memory_stack.sh';script.write_bytes(b'#!/bin/bash\necho old-fixture\n')
+            manifest=target/'.exocortex/.install-manifest'
+            rows=[('.exocortex/scripts/read_memory_stack.sh '+hashlib.sha256(script.read_bytes()).hexdigest()) if x.startswith('.exocortex/scripts/read_memory_stack.sh ') else x for x in manifest.read_text().splitlines()]
+            manifest.write_bytes(('\n'.join(rows)+'\n').encode())
+            run(['git','add','.'],target);run(['git','commit','-qm','Fictional installed baseline'],target)
+            controller=base/'controller';locks=base/'locks'
+            run(['git','clone','--no-local','-q','-c','core.autocrlf=false',target,controller],base)
+            self.assertFalse((controller/'SHA256SUMS').exists())
+            installed_scripts=controller/'.exocortex/scripts'
+            # Every coordinator invocation is a fresh isolated process importing
+            # only the installed helper and siblings, never the template module.
+            def installed_call(action,expected=None,authorities=None):
+                payload=dict(action=action,controller=str(controller),source=str(source),
+                    target=str(target),backup=str(base/'backups'),locks=str(locks),
+                    digest=sha,expected=expected,authorities=authorities)
+                program="""
+import json,sys
+from pathlib import Path
+from unittest.mock import patch
+sys.path.insert(0,sys.argv[1])
+import update_selected as update
+p=json.load(sys.stdin);root=Path(p['controller']);source=Path(p['source'])
+assert Path(update.__file__).resolve().parent == Path(sys.argv[1]).resolve()
+assert not (root/'SHA256SUMS').exists()
+if p['action']=='create':
+    result=update.create(root,'fixture',source,p['digest'],Path(p['backup']),[Path(p['target'])],'fictional')
+elif p['action']=='apply':
+    # Unpublished source: replace only public-release lookup, retain real code
+    # authentication, launcher, authority consumption and post-verification.
+    verify_source=update.verify_source
+    with patch.object(update,'verify_source',side_effect=lambda candidate,apply=False: verify_source(candidate,apply=False)):
+        result=update.execute(root,'fixture',p['expected'],'apply',p['authorities'],Path(p['locks']))
+else:
+    result=update.execute(root,'fixture',p['expected'],'preview',lock_root=Path(p['locks']))
+print(json.dumps(result))
+"""
+                result=subprocess.run([sys.executable,'-I','-B','-c',program,str(installed_scripts)],
+                    input=json.dumps(payload),cwd=controller,capture_output=True,text=True,timeout=720)
+                self.assertEqual(result.returncode,0,result.stdout+result.stderr)
+                return json.loads(result.stdout)
+            sha=hashlib.sha256((source/'SHA256SUMS').read_bytes()).hexdigest()
+            plan=installed_call('create')
+            self.assertEqual(plan['targets'][0]['state'],'not_attempted',plan)
+            plan=installed_call('preview',plan['plan_sha256'])
+            self.assertEqual(plan['targets'][0]['state'],'ready',plan)
+            paths=plan['targets'][0]['receipt']['changed_paths']
+            actor={'surface_id':'fixture-surface','executor_id':'fixture-writer','adapter_version':'fixture-v1'}
+            approval={'approved_by':'fixture-owner','accepted_at':'2026-01-01T00:00:00Z','expires_at':'2099-01-01T00:00:00Z','summary':'Fictional update test.'}
+            envelope={'schema_version':'public-v2','kind':'local_delivery_envelope','envelope_id':'fixture-update',
+                      'work_item_id':'fixture-update','title':'Fictional selected update','type':'maintenance',
+                      'project_root':str(target),'branch':'fixture-update','base_sha':run(['git','rev-parse','HEAD'],target),
+                      'allowed_paths':paths,'outcome':'Update fictional project','risk':'low','rollback':'Retain and review archive',
+                      'verification':['Memory preserved; zero changes remain'],'exclusions':['No real projects or accounts'],
+                      'writer':actor,'reviewer':{'surface_id':'fixture-review','executor_id':'fixture-reviewer','adapter_version':'fixture-v1'},
+                      'approval':approval,'lease_expires_at':'2099-01-01T00:00:00Z'}
+            inbox='.exocortex/local/protocol/inbox/fixture-update.json';write(target/inbox,envelope)
+            run([sys.executable,source/'.exocortex/scripts/orchestrate_work_item.py','bootstrap-local-delivery',
+                 '--project-root',target,'--envelope-source',inbox,'--request-id','fixture-bootstrap'],target)
+            registry=json.loads((target/'.exocortex/control/EXECUTOR_REGISTRY.json').read_text())
+            capability='.exocortex/local/protocol/capabilities/fixture-apply.json'
+            cap={'schema_version':'public-v2','kind':'approval_capability','capability_id':'fixture-apply',
+                 'work_item_id':'fixture-update','work_item_revision':0,'operation':'apply_template_update',
+                 'scope':{'allowed_paths':paths,'target_sha':sha},
+                 'executor':dict(actor,guard_digest=guard.current_guard_digest(),registry_version=registry['registry_version']),
+                 'approval':dict(approval,one_time=True),
+                 'status':{'state':'active','revoked_at':None,'consumed_at':None,'consumed_by_request_id':None}}
+            write(target/capability,cap)
+            authority=dict(actor,capability=capability,work_item_id='fixture-update',work_item_revision=0,request_id='fixture-apply')
+            # This candidate is deliberately unpublished. Source bytes, real
+            # launcher, guard, capability consumption and post-check still run.
+            plan=installed_call('apply',plan['plan_sha256'],{'target-1':authority})
+            self.assertEqual(plan['targets'][0]['state'],'applied',plan)
+            self.assertEqual(memory.read_bytes(),b'# Fictional handwritten memory\nRetain this.\n')
+            self.assertEqual(script.read_bytes(),(source/'.exocortex/scripts/read_memory_stack.sh').read_bytes())
+            self.assertEqual(plan['targets'][0]['receipt']['verification']['changed_paths'],[])
+            self.assertEqual(json.loads((target/capability).read_text())['status']['state'],'consumed')
+
+
+if __name__=='__main__':unittest.main()
