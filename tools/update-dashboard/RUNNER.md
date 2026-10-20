@@ -3,7 +3,7 @@
 This Python library publishes an already verified Exocortex update as a draft
 GitHub pull request. A bounded session worker supports an administrator-pinned
 disposable pilot from a private dashboard. The trusted preparation controller now connects reviewed local plans to the
-artifact freezer. Hosted preparation and real-repository updates remain unavailable. The runner does not merge a pull
+artifact freezer. A preview-only attended host is runnable; hosted-owner acceptance and real-repository updates remain unavailable. The runner does not merge a pull
 request, deploy an application, synchronize local clones, or grant itself
 update authority.
 
@@ -165,9 +165,9 @@ requires host isolation, registration, release approval and repository consent.
 The prepared disposable pilot does not complete general activation. Remaining
 work requires implementation, review and evidence for:
 
-1. Provision and verify the disposable-checkout host for the preparation
-   request bridge described below. The hosted queue and preview bridge exist,
-   but no general live preparation host or reviewed apply-request path is enabled.
+1. Complete authenticated hosted-owner acceptance of the isolated preparation
+   host described below. The attended host and network-free preview execution
+   are implemented; no reviewed apply-request path is enabled.
 2. Hosted credential provisioning and an isolated execution host, with private
    durable storage, logging limits and secret rotation. The implemented local
    pilot broker does not provide those hosted boundaries.
@@ -251,3 +251,78 @@ Offline queue, encryption, lease, worker, transport and built-UI tests establish
 these boundaries. They do not demonstrate a provisioned isolated execution host,
 an actual hosted-owner preparation request, a new guarded apply, or publication
 of a real repository update. Real activation still requires those proofs.
+
+
+## Isolated preparation execution
+
+`pr_runner_isolation.DockerPreview` is an optional preview invoker for the
+coordinator and preparation controller. It is rejected for apply. The trusted
+host performs fixed read-only GitHub observations and published-release
+attestation; only the authenticated updater dry run executes in Docker.
+Provider credentials, signed controller policy and coordinator state stay out
+of the container. This separates provider access from untrusted execution; it
+does not sandbox the trusted host controller or Docker daemon itself.
+
+The adapter pins a local Unix-socket Docker endpoint, an empty temporary client
+configuration and an immutable local image ID. Ambient Docker host/context and
+proxy configuration are excluded. The container has no network, runs as the
+nonroot host UID, drops all capabilities and disallows privilege escalation.
+Its root, release, target checkout and authenticated private launcher snapshot
+are read-only. Only the selected backup subdirectory and a 256 MiB temporary
+filesystem are writable. Limits are one CPU, 512 MiB RAM, 128 processes, 240
+seconds and 8 MiB captured output. Docker logging and restart are disabled.
+Actual inspect results are checked before start. A unique ownership label/name
+allows reconciliation after a lost create response; cleanup failure is a failure.
+
+Build the runtime separately with `tools/update-dashboard/isolation.Dockerfile`,
+review it, and use its local `sha256:` image ID in the private host configuration.
+The runner never starts Docker, pulls an image, clones a target, discovers keys,
+or installs a daemon. The image's installed package versions are captured by the
+resulting image ID; rebuilding the Dockerfile may produce a different ID.
+
+For a standalone diagnostic preview:
+
+```sh
+python3 tools/update-dashboard/pr_runner_isolation.py --config /absolute/private/host.json
+```
+
+That owner-only (0600), absolute-path JSON file has exactly these fields:
+`image`, `source`, `checkout`, `backup_root`, `controller`, `plan_id`,
+`account_scope`, `repository`, `repository_id`, `base_branch`, `base_sha`.
+`source` is the existing coordinator's authenticated published-source record
+(`path`, `manifest_sha256`, `release`), not a browser-supplied release selector.
+The repository ID and base SHA must match current GitHub observations before
+and after preview. Paths must be canonical, separate local directories; the
+checkout must be a standalone disposable clone. No credentials belong in this
+file. The CLI reports bounded evidence and never applies or publishes.
+
+A clone lacks local-only identity and memory. Provision verified local context
+through the existing approved process before rehearsal. Missing context remains
+a preservation failure; never invent it to make a real repository pass.
+Disposable fixture tests may restore their explicitly declared fictional context.
+
+For the hosted preparation queue, run:
+
+```sh
+python3 tools/update-dashboard/pr_runner_preparation_host.py --config /absolute/private/session.json --duration 900
+```
+
+The session file has exactly `host`, `job`, `authority_directory`, `control_key`,
+`worker_key`, `origin`, `github_id`. `host` is the standalone configuration above
+without `plan_id` (the immutable hosted request chooses that ID). `job` names an
+owner-private, unexpired, exact job record. `authority_directory` and
+`control_key` refer to the existing signed RepositoryAuthority policy; they do
+not grant publication. `worker_key` is the existing request-signing key. No
+writer App key or publication grant is accepted. Service access arrives as one
+hidden-stdin JSON object with `service_token`, and stays in memory. The session
+holds an exclusive controller lock and expires after at most four hours.
+
+The host's `configuration(job, github_id)` output must exactly match the private
+Site's `UPDATE_PREPARATION_CONFIG`; the existing worker public key must match.
+The owner still requests preparation through the signed-in dashboard. Service
+access cannot impersonate that owner. This entrypoint composes the same queue
+checks for cancellation, connection/preference changes, lease expiry and retry.
+A completed preview is evidence only; applying, freezing and publishing remain
+separate guarded operations.
+
+Docker options follow the official [container execution reference](https://docs.docker.com/engine/containers/run/).
