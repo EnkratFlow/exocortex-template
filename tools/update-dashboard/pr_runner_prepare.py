@@ -74,7 +74,9 @@ def prepare(controller, plan_id, target_id, job, key, now):
         raise Blocked("checkout_changed_after_apply")
     if current["customization"]["requires_review"]:
         raise Blocked("policy_or_customization_changed")
-    if updater.state.remote_identity(updater.state.git(root, "remote", "get-url", "origin")) != "github.com/"+job["repository"]:
+    # remote_identity canonicalizes GitHub owner/repository casing. API
+    # selections retain display casing, so compare the same canonical form.
+    if updater.state.remote_identity(updater.state.git(root, "remote", "get-url", "origin")) != "github.com/"+job["repository"].lower():
         raise Blocked("repository_binding_mismatch")
     if job["plan_sha256"] != digest(plan):
         raise Blocked("plan_binding_mismatch")

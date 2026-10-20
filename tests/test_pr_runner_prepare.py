@@ -51,12 +51,12 @@ class PrepareTests(unittest.TestCase):
     def tearDown(self):
         self.tmp.cleanup()
 
-    def prepare(self, verify=None, invoke=None, target=None):
+    def prepare(self, verify=None, invoke=None, target=None, remote="https://github.com/example/project"):
         with patch.object(prep.updater, "load", return_value=self.plan), \
              patch.object(prep.updater, "verify_source", side_effect=verify or (lambda *a, **k: self.source)) as release, \
              patch.object(prep.updater, "target", side_effect=target or (lambda *a: self.current)), \
              patch.object(prep.updater, "candidate_hashes", return_value={}), \
-             patch.object(prep.updater.state, "git", return_value="https://github.com/example/project"), \
+             patch.object(prep.updater.state, "git", return_value=remote), \
              patch.object(prep.updater, "invoke", side_effect=invoke or (lambda *a: (0, "fixture"))) as updater, \
              patch.object(prep.updater, "receipt", return_value={"changed_paths":[], "reconciliation_required":False}), \
              patch.object(prep, "git_blob", return_value="c"*40):
@@ -72,6 +72,22 @@ class PrepareTests(unittest.TestCase):
         r.validate_artifact(payload["artifact"], payload["job"])
         self.assertEqual([x["path"] for x in payload["artifact"]["changes"]], [self.path])
         self.assertEqual(base64.b64decode(payload["artifact"]["changes"][0]["content"]), b"# fictional\n")
+
+    def test_api_display_casing_matches_https_and_ssh_remotes(self):
+        self.job["repository"] = "Example/Project"
+        for remote in ("https://github.com/example/project.git",
+                       "ssh://github.com/EXAMPLE/Project.git"):
+            with self.subTest(remote=remote):
+                payload = r.verify(self.prepare(remote=remote), "prepared-update", self.key)
+                self.assertEqual(payload["job"]["repository"], "Example/Project")
+
+    def test_different_repository_or_host_cannot_match(self):
+        self.job["repository"] = "Example/Project"
+        for remote in ("https://github.com/example/another.git",
+                       "https://example.invalid/example/project.git"):
+            with self.subTest(remote=remote):
+                with self.assertRaisesRegex(r.Blocked, "repository_binding_mismatch"):
+                    self.prepare(remote=remote)
 
     def test_preview_cannot_become_signed_apply(self):
         self.row["state"] = "ready"
