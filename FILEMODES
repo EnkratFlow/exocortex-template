@@ -323,6 +323,7 @@
 0644  tests/test_onboard_contract.py
 0644  tests/test_pr_runner.py
 0644  tests/test_pr_runner_authority.py
+0644  tests/test_pr_runner_credentials.py
 0644  tests/test_pr_runner_prepare.py
 0644  tests/test_pr_runner_transport.py
 0644  tests/test_project_state.py
@@ -338,6 +339,7 @@
 0644  tools/update-dashboard/RUNNER.md
 0644  tools/update-dashboard/pr_runner.py
 0644  tools/update-dashboard/pr_runner_authority.py
+0644  tools/update-dashboard/pr_runner_credentials.py
 0644  tools/update-dashboard/pr_runner_github.py
 0644  tools/update-dashboard/pr_runner_prepare.py
 0644  tools/update-dashboard/pr_runner_transport.py

@@ -67,6 +67,22 @@ recovery mechanism; neither mechanism restores an application's deployment.
 - Installation credentials belong only in the publisher process. The credential
   broker must bind them to the recorded App installation and repository.
   Preparation must not receive repository write credentials.
+- `pr_runner_credentials` supplies a local, single-repository pilot broker.
+  An explicit owner-private PEM path is passed to a POSIX OpenSSL signer; the
+  key is never discovered, returned to Python, placed in argv/environment, or
+  logged. The file must be owner-only, regular, singly linked and beneath a
+  0700 directory. Keep it outside repositories and hosted source bundles.
+  The broker verifies the exact App/installation/account, selected-repository
+  mode and exact permission set. A temporary metadata-only token verifies the
+  installation contains exactly one pinned private repository, then is revoked.
+  The write token is requested with that immutable repository ID and exact
+  permissions, and its accessible repository list is checked again.
+- Pilot tokens stay in memory and are refreshed only after retiring the prior
+  token. Failed revocations retain an inaccessible token for retry; pending
+  cleanup blocks reuse and replacement until deletion succeeds or verified
+  expiry passes. Call `revoke()` when ending the pilot. A lost token-creation
+  response may leave an unknown provider token until its one-hour expiry.
+  This local mechanism is not a vault, remote service or OS isolation boundary.
 - No target-repository script is executed by the publisher. Preparation imports
   its coordinator from the trusted application tree, not from the target.
 - Maximum 1,000 changed files, 2 MiB per file, 8 MiB decoded content and 12 MiB
@@ -86,8 +102,9 @@ requires an implementation and review of:
 1. The authenticated controller that validates the selected repository, prepares
    a disposable checkout, obtains exact guarded-apply authority and records the
    result. It must never manufacture capability records from a preview.
-2. A credential broker and isolated execution host, with repository-bound App
-   tokens, private durable storage, logging limits and secret rotation.
+2. Hosted credential provisioning and an isolated execution host, with private
+   durable storage, logging limits and secret rotation. The implemented local
+   pilot broker does not provide those hosted boundaries.
 3. Hosted dispatch/status and cancellation, tying connection revocation and
    policy revisions to the publisher's current signed control records.
 4. An authenticated published target release. An unpublished candidate remains
@@ -118,10 +135,16 @@ The tests use fictional identities, real local files/SQLite and mocked GitHub
 responses/release attestation. They cover account isolation, state tampering,
 explicit policy, expiry/revocation, restart deduplication, uncertain writes,
 changed bases, closed/foreign PRs, size/path limits, bounded transport and
-multi-file validation cost. They make no network requests and do not prove a
-live deployment. Real guarded installer and restore tests are separate.
+multi-file validation cost. Credential tests use real disposable RSA signing
+and fictional provider responses to verify scope, expiry and revocation
+failure recovery. They make no network requests and do not prove a live
+deployment. Real guarded installer and restore tests are separate.
 
 The implementation follows GitHub's
 [Git tree API](https://docs.github.com/en/rest/git/trees),
 [Git reference API](https://docs.github.com/en/rest/git/refs) and
 [Git commit API](https://docs.github.com/en/rest/git/commits).
+App authentication follows GitHub's
+[JWT signing](https://docs.github.com/en/apps/creating-github-apps/authenticating-with-a-github-app/generating-a-json-web-token-jwt-for-a-github-app)
+and [installation token scope](https://docs.github.com/en/apps/creating-github-apps/authenticating-with-a-github-app/generating-an-installation-access-token-for-a-github-app)
+contracts.
