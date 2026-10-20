@@ -40,7 +40,7 @@ def git_blob(root, commit, path):
     return sha
 
 
-def prepare(controller, plan_id, target_id, job, key, now):
+def prepare(controller, plan_id, target_id, job, key, now, preview_invoker=None):
     """Return a signed prepared-update packet; caller stores it privately.
 
     `job` is the controller's authenticated selection/policy record with an
@@ -81,7 +81,7 @@ def prepare(controller, plan_id, target_id, job, key, now):
     if job["plan_sha256"] != digest(plan):
         raise Blocked("plan_binding_mismatch")
     # Recheck the actual post-apply zero-change state, not just a stored claim.
-    code, output = updater.invoke(plan["source"], row, Path(plan["backup_root"])/plan_id/target_id)
+    code, output = (preview_invoker or updater.invoke)(plan["source"], row, Path(plan["backup_root"])/plan_id/target_id)
     fresh = updater.receipt(output, Path(plan["backup_root"])/plan_id/target_id) if code == 0 else None
     if not fresh or fresh["changed_paths"] or fresh["reconciliation_required"]:
         raise Blocked("post_apply_recheck_failed")

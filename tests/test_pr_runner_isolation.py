@@ -9,7 +9,7 @@ import tempfile
 import unittest
 from unittest.mock import Mock, patch
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'tools/update-dashboard'))
-from pr_runner_isolation import DockerPreview, IsolationError, updater, observe_repository, preview_config
+from pr_runner_isolation import DockerPreview, DockerRehearsal, IsolationError, updater, observe_repository, preview_config
 
 @unittest.skipUnless(os.name=='posix','Docker host adapter requires POSIX host')
 class IsolationTests(unittest.TestCase):
@@ -166,5 +166,79 @@ class IsolationTests(unittest.TestCase):
     def test_preview_adapter_cannot_be_supplied_for_apply(self):
         with self.assertRaisesRegex(updater.UpdateError,'cannot authorize apply'):
             updater.execute(self.root,'unused','0'*64,'apply',preview_invoker=self.adapter)
+
+    def authority(self):
+        return dict(capability='.exocortex/local/protocol/capabilities/fixture.json',
+                    work_item_id='fixture',work_item_revision=0,request_id='fixture',
+                    surface_id='fixture',executor_id='fixture',adapter_version='fixture-v1')
+
+    def rehearsal(self):
+        return DockerRehearsal(self.image,self.source,self.root/'checkout',self.root/'backups',self.authority())
+
+    def test_rehearsal_dryrun_readonly_and_apply_has_readonly_git(self):
+        adapter=self.rehearsal();seen=[]
+        def run(backup):
+            seen.append((adapter._create_args(backup),adapter._mounts(backup)))
+            return 0,''
+        with patch.object(adapter,'_control',side_effect=self.control),patch.object(adapter,'_run',side_effect=run):
+            adapter(self.source,{'path':str(self.root/'checkout')},self.backup)
+            adapter(self.source,{'path':str(self.root/'checkout')},self.backup,self.authority())
+            adapter(self.source,{'path':str(self.root/'checkout')},self.backup)
+        for n in (0,2):
+            self.assertIn('--dry-run',seen[n][0]);self.assertTrue(dict(seen[n][1])[self.root/'checkout'])
+        self.assertIn('--apply',seen[1][0]);self.assertFalse(dict(seen[1][1])[self.root/'checkout'])
+        self.assertTrue(dict(seen[1][1])[self.root/'checkout/.git'])
+        self.assertIn(self.authority()['capability'],seen[1][0])
+
+    def test_rehearsal_rejects_changed_authority_before_container(self):
+        adapter=self.rehearsal()
+        with patch.object(adapter,'_control',side_effect=self.fail):
+            for auth in ({},{**self.authority(),'request_id':'another'}):
+                with self.assertRaises(updater.UpdateError):adapter(self.source,{'path':str(self.root/'checkout')},self.backup,auth)
+
+    def test_writable_aliases_fail_without_changing_outside_file(self):
+        outside=self.root/'outside';outside.write_text('preserve')
+        adapter=self.rehearsal()
+        for link in ('hard','symbolic'):
+            target=self.root/'checkout/linked'
+            if link=='hard':os.link(outside,target)
+            else:target.symlink_to(outside)
+            with patch.object(adapter,'_control',side_effect=self.fail):
+                with self.assertRaisesRegex(IsolationError,'unsafe_rehearsal_tree'):
+                    adapter(self.source,{'path':str(self.root/'checkout')},self.backup,self.authority())
+            self.assertEqual(outside.read_text(),'preserve');target.unlink()
+
+    def test_preview_backup_alias_rejected(self):
+        self.backup.mkdir(parents=True)
+        outside=self.root/'outside';outside.write_text('preserve')
+        os.link(outside,self.backup/'alias')
+        with patch.object(self.adapter,'_control',side_effect=self.fail):
+            with self.assertRaisesRegex(IsolationError,'unsafe_rehearsal_tree'):
+                self.adapter(self.source,{'path':str(self.root/'checkout')},self.backup)
+
+    def test_git_replacement_after_construction_rejected(self):
+        adapter=self.rehearsal()
+        (self.root/'checkout/.git').rmdir();(self.root/'checkout/.git').write_text('gitdir: /elsewhere')
+        with patch.object(adapter,'_control',side_effect=self.fail):
+            with self.assertRaisesRegex(IsolationError,'standalone_checkout_required'):
+                adapter(self.source,{'path':str(self.root/'checkout')},self.backup,self.authority())
+
+    def test_expiry_after_container_creation_prevents_start_and_cleans_up(self):
+        self.adapter.before_start=Mock(side_effect=IsolationError('expired'))
+        with patch.object(self.adapter,'_control',side_effect=self.control),patch('pr_runner_isolation.subprocess.Popen') as start:
+            with self.assertRaisesRegex(IsolationError,'expired'):
+                self.adapter(self.source,{'path':str(self.root/'checkout')},self.backup)
+            start.assert_not_called()
+        self.assertEqual(self.calls[-1],['rm','--force',self.cid])
+
+    def test_inspection_rejects_writable_git_in_rehearsal(self):
+        adapter=self.rehearsal();adapter._applying=True
+        info=self.info()
+        info['Mounts']=[{'Source':str(p),'Destination':str(p),'RW':not ro,'Type':'bind'} for p,ro in adapter._mounts(self.backup)]
+        with patch.object(adapter,'_control',return_value=json.dumps([info])):
+            self.assertFalse(adapter._inspect(self.cid,self.backup)['checkout_read_only'])
+        info['Mounts'][-1]['RW']=True
+        with patch.object(adapter,'_control',return_value=json.dumps([info])):
+            with self.assertRaisesRegex(IsolationError,'boundary_mismatch'):adapter._inspect(self.cid,self.backup)
 
 if __name__=='__main__':unittest.main()

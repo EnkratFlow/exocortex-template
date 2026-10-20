@@ -396,9 +396,13 @@ def family_path(facts,lock_root):
     return absolute(lock_root)/(state.opaque(facts['common_dir'])+'.json')
 
 
-def execute(root,pid,expected,action,authorities=None,lock_root=None,preview_invoker=None):
+def execute(root,pid,expected,action,authorities=None,lock_root=None,preview_invoker=None,rehearsal_invoker=None):
     if action not in ('preview','apply'): raise UpdateError('Unsupported plan operation')
     if preview_invoker is not None and action!='preview': raise UpdateError('Isolated preview cannot authorize apply')
+    if rehearsal_invoker is not None and action!='apply': raise UpdateError('Rehearsal execution requires apply authority')
+    # A trusted host can isolate all three installer calls for an authorized
+    # rehearsal. This callback never supplies or substitutes target authority.
+    run = rehearsal_invoker or preview_invoker or invoke
     authorities=authorities or {};lock_root=lock_root or local.default_cache().parent/'update-locks'
     with local.lock(plan_path(root,pid).with_suffix('.lock')):
         p=load(root,pid);expect(p,expected)
@@ -421,7 +425,7 @@ def execute(root,pid,expected,action,authorities=None,lock_root=None,preview_inv
                     if recovery and not recovery.get('resolved'):raise UpdateError('This Git family requires recovery before another update')
                     verify_source(p['source'],apply=action=='apply')
                     if target(row['path'],candidate_hashes(p['source']))!=before:raise UpdateError('Target or policy changed before preview')
-                    code,output=(preview_invoker or invoke)(p['source'],row,backup)
+                    code,output=run(p['source'],row,backup)
                     log=plan_path(root,pid).parent/pid/(row['id']+'-preview-'+str(p['revision'])+'.json')
                     local.write(log,{'exit_code':code,'output':output[-200000:]})
                     row['diagnostic_record']=str(log)
@@ -439,7 +443,7 @@ def execute(root,pid,expected,action,authorities=None,lock_root=None,preview_inv
                         row.update(state='applying',reason='Updater outcome pending');p['revision']+=1;local.write(plan_path(root,pid),p)
                         verify_source(p['source'],apply=True)
                         if target(row['path'],candidate_hashes(p['source']))!=before:raise UpdateError('Target or policy changed before apply')
-                        code,output=invoke(p['source'],row,backup,authorities[row['id']])
+                        code,output=run(p['source'],row,backup,authorities[row['id']])
                         log=plan_path(root,pid).parent/pid/(row['id']+'-apply-'+str(p['revision'])+'.json')
                         local.write(log,{'exit_code':code,'output':output[-200000:]})
                         row['diagnostic_record']=str(log)
@@ -447,7 +451,7 @@ def execute(root,pid,expected,action,authorities=None,lock_root=None,preview_inv
                         applied=receipt(output,backup,applied=True,request_id=authorities[row['id']]['request_id']);row['receipt'].update(apply=applied)
                         row['state']='verification_failed'
                         verify_source(p['source'],apply=True)
-                        code,output=invoke(p['source'],row,backup)
+                        code,output=run(p['source'],row,backup)
                         verified=receipt(output,backup) if code==0 else None
                         if not verified or verified['changed_paths'] or verified['reconciliation_required']:
                             raise UpdateError('Post-apply zero-change verification failed; preserve recovery evidence')

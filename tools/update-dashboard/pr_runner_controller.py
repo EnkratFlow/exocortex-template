@@ -14,7 +14,7 @@ from pr_runner_prepare import updater, prepare
 
 
 class PreparationController:
-    def __init__(self, root, source, checkout, backup, authority, observe, clock=time.time, preview_invoker=None):
+    def __init__(self, root, source, checkout, backup, authority, observe, clock=time.time, preview_invoker=None, rehearsal_invoker=None):
         """Paths/callbacks come from trusted host provisioning, not request JSON.
 
         authority(job, artifact) is the existing RepositoryAuthority callback.
@@ -25,6 +25,7 @@ class PreparationController:
         self.source, self.authority, self.observe = source, authority, observe
         self.clock = clock
         self.preview_invoker = preview_invoker
+        self.rehearsal_invoker = rehearsal_invoker
         for path in (self.root, self.checkout, self.backup):
             if not path.is_absolute() or path.resolve() != path:
                 raise Blocked('unsafe_preparation_path')
@@ -33,7 +34,8 @@ class PreparationController:
 
     def _validate(self, job):
         validate_job(job, self.clock())
-        self.authority(job, None)
+        if self.authority(job, None) is not True:
+            raise Blocked('live_authority_rejected')
         source = updater.verify_source(self.source, apply=True)
         release = self.source['release']
         expected = dict(repository=release['repository'], tag=release['tag'], commit=release['commit'],
@@ -72,7 +74,8 @@ class PreparationController:
         if row['initial'] != current:
             raise Blocked('preparation_changed')
         if row['state'] == 'not_attempted':
-            options = {'preview_invoker': self.preview_invoker} if self.preview_invoker is not None else {}
+            invoker = self.preview_invoker or self.rehearsal_invoker
+            options = {'preview_invoker': invoker} if invoker is not None else {}
             updater.execute(self.root, plan_id, digest(plan), 'preview', **options)
         plan = updater.load(self.root, plan_id)
         self._validate(job)
@@ -111,7 +114,17 @@ class PreparationController:
             raise Blocked('exact_target_authority_required')
         # The selected updater itself validates and consumes the exact apply
         # authority. This wrapper never substitutes a signed preview for it.
-        updater.execute(self.root, plan_id, expected, 'apply', authorities)
+        options = {}
+        if self.rehearsal_invoker is not None:
+            def isolated(source, row, backup, authority=None):
+                # Recheck cancellation, policy, release, base and expiry after
+                # each potentially slow dry run, immediately before the next
+                # execution boundary. The installer still consumes its own
+                # exact local capability before changing the disposable copy.
+                self._validate(job)
+                return self.rehearsal_invoker(source, row, backup, authority)
+            options['rehearsal_invoker'] = isolated
+        updater.execute(self.root, plan_id, expected, 'apply', authorities, **options)
         plan = updater.load(self.root, plan_id)
         self._bind(plan, job)
         if plan['targets'][0]['state'] != 'applied':
@@ -128,7 +141,16 @@ class PreparationController:
         if row['state'] != 'applied':
             raise Blocked('verified_rehearsal_required')
         bound = dict(job, plan_sha256=digest(plan))
-        packet = prepare(self.root, plan_id, row['id'], bound, key, self.clock())
+        options = {}
+        invoker = self.preview_invoker or self.rehearsal_invoker
+        if invoker is not None:
+            def isolated(source, target, backup, authority=None):
+                if authority is not None:
+                    raise Blocked('freeze_is_read_only')
+                self._validate(job)
+                return invoker(source, target, backup)
+            options['preview_invoker'] = isolated
+        packet = prepare(self.root, plan_id, row['id'], bound, key, self.clock(), **options)
         payload = verify(packet, 'prepared-update', key)
         self._validate(payload['job'])
         return packet

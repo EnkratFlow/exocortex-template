@@ -9,6 +9,7 @@ import json
 import os
 from pathlib import Path
 import re
+import stat
 import subprocess
 import tempfile
 import time
@@ -31,7 +32,7 @@ def directory(value):
 
 
 class DockerPreview:
-    def __init__(self, image, source, checkout, backup_root, docker='docker', timeout=240):
+    def __init__(self, image, source, checkout, backup_root, docker='docker', timeout=240, before_start=None):
         if not isinstance(image,str) or not re.fullmatch(r'sha256:[0-9a-f]{64}',image):
             raise IsolationError('immutable_image_required')
         if type(timeout) is not int or not 1 <= timeout <= 240:
@@ -51,6 +52,7 @@ class DockerPreview:
         self.docker_config = None
         self.launcher = None
         self.owner = None
+        self.before_start = before_start
 
     def _environment(self):
         # No ambient Docker host/context, plugin configuration or proxy injection.
@@ -79,9 +81,7 @@ class DockerPreview:
                 '--workdir',str(self.checkout),'--entrypoint','/bin/bash']
         if self.owner:
             args += ['--name',self.owner,'--label','exocortex.preview.owner='+self.owner]
-        mounts=[(Path(self.source['path']),True),(self.checkout,True),(backup,False)]
-        if self.launcher:mounts.append((self.launcher,True))
-        for source, readonly in mounts:
+        for source, readonly in self._mounts(backup):
             args += ['--mount',f'type=bind,source={source},target={source}'+(',readonly' if readonly else '')]
         for value in ('HOME=/tmp','TMPDIR=/tmp','LC_ALL=C','LANG=C','PYTHONDONTWRITEBYTECODE=1',
                       'PATH=/usr/local/bin:/usr/bin:/bin','GIT_CONFIG_NOSYSTEM=1','GIT_CONFIG_GLOBAL=/dev/null',
@@ -90,7 +90,15 @@ class DockerPreview:
             args += ['--env',value]
         return args+[self.image,'--noprofile','--norc',str((self.launcher or Path(self.source['path']))/'scripts/safe-update.sh'),
                      '--template',self.source['path'],'--candidate-digest',self.source['manifest_sha256'],
-                     '--backup-dir',str(backup),'--dry-run']
+                     '--backup-dir',str(backup)]+self._operation_args()
+
+    def _mounts(self, backup):
+        mounts=[(Path(self.source['path']),True),(self.checkout,True),(backup,False)]
+        if self.launcher:mounts.append((self.launcher,True))
+        return mounts
+
+    def _operation_args(self):
+        return ['--dry-run']
 
     def _inspect(self, cid, backup):
         try:
@@ -98,9 +106,7 @@ class DockerPreview:
             if not isinstance(data,list) or len(data)!=1:raise ValueError()
             info=data[0];host=info['HostConfig'];config=info['Config']
             mounts={(m['Source'],m['Destination'],m['RW'],m['Type']) for m in info['Mounts'] if m['Type']!='tmpfs'}
-            expected={(self.source['path'],self.source['path'],False,'bind'),
-                      (str(self.checkout),str(self.checkout),False,'bind'),(str(backup),str(backup),True,'bind')}
-            if self.launcher:expected.add((str(self.launcher),str(self.launcher),False,'bind'))
+            expected={(str(p),str(p),not readonly,'bind') for p,readonly in self._mounts(backup)}
             if (info['Id']!=cid or info['Image']!=self.image or config['User']!=f'{os.getuid()}:{os.getgid()}'
                 or host['NetworkMode']!='none' or not host['ReadonlyRootfs'] or host['Privileged']
                 or set(host['CapDrop'])!={'ALL'} or host.get('CapAdd')
@@ -111,7 +117,7 @@ class DockerPreview:
                 or mounts!=expected or len([m for m in info['Mounts'] if m['Type']!='tmpfs'])!=len(expected)):
                 raise ValueError()
             return {'image':self.image,'network':'none','root_read_only':True,
-                    'checkout_read_only':True,'source_read_only':True,'nonroot':True,
+                    'checkout_read_only':dict(self._mounts(backup))[self.checkout],'source_read_only':True,'nonroot':True,
                     'memory_bytes':host['Memory'],'cpus':1,'pids_limit':128}
         except (KeyError,TypeError,ValueError):
             raise IsolationError('container_boundary_mismatch') from None
@@ -122,10 +128,13 @@ class DockerPreview:
         if source!=self.source or Path(row['path'])!=self.checkout or os.getuid()==0:
             raise IsolationError('isolation_binding_changed')
         directory(self.checkout);directory(self.source['path']);directory(self.backup)
+        if not (self.checkout/'.git').is_dir() or (self.checkout/'.git').is_symlink():
+            raise IsolationError('standalone_checkout_required')
         backup=Path(backup)
         if not backup.is_absolute() or backup.resolve()!=backup or self.backup not in backup.parents:
             raise IsolationError('unsafe_backup_path')
         backup.mkdir(mode=0o700,parents=True,exist_ok=True);directory(backup)
+        check_writable_tree(backup)
         # Provider checks execute in the trusted host, never in the container.
         # A raw call cannot bypass the controller's published-source requirement.
         updater.verify_source(self.source,apply=True)
@@ -161,6 +170,8 @@ class DockerPreview:
                 cid=None
                 raise IsolationError('container_identity_unavailable')
             evidence=self._inspect(cid,backup)
+            if self.before_start is not None:
+                self.before_start()
             with tempfile.TemporaryFile() as output:
                 try:
                     process=subprocess.Popen(self._command(['start','--attach',cid]),env=self._environment(),stdout=output,stderr=subprocess.STDOUT)
@@ -190,6 +201,63 @@ class DockerPreview:
                 if owned:
                     if not re.fullmatch('[0-9a-f]{64}',owned):raise IsolationError('ambiguous_container_cleanup')
                     self._control(['rm','--force',owned])
+
+
+class DockerRehearsal(DockerPreview):
+    """Distinct guarded apply lane for one host-provisioned disposable clone.
+
+    The host pins existing authority references; the published installer checks
+    and consumes the capability inside the clone. No registry, work item or
+    capability is created here. Git metadata stays read-only even during apply.
+    Dry runs use the same read-only mounts as DockerPreview. Instances are used
+    serially under the controller's session and plan locks.
+    """
+    def __init__(self, image, source, checkout, backup_root, authority, **options):
+        super().__init__(image,source,checkout,backup_root,**options)
+        updater.validate_authority(authority)
+        self.authority = copy.deepcopy(authority)
+        self._applying = False
+
+    def _mounts(self, backup):
+        mounts=super()._mounts(backup)
+        if self._applying:
+            mounts=[(path,False if path==self.checkout else readonly) for path,readonly in mounts]
+            mounts.append((self.checkout/'.git',True))
+        return mounts
+
+    def _operation_args(self):
+        if not self._applying:return ['--dry-run']
+        args=['--apply']
+        for key,value in sorted(self.authority.items()):
+            args+=['--'+key.replace('_','-'),str(value)]
+        return args
+
+    def __call__(self, source, row, backup, authority=None):
+        if authority is not None:
+            updater.validate_authority(authority)
+            if authority!=self.authority:raise IsolationError('rehearsal_authority_changed')
+            check_writable_tree(self.checkout)
+        self._applying = authority is not None
+        try:
+            return super().__call__(source,row,backup)
+        finally:
+            self._applying = False
+
+
+def check_writable_tree(root):
+    # A hard link could alias a file outside the container's bind mount.
+    # Reject linked/special files instead of following or unlinking them.
+    directory(root)
+    pending=[root];count=0
+    while pending:
+        path=pending.pop();meta=path.lstat();count+=1
+        if count>50000:raise IsolationError('unsafe_rehearsal_tree')
+        if stat.S_ISDIR(meta.st_mode):
+            for child in path.iterdir():
+                pending.append(child)
+                if count+len(pending)>50000:raise IsolationError('unsafe_rehearsal_tree')
+        elif not stat.S_ISREG(meta.st_mode) or meta.st_nlink!=1:
+            raise IsolationError('unsafe_rehearsal_tree')
 
 
 def observe_repository(config):

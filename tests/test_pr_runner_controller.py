@@ -113,4 +113,31 @@ class ControllerTests(unittest.TestCase):
         with self.assertRaisesRegex(r.Blocked,'unsafe_preparation_path'):
             c.PreparationController(root,self.source,root/'checkout',root/'backup',self.authority,self.observe)
 
+    def test_false_authority_callback_fails_closed(self):
+        self.authority.return_value=False
+        with self.assertRaisesRegex(r.Blocked,'live_authority_rejected'):self.controller.preview('test',self.job)
+        self.assertEqual(self.actions,[])
+
+    def test_rehearsal_checks_expiry_between_dryrun_and_apply(self):
+        preview=self.controller.preview('test',self.job)
+        invoke=Mock(return_value=(0,''));self.controller.rehearsal_invoker=invoke
+        def execute(*args,**kw):
+            kw['rehearsal_invoker'](self.source,self.plan['targets'][0],Path(self.plan['backup_root']))
+            self.now=NOW+1000
+            kw['rehearsal_invoker'](self.source,self.plan['targets'][0],Path(self.plan['backup_root']),{})
+        with patch.object(c.updater,'execute',side_effect=execute):
+            with self.assertRaisesRegex(r.Blocked,'expired_request'):
+                self.controller.rehearse('test',preview['plan_sha256'],self.job,{'target-1':{}},b'k'*32)
+        invoke.assert_called_once();self.freeze.assert_not_called()
+
+    def test_freeze_uses_rehearsal_readonly_when_no_preview_adapter(self):
+        self.plan['targets'][0]['state']='applied'
+        invoke=Mock(return_value=(0,''));self.controller.rehearsal_invoker=invoke
+        def prepare(root,pid,tid,job,key,now,**kw):
+            kw['preview_invoker'](self.source,self.plan['targets'][0],Path(self.plan['backup_root']))
+            return r.sign('prepared-update',{'job':job,'artifact':{}},key)
+        self.freeze.side_effect=prepare
+        self.controller.freeze('test',r.digest(self.plan),self.job,b'k'*32)
+        self.assertEqual(len(invoke.call_args.args),3)
+
 if __name__=='__main__':unittest.main()

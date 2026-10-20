@@ -2,8 +2,11 @@
 
 This Python library publishes an already verified Exocortex update as a draft
 GitHub pull request. A bounded session worker supports an administrator-pinned
-disposable pilot from a private dashboard. The trusted preparation controller now connects reviewed local plans to the
-artifact freezer. A preview-only attended host is runnable; hosted-owner acceptance and real-repository updates remain unavailable. The runner does not merge a pull
+disposable pilot from a private dashboard. The trusted preparation controller
+connects reviewed local plans to the artifact freezer. Separate attended hosts
+run read-only preparation and exactly reviewed, isolated disposable rehearsal.
+Hosted apply approval and real-repository activation remain separate work.
+The runner does not merge a pull
 request, deploy an application, synchronize local clones, or grant itself
 update authority.
 
@@ -158,7 +161,8 @@ its separate, exact artifact-bound grant; this module cannot create a PR itself.
 These are trusted host APIs, not public HTTP routes. The caller is responsible
 for provisioning an isolated disposable checkout without write credentials and
 for durably retaining the returned signed packet. Production activation still
-requires host isolation, registration, release approval and repository consent.
+requires deployment-specific isolation evidence, registration, release approval
+and repository consent.
 
 ## Activation work still required
 
@@ -324,5 +328,59 @@ access cannot impersonate that owner. This entrypoint composes the same queue
 checks for cancellation, connection/preference changes, lease expiry and retry.
 A completed preview is evidence only; applying, freezing and publishing remain
 separate guarded operations.
+
+## Separately reviewed isolated rehearsal
+
+`DockerRehearsal` supplies the distinct writable lane. It pins existing
+target-specific authority references and passes them to the published installer's
+guard; it creates no capability. Only the disposable checkout and exact backup
+directory are writable. Git metadata remains a separate read-only mount. All
+dry runs, including the artifact freezer's final check, use read-only checkout
+mounts. Writable trees reject hard links, symlinks and special files. The same
+network, privilege, image, resource, inspection and cleanup restrictions as
+`DockerPreview` apply. Preview callbacks still cannot authorize apply.
+
+An attended host can run one independently reviewed plan:
+
+```sh
+python3 tools/update-dashboard/pr_runner_rehearsal_host.py --config /absolute/private/rehearsal.json
+```
+
+This owner-private configuration has exactly `host`, `job`, `review`,
+`authorities`, `authority_directory`, `control_key`, and `preparation_key`.
+The latter six values name already provisioned private files/directories; no
+writer App key or Sites service access is accepted. `host` has exactly `image`,
+`source`, `checkout`, `backup_root`, `controller`, and `output`. The output is
+one new JSON file directly within the controller directory, outside every
+container mount. The source has the coordinator's authenticated release pin.
+
+The control-key-signed `rehearsal-review` packet binds the complete job,
+`host_sha256`, `plan_id`, `plan_sha256`, `target_id`, and
+`authorities_sha256`. The job binds account, connection epoch, repository ID,
+base, published release, preference/policy revision and expiry. A preview packet
+is not a review packet. The host also requires the existing exact guarded apply
+capability and executor records in the disposable checkout. Provisioning those
+records requires the separately accepted rehearsal scope; neither this command
+nor browser input creates them.
+
+Live policy, provider identity and expiry are rechecked between phases and again
+immediately before starting each container. Successful apply and final zero-change
+verification freeze only the recorded effect paths. The signed artifact is saved
+privately with an atomic no-overwrite write. Repeating a completed request returns
+that exact artifact after revalidation. An interrupted apply or a missing artifact
+after apply never causes automatic reapplication: retain the saved plan and archive,
+review recovery, and use the controller's separately scoped freeze recovery where
+appropriate. Cancellation during execution can leave a disposable change requiring
+recovery; it cannot authorize later freezing or publication.
+
+The hosted preparation queue remains preview-only. This command does not add a
+dashboard approval action or publication grant. A frozen artifact still needs its
+separate exact publication review before the existing PR runner may act.
+
+The optional container integration tests use fictional accounts and an unpublished
+local candidate, substituting provider provenance checks only. They exercise the
+real installer, capability consumption, memory/knowledge/application preservation,
+artifact freezing, exact replay and a lost apply response. They do not prove an
+authenticated release, a hosted human approval, a real PR, or a production upgrade.
 
 Docker options follow the official [container execution reference](https://docs.docker.com/engine/containers/run/).
