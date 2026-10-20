@@ -28,7 +28,7 @@ class GitHubTransport:
         common = r"/repos/[A-Za-z0-9][A-Za-z0-9_.-]{0,99}/[A-Za-z0-9][A-Za-z0-9_.-]{0,99}"
         get = (r"/repositories/[1-9][0-9]{0,19}|" + common +
                r"/(?:git/(?:ref/heads/[A-Za-z0-9_%./-]+|commits/[a-f0-9]{40}|trees/[a-f0-9]{40}\?recursive=1)"
-               r"|pulls\?[A-Za-z0-9_%=&+.-]+)")
+               r"|pulls/[1-9][0-9]{0,19}|pulls\?[A-Za-z0-9_%=&+.-]+)")
         post = common + r"/(?:git/(?:blobs|trees|commits|refs)|pulls)"
         if (method not in ("GET", "POST") or
                 not re.fullmatch(get if method == "GET" else post, path)):

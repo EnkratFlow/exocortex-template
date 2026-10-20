@@ -1,9 +1,11 @@
 # Update pull-request runner
 
-This is an inactive Python library for publishing an already verified Exocortex
-update as a draft GitHub pull request. It is not a deployed service or a complete
-dashboard-to-update workflow. It does not merge a pull request, deploy an
-application, synchronize local clones, or grant itself update authority.
+This Python library publishes an already verified Exocortex update as a draft
+GitHub pull request. A bounded session worker supports an administrator-pinned
+disposable pilot from a private dashboard. Generic dashboard preparation and
+real-repository updates remain unavailable. The runner does not merge a pull
+request, deploy an application, synchronize local clones, or grant itself
+update authority.
 
 ## Implemented flow
 
@@ -94,10 +96,45 @@ recovery mechanism; neither mechanism restores an application's deployment.
 - Customized repositories remain blocked in this standard lane. A separately
   reconciled installer fixture does not enroll its real repository for updates.
 
+## Bounded dashboard pilot
+
+`pr_runner_pilot_worker.py` polls one administrator-configured private HTTPS
+origin. It accepts only signed requests for one existing, signed prepared job;
+the dashboard cannot provide commands, filesystem paths, release choices or
+artifacts. The hosted controller binds the enrolled GitHub account, explicit
+Standard treatment, source commit, and connection/preference revisions to a
+short-lived preview and persistent request. Only one request per owner may be
+active. Other repositories remain in the read-only inspection workflow.
+
+The worker uses a separate RSA signing key for request authentication. Signatures
+bind method, origin, path, timestamp, nonce and body digest; the controller
+rejects replayed nonces. Private Sites service access arrives on hidden stdin
+and stays in memory. It supplies no visitor identity and grants no publication
+capability. The App key and preparation/publication signing keys stay local.
+No HTTP listener is opened. Run only as an attended session, for at most four
+hours; this is not a permanent daemon or OS isolation boundary.
+
+Before new writes the existing signed authority and hosted cancellation,
+connection, source and treatment checks must all pass. The worker never submits
+a replacement job or renews an expired grant. Completed or interrupted jobs can
+be observed after expiry, without renewed write authority. An existing PR is
+reused and checked for exact repository, branch, commit, base and draft state.
+A result already requiring review cannot become a successful completion merely
+because it was read again. Cancellation after a provider effect retains the PR
+link and a review-required result. Owners can cancel their requests after their
+GitHub connection expires or is disconnected.
+
+One credential broker lives for the session. Revocation must succeed, or the
+credential reach verified expiry, before polling/minting again. Pending results
+remain retryable across transient transport failure; a lost lease recovers the
+same durable job. The original per-job process lock still protects publisher
+state. The server stores progress independently of browser tabs; refresh does
+not create another request.
+
 ## Activation work still required
 
-The library is intentionally not reachable from the hosted dashboard. Activation
-requires an implementation and review of:
+The prepared disposable pilot does not complete general activation. Remaining
+work requires implementation, review and evidence for:
 
 1. The authenticated controller that validates the selected repository, prepares
    a disposable checkout, obtains exact guarded-apply authority and records the
@@ -105,12 +142,13 @@ requires an implementation and review of:
 2. Hosted credential provisioning and an isolated execution host, with private
    durable storage, logging limits and secret rotation. The implemented local
    pilot broker does not provide those hosted boundaries.
-3. Hosted dispatch/status and cancellation, tying connection revocation and
-   policy revisions to the publisher's current signed control records.
+3. Extending the bounded pilot controller to newly prepared jobs, with exact
+   signed authority, revocation and policy checks for every enrolled repository.
 4. An authenticated published target release. An unpublished candidate remains
    invalid for a real update; tests never introduce a production bypass.
 5. A disposable GitHub pilot with provider timeouts/restarts, human PR review
-   and browser acceptance before any real repository or selected batch.
+   and browser acceptance before any real repository or selected batch. The
+   offline recovery tests do not prove live provider timeout behavior.
 
 Keep the existing read-only discovery App intact. Its permission checks reject
 write grants. The recommended external setup is a **separate update App**, with
@@ -137,7 +175,9 @@ explicit policy, expiry/revocation, restart deduplication, uncertain writes,
 changed bases, closed/foreign PRs, size/path limits, bounded transport and
 multi-file validation cost. Credential tests use real disposable RSA signing
 and fictional provider responses to verify scope, expiry and revocation
-failure recovery. They make no network requests and do not prove a live
+failure recovery. Session-worker tests exercise real SQLite recovery after
+cancellation, exact PR identity, and terminal input echo suppression. They make
+no network requests and do not prove a live
 deployment. Real guarded installer and restore tests are separate.
 
 The implementation follows GitHub's
