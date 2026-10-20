@@ -396,8 +396,9 @@ def family_path(facts,lock_root):
     return absolute(lock_root)/(state.opaque(facts['common_dir'])+'.json')
 
 
-def execute(root,pid,expected,action,authorities=None,lock_root=None):
+def execute(root,pid,expected,action,authorities=None,lock_root=None,preview_invoker=None):
     if action not in ('preview','apply'): raise UpdateError('Unsupported plan operation')
+    if preview_invoker is not None and action!='preview': raise UpdateError('Isolated preview cannot authorize apply')
     authorities=authorities or {};lock_root=lock_root or local.default_cache().parent/'update-locks'
     with local.lock(plan_path(root,pid).with_suffix('.lock')):
         p=load(root,pid);expect(p,expected)
@@ -420,7 +421,7 @@ def execute(root,pid,expected,action,authorities=None,lock_root=None):
                     if recovery and not recovery.get('resolved'):raise UpdateError('This Git family requires recovery before another update')
                     verify_source(p['source'],apply=action=='apply')
                     if target(row['path'],candidate_hashes(p['source']))!=before:raise UpdateError('Target or policy changed before preview')
-                    code,output=invoke(p['source'],row,backup)
+                    code,output=(preview_invoker or invoke)(p['source'],row,backup)
                     log=plan_path(root,pid).parent/pid/(row['id']+'-preview-'+str(p['revision'])+'.json')
                     local.write(log,{'exit_code':code,'output':output[-200000:]})
                     row['diagnostic_record']=str(log)

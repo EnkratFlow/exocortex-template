@@ -325,7 +325,9 @@
 0644  tests/test_pr_runner_authority.py
 0644  tests/test_pr_runner_controller.py
 0644  tests/test_pr_runner_credentials.py
+0644  tests/test_pr_runner_isolation.py
 0644  tests/test_pr_runner_pilot_worker.py
+0644  tests/test_pr_runner_preparation_host.py
 0644  tests/test_pr_runner_preparation_worker.py
 0644  tests/test_pr_runner_prepare.py
 0644  tests/test_pr_runner_transport.py
@@ -340,12 +342,15 @@
 0644  tests/test_upgrade_path_fixes.py
 0644  tests/test_windows_update.py
 0644  tools/update-dashboard/RUNNER.md
+0644  tools/update-dashboard/isolation.Dockerfile
 0644  tools/update-dashboard/pr_runner.py
 0644  tools/update-dashboard/pr_runner_authority.py
 0644  tools/update-dashboard/pr_runner_controller.py
 0644  tools/update-dashboard/pr_runner_credentials.py
 0644  tools/update-dashboard/pr_runner_github.py
+0644  tools/update-dashboard/pr_runner_isolation.py
 0644  tools/update-dashboard/pr_runner_pilot_worker.py
+0644  tools/update-dashboard/pr_runner_preparation_host.py
 0644  tools/update-dashboard/pr_runner_preparation_worker.py
 0644  tools/update-dashboard/pr_runner_prepare.py
 0644  tools/update-dashboard/pr_runner_transport.py

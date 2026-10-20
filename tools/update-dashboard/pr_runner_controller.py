@@ -14,7 +14,7 @@ from pr_runner_prepare import updater, prepare
 
 
 class PreparationController:
-    def __init__(self, root, source, checkout, backup, authority, observe, clock=time.time):
+    def __init__(self, root, source, checkout, backup, authority, observe, clock=time.time, preview_invoker=None):
         """Paths/callbacks come from trusted host provisioning, not request JSON.
 
         authority(job, artifact) is the existing RepositoryAuthority callback.
@@ -24,6 +24,7 @@ class PreparationController:
         self.root, self.checkout, self.backup = map(Path, (root, checkout, backup))
         self.source, self.authority, self.observe = source, authority, observe
         self.clock = clock
+        self.preview_invoker = preview_invoker
         for path in (self.root, self.checkout, self.backup):
             if not path.is_absolute() or path.resolve() != path:
                 raise Blocked('unsafe_preparation_path')
@@ -71,7 +72,8 @@ class PreparationController:
         if row['initial'] != current:
             raise Blocked('preparation_changed')
         if row['state'] == 'not_attempted':
-            updater.execute(self.root, plan_id, digest(plan), 'preview')
+            options = {'preview_invoker': self.preview_invoker} if self.preview_invoker is not None else {}
+            updater.execute(self.root, plan_id, digest(plan), 'preview', **options)
         plan = updater.load(self.root, plan_id)
         self._validate(job)
         return self.summary(plan)
