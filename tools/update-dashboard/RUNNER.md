@@ -2,8 +2,8 @@
 
 This Python library publishes an already verified Exocortex update as a draft
 GitHub pull request. A bounded session worker supports an administrator-pinned
-disposable pilot from a private dashboard. Generic dashboard preparation and
-real-repository updates remain unavailable. The runner does not merge a pull
+disposable pilot from a private dashboard. The trusted preparation controller now connects reviewed local plans to the
+artifact freezer. Hosted preparation and real-repository updates remain unavailable. The runner does not merge a pull
 request, deploy an application, synchronize local clones, or grant itself
 update authority.
 
@@ -131,14 +131,43 @@ same durable job. The original per-job process lock still protects publisher
 state. The server stores progress independently of browser tabs; refresh does
 not create another request.
 
+## Preparation controller
+
+`pr_runner_controller.PreparationController` connects the selected updater to
+artifact preparation for a host-provisioned disposable checkout. The host supplies
+fixed paths, the existing signed repository authority callback and a current
+read-only provider observer. Browser input cannot choose local paths or supply
+policy declarations. The observer returns exactly `repository_id`, `repository`,
+`base_branch` and `base_sha`; it must obtain these from the current provider state.
+
+`preview(plan_id, job)` verifies the published release, private controller policy,
+repository identity and exact base before creating an immutable one-target plan.
+Repeating the same plan reuses its preview; different bindings are rejected.
+`rehearse(plan_id, expected_digest, job, authorities, preparation_key)` requires
+an exact reviewed plan digest and existing target-specific guarded apply authority.
+It delegates apply, preservation and post-apply verification to the existing
+coordinator. It neither creates capabilities nor treats a preview as consent.
+
+Only a verified rehearsal reaches the artifact freezer. Release, policy, source
+and expiry are checked again after freezing, including when slow verification
+crosses the expiry boundary. `freeze` can retry artifact creation from an already
+verified plan without repeating apply. Failed updates retain the coordinator's
+recovery state and cannot be signed as successful. The publisher still requires
+its separate, exact artifact-bound grant; this module cannot create a PR itself.
+
+These are trusted host APIs, not public HTTP routes. The caller is responsible
+for provisioning an isolated disposable checkout without write credentials and
+for durably retaining the returned signed packet. Production activation still
+requires host isolation, registration, release approval and repository consent.
+
 ## Activation work still required
 
 The prepared disposable pilot does not complete general activation. Remaining
 work requires implementation, review and evidence for:
 
-1. The authenticated controller that validates the selected repository, prepares
-   a disposable checkout, obtains exact guarded-apply authority and records the
-   result. It must never manufacture capability records from a preview.
+1. Wire the preparation controller to authenticated hosted requests and a
+   provisioned disposable-checkout host, retaining exact guarded authority and
+   durable results. The local controller does not provision a host or issue grants.
 2. Hosted credential provisioning and an isolated execution host, with private
    durable storage, logging limits and secret rotation. The implemented local
    pilot broker does not provide those hosted boundaries.
