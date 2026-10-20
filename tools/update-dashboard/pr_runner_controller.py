@@ -51,6 +51,7 @@ class PreparationController:
             raise Blocked('repository_binding_mismatch')
         if current['customization']['requires_review']:
             raise Blocked('customization_review_required')
+        validate_job(job, self.clock())
         return current
 
     def preview(self, plan_id, job):

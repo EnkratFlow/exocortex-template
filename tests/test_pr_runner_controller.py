@@ -91,6 +91,18 @@ class ControllerTests(unittest.TestCase):
         with self.assertRaises(r.Blocked):
             self.controller.rehearse('test',preview['plan_sha256'],self.job,{'target-1':{}},b'k'*32)
         self.assertEqual(self.plan['targets'][0]['state'],'applied')
+    def test_expiry_during_final_provider_revalidation_never_returns_packet(self):
+        preview=self.controller.preview('test',self.job)
+        count=0
+        def observed(job):
+            nonlocal count
+            count+=1
+            if count==3:self.now=NOW+1000
+            return {k:job[k] for k in ('repository_id','repository','base_branch','base_sha')}
+        self.observe.side_effect=observed
+        with self.assertRaises(r.Blocked):
+            self.controller.rehearse('test',preview['plan_sha256'],self.job,{'target-1':{}},b'k'*32)
+        self.assertEqual(self.plan['targets'][0]['state'],'applied')
     def test_freeze_retry_never_repeats_apply(self):
         preview=self.controller.preview('test',self.job)
         self.controller.rehearse('test',preview['plan_sha256'],self.job,{'target-1':{}},b'k'*32)
