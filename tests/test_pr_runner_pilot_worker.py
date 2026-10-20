@@ -35,6 +35,20 @@ class PilotWorkerTests(unittest.TestCase):
             self.assertEqual(opener.timeout,30)
             with self.assertRaises(Blocked):client('https://evil.invalid',{})
 
+    def test_preparation_lane_has_separate_signed_fixed_path(self):
+        class Opener:
+            def open(self,request,timeout):
+                self.request=request
+                return Response(b'{"job":null}')
+        opener=Opener()
+        client=SiteClient('https://uat.example.invalid','fixture','unused',opener,lane='preparation')
+        with patch('pr_runner_pilot_worker.request_signature',return_value='fixture') as signer:
+            self.assertEqual(client('poll',{}),{'job':None})
+            self.assertEqual(opener.request.full_url,'https://uat.example.invalid/api/preparation-worker/poll')
+            self.assertIn(b'/api/preparation-worker/poll\n',signer.call_args.args[1])
+        with self.assertRaises(Blocked):
+            SiteClient('https://uat.example.invalid','fixture','unused',lane='../other')
+
     def test_errors_and_large_response_never_expose_diagnostics(self):
         class Opener:
             def open(self,request,timeout):

@@ -64,7 +64,7 @@ def request_signature(path, data):
 
 
 class SiteClient:
-    def __init__(self, origin, service_token, key, opener=None):
+    def __init__(self, origin, service_token, key, opener=None, lane="pilot"):
         from urllib.parse import urlsplit
         url = urlsplit(origin)
         if (url.scheme != 'https' or not url.hostname or url.username or url.password or
@@ -72,13 +72,16 @@ class SiteClient:
             raise runner.Blocked('invalid_site_origin')
         if not isinstance(service_token, str) or not 1 <= len(service_token) <= 8192 or any(c.isspace() for c in service_token):
             raise runner.Blocked('invalid_service_access')
+        if lane not in ("pilot", "preparation"):
+            raise runner.Blocked("invalid_worker_lane")
+        self.prefix = "/api/update-worker/" if lane == "pilot" else "/api/preparation-worker/"
         self.origin, self.token, self.key = origin, service_token, Path(key)
         self.opener = opener or build_opener(NoRedirect())
 
     def __call__(self, operation, body):
         if operation not in ('poll','check','result'):
             raise runner.Blocked('invalid_worker_operation')
-        path='/api/update-worker/'+operation
+        path=self.prefix+operation
         raw=runner.canonical(body)
         if len(raw)>4096: raise runner.Blocked('worker_request_bound')
         stamp=str(int(time.time()));nonce=secrets.token_hex(32)

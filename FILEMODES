@@ -326,6 +326,7 @@
 0644  tests/test_pr_runner_controller.py
 0644  tests/test_pr_runner_credentials.py
 0644  tests/test_pr_runner_pilot_worker.py
+0644  tests/test_pr_runner_preparation_worker.py
 0644  tests/test_pr_runner_prepare.py
 0644  tests/test_pr_runner_transport.py
 0644  tests/test_project_state.py
@@ -345,5 +346,6 @@
 0644  tools/update-dashboard/pr_runner_credentials.py
 0644  tools/update-dashboard/pr_runner_github.py
 0644  tools/update-dashboard/pr_runner_pilot_worker.py
+0644  tools/update-dashboard/pr_runner_preparation_worker.py
 0644  tools/update-dashboard/pr_runner_prepare.py
 0644  tools/update-dashboard/pr_runner_transport.py
