@@ -275,6 +275,7 @@
 0644  .github/workflows/checksums.yml
 0644  .github/workflows/command-runtime.yml
 0644  .github/workflows/test.yml
+0644  .github/workflows/update-pr-runner.yml
 0644  .github/workflows/windows-update.yml
 0644  .gitignore
 0644  .rules
@@ -320,6 +321,12 @@
 0644  tests/test_memory_knowledge.py
 0644  tests/test_memory_refresh.py
 0644  tests/test_onboard_contract.py
+0644  tests/test_pr_runner.py
+0644  tests/test_pr_runner_authority.py
+0644  tests/test_pr_runner_credentials.py
+0644  tests/test_pr_runner_pilot_worker.py
+0644  tests/test_pr_runner_prepare.py
+0644  tests/test_pr_runner_transport.py
 0644  tests/test_project_state.py
 0644  tests/test_public_release.py
 0644  tests/test_publication_workflow.py
@@ -330,3 +337,11 @@
 0644  tests/test_update_selected.py
 0644  tests/test_upgrade_path_fixes.py
 0644  tests/test_windows_update.py
+0644  tools/update-dashboard/RUNNER.md
+0644  tools/update-dashboard/pr_runner.py
+0644  tools/update-dashboard/pr_runner_authority.py
+0644  tools/update-dashboard/pr_runner_credentials.py
+0644  tools/update-dashboard/pr_runner_github.py
+0644  tools/update-dashboard/pr_runner_pilot_worker.py
+0644  tools/update-dashboard/pr_runner_prepare.py
+0644  tools/update-dashboard/pr_runner_transport.py
