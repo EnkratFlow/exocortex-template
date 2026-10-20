@@ -93,6 +93,8 @@ class PreparationController:
         row = plan['targets'][0]
         return {'plan_id':plan['id'], 'plan_sha256':digest(plan), 'target_id':row['id'],
                 'state':row['state'], 'changed_paths':(row.get('receipt') or {}).get('changed_paths', []),
+                'installed_version':row['initial']['version'],
+                'protected_data':bool(row.get('receipt')),
                 'requires_review':row['state'] not in ('ready','current','applied'),
                 'published':False}
 

@@ -72,9 +72,9 @@ class SiteClient:
             raise runner.Blocked('invalid_site_origin')
         if not isinstance(service_token, str) or not 1 <= len(service_token) <= 8192 or any(c.isspace() for c in service_token):
             raise runner.Blocked('invalid_service_access')
-        if lane not in ("pilot", "preparation"):
+        if lane not in ("pilot", "preparation", "rehearsal"):
             raise runner.Blocked("invalid_worker_lane")
-        self.prefix = "/api/update-worker/" if lane == "pilot" else "/api/preparation-worker/"
+        self.prefix = "/api/update-worker/" if lane == "pilot" else "/api/"+lane+"-worker/"
         self.origin, self.token, self.key = origin, service_token, Path(key)
         self.opener = opener or build_opener(NoRedirect())
 
@@ -83,7 +83,7 @@ class SiteClient:
             raise runner.Blocked('invalid_worker_operation')
         path=self.prefix+operation
         raw=runner.canonical(body)
-        if len(raw)>4096: raise runner.Blocked('worker_request_bound')
+        if len(raw)>(320000 if self.prefix=="/api/preparation-worker/" else 4096): raise runner.Blocked('worker_request_bound')
         stamp=str(int(time.time()));nonce=secrets.token_hex(32)
         message='\n'.join(('POST',self.origin,path,stamp,nonce,hashlib.sha256(raw).hexdigest())).encode()
         req=Request(self.origin+path,data=raw,method='POST',headers={

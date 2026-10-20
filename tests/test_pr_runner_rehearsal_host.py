@@ -97,6 +97,15 @@ class ReviewedHostTests(unittest.TestCase):
         with patch.object(h,'private_json',side_effect=revoke):
             with self.assertRaisesRegex(r.Blocked,'authority_rejected'):self.run_review()
         self.controller.rehearse.assert_called_once()
+    def test_hosted_review_cannot_bypass_live_request_gate_via_standalone_host(self):
+        self.review=r.sign('rehearsal-review',{**self.review['payload'],'hosted_review':{'preparation_id':'a'*64,'result_sha256':'b'*64}},self.key)
+        with self.assertRaisesRegex(r.Blocked,'hosted_request_gate_required'):self.run_review()
+        self.controller.rehearse.assert_not_called()
+    def test_external_request_gate_checked_before_any_execution(self):
+        gate=Mock(side_effect=r.Blocked('request_cancelled'))
+        with self.assertRaisesRegex(r.Blocked,'request_cancelled'):
+            h.execute_reviewed(self.config,self.job,self.review,self.auth,self.authority,self.key,self.prepkey,lambda:NOW,request_gate=gate)
+        self.controller.rehearse.assert_not_called()
     def test_large_artifact_saved_privately_and_never_overwrites(self):
         output=Path(self.config['output'])
         value={'fixture':'x'*(600*1024)};h.save_packet(output,value)

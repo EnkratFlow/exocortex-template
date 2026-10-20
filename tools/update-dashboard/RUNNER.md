@@ -373,8 +373,8 @@ review recovery, and use the controller's separately scoped freeze recovery wher
 appropriate. Cancellation during execution can leave a disposable change requiring
 recovery; it cannot authorize later freezing or publication.
 
-The hosted preparation queue remains preview-only. This command does not add a
-dashboard approval action or publication grant. A frozen artifact still needs its
+The hosted preparation queue remains preview-only. The standalone command does not add a
+dashboard action or publication grant. A frozen artifact still needs its
 separate exact publication review before the existing PR runner may act.
 
 The optional container integration tests use fictional accounts and an unpublished
@@ -384,3 +384,52 @@ artifact freezing, exact replay and a lost apply response. They do not prove an
 authenticated release, a hosted human approval, a real PR, or a production upgrade.
 
 Docker options follow the official [container execution reference](https://docs.docker.com/engine/containers/run/).
+
+
+## Hosted plan review and attended test
+
+Preparation results now include bounded review evidence: exact repository/base,
+installed version and release tag, a sorted list of at most 1,000 template paths
+(each at most 240 ASCII characters), and protected-data dry-run verification.
+Only relative publishable template paths are included; never contents, host paths,
+keys or local control records. Older count-only results remain historical evidence
+and cannot request a test. A current, zero-change result needs no update PR.
+
+The private dashboard displays the complete path list in searchable pages. The
+owner opens the saved plan and explicitly requests **Test this plan** after
+reviewing it. A five-minute, account-bound receipt binds the exact result digest,
+connection epoch, policy revision and configuration. A separate durable rehearsal
+queue records that request; it never converts a preparation receipt into installer
+authority. The request lasts at most 15 minutes and cannot outlive its pinned job.
+
+The attended bridge is:
+
+```sh
+python3 tools/update-dashboard/pr_runner_rehearsal_worker.py --config /absolute/private/review-worker.json --duration 900
+```
+
+Its private configuration has exactly `host`, `preview_job`, `review`,
+`authorities`, `authority_directory`, `control_key`, `preparation_key`, `github_id`,
+`worker_key`, and `origin`. The host fields match the standalone rehearsal host.
+`preview_job` is the original pinned preparation job. The separate signed review's
+job differs only by its concrete plan digest. The review must additionally bind
+`hosted_review`, with the full `preparation_id` and canonical `result_sha256`.
+The plan ID must be `prep-` followed by the preparation ID's first 32 characters.
+This bridge cannot create any of these authority records. Service access is
+accepted only through hidden stdin and kept in memory.
+
+Polling selects only that exact preparation/result. Before execution, the bridge
+recomputes the displayed result from the ready local plan. Dashboard cancellation,
+access, preference, source/base and expiry checks supplement the existing installer
+authority checks before every isolated execution boundary. Hosted-bound reviews
+cannot use the standalone host without the hosted request gate. No browser input
+selects paths, commands, capabilities, releases or credentials.
+
+A ten-minute renewable boundary lease covers the supported 240-second container
+operation and bounded checks. An expired writable lease is never reclaimed.
+Cancellation after claim, lost execution status or a failed test requires explicit
+recovery review. A lost report retries the exact result without repeating apply.
+Only artifact digest, changed-file count and outcome return to the dashboard;
+the actual signed artifact stays private on the host. Success means a disposable
+copy passed its update checks, not a repository update, PR, merge or deployment.
+Separate artifact publication review is still required.
