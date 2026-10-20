@@ -116,6 +116,24 @@ class SelectedTests(unittest.TestCase):
         self.assertEqual(self.calls,[('target-1',False),('target-1',False),('target-1',True),('target-1',False)])
         self.assertEqual(p['targets'][0]['receipt']['verification']['changed_paths'],[])
 
+    def test_isolated_rehearsal_covers_all_three_calls_without_host_fallback(self):
+        p=self.create()
+        with patch.object(update,'invoke',side_effect=self.fake_run),patch.object(update,'verify_source',return_value=self.source):
+            p=self.execute(p)
+        with patch.object(update,'invoke',side_effect=AssertionError('host execution forbidden')),patch.object(update,'verify_source',return_value=self.source):
+            p=update.execute(self.control,p['id'],p['plan_sha256'],'apply',{'target-1':self.auth()},self.locks,
+                             rehearsal_invoker=self.fake_run)
+        self.assertEqual(p['targets'][0]['state'],'applied')
+        self.assertEqual(self.calls,[('target-1',False),('target-1',False),('target-1',True),('target-1',False)])
+
+    def test_rehearsal_callback_never_supplies_missing_apply_authority(self):
+        p=self.create()
+        with self.assertRaises(update.UpdateError):
+            update.execute(self.control,p['id'],p['plan_sha256'],'apply',rehearsal_invoker=self.fake_run)
+        with self.assertRaises(update.UpdateError):
+            update.execute(self.control,p['id'],p['plan_sha256'],'preview',rehearsal_invoker=self.fake_run)
+        self.assertEqual(self.calls,[])
+
     def test_failure_retains_recovery_and_blocks_other_plan_until_restore(self):
         def failed(s,r,b,a=None):return (1,'apply failed') if a else self.fake_run(s,r,b,a)
         p=self.create()
