@@ -11,7 +11,7 @@ from test_pr_runner import sample, NOW
 class WorkerTests(unittest.TestCase):
     def setUp(self):
         self.now=NOW;self.job=sample()['job'];self.calls=[]
-        self.controller=Mock();self.controller.preview.return_value={'state':'ready','changed_paths':['fixture'],'plan_sha256':'a'*64}
+        self.controller=Mock();self.controller.preview.return_value={'state':'ready','changed_paths':['.exocortex/scripts/fixture.py'],'plan_sha256':'a'*64,'installed_version':'1.0.0','protected_data':True}
         self.claim={'id':'b'*64,'lease':'fixture','configuration':w.configuration(self.job,7),'expires_at':self.job['expires_at']}
         self.allow=True;self.fail=False
         def site(op,body):
@@ -25,7 +25,7 @@ class WorkerTests(unittest.TestCase):
         self.assertEqual(self.worker.once(),'review_ready')
         self.controller.preview.assert_called_once_with('prep-'+'b'*32,self.job)
         self.controller.rehearse.assert_not_called();self.controller.freeze.assert_not_called()
-        result=self.calls[-1][1]['result'];self.assertEqual(result['changed_files'],1);self.assertNotIn('fixture',str(result))
+        result=self.calls[-1][1]['result'];self.assertEqual(result['changed_files'],1);self.assertEqual(result['details']['changed_paths'],['.exocortex/scripts/fixture.py'])
     def test_foreign_job_or_extra_paths_never_reach_controller(self):
         for change in (lambda c:c['configuration'].update(base='c'*40),lambda c:c.update(checkout='/tmp/foreign')):
             claim=copy.deepcopy(self.claim);change(self.claim)
@@ -68,6 +68,10 @@ class WorkerTests(unittest.TestCase):
     def test_current_requires_zero_changes(self):
         self.controller.preview.return_value.update(state='current',changed_paths=[])
         self.assertEqual(self.worker.once(),'current')
+    def test_result_rejects_unbounded_private_or_invalid_paths(self):
+        for paths in ([".exocortex/knowledge/private.md"],["/tmp/private"],[".exocortex/scripts/"+"x"*241],['.exocortex/a.py']*1001):
+            summary=dict(self.controller.preview.return_value,changed_paths=paths)
+            with self.assertRaises(w.Blocked):w.preparation_result(summary,self.job)
     def test_session_duration_bounded(self):
         for duration in (0,14401,True):
             with self.assertRaises(w.Blocked):self.worker.run(duration)

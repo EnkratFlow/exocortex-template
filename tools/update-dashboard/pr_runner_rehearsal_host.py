@@ -33,7 +33,7 @@ def save_packet(output, value):
     finally:os.close(directory_fd)
 
 
-def execute_reviewed(config, job, review, authorities, authority, control_key, preparation_key, clock=time.time):
+def execute_reviewed(config, job, review, authorities, authority, control_key, preparation_key, clock=time.time, request_gate=None):
     """Consume a separately signed review with existing local apply authority.
 
     A repeat after a durable success returns the exact saved artifact. An
@@ -43,7 +43,10 @@ def execute_reviewed(config, job, review, authorities, authority, control_key, p
     exact(config,('image','source','checkout','backup_root','controller','output'))
     validate_job(job,clock())
     approved=verify(review,'rehearsal-review',control_key)
-    exact(approved,('job','host_sha256','plan_id','plan_sha256','target_id','authorities_sha256'))
+    fields=('job','host_sha256','plan_id','plan_sha256','target_id','authorities_sha256')
+    exact(approved, fields+(('hosted_review',) if 'hosted_review' in approved else ()))
+    if 'hosted_review' in approved and not callable(request_gate):
+        raise Blocked('hosted_request_gate_required')
     if (approved['job']!=job or approved['host_sha256']!=digest(config)
             or approved['authorities_sha256']!=digest(authorities)):
         raise Blocked('review_binding_changed')
@@ -67,9 +70,11 @@ def execute_reviewed(config, job, review, authorities, authority, control_key, p
         return {k:job[k] for k in ('repository_id','repository','base_branch','base_sha')}
 
     def gate():
+        if request_gate is not None:request_gate()
         validate_job(job,clock())
         if authority(job,None) is not True:raise Blocked('live_authority_rejected')
         observe(job)
+        if request_gate is not None:request_gate()
         validate_job(job,clock())
 
     preview=DockerPreview(config['image'],config['source'],paths[1],paths[2],before_start=gate)
@@ -78,6 +83,7 @@ def execute_reviewed(config, job, review, authorities, authority, control_key, p
     controller=PreparationController(root,config['source'],paths[1],paths[2],authority,observe,
                                      clock=clock,preview_invoker=preview,rehearsal_invoker=rehearsal)
     with updater.local.lock(root/'preparation-session.lock'):
+        gate()
         controller._validate(job)
         plan=updater.load(root,approved['plan_id'])
         controller._bind(plan,job)

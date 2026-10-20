@@ -16,7 +16,7 @@ class ControllerTests(unittest.TestCase):
         root=Path(self.tmp.name).resolve();self.job=sample()['job']
         self.source={'path':str(root/'source'),'manifest_sha256':self.job['release']['manifest_sha256'],
                      'release':{'repository':'example/template','tag':'v4.0.0','commit':'e'*40,'asset':str(root/'SHA256SUMS')}}
-        self.current={'binding':{'head':self.job['base_sha']},'customization':{'requires_review':False}}
+        self.current={'version':'1.0.0','binding':{'head':self.job['base_sha']},'customization':{'requires_review':False}}
         self.plan={'id':'test','account_scope':'owner-1','source':self.source,'backup_root':str(root/'backup'),
                    'targets':[{'id':'target-1','path':str(root/'checkout'),'initial':self.current,'state':'not_attempted','receipt':None}]}
         self.authority=Mock(return_value=True)

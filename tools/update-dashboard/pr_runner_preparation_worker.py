@@ -6,7 +6,8 @@ Use SiteClient(lane='preparation') with hidden-stdin service access. This module
 neither discovers credentials nor provisions an isolated host.
 """
 import time
-from pr_runner import Blocked, digest, validate_job
+import re
+from pr_runner import Blocked, digest, validate_job, allowed_path, canonical
 from pr_runner_prepare import updater
 
 
@@ -15,6 +16,31 @@ def configuration(job, github_id):
                 repository=job['repository'], branch=job['base_branch'],
                 base=job['base_sha'], release=job['release'],
                 github_id=github_id, expires_at=job['expires_at'])
+
+
+def preparation_result(summary, job):
+    """Bounded, data-only review evidence; no host paths or file contents."""
+    changes=summary['changed_paths']
+    if (not isinstance(changes,list) or len(changes)>1000 or
+            any(not allowed_path(p) for p in changes) or changes!=sorted(set(changes)) or
+            not isinstance(summary['plan_sha256'],str) or
+            not re.fullmatch('[a-f0-9]{64}',summary['plan_sha256'])):
+        raise Blocked('preparation_summary_invalid')
+    state=summary['state']
+    result=dict(state='current' if state=='current' and not changes else
+                'review_ready' if state=='ready' and changes else 'blocked',
+                changed_files=len(changes),plan_sha256=summary['plan_sha256'],error=None,details=None)
+    if result['state']=='blocked':
+        result.update(error='verification_failed',changed_files=0)
+    else:
+        version=summary.get('installed_version')
+        if not isinstance(version,str) or not re.fullmatch(r'\d+\.\d+\.\d+',version) or summary.get('protected_data') is not True:
+            raise Blocked('preparation_summary_invalid')
+        result['details']=dict(repository=job['repository'],base_sha=job['base_sha'],
+            installed_version=version,release=job['release']['tag'],changed_paths=changes,
+            protected_data='passed')
+    if len(canonical(result))>300000:raise Blocked('preparation_summary_invalid')
+    return result
 
 
 class PreparationWorker:
@@ -61,18 +87,7 @@ class PreparationWorker:
             except (Blocked, updater.UpdateError):
                 summary = {'state':'blocked','changed_paths':[],'plan_sha256':'0'*64}
             self._gate(claim)
-            state = summary['state']
-            changes = summary['changed_paths']
-            if (not isinstance(changes,list) or len(changes)>1000 or
-                    not isinstance(summary['plan_sha256'],str) or
-                    len(summary['plan_sha256']) != 64 or
-                    any(c not in '0123456789abcdef' for c in summary['plan_sha256'])):
-                raise Blocked('preparation_summary_invalid')
-            result = dict(state='current' if state=='current' and not changes else
-                          'review_ready' if state=='ready' else 'blocked',
-                          changed_files=len(changes), plan_sha256=summary['plan_sha256'],
-                          error=None if state in ('ready','current') else 'verification_failed')
-            if result['state']=='blocked':result['error']='verification_failed'
+            result = preparation_result(summary,self.job)
             self.pending = (claim,result)
         # Reporting the same saved result is harmless after a lost response.
         # The hosted endpoint enforces current lease/access before first save and
