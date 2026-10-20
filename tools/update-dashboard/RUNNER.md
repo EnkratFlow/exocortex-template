@@ -165,9 +165,9 @@ requires host isolation, registration, release approval and repository consent.
 The prepared disposable pilot does not complete general activation. Remaining
 work requires implementation, review and evidence for:
 
-1. Wire the preparation controller to authenticated hosted requests and a
-   provisioned disposable-checkout host, retaining exact guarded authority and
-   durable results. The local controller does not provision a host or issue grants.
+1. Provision and verify the disposable-checkout host for the preparation
+   request bridge described below. The hosted queue and preview bridge exist,
+   but no general live preparation host or reviewed apply-request path is enabled.
 2. Hosted credential provisioning and an isolated execution host, with private
    durable storage, logging limits and secret rotation. The implemented local
    pilot broker does not provide those hosted boundaries.
@@ -217,3 +217,37 @@ App authentication follows GitHub's
 [JWT signing](https://docs.github.com/en/apps/creating-github-apps/authenticating-with-a-github-app/generating-a-json-web-token-jwt-for-a-github-app)
 and [installation token scope](https://docs.github.com/en/apps/creating-github-apps/authenticating-with-a-github-app/generating-an-installation-access-token-for-a-github-app)
 contracts.
+
+## Preparation request bridge
+
+`pr_runner_preparation_worker.PreparationWorker` connects an attended host to a
+separate authenticated preparation queue. The host injects its provisioned
+`PreparationController`, one exact job, GitHub identity and a
+`SiteClient(lane="preparation")`. There is no credential discovery, CLI that
+accepts browser paths, automatic checkout provisioning or daemon installation.
+
+The private hosted queue binds encrypted owner previews to the configured job,
+repository/base, published target metadata, GitHub account, connection epoch and
+explicit Standard preference revision. Requests persist independently of tabs;
+one active request per owner is enforced in SQLite. Signed worker requests use
+fresh nonces and leases. Cancellation, changed access, changed base, expired
+configuration and expired leases cannot produce a successful plan result.
+
+The worker only calls `controller.preview()`. It cannot rehearse, apply, freeze,
+publish or merge. The controller itself authenticates the published release and
+private policy. A returned plan requires separate review and existing guarded
+apply authority before the previously implemented rehearsal path may be used.
+The queue has no endpoint that creates that authority. Missing administrator
+configuration leaves preparation unavailable, with an explanation in the UI.
+
+A restarted request chooses the same local plan ID. Lost result responses retry
+the identical bounded result without repeating preview; the server accepts exact
+terminal-result retries. Lost leases discard the pending delivery and allow
+normal queue recovery. The host must enforce one writer per disposable checkout
+and protect its durable coordinator state. A session lasts at most four hours;
+private Sites access remains injected in memory and is not a durable credential.
+
+Offline queue, encryption, lease, worker, transport and built-UI tests establish
+these boundaries. They do not demonstrate a provisioned isolated execution host,
+an actual hosted-owner preparation request, a new guarded apply, or publication
+of a real repository update. Real activation still requires those proofs.
