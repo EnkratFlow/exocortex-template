@@ -433,3 +433,59 @@ Only artifact digest, changed-file count and outcome return to the dashboard;
 the actual signed artifact stays private on the host. Success means a disposable
 copy passed its update checks, not a repository update, PR, merge or deployment.
 Separate artifact publication review is still required.
+
+## Reviewed artifact publication
+
+The new publication lane continues a **verified** hosted rehearsal. The owner
+opens **Review draft PR request**, checks the repository, installed/target
+versions and complete tested path list, and explicitly chooses **Create draft
+update PR**. This uses a separate five-minute `publication-review` receipt; a
+preparation or rehearsal receipt cannot request publication. Each saved request
+retains its own repository, version and artifact digest, independent of the old
+fixed pilot and any later configuration. Nothing automatically merges or deploys.
+
+The host validates the rehearsal's private `{review_sha256, packet}` wrapper,
+its separately signed review, the original preview job and the exact rich
+preparation result. The tested packet must retain the original job's identity,
+base, release, policy and expiry, and contain exactly the reviewed paths. Only
+its post-apply plan/artifact digests may change. The handoff emits metadata only;
+file contents and signatures remain on the host.
+
+```sh
+python3 tools/update-dashboard/pr_runner_publication_worker.py --config /absolute/private/publication-worker.json --duration 900
+```
+
+The owner-private configuration has exactly `saved`, `review`, `preview_job`,
+`result`, `control_key`, `preparation_key`, `publication_key`, `runtime`,
+`github_id`, `worker_key`, `origin`, `app_key`, `app_id`, and `account_id`.
+The first four name the saved rehearsal wrapper, signed review, original
+preparation job and its exact rich result (retain this before rehearsal changes
+the plan). Keys and runtime are already provisioned host paths. The runtime
+retains the existing `authority` directory, independent `grant.json`, and durable
+`jobs` state. There is no key discovery, grant issuance, capability creation or
+browser-supplied path. Service access arrives through hidden stdin only.
+
+`handoff(...)` returns the exact non-secret `UPDATE_PUBLICATION_CONFIG` value:
+`preparation_id`, `result_sha256`, `artifact_sha256`, `job_id`, and `preparation`
+(the original preparation configuration). A trusted operator provisions this
+value alongside the matching, unexpired `UPDATE_PREPARATION_CONFIG`; the browser
+cannot choose it. Keeping it unset disables publication. A local
+`publish-update-pr` grant must separately bind that complete job/artifact/account
+and expiry, with current repository authority. The hosted receipt is an additional
+live gate, never a replacement for that grant.
+
+Polling claims only the matching artifact. Live account/access, preference,
+base, lease and expiry are checked before publication writes. Exact result
+retries do not repeat publication. Cancellation after claim, lost leases and
+ambiguous provider results retain `recovery_required`; they are not automatically
+reclaimed. Preserve the runner database and reconcile its exact branch/PR using
+the existing recovery path before any new request. Never discard the database,
+renew a grant blindly or interpret an absent result as proof of no GitHub effects.
+Temporary installation credentials are revoked before another poll or shutdown.
+
+The offline bridge tests exercise the actual durable Runner with a fictional
+provider: missing/wrong grants and rejected hosted checks produce zero writes;
+an exact accepted artifact creates only its dedicated branch and draft PR.
+Hosted tests cover separate approval, artifact/identity substitution, cancellation,
+expiry, final-write races, safe PR links and account-bound history. These are not
+a live changed-repository acceptance test or evidence of an upgraded consumer.

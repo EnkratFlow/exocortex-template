@@ -72,7 +72,7 @@ class SiteClient:
             raise runner.Blocked('invalid_site_origin')
         if not isinstance(service_token, str) or not 1 <= len(service_token) <= 8192 or any(c.isspace() for c in service_token):
             raise runner.Blocked('invalid_service_access')
-        if lane not in ("pilot", "preparation", "rehearsal"):
+        if lane not in ("pilot", "preparation", "rehearsal", "publication"):
             raise runner.Blocked("invalid_worker_lane")
         self.prefix = "/api/update-worker/" if lane == "pilot" else "/api/"+lane+"-worker/"
         self.origin, self.token, self.key = origin, service_token, Path(key)
@@ -110,12 +110,15 @@ def binding(config, job):
                 github_id=config['github_id'], job_id=runner.digest(job), artifact=job['artifact_sha256'])
 
 
-def process(config, claim, site, broker):
-    prepared=private_json(Path(config['runtime'])/'prepared.json',12*1024*1024)
+def process(config, claim, site, broker, *, prepared=None, expected_configuration=None):
+    hosted = prepared is not None
+    if prepared is None:
+        prepared=private_json(Path(config['runtime'])/'prepared.json',12*1024*1024)
     prep_key=signing_bytes(config['preparation_key']);grant_key=signing_bytes(config['publication_key'])
     payload=runner.verify(prepared,'prepared-update',prep_key);job=payload['job']
     runner.validate_artifact(payload['artifact'],job)
-    if claim.get('configuration')!=binding(config,job): raise runner.Blocked('pilot_binding_mismatch')
+    expected = expected_configuration if hosted else binding(config,job)
+    if expected is None or claim.get('configuration')!=expected: raise runner.Blocked('pilot_binding_mismatch')
     jid=runner.digest(job)
     check_body={'id':claim['id'],'lease':claim['lease']}
     def gate():
@@ -131,6 +134,10 @@ def process(config, claim, site, broker):
     backend=GitHubBackend(transport,CurrentAuthority())
     state=runner.Runner(Path(config['runtime'])/'jobs',prep_key,grant_key,backend)
     try:
+        if hosted:
+            # Submission saves an authenticated artifact only. Publication still
+            # requires the separate grant and live hosted gate in Runner.run.
+            state.submit(prepared,job['account'])
         state.status(jid,job['account'])
         # A completed job is read-only recovery, even after original grant expiry.
         # Unfinished jobs still require their original unexpired signed authority.
